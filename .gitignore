@@ -1,0 +1,10 @@
+
+*.xdb
+*.exe
+*.lst
+*.rsp
+*.lib
+*.Slang#ast
+*.Slang#int
+*.ff
+*.out
