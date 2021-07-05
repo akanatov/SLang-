@@ -1,0 +1,23 @@
+return a + if a { 5 else 6
+
+a := a + if a { 5 else 6
+
+if a {
+elsif b {
+else
+}
+
+if a is
+   :1: 
+   :2: 
+elsif b {
+elsif c is
+   :3:
+   :4:
+else
+}
+a := if a { 5 else 6
+
+
+
+

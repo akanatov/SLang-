@@ -6166,97 +6166,135 @@ end -- class IfDoLineDecsriptor
 
 
 deferred class AlternativeDescriptor
--- ValueAlternative“:”StatementsList
+-- ValueAlternative {"," ValueAlternative} ":" StatementsList
 inherit
-	Comparable
+	SmartComparable
 		undefine
 			out
-		redefine
-			is_equal
+		--redefine
+		--	is_equal
 	end
-feature {Any}
-	is_equal (other: like Current): Boolean is
-	do
-		Result := Current = other or else Current.same_type (other) and then sameAs (other)
-	end -- is_equal
-	infix "<" (other: like Current): Boolean is
-	do
-		if Current /= other then
-			Result := Current.generating_type < other.generating_type
-			if not Result and then Current.same_type (other) then 
-				Result := lessThan (other)
-			end -- if
-		end -- if
-	end -- infix "<"
-feature {AlternativeDescriptor}
-	sameAs (other: like Current): Boolean is
-	deferred		
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	deferred
-	end -- lessThan
+--feature {Any}
+--	is_equal (other: like Current): Boolean is
+--	do
+--		Result := Current = other or else Current.same_type (other) and then sameAs (other)
+--	end -- is_equal
+--	infix "<" (other: like Current): Boolean is
+--	do
+--		if Current /= other then
+--			Result := Current.generating_type < other.generating_type
+--			if not Result and then Current.same_type (other) then 
+--				Result := lessThan (other)
+--			end -- if
+--		end -- if
+--	end -- infix "<"
+--feature {AlternativeDescriptor}
+--	sameAs (other: like Current): Boolean is
+--	deferred		
+--	end -- sameAs
+--	lessThan (other: like Current): Boolean is
+--	deferred
+--	end -- lessThan
 end -- class AlternativeDescriptor
 class IfIsBodyAlternative
--- ":"ValueAlternative“:”StatementsList
+-- ":"ValueAlternative {"," ValueAlternative} ":" StatementsList
 inherit
 	AlternativeDescriptor
 	end
 create
 	init
 feature {Any}
-	alternatives: ValueAlternativeDescriptor
+	alternatives: Sorted_Array [ValueAlternativeDescriptor]
 	statements: Array [StatementDescriptor]
 	
 	sameAs (other: like Current): Boolean is
 	local
 		i, n: Integer
 	do
-		Result := alternatives.is_equal (other.alternatives)
+		n := alternatives.count
+		Result := n = other.alternatives.count
 		if Result then
-			n := statements.count
-			Result := n = other.statements.count
-			if Result then
-				from
-					i := 1
-				until
-					i > n
-				loop
-					if statements.item (i).is_equal (other.statements.item (i)) then
-						i := i + 1
-					else
-						Result := False
-						i := n + 1
-					end -- if
-				end -- loop
-			end -- if			
-		end -- if
+			from
+				i := 1
+			until
+				i > n
+			loop
+				if alternatives.item (i).is_equal (other.alternatives.item (i)) then
+					i := i + 1
+				else
+					Result := False
+					i := n + 1
+				end -- if
+			end -- loop
+		end -- if			
+
+--		Result := alternatives.is_equal (other.alternatives)
+
+--		if Result then
+--			n := statements.count
+--			Result := n = other.statements.count
+--			if Result then
+--				from
+--					i := 1
+--				until
+--					i > n
+--				loop
+--					if statements.item (i).is_equal (other.statements.item (i)) then
+--						i := i + 1
+--					else
+--						Result := False
+--						i := n + 1
+--					end -- if
+--				end -- loop
+--			end -- if			
+--		end -- if
 	end -- sameAs
 	lessThan (other: like Current): Boolean is
 	local
 		i, n, m: Integer
 	do
-		Result := alternatives.is_equal (other.alternatives)
-		if not Result and then alternatives.is_equal (other.alternatives) then
-			n := statements.count
-			m := other.statements.count
-			Result := n < m
-			if not Result and then n = m then
-				from
-					i := 1
-				until
-					i > n
-				loop
-					if statements.item (i) < other.statements.item (i) then
-						Result := True
-						i := n + 1
-					elseif statements.item (i).is_equal (other.statements.item (i)) then
-						i := i + 1
-					else
-						i := n + 1
-					end -- if
-				end -- loop
-			end -- if			
-		end -- if
+		n := alternatives.count
+		m := other.alternatives.count
+		Result := n < m
+		if not Result and then n = m then
+			from
+				i := 1
+			until
+				i > n
+			loop
+				if alternatives.item (i) < other.alternatives.item (i) then
+					Result := True
+					i := n + 1
+				elseif alternatives.item (i).is_equal (other.alternatives.item (i)) then
+					i := i + 1
+				else
+					i := n + 1
+				end -- if
+			end -- loop
+		end -- if			
+
+		--Result := alternatives.is_equal (other.alternatives)
+		--if not Result and then alternatives.is_equal (other.alternatives) then
+		--	n := statements.count
+		--	m := other.statements.count
+		--	Result := n < m
+		--	if not Result and then n = m then
+		--		from
+		--  			i := 1
+		--		until
+		--			i > n
+		--	 	loop
+		--			if statements.item (i) < other.statements.item (i) then
+		--				Result := True
+		-- 				i := n + 1
+		-- 			elseif statements.item (i).is_equal (other.statements.item (i)) then
+		--				i := i + 1
+		--			else
+		--				i := n + 1
+		--			end -- if
+		--		end -- loop
+		--	end -- if			
+		--end -- if
 	end -- lessThan
 	
 	init (a: like alternatives; s: like statements) is
@@ -6274,7 +6312,20 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := ":" + alternatives.out + ":%N"
+		Result := ": "
+		from
+			i := 1
+			n := alternatives.count
+		until
+			i > n
+		loop
+			if i > 1 then
+				Result.append_string (", ")
+			end -- if
+			Result.append_string (alternatives.item (i).out)
+			i := i + 1
+		end -- loop
+		Result.append_string (" :%N")
 		from
 			i := 1
 			n := statements.count
@@ -7853,7 +7904,7 @@ deferred class ValueAlternativeDescriptor
 
 -- {“,” Expression ([[“|”OperatorName ConstantExpression] “..”Expression ] | {“|”Expression} ) }
 inherit
-	Any
+	SmartComparable
 		undefine
 			out
 	end
@@ -7862,7 +7913,7 @@ end -- class ValueAlternativeDescriptor
 
 
 class ValuesAlternative
--- Expression {“|”Expression}
+-- Expression {"|" Expression}
 inherit
 	ValueAlternativeDescriptor
 	end
@@ -7876,6 +7927,13 @@ feature {Any}
 	do
 		values := v
 	end -- init
+	sameAs (other: like Current): Boolean is
+	do
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
+	do
+	end -- lessThan
+	
 	out: String is
 	local
 		i, n: Integer
@@ -7913,6 +7971,12 @@ feature {Any}
 	do
 		expr := e
 	end -- init
+	sameAs (other: like Current): Boolean is
+	do
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
+	do
+	end -- lessThan
 	out: String is
 	do
 		Result := expr.out			
@@ -7944,6 +8008,26 @@ feature {Any}
 		constExpr:= ce
 		upper:= u
 	end -- init
+	sameAs (other: like Current): Boolean is
+	do
+		Result := lower.is_equal (other.lower) and then upper.is_equal (other.upper)
+		if Result then
+			Result := operator = Void and then other.operator = Void
+			if not Result and then operator /= Void and then other.operator /= Void then
+				Result := operator.is_equal (other.operator) and then constExpr.is_equal (other.constExpr)
+			end -- if
+		end -- if
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
+	do
+		Result := lower < other.lower
+		if not Result and then lower.is_equal (other.lower) then
+			Result := upper < other.upper			
+			if not Result and then upper.is_equal (other.upper) then
+				
+			end -- if
+		end -- if
+	end -- lessThan
 	out: String is
 	do
 		Result := ""

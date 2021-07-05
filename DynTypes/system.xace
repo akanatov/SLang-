@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<system name="DynTypes">
+	<root class="Test" creation="init"/>
+	<option name="assertion" value="require"/>
+	<option name="assertion" value="check"/>
+	<option name="console_application" value="true"/>
+	<option name="dead_code_removal" value="low_level"/>
+	<option name="debugger" value="true"/>
+	<option name="dynamic_runtime" value="true"/>
+	<option name="inlining" value="constant"/>
+	<option name="inlining" value="once"/>
+	<option name="jumps_optimization" value="true"/>
+	<option name="reloads_optimization" value="true"/>
+	<option name="target" value="exe"/>
+	<cluster name="C:\Work\SLang\DynTypes" location="."/>
+	<mount location="${VE_Lib}/kernel/library.xace"/>
+</system>

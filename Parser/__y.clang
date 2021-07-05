@@ -1,0 +1,11 @@
+unit A
+	foo -> Type 
+	require
+	{
+		if a {
+		else
+			x := if s { 4 else 6 }
+		}
+	ensure
+	}
+}

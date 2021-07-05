@@ -1,0 +1,54 @@
+system "hello_world"
+
+root
+   Test
+
+creation
+   make
+
+cluster
+
+   -- Project cluster
+   [HelloWorld "."                                     ] end
+
+   -- Library clusters
+   [kernel                     "$VE_Lib\kernel"                        ]  end
+   [winlib] end
+
+makepath
+
+
+link
+
+
+
+option
+   -- General options
+   target             exe console
+   map                off
+   debug              off
+   debug instructions off
+   -- Assertions control options
+   assertions         off
+   check              off
+   require            off
+   ensure             off
+   class invariant    off
+   loop  invariant    off
+   loop  variant      off
+   -- Optimizations control options
+   optimize fst       on
+   optimize inline    on
+   optimize constants on
+   optimize once      on
+   optimize jumps     on
+   optimize reloads   on
+   optimize dead_code on
+   linker             default
+	   
+   run_time_in_dll    off
+
+   optimize leaves    on
+   optimize calls     on
+	finalize on
+end
