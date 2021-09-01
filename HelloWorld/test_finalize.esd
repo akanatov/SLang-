@@ -46,7 +46,7 @@ option
    optimize dead_code on
    linker             default
 	   
-   run_time_in_dll    off
+   run_time_in_dll    on
 
    optimize leaves    on
    optimize calls     on
