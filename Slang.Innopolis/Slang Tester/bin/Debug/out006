@@ -1,0 +1,169 @@
+    Entering COMPILATION.parse
+        Entering UNIT.parse
+        ======================Routine
+            Entering FORMAL_GENERIC.parse
+                Entering FORMAL_TYPE.parse
+                    Entering TUPLE_TYPE.parse
+                    Exiting TUPLE_TYPE.parse
+                Exiting FORMAL_TYPE.parse
+            Exiting FORMAL_GENERIC.parse
+            Entering FORMAL_GENERIC.parse
+                Entering FORMAL_TYPE.parse
+                Exiting FORMAL_TYPE.parse
+            Exiting FORMAL_GENERIC.parse
+            Entering DECLARATION.parse
+                Entering VARIABLE.parse
+                Exiting VARIABLE.parse
+            Exiting DECLARATION.parse
+            Entering DECLARATION.parse
+                Entering ROUTINE.parse (())
+                    Entering VARIABLE.parse
+                        Entering UNIT_REF.parse
+                        Exiting UNIT_REF.parse
+                    Exiting VARIABLE.parse
+                Exiting ROUTINE.parse
+            Exiting DECLARATION.parse
+            Entering DECLARATION.parse
+                Entering ROUTINE.parse (())
+                    Entering VARIABLE.parse
+                        Entering UNIT_REF.parse
+                        Exiting UNIT_REF.parse
+                    Exiting VARIABLE.parse
+                    Entering UNIT_REF.parse
+                    Exiting UNIT_REF.parse
+                Exiting ROUTINE.parse
+            Exiting DECLARATION.parse
+            Entering DECLARATION.parse
+            Exiting DECLARATION.parse
+        Exiting UNIT.parse
+        Entering UNIT.parse
+        ======================Procedure
+            Entering FORMAL_GENERIC.parse
+                Entering FORMAL_TYPE.parse
+                    Entering TUPLE_TYPE.parse
+                    Exiting TUPLE_TYPE.parse
+                Exiting FORMAL_TYPE.parse
+            Exiting FORMAL_GENERIC.parse
+            Entering UNIT_REF.parse
+                Entering TUPLE_TYPE.parse
+                Exiting TUPLE_TYPE.parse
+            Exiting UNIT_REF.parse
+            Entering DECLARATION.parse
+                Entering ROUTINE.parse (())
+                    Entering VARIABLE.parse
+                        Entering UNIT_REF.parse
+                        Exiting UNIT_REF.parse
+                    Exiting VARIABLE.parse
+                Exiting ROUTINE.parse
+            Exiting DECLARATION.parse
+            Entering DECLARATION.parse
+                Entering ROUTINE.parse (())
+                    Entering VARIABLE.parse
+                        Entering UNIT_REF.parse
+                        Exiting UNIT_REF.parse
+                    Exiting VARIABLE.parse
+                    Entering UNIT_REF.parse
+                    Exiting UNIT_REF.parse
+                    Entering BODY.parse
+                        Entering STATEMENT.parse
+                        Exiting STATEMENT.parse
+                    Exiting BODY.parse
+                Exiting ROUTINE.parse
+            Exiting DECLARATION.parse
+            Entering DECLARATION.parse
+            Exiting DECLARATION.parse
+        Exiting UNIT.parse
+        Entering UNIT.parse
+        ======================Function
+            Entering FORMAL_GENERIC.parse
+                Entering FORMAL_TYPE.parse
+                    Entering TUPLE_TYPE.parse
+                    Exiting TUPLE_TYPE.parse
+                Exiting FORMAL_TYPE.parse
+            Exiting FORMAL_GENERIC.parse
+            Entering FORMAL_GENERIC.parse
+                Entering FORMAL_TYPE.parse
+                Exiting FORMAL_TYPE.parse
+            Exiting FORMAL_GENERIC.parse
+            Entering UNIT_REF.parse
+            Exiting UNIT_REF.parse
+            Entering DECLARATION.parse
+                Entering ROUTINE.parse (())
+                    Entering VARIABLE.parse
+                        Entering UNIT_REF.parse
+                        Exiting UNIT_REF.parse
+                    Exiting VARIABLE.parse
+                    Entering BODY.parse
+                        Entering STATEMENT.parse
+                        Exiting STATEMENT.parse
+                    Exiting BODY.parse
+                Exiting ROUTINE.parse
+            Exiting DECLARATION.parse
+            Entering DECLARATION.parse
+                Entering ROUTINE.parse (())
+                    Entering VARIABLE.parse
+                        Entering UNIT_REF.parse
+                        Exiting UNIT_REF.parse
+                    Exiting VARIABLE.parse
+                    Entering UNIT_REF.parse
+                    Exiting UNIT_REF.parse
+                Exiting ROUTINE.parse
+            Exiting DECLARATION.parse
+            Entering DECLARATION.parse
+            Exiting DECLARATION.parse
+        Exiting UNIT.parse
+    Exiting COMPILATION.parse
+N:0001 P:--- S:(002:002,016:005)    COMPILATION
+N:0002 P:0001 S:(----:----,----:----)        ROUTINE $anonymous
+N:0006 P:0001 S:(002:002,007:001)        ABSTRACT GENERIC UNIT Routine
+                                         GENERIC PARAMETERS
+N:0008 P:0006 S:(002:025,002:039)            FORMAL TYPE Arguments
+N:0011 P:0006 S:(002:040,002:047)            FORMAL TYPE Result
+                                         MEMBERS
+N:0015 P:0006 S:(003:003,004:001)            VAL FOREIGN VARIABLE arguments
+N:0016 P:0006 S:(004:003,005:004)            ABSTRACT ROUTINE ()
+                                             PARAMETERS
+N:0022 P:0016 S:(004:006,004:022)                VAL VARIABLE args
+N:0020 P:0022 S:(004:012,004:022)                    UNIT REF Arguments:8 TAKEN FROM AS
+N:0023 P:0006 S:(005:003,007:001)            ABSTRACT ROUTINE ()
+N:0030 P:0023 S:(005:024,005:033)                UNIT REF Result:11 TAKEN FROM AS
+                                             PARAMETERS
+N:0029 P:0023 S:(005:006,005:022)                VAL VARIABLE args
+N:0027 P:0029 S:(005:012,005:022)                    UNIT REF Arguments:8 TAKEN FROM AS
+N:0031 P:0001 S:(008:002,012:001)        VAL GENERIC UNIT Procedure
+                                         GENERIC PARAMETERS
+N:0033 P:0031 S:(008:018,008:032)            FORMAL TYPE Arguments
+                                         BASE CLASSES
+N:0036 P:0031 S:(008:040,008:063)            EXTEND
+N:0037 P:0036 S:(008:040,008:063)                UNIT REF Routine:6 TAKEN FROM AS GENERIC ACTUALS
+N:0038 P:0037 S:(008:049,008:058)                    REF Arguments:33
+N:0039 P:--- S:(008:060,008:062)                    TUPLE TYPE
+                                         MEMBERS
+N:0040 P:0031 S:(009:012,010:011)            FOREIGN OVERRIDE ROUTINE ()
+                                             PARAMETERS
+N:0046 P:0040 S:(009:016,009:032)                VAL VARIABLE args
+N:0044 P:0046 S:(009:022,009:032)                    UNIT REF Arguments:33 TAKEN FROM AS
+N:0047 P:0031 S:(010:019,012:001)            OVERRIDE ROUTINE ()
+N:0054 P:0047 S:(010:040,010:049)                UNIT REF Result:??? TAKEN FROM AS
+                                             PARAMETERS
+N:0053 P:0047 S:(010:022,010:038)                VAL VARIABLE args
+N:0051 P:0053 S:(010:028,010:038)                    UNIT REF Arguments:33 TAKEN FROM AS
+N:0056 P:0001 S:(013:002,016:004)        VAL GENERIC UNIT Function
+                                         GENERIC PARAMETERS
+N:0058 P:0056 S:(013:017,013:031)            FORMAL TYPE Arguments
+N:0061 P:0056 S:(013:032,013:039)            FORMAL TYPE Result
+                                         BASE CLASSES
+N:0063 P:0056 S:(013:047,013:074)            EXTEND
+N:0064 P:0063 S:(013:047,013:074)                UNIT REF Routine:6 TAKEN FROM AS GENERIC ACTUALS
+N:0065 P:0064 S:(013:056,013:065)                    REF Arguments:58
+N:0066 P:0064 S:(013:067,013:073)                    REF Result:61
+                                         MEMBERS
+N:0067 P:0056 S:(014:019,015:011)            OVERRIDE ROUTINE ()
+                                             PARAMETERS
+N:0073 P:0067 S:(014:023,014:039)                VAL VARIABLE args
+N:0071 P:0073 S:(014:029,014:039)                    UNIT REF Arguments:58 TAKEN FROM AS
+N:0075 P:0056 S:(015:012,016:004)            FOREIGN OVERRIDE ROUTINE ()
+N:0082 P:0075 S:(015:033,015:042)                UNIT REF Result:61 TAKEN FROM AS
+                                             PARAMETERS
+N:0081 P:0075 S:(015:015,015:031)                VAL VARIABLE args
+N:0079 P:0081 S:(015:021,015:031)                    UNIT REF Arguments:58 TAKEN FROM AS

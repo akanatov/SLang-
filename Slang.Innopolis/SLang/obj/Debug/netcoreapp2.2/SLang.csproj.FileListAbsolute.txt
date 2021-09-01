@@ -1,0 +1,7 @@
+C:\Zouev\SLang\SLang\obj\Debug\netcoreapp2.2\SLang.csproj.CoreCompileInputs.cache
+C:\Zouev\SLang\SLang\bin\Debug\netcoreapp2.2\SLang.deps.json
+C:\Zouev\SLang\SLang\bin\Debug\netcoreapp2.2\SLang.dll
+C:\Zouev\SLang\SLang\bin\Debug\netcoreapp2.2\SLang.pdb
+C:\Zouev\SLang\SLang\obj\Debug\netcoreapp2.2\SLang.csprojAssemblyReference.cache
+C:\Zouev\SLang\SLang\obj\Debug\netcoreapp2.2\SLang.dll
+C:\Zouev\SLang\SLang\obj\Debug\netcoreapp2.2\SLang.pdb

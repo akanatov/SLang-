@@ -1,0 +1,6 @@
+C:\Zouev\SLang\SLang\bin\Debug\SLang.dll
+C:\Zouev\SLang\SLang\bin\Debug\SLang.pdb
+C:\Zouev\SLang\SLang\obj\Debug\SLang.dll
+C:\Zouev\SLang\SLang\obj\Debug\SLang.pdb
+C:\Zouev\SLang\SLang\obj\Debug\SLang.csprojAssemblyReference.cache
+C:\Zouev\SLang\SLang\obj\Debug\SLang.csproj.CoreCompileInputs.cache

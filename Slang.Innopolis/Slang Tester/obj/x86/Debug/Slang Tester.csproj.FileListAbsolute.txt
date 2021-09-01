@@ -1,0 +1,7 @@
+C:\Zouev\SLang\Slang Tester\obj\x86\Debug\Slang Tester.csprojResolveAssemblyReference.cache
+C:\Zouev\SLang\Slang Tester\bin\Debug\Slang Tester.exe
+C:\Zouev\SLang\Slang Tester\bin\Debug\Slang Tester.pdb
+C:\Zouev\SLang\Slang Tester\bin\Debug\SLang.dll
+C:\Zouev\SLang\Slang Tester\bin\Debug\SLang.pdb
+C:\Zouev\SLang\Slang Tester\obj\x86\Debug\Slang Tester.exe
+C:\Zouev\SLang\Slang Tester\obj\x86\Debug\Slang Tester.pdb

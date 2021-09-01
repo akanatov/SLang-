@@ -1,0 +1,13 @@
+C:\Zouev\SLang\Slang Tester\obj\Debug\netcoreapp2.2\SLang Tester.csproj.CoreCompileInputs.cache
+C:\Zouev\SLang\Slang Tester\bin\Debug\netcoreapp2.2\SLang Tester.dll.config
+C:\Zouev\SLang\Slang Tester\bin\Debug\netcoreapp2.2\SLang Tester.deps.json
+C:\Zouev\SLang\Slang Tester\bin\Debug\netcoreapp2.2\SLang Tester.runtimeconfig.json
+C:\Zouev\SLang\Slang Tester\bin\Debug\netcoreapp2.2\SLang Tester.runtimeconfig.dev.json
+C:\Zouev\SLang\Slang Tester\bin\Debug\netcoreapp2.2\SLang Tester.dll
+C:\Zouev\SLang\Slang Tester\bin\Debug\netcoreapp2.2\SLang Tester.pdb
+C:\Zouev\SLang\Slang Tester\bin\Debug\netcoreapp2.2\SLang.dll
+C:\Zouev\SLang\Slang Tester\bin\Debug\netcoreapp2.2\SLang.pdb
+C:\Zouev\SLang\Slang Tester\obj\Debug\netcoreapp2.2\SLang Tester.csprojAssemblyReference.cache
+C:\Zouev\SLang\Slang Tester\obj\Debug\netcoreapp2.2\SLang Tester.csproj.CopyComplete
+C:\Zouev\SLang\Slang Tester\obj\Debug\netcoreapp2.2\SLang Tester.dll
+C:\Zouev\SLang\Slang Tester\obj\Debug\netcoreapp2.2\SLang Tester.pdb

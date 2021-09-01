@@ -1,0 +1,10 @@
+C:\Zouev\SLang\SLang Compiler\bin\Debug\SLang Compiler.exe.config
+C:\Zouev\SLang\SLang Compiler\bin\Debug\SLang Compiler.exe
+C:\Zouev\SLang\SLang Compiler\bin\Debug\SLang Compiler.pdb
+C:\Zouev\SLang\SLang Compiler\bin\Debug\SLang.dll
+C:\Zouev\SLang\SLang Compiler\bin\Debug\SLang.pdb
+C:\Zouev\SLang\SLang Compiler\obj\Debug\SLang Compiler.exe
+C:\Zouev\SLang\SLang Compiler\obj\Debug\SLang Compiler.pdb
+C:\Zouev\SLang\SLang Compiler\obj\Debug\SLang Compiler.csprojAssemblyReference.cache
+C:\Zouev\SLang\SLang Compiler\obj\Debug\SLang Compiler.csproj.CoreCompileInputs.cache
+C:\Zouev\SLang\SLang Compiler\obj\Debug\SLang Compiler.csproj.CopyComplete

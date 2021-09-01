@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SLang Compiler": {
+      "commandName": "Project",
+      "commandLineArgs": "c:\\Zouev\\SLang\\SLang Tests\\\"Core ver 0.72.slang\""
+    }
+  }
+}

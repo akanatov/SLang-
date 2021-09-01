@@ -1,0 +1,13 @@
+C:\Zouev\SLang\SLang Compiler\obj\Debug\netcoreapp2.2\SLang Compiler.csproj.CoreCompileInputs.cache
+C:\Zouev\SLang\SLang Compiler\bin\Debug\netcoreapp2.2\SLang Compiler.dll.config
+C:\Zouev\SLang\SLang Compiler\bin\Debug\netcoreapp2.2\SLang Compiler.deps.json
+C:\Zouev\SLang\SLang Compiler\bin\Debug\netcoreapp2.2\SLang Compiler.runtimeconfig.json
+C:\Zouev\SLang\SLang Compiler\bin\Debug\netcoreapp2.2\SLang Compiler.runtimeconfig.dev.json
+C:\Zouev\SLang\SLang Compiler\bin\Debug\netcoreapp2.2\SLang Compiler.dll
+C:\Zouev\SLang\SLang Compiler\bin\Debug\netcoreapp2.2\SLang Compiler.pdb
+C:\Zouev\SLang\SLang Compiler\bin\Debug\netcoreapp2.2\SLang.dll
+C:\Zouev\SLang\SLang Compiler\bin\Debug\netcoreapp2.2\SLang.pdb
+C:\Zouev\SLang\SLang Compiler\obj\Debug\netcoreapp2.2\SLang Compiler.csprojAssemblyReference.cache
+C:\Zouev\SLang\SLang Compiler\obj\Debug\netcoreapp2.2\SLang Compiler.csproj.CopyComplete
+C:\Zouev\SLang\SLang Compiler\obj\Debug\netcoreapp2.2\SLang Compiler.dll
+C:\Zouev\SLang\SLang Compiler\obj\Debug\netcoreapp2.2\SLang Compiler.pdb
