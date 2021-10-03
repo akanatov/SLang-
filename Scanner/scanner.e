@@ -186,7 +186,6 @@ feature {Any}
 				"<illegal>",
 				"alias",
 				"as",
-				"break",
 				"concurrent",
 				"const",
 				"do",
@@ -282,7 +281,6 @@ feature {Any}
 	illegal_token,	
 	alias_token,	
 	as_token,		
-	break_token,
 	concurrent_token,
 	const_token,	
 	do_token,		
@@ -1435,12 +1433,6 @@ feature {None}
 				else
 					Result := identifier_token
 				end
-			else
-				Result := identifier_token
-			end
-		when 'b' then -- "break"
-			if buffer.is_equal (keywords.item (break_token)) then
-				Result := break_token
 			else
 				Result := identifier_token
 			end

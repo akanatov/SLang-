@@ -287,8 +287,8 @@ feature {Any}
 						toExit := True
 					end -- if
 				end -- inspect
-			-- Statement: Assignment | LocalAttributeCreation | +IfCase | ? Identifier | +Break | Return | +HyperBlock | Raise |MemberCallOrCreation 		|  +Loop
-			--            ( ident      var ident                if        ?              break   return    +require do   raise   ident new old this return     while require do
+			-- Statement: Assignment | LocalAttributeCreation | +IfCase | ? Identifier | Return | +HyperBlock | Raise |MemberCallOrCreation 		|  +Loop
+			--            ( ident      var ident                if        ?              return    +require do   raise   ident new old this return     while require do
 			-- Anonymous routine start (statements list)
 			when scanner.if_token then -- Anonymous routine: if statement
 				stmtDsc := parseIfStatement
@@ -302,11 +302,6 @@ feature {Any}
 				end -- if				
 			when scanner.new_token then -- Anonymous routine: new statement
 				stmtDsc := parseNewStatement
-				if stmtDsc /= Void then
-					ast.addStatement (stmtDsc)
-				end -- if				
-			when scanner.break_token then -- Anonymous routine: break statement
-				stmtDsc := parseBreakStatement
 				if stmtDsc /= Void then
 					ast.addStatement (stmtDsc)
 				end -- if				
@@ -347,7 +342,7 @@ feature {Any}
 					syntax_error (<<
 						scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
 						scanner.virtual_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
-						scanner.if_token, scanner.require_token, scanner.left_curly_bracket_token, scanner.while_token, scanner.new_token, scanner.break_token, scanner.detach_token,
+						scanner.if_token, scanner.require_token, scanner.left_curly_bracket_token, scanner.while_token, scanner.new_token, scanner.detach_token,
 						scanner.raise_token, scanner.return_token, scanner.left_paranthesis_token, scanner.var_token
 					>>)
 					toExit := True
@@ -355,7 +350,7 @@ feature {Any}
 					syntax_error (<<
 						scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
 						scanner.virtual_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
-						scanner.if_token, scanner.require_token, scanner.do_token, scanner.while_token, scanner.new_token, scanner.break_token, scanner.detach_token,
+						scanner.if_token, scanner.require_token, scanner.do_token, scanner.while_token, scanner.new_token, scanner.detach_token,
 						scanner.raise_token, scanner.return_token, scanner.left_paranthesis_token, scanner.var_token
 					>>)
 					toExit := True
@@ -1684,11 +1679,11 @@ feature {None}
 			if stmtDsc /= Void then
 				Result := <<stmtDsc>>
 			end -- if
-		when scanner.break_token then
-			stmtDsc := parseBreakStatement
-			if stmtDsc /= Void then
-				Result := <<stmtDsc>>
-			end -- if
+		--when scanner.break_token then
+		--	stmtDsc := parseBreakStatement
+		--	if stmtDsc /= Void then
+		--		Result := <<stmtDsc>>
+		--	end -- if
 		when scanner.detach_token then
 			stmtDsc := parseDetachStatement
 			if stmtDsc /= Void then
@@ -1719,7 +1714,7 @@ feature {None}
 				if statementExpected then
 					syntax_error (<<
 						scanner.identifier_token, scanner.var_token, scanner.left_paranthesis_token, scanner.old_token, scanner.this_token, scanner.new_token,
-						scanner.if_token, scanner.while_token, scanner.break_token, scanner.detach_token, scanner.return_token, scanner.raise_token, scanner.require_token, 
+						scanner.if_token, scanner.while_token, scanner.detach_token, scanner.return_token, scanner.raise_token, scanner.require_token, 
 						scanner.left_curly_bracket_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.init_token
 					>>)
 				end -- if
@@ -1727,7 +1722,7 @@ feature {None}
 				if statementExpected then
 					syntax_error (<<
 						scanner.identifier_token, scanner.var_token, scanner.left_paranthesis_token, scanner.old_token, scanner.this_token, scanner.new_token,
-						scanner.if_token, scanner.while_token, scanner.break_token, scanner.detach_token, scanner.return_token, scanner.raise_token, scanner.require_token, 
+						scanner.if_token, scanner.while_token, scanner.detach_token, scanner.return_token, scanner.raise_token, scanner.require_token, 
 						scanner.do_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.init_token
 					>>)
 				end -- if
@@ -2761,25 +2756,25 @@ feature {None}
 		end -- if	
 	end -- parseDetachStatement
 
-	parseBreakStatement: BreakStatementDescriptor is
-	--54
-	require
-		valid_start_token: scanner.token = scanner.break_token
-	do
-		scanner.nextToken
-		inspect
-			scanner.token
-		when scanner.colon_token then -- break : Label
-			scanner.nextToken
-			if scanner.token = scanner.identifier_token then
-				create Result.init (scanner.tokenString)
-			else
-				syntax_error (<<scanner.identifier_token>>)
-			end -- if
-		else
-			create Result.init (Void)
-		end -- if	
-	end -- parseBreakStatement
+--	parseBreakStatement: BreakStatementDescriptor is
+--	--54
+--	require
+--		valid_start_token: scanner.token = scanner.break_token
+--	do
+--		scanner.nextToken
+--		inspect
+--			scanner.token
+--		when scanner.colon_token then -- break : Label
+--			scanner.nextToken
+--			if scanner.token = scanner.identifier_token then
+--				create Result.init (scanner.tokenString)
+--			else
+--				syntax_error (<<scanner.identifier_token>>)
+--			end -- if
+--		else
+--			create Result.init (Void)
+--		end -- if	
+--	end -- parseBreakStatement
 
 	parseNewExpression: NewExpressionDescriptor is
 	-- NewExpression: new UnitType [“.”init] [ Arguments ]
@@ -3166,7 +3161,7 @@ trace ("%Talternative: " + valAltDsc.out)
 							create {IfIsBodyAlternative} altDsc.init (valAlts, statements)
 							Result.force (altDsc, Result.count + 1)
 
-							valAlts.resize (1, 0)
+							valAlts.resize (0) -- 1, 0)
 						when scanner.comma_token then
 							scanner.nextToken
 							isOptionalAlternative := False

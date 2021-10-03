@@ -3067,41 +3067,41 @@ feature {Any}
 	end
 end -- class ReturnStatementDescriptor
 
-class BreakStatementDescriptor 
---25 break [“:”Label] 
-inherit	
-	StatementDescriptor
-	end
-create	
-	init
-feature {Any}
-	label: String
+--class BreakStatementDescriptor 
+----25 break [“:”Label] 
+--inherit	
+--	StatementDescriptor
+--	end
+--create	
+--	init
+--feature {Any}
+--	label: String
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
-	do
-		-- do nothing so far
-	end -- checkValidity
-	generate is
-	do
-		-- do nothing so far
-	end -- if
-
-	out: String is
-	do
-		Result := "break"
-		if label = Void then
-			Result.append_character (';')
-		else
-			Result.append_character (' ')
-			Result.append_character (':')
-			Result.append_string (label)
-		end -- if
-	end -- out
-	init (l: like label) is
-	do
-		label := l
-	end
-end -- class BreakStatementDescriptor 
+--	isNotValid (context: CompilationUnitCommon): Boolean is
+--	do
+--		-- do nothing so far
+--	end -- checkValidity
+--	generate is
+--	do
+--		-- do nothing so far
+--	end -- if
+--
+--	out: String is
+--	do
+--		Result := "break"
+--		if label = Void then
+--			Result.append_character (';')
+--		else
+--			Result.append_character (' ')
+--			Result.append_character (':')
+--			Result.append_string (label)
+--		end -- if
+--	end -- out
+--	init (l: like label) is
+--	do
+--		label := l
+--	end
+--end -- class BreakStatementDescriptor 
 
 class HyperBlockDescriptor
 --26 [RequireBlock] InnerBlockDescriptor [EnsureBlock] end

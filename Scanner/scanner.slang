@@ -143,7 +143,6 @@ unit SLang_Scanner
 				"<illegal>",
 				"alias",
 				"as",
-				"break",
 				"concurrent",
 				"const",
 				"do",
@@ -241,7 +240,6 @@ unit SLang_Scanner
 	illegal_token,	
 	alias_token,	
 	as_token,		
-	break_token,
 	concurrent_token,
 	const_token,	
 	do_token,		
@@ -1295,12 +1293,6 @@ unit SLang_Scanner
 				else
 					return identifier_token
 				end
-			else
-				return identifier_token
-			end
-		: 'b' : // "break"
-			if buffer.is_equal (keywords (break_token)) do
-				return break_token
 			else
 				return identifier_token
 			end
