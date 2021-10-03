@@ -1,0 +1,313 @@
+Compilation:
+	Array [CompilationUnit]
+
+CompilationUnit:
+	{UseDirective}
+	AnonymousRoutine|StandaloneRoutine|UnitDeclaration
+
+UseDirective:
+	use (const UnitTypeName {“,” UnitTypeName}) | (AttachedType as Identifier)
+
+EnclosedUseDirective:
+	[use [EnclosedUseEement {“,” EnclosedUseEement}] [const UnitTypeName {“,” UnitTypeName}]]
+
+EnclosedUseEement:
+	UnitTypeName [as Identifier]]
+
+AnonymousRoutine:
+	Array [Statement]
+
+StandaloneRoutine:
+	[pure|safe] Identifier [FormalGenerics] [Parameters] [ReturnType Type] [EnclosedUseDirective]
+	[RequireBlock]
+	(InnerBlock [EnsureBlock] BlockEnd)|(((“=>”Expression)|foreign) [EnsureBlock BlockEnd])
+
+InnerBlock:
+	BlockStart  [”:”Label] [GroupStart Identifier {“,” Identifier} GroupEnd]
+	Array [Statement]
+	[Array [WhenClause]
+	[else
+		Array [Statement]
+	]
+	]
+
+WhenClause:
+	when [Identifier:] UnitType BlockStart
+	Array [Statement]
+          
+Parameters:
+	“(”[“:=”]Parameter{”;” Parameter}“)”
+
+Parameter:
+	([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“as” Identifier))
+
+RequireBlock:
+	require
+	Array [Predicate] 
+EnsureBlock:
+	ensure
+	Array [Predicate]
+InvariantBlock:
+	require
+	Array [Predicate]
+
+Predicate:
+	BooleanExpression [DocumentingComment]
+
+UnitDeclaration:
+	([final] [ref|val|concurrent])|[virtual]|[extend] unit Identifier [AliasName] [FormalGenerics] [InheritDirective]
+	[EnclosedUseDirective]
+	[MemberSelection]
+	[InheritedMemberOverriding]
+	[InitProcedureInheritance]
+	[ConstObjectsDeclaration]
+	{ ( MemberVisibility “:” {MemberDeclaration}) |  MemberDeclaration }
+	[InvariantBlock]
+	BlockEnd
+
+InheritDirective:
+	extend Array [Parent]
+
+Parent:
+	UnitTypeName | (“~” UnitTypeName [“(”MemberName{“,”MemberName}“)”])
+
+MemberName:
+	Identifier|(RoutineName [Signature])
+
+FormalGenerics:
+	GenericsStart Array [FormalGeneric] GenericsEnd
+
+FormalGeneric:
+	Identifier ([“extend” UnitTypeName] [“init” [Signature]])| [“:” (UnitType | RoutineType]
+
+MemberSelection:
+	select Array [MemberName]
+
+InheritedMemberOverriding:
+	override Array [UnitTypeName”.”MemberName]
+
+InitProcedureInheritance:
+	init Array [UnitTypeName[Signature]]
+	
+MemberVisibility:
+	“{” [this| Array [UnitTypeName]] “}”
+
+MemberDeclaration:
+	[MemberVisibility] ([override] [final] UnitAttribiteDeclaration|UnitRoutineDeclaration) | InitDeclaration
+
+InitDeclaration:
+	init [[“:=”]Parameters] [EnclosedUseDirective]
+	[RequireBlock] 
+	(InnerBlock [EnsureBlock] BlockEnd)|(foreign [EnsureBlock BlockEnd])
+
+UnitRoutineDeclaration:
+	[pure|safe] RoutineName [final Identifier] [[“:=”]Parameters] [ReturnType Type] [EnclosedUseDirective]
+	[RequireBlock]
+	((InnerBlock) [EnsureBlock] BlockEnd) | ((virtual|foreign|(“=>”Expression))[EnsureBlock BlockEnd])
+
+RoutineName: Identifier |“()”|“:=”|(OperatorName [AliasName])
+
+AliasName:
+	alias (Identifier|“and then”|“or else”)
+
+OperatorName:
+	OperatorSign [OperatorSign]
+OperatorSign:
+	“^” | “*” | “/” | “\” | “=” | “+” | “-“ |”<” | ”>” | ”&” | “|”
+
+ConstObjectsDeclaration:
+	enum [ Array [ConstObject] ] BlockEnd
+
+ConstObject : 
+( 
+( Constant | (Idenitifer [“.”init] [ Arguments ]) )
+[ [“{”OperatorName ConstantExpression “}”] “..” (Constant | (Idenitifer [“.”init] [ Arguments ])) ]
+)
+	|
+(“{” RegularExpression “}” IntegerConstant [“+”])
+
+RegularExpression:
+     Constant ({“|”Constant}) | (“|” ”..” Constant)
+
+Statement:
+	Assignment | LocalAttributeCreation | MemberCall | NewStatement | IfCase | Loop | Break | Detach | Return | HyperBlock | Raise 
+
+Detach:
+	? Identifier 
+Raise:
+	raise [Expression] 
+Return:
+	return [Expression] 
+Break:
+	break [“:” Identifier] 
+
+HyperBlock:
+	[RequireBlock]
+	InnerBlock
+	[EnsureBlock]
+	BlockEnd
+
+Assignment:
+	Writable “:=” Expression 
+
+Writable:
+	WritableCall | (“(”Array [WritableCall] “)”)
+
+LocalAttributeCreation:
+	(LocalAttributeNamesList ([“:” Type] is Expression )|(“:” “?” AttachedType)) |(“(“ LocalAttributeNamesList “)” is Expression  )
+
+LocalAttributeNamesList: [var|rigid] Identifier {“,”[var|rigid] Identifier}
+
+UnitAttributeDeclaration:
+(
+( UnitAttributeNamesList “:” Type) | ( [const|rigid] Identifier [“:” AttachedType] is ConstantExpression  )
+|
+(Identifier “:” Type rtn “:=” [[Parameters] HyperBlock])
+) [final (“=>”Statement ) | (InnerBlock [EnsureBlock] BlockEnd)]
+
+UnitAttributeNamesList:
+	[const | rigid] Identifier {“,”[const | rigid] Identifier}
+
+BooleanExpression: Expression
+
+ConstantExpression:
+(Identifier {“.” Identifier}) | Constant [Operator ConstantExpression]
+
+Expression: 
+	IfExpression | MemberCall | NewExpression | Expression Operator Expression | Operator Expression | Constant | TypeOfExpression | OldExpression 
+	| RangeExpression | LambdaExpression | TupleExpression | RefExpression | “(”Expression“)”{CallChain}
+
+RefExpression:
+	ref Expression
+
+LambdaExpression:
+	(rtn Identifier [Signature])|InlineLambdaExpression
+
+InlineLambdaExpression:
+	[pure|safe] rtn [Parameters] [ReturnType Type]
+	( [RequireBlock] (InnerBlock BlockEnd)|(foreign [EnsureBlock] BlockEnd])|(“=>”Expression)
+
+RangeExpression:
+	Expression [“{”OperatorName ConstantExpression“}”] “..”Expression
+
+OldExpression:
+	old Expression 
+
+TupleExpression:
+	“(”[Array [TupleElement]]“)”
+
+TupleElement:
+	Expression| Parameter
+
+TypeOfExpression:
+	Expression is (“?”| UnitType| AnonymousUnitType)
+
+Operator:
+	OperatorName|in
+
+Constant:
+	[UnitTypeName “.”] ( StringConstant | CharacterConstant | IntegerConstant | RealConstant | BooleanConstant | BitConstant | Identifier )
+
+IfExpression:
+	if Expression (is IfBodyExpression)|( BlockStart Expression)
+	Array [elsif Expression (is IfBodyExpression)|( BlockStart Expression)]
+	else Expression “}”Cmod
+
+IfBodyExpression:
+	Array [“:”ValueAlternative“:”Expression]
+
+MemberCall:
+	WritableCall|(init [Arguments])
+
+WritableCall: 
+	((Identifier|return|this) [“.”(Identifier|OperatorName)]) |old [GroupStart  UnitTypeName Groupend] [Arguments] {CallChain}
+
+NewStatement:
+	(new [GroupStart UnitType GroupEnd] return) | ([new] [GroupStart UnitType GroupEnd] Identifier) [“.”init] [ Arguments ]
+
+NewExpression:
+	[new] UnitType [“.”init] [ Arguments ]
+
+CallChain:
+	“.”(Identifier|OperatorName) [ Arguments ]
+
+Arguments: “(” [ExpressionList] ”)”
+
+ExpressionList:
+	Array [[GroupStart UnitType GroupEnd] Expression]
+
+IfCase:
+	if Expression (is IfBody)|(BlockStart [Array [Statement]])
+	{elsif Expression (is IfBody)|(BlockStart [Array [Statement]])}
+	[else [Array [Statement]]]
+BlockEnd
+
+IfBody:
+	Array [“:” ValueAlternatives “:” Array [Statement]]
+
+ValueAlternatives: Array [ValueAlternative]
+
+ValueAlternative:
+	Expression ([[GroupStart OperatorName ConstantExpression GroupEnd] “..”Expression ] | {“|”Expression} )
+
+MemberDescription:
+	([rtn] RoutineName[Signature])|(Idenitifer{“,”Idenitifer} ”:” UnitType)
+
+
+Loop: 
+	(
+		while BooleanExpression
+		[RequireBlock]
+		InnerBlock
+	)
+	|
+	(
+		[RequireBlock]
+		InnerBlock
+		while BooleanExpression
+	)
+	[EnsureBlock]
+	BlockEnd
+
+Type:
+	[”?”] AttachedType
+
+AttachedType:
+	UnitType|AnchorType|MultiType|TupleType|RangeType|RoutineType|AnonymousUnitType
+
+AnonymousUnitType:
+	unit
+	Array [MemberDesciption]
+	BlockEnd
+
+RoutineType:
+	rtn [Signature]
+
+Signature: (“(”[Type {“,” Type}]“)”[ ReturnType Type])| (ReturnType Type)
+
+RangeType: 
+(ConstantExpression [GroupStart OperatorName ConstantExpression GroupEnd] “..”ConstantExpression)
+|
+(ConstantExpression {“|” ConstantExpression})
+
+ AnchorType: as (this|(Identifier [Signature]))
+ MultiType: UnitType {“|”UnitType}
+
+ TupleType: “(”[TupleField {“,”|”;” TupleField}]“)”
+ TupleField: [Identifier {“,” Identifier}“:”] UnitType
+
+ UnitTypeName: 
+Identifier 
+[GenericsStart (Type|ConstantExpression) {“,” ( Type|ConstantExpression)} GenericsEnd ]
+ UnitType: [ref|val|concurrent] UnitTypeName 
+
+DocumentingComment: “///” { Character }
+Comment: ( “//” { Character } ) |  ( ”/*” { Character } “*/” )
+
+ReturnType: “:”|”->”
+GenericsStart: “[“|”<”Cmod
+GenericsEnd: “]”|”>”Cmod
+BlockStart: do|”{”Cmod
+BlockEnd: end|”}”Cmod
+GroupStart: “{”|”[“Cmod
+GroupEnd: “}”|”]“Cmod
