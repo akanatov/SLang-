@@ -1181,7 +1181,7 @@ feature {None}
 				end -- if
 				loopDsc ?= innerBlock
 				if loopDsc = Void then
-					create {HyperBlockDescriptor} Result.init (preconditions, innerBlock.label, innerBlock.invariantOffList, innerBlock.statements,
+					create {HyperBlockDescriptor} Result.init (preconditions, innerBlock.invariantOffList, innerBlock.statements,
 						innerBlock.whenClauses, innerBlock.whenElseClause, postconditions)
 					-- 	init (rc: like requireClause; lbl: String; invOff: like invariantOffList; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
 				else
@@ -1197,11 +1197,10 @@ feature {None}
 	end -- parseBlock1
 	
 	parseInnerBlock (checkForLoop: Boolean): InnerBlockDescriptor is 
-	-- do [”:”Label] [“{”Identifier {“,” Identifier} “}”]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
+	-- do [“{”Identifier {“,” Identifier} “}”]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
 	require
 		valid_token: scanner.token = scanner.do_token or else scanner.token = scanner.left_curly_bracket_token
 	local
-		label: String
 		invariantOffList: Sorted_Array [String]
 		commaFound: Boolean
 		wasError: Boolean
@@ -1214,16 +1213,6 @@ feature {None}
 	do
 --		scanner.disableSemicolon -- No idea why it should be turned off, but it does not work well without this fix
 		scanner.nextToken
-		if scanner.token = scanner.colon_token then
-			scanner.nextToken
-			if scanner.token = scanner.identifier_token then
-				label := scanner.tokenString
-				scanner.nextToken
-			else
-				syntax_error (<<scanner.identifier_token>>)
-				wasError := True
-			end -- if
-		end -- if
 		if scanner.visibilityStart then
 			from
 				scanner.nextToken
@@ -1297,7 +1286,7 @@ feature {None}
 					rwDsc ?= statements.item (statements.count)
 					if rwDsc /= Void then
 						statements.resize (1, statements.count - 1) -- get rid of last element
-						create {LoopStatementDescriptor} Result.init (label, invariantOffList, False, rwDsc.whileExpr, Void, statements, Void, Void, Void)
+						create {LoopStatementDescriptor} Result.init (invariantOffList, False, rwDsc.whileExpr, Void, statements, Void, Void, Void)
 						-- Require and ensure are to be set at upper level !!!
 					end -- if
 				end -- if
@@ -1310,7 +1299,7 @@ feature {None}
 					create whenElseClause.make (1, 0)
 					parseExceptionHandlingCaluse (whenClauses, whenElseClause)
 				end -- if
-				create Result.init (label, invariantOffList, statements, whenClauses, whenElseClause)	
+				create Result.init (invariantOffList, statements, whenClauses, whenElseClause)	
 			end -- if
 		end -- if
 	end -- parseInnerBlock
@@ -2756,26 +2745,6 @@ feature {None}
 		end -- if	
 	end -- parseDetachStatement
 
---	parseBreakStatement: BreakStatementDescriptor is
---	--54
---	require
---		valid_start_token: scanner.token = scanner.break_token
---	do
---		scanner.nextToken
---		inspect
---			scanner.token
---		when scanner.colon_token then -- break : Label
---			scanner.nextToken
---			if scanner.token = scanner.identifier_token then
---				create Result.init (scanner.tokenString)
---			else
---				syntax_error (<<scanner.identifier_token>>)
---			end -- if
---		else
---			create Result.init (Void)
---		end -- if	
---	end -- parseBreakStatement
-
 	parseNewExpression: NewExpressionDescriptor is
 	-- NewExpression: new UnitType [“.”init] [ Arguments ]
 	require
@@ -3102,8 +3071,8 @@ feature {None}
 		end -- inspect
 	end -- parseMemberDescription
 	
-	parseIfBody: Array [AlternativeDescriptor] is
-	-- IfBody: “:” ValueAlternatives “:” StatementsList {“:” ValueAlternatives “:”StatementsList} 
+	parseAlternatives: Array [AlternativeDescriptor] is
+	-- Alternatives: ValueAlternatives “:” StatementsList {ValueAlternatives “:”StatementsList} 
 
 	-- ValueAlternative“:”StatementsList {ValueAlternative“:”StatementsList} 
 	local
@@ -3116,7 +3085,7 @@ feature {None}
 		wasError: Boolean
 		--i, n: Integer
 	do
-trace (">>>parseIfBody")
+trace (">>>parseAlternatives")
 		from
 			create Result.make (1, 0)
 			create valAlts.make
@@ -3124,6 +3093,8 @@ trace (">>>parseIfBody")
 			toLeave
 		loop
 			if valAlts.count = 0 then
+-- Must be redone !!! No more scanner.token = scanner.colon_token
+not_implemented_yet ("Must be redone !!! No more scanner.token = scanner.colon_token")
 				if scanner.token = scanner.colon_token then
 					scanner.nextToken
 				else
@@ -3180,8 +3151,8 @@ trace ("%Talternative: " + valAltDsc.out)
 		if wasError or else Result.count = 0 then
 			Result := Void
 		end -- if
-trace ("<<<parseIfBody")
-	end -- parseIfBody
+trace ("<<<parseAlternatives")
+	end -- parseAlternatives
 
 	parseExprAlternatives: Array [ValueExprPair] is
 	-- ValueAlternative“:”Expression {ValueAlternative“:”Expression}
@@ -3378,7 +3349,7 @@ trace ("%Tif " + ifExpr.out )
 				scanner.nextToken
 				isFound := True
 				if isStatement then
-					alternatives := parseIfBody
+					alternatives := parseAlternatives
 				else
 					exprAlternatives := parseExprAlternatives
 				end -- if
@@ -3390,12 +3361,13 @@ trace ("%Tif " + ifExpr.out )
 					else
 						doExpr := parseOptionalExpression
 					end -- if
-				elseif scanner.Cmode then
-					syntax_error (<<scanner.is_token, scanner.left_curly_bracket_token>>)
-					wasError := True
 				else
-					syntax_error (<<scanner.is_token, scanner.do_token>>)
 					wasError := True
+					if scanner.Cmode then
+						syntax_error (<<scanner.is_token, scanner.left_curly_bracket_token>>)
+					else
+						syntax_error (<<scanner.is_token, scanner.do_token>>)
+					end -- if
 				end -- if
 			end -- if				
 			if not wasError then
@@ -3430,7 +3402,7 @@ trace ("%Tif " + ifExpr.out )
 								scanner.nextToken
 								isFound := True
 								if isStatement then
-									alternatives := parseIfBody
+									alternatives := parseAlternatives
 								else
 									exprAlternatives := parseExprAlternatives
 								end -- if
@@ -3443,14 +3415,14 @@ trace ("%Tif " + ifExpr.out )
 									else
 										doExpr := parseOptionalExpression
 									end -- if
-								elseif scanner.Cmode then
-									syntax_error (<<scanner.is_token, scanner.left_curly_bracket_token>>)
-									wasError := True
-									toLeave := True
 								else
-									syntax_error (<<scanner.is_token, scanner.do_token>>)
 									wasError := True
 									toLeave := True
+									if scanner.Cmode then
+										syntax_error (<<scanner.is_token, scanner.left_curly_bracket_token>>)
+									else
+										syntax_error (<<scanner.is_token, scanner.do_token>>)
+									end -- if
 								end -- if
 							end -- if				
 							if not wasError then
@@ -3550,7 +3522,7 @@ trace ("<<<parse_if")
 							scanner.nextToken
 							postconditions := parsePredicates
 						end -- if
-						create Result.init (innerBlock.label, innerBlock.invariantOffList, True, exprDsc, preconditions, innerBlock.statements, innerBlock.whenClauses, innerBlock.whenElseClause, postconditions)
+						create Result.init (innerBlock.invariantOffList, True, exprDsc, preconditions, innerBlock.statements, innerBlock.whenClauses, innerBlock.whenElseClause, postconditions)
 						if scanner.blockEnd then
 							scanner.nextToken
 						elseif scanner.Cmode then

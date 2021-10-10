@@ -1,5 +1,13 @@
-if x is
- :x, c, f: a := expr
+if x is Type do
+//elsif x is unit end do
+//elsif x is unit Type do
+//elsif x do
+//elsif x is
+//	x:
+//	x, c, f:
+//	x, c, f:
+//	a .. b:
+else	
 end
 
 /*

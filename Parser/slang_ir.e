@@ -393,7 +393,7 @@ feature {None}
 	local
 		aFile: File
 		wasError: Boolean
-	do
+	do	
 		if wasError then
 			o.putNL ("Failure: unable to store compilation results into file `" + fileName + "`")
 		else
@@ -617,14 +617,13 @@ invariant
 end 
 
 class InnerBlockDescriptor
---6 do [”:”Label] [“{”Identifier {“,” Identifier} “}”]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
+--6 do [“{”Identifier {“,” Identifier} “}”]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
 inherit	
 	StatementDescriptor
 	end
 create
 	init
 feature {Any}
-	label: String
 	invariantOffList: Sorted_Array [String]
 	statements: Array [StatementDescriptor]
 	whenClauses: Array [WhenClauseDescriptor]
@@ -639,8 +638,6 @@ feature {Any}
 		-- do nothing so far
 	end -- if
 
-
-	
 	cutImplementation is
 	do
 		create invariantOffList.make
@@ -649,9 +646,8 @@ feature {Any}
 		create whenElseClause.make (1, 0)
 	end -- cutImplementation
 	
-	init (lbl: String; invOff: like invariantOffList; stmts: like statements; wc: like whenClauses; wec: like whenElseClause) is
+	init (invOff: like invariantOffList; stmts: like statements; wc: like whenClauses; wec: like whenElseClause) is
 	do
-		label:= lbl
 		if invOff = Void then
 			create invariantOffList.make
 		else
@@ -681,11 +677,7 @@ feature {Any}
 		if statements.count = 0 and then whenClauses.count = 0 and then whenElseClause.count = 0 then
 			Result := "%Tdo%N"
 		else
-			Result := "%Tdo"
-			if label /= Void then
-				Result.append_string (" :")
-				Result.append_string (label)
-			end -- if
+			Result := "%Tdo"			
 			-- invariantOffList
 			n := invariantOffList.count
 			if n > 0 then
@@ -3050,7 +3042,6 @@ feature {Any}
 		-- do nothing so far
 	end -- if
 
-
 	out: String is
 	do
 		Result := "return"
@@ -3066,42 +3057,6 @@ feature {Any}
 		expr := e
 	end
 end -- class ReturnStatementDescriptor
-
---class BreakStatementDescriptor 
-----25 break [“:”Label] 
---inherit	
---	StatementDescriptor
---	end
---create	
---	init
---feature {Any}
---	label: String
-
---	isNotValid (context: CompilationUnitCommon): Boolean is
---	do
---		-- do nothing so far
---	end -- checkValidity
---	generate is
---	do
---		-- do nothing so far
---	end -- if
---
---	out: String is
---	do
---		Result := "break"
---		if label = Void then
---			Result.append_character (';')
---		else
---			Result.append_character (' ')
---			Result.append_character (':')
---			Result.append_string (label)
---		end -- if
---	end -- out
---	init (l: like label) is
---	do
---		label := l
---	end
---end -- class BreakStatementDescriptor 
 
 class HyperBlockDescriptor
 --26 [RequireBlock] InnerBlockDescriptor [EnsureBlock] end
@@ -3163,9 +3118,9 @@ feature {Any}
 		Result.append_character('%T')
 		Result.append_string ("end // block%N")
 	end -- out
-	init (rc: like requireClause; lbl: String; invOff: like invariantOffList; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
+	init (rc: like requireClause; invOff: like invariantOffList; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
 	do
-		InnerBlockInit (lbl, invOff, stmts, wc, wec)
+		InnerBlockInit (invOff, stmts, wc, wec)
 		if rc = Void then
 			create requireClause.make (1, 0)
 		else
@@ -6542,12 +6497,12 @@ feature {Any}
 		Result.append_character('%T')
 		Result.append_string ("end // loop%N")
 	end
-	init (lbl: String; ioff: like invariantOffList; isWL: Boolean; w: like whileExpr; rc: like requireClause; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
+	init (ioff: like invariantOffList; isWL: Boolean; w: like whileExpr; rc: like requireClause; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
 	require
 		non_void_while_expression: w /= Void
 		non_void_loop_body: stmts /= Void
 	do
-		InnerBlockInit (lbl, ioff, stmts, wc, wec)
+		InnerBlockInit (ioff, stmts, wc, wec)
 		isWhileLoop := isWL
 		whileExpr:= w
 		if rc = Void then
