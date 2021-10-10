@@ -227,8 +227,8 @@ feature
 				source.force (anEnd, source.count + 1)
 				currentLinePos := source.count - 3
 			else
-				resize ()
-				insert ()
+--				resize ()
+--				insert ()
 				
 				source.force (ifDsc, currentLinePos)
 				source.force (anEnd, currentLinePos + 1)
