@@ -41,6 +41,8 @@ feature {None}
 		slangFileCount: Integer
 		actualFiles: Integer
 		skipBuild: Boolean
+		skipSourceFile: Boolean
+		Cmode: Boolean
 		i, n: Integer
 		j, m: Integer
 	do
@@ -94,56 +96,70 @@ create {FileOutput}output.init ("_Dump.out")
 					i > n
 				loop
 					fName := args.item (i)
-					sName := "_" + fs.getFileName(fName)
---output.putNL ("// " + fName + ":" + fs.file_time (fName).out + " vs. " + 
---	IRfolderName + "\" + sName + ".Slang#int" + ":" + fs.file_time (IRfolderName + "\" + sName + ".Slang#int").out )
-					if fs.younger (fName, IRfolderName + "\" + sName + ".Slang#int") then
-						-- No need to parse - interface was created later then last change of the source file
-						o.putLine ("File `" + fName + "` was not changed. Parsing skipped.")
-						actualFiles := actualFiles + 1
+					if fs.getFileExtension (fName).is_equal ("clang") then
+						Cmode := True
+					elseif fs.getFileExtension (fName).is_equal ("slang") then
+						Cmode := False
 					else
-						create scanner.init (fName)
-						if scanner.isReady then
-							if fs.getFileExtension (fName).is_equal ("clang") then
-								scanner.setCmode
-							else
-								scanner.setPmode
-							end -- if
-							create parser.init (scanner, systems, o)
-							o.putLine ("Parsing file `" + fName + "`")
-							parser.parseSourceFile
-							scanner.close
-							if parser.ast.statements.count > 0 then
-								scripts.add (fName)
-							end -- if
-							if parser.systems /= Void and then parser.systems.count > 0 then
-								systems.append (parser.systems)
-							end -- if
+						-- Do not parse such file!!!
+						o.putLine ("File `" + fName + "` has extension different from SLang source files. Parsing skipped.")
+						skipSourceFile := True
+					end -- if
+		
+					if skipSourceFile then
+						skipSourceFile := False
+					else
+						sName := "_" + fs.getFileName(fName)
+	--output.putNL ("// " + fName + ":" + fs.file_time (fName).out + " vs. " + 
+	--	IRfolderName + "\" + sName + ".Slang#int" + ":" + fs.file_time (IRfolderName + "\" + sName + ".Slang#int").out )
+						if fs.younger (fName, IRfolderName + "\" + sName + ".Slang#int") then
+							-- No need to parse - interface was created later then last change of the source file
+							o.putLine ("File `" + fName + "` was not changed. Parsing skipped.")
+							actualFiles := actualFiles + 1
+						else
+							create scanner.init (fName)
+							if scanner.isReady then
+								if Cmode then
+									scanner.setCmode
+								else
+									scanner.setPmode
+								end -- if
+								create parser.init (scanner, systems, o)
+								o.putLine ("Parsing file `" + fName + "`")
+								parser.parseSourceFile
+								scanner.close
+								if parser.ast.statements.count > 0 then
+									scripts.add (fName)
+								end -- if
+								if parser.systems /= Void and then parser.systems.count > 0 then
+									systems.append (parser.systems)
+								end -- if
 -- It should be commented out in the final version!
 dumpAST (parser)
 --memory.full_collect
 
-							inspect 
-								parser.errorsCount
-							when 0 then
-								if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
-									parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".Slang#ast", o)
-									parser.ast.cutImplementation
-									parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".Slang#int", o)
-									o.putLine ("File `" + fName + "` parsed with no errors!")
-								else
-									o.putLine ("Failed to create folder `" + IRfolderName + "` to store internal files. Parsing results of file `" + fName + "` are not saved!")
+								inspect 
+									parser.errorsCount
+								when 0 then
+									if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
+										parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".Slang#ast", o)
+										parser.ast.cutImplementation
+										parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".Slang#int", o)
+										o.putLine ("File `" + fName + "` parsed with no errors!")
+									else
+										o.putLine ("Failed to create folder `" + IRfolderName + "` to store internal files. Parsing results of file `" + fName + "` are not saved!")
+										skipBuild := True
+									end -- if
+								when 1 then
+									o.putLine ("File `" + fName + "` parsed with 1 error!")
 									skipBuild := True
-								end -- if
-							when 1 then
-								o.putLine ("File `" + fName + "` parsed with 1 error!")
-								skipBuild := True
+								else
+									o.putLine ("File `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
+									skipBuild := True
+								end -- inspect
 							else
-								o.putLine ("File `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
-								skipBuild := True
-							end -- inspect
-						else
-							o.putLine ("File `" + fName + "` not found or cannot be opened")
+								o.putLine ("File `" + fName + "` not found or cannot be opened")
+							end -- if
 						end -- if
 					end -- if
 					i := i + 1
@@ -347,8 +363,3 @@ output: Output
 	end -- dumpAST
 	
 end -- class SLang_compiler
---agent alias all and as assign check class convert create creation Current debug deferred do else elseif end ensure expanded export
---external False feature from frozen if implies indexing infix inherit inspect invariant is like local loop not obsolete old once or
---pure Precursor prefix redefine reference rename require rescue Result retry select separate strip then True undefine unique until
---variant when xor and then or else
---! $ ( ) * + , - -> . .. / // /= : := ; < << <= = > >= >> ?= [ \\ ] { }
