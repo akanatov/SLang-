@@ -18,6 +18,7 @@ feature {Any}
 	local 
 		cufDsc : CompilationUnitFile
 		folderName: String
+		f1, f2, f3: File
 		statements: Array [StatementDescriptor]
 		skipCodeGen: Boolean
 		i, n: Integer
@@ -45,6 +46,9 @@ feature {Any}
 					i := i + 1
 				end -- loop
 				if not skipCodeGen then
+					create f1.make_create_rerad_write (folderName + "\_" + fs.getFileName(fName) + "_win.ll")
+					create f2.make_create_rerad_write (folderName + "\_" + fs.getFileName(fName) + "_lin.ll")
+					create f3.make_create_rerad_write (folderName + "\_" + fs.getFileName(fName) + ".msil")
 					from
 						statements := cufDsc.statements
 						n := statements.count
@@ -52,13 +56,18 @@ feature {Any}
 					until
 						i > n
 					loop
-						statements.item(i).generate
+						statements.item(i).generate_llvm_windows
+						statements.item(i).generate_llvm_linux
+						statements.item(i).generate_msil
 						i := i + 1
 					end -- loop
+					f1.close
+					f2.close
+					f3.close
 				end -- if
 			end -- if
 		else
-			o.putNL ("Error: project folder '" + folderName + "' not found")
+			o.putNL ("Error: SLang folder with artefacts '" + folderName + "' not found")
 		end -- if
 	end -- build_from_file
 	build (sysDsc: SystemDescriptor; fs: FileSystem; o: Output) is
@@ -87,7 +96,7 @@ feature {Any}
 				o.putNL ("Building executable `" + sysDsc.name + "`")
 			end -- if
 		else
-			o.putNL ("Error: Not able to create project folder '" + folderName + "'")
+			o.putNL ("Error: Not able to create SLang folder with artefacts  '" + folderName + "'")
 		end -- if
 	end -- build
 end -- class SLang_builder
