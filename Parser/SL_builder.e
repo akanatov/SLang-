@@ -18,7 +18,7 @@ feature {Any}
 	local 
 		cufDsc : CompilationUnitFile
 		folderName: String
-		f1, f2, f3: File
+		cg1, cg2, cg3: CodeGenerator
 		statements: Array [StatementDescriptor]
 		skipCodeGen: Boolean
 		i, n: Integer
@@ -46,9 +46,9 @@ feature {Any}
 					i := i + 1
 				end -- loop
 				if not skipCodeGen then
-					create f1.make_create_rerad_write (folderName + "\_" + fs.getFileName(fName) + "_win.ll")
-					create f2.make_create_rerad_write (folderName + "\_" + fs.getFileName(fName) + "_lin.ll")
-					create f3.make_create_rerad_write (folderName + "\_" + fs.getFileName(fName) + ".msil")
+					create {LLVM_Windows_CodeGenerator}cg1.init (folderName + "\_" + fs.getFileName(fName) + "_win.ll")
+					create {LLVM_Linux_CodeGenerator}cg2.init (folderName + "\_" + fs.getFileName(fName) + "_lin.ll")
+					create {MSIL_CodeGenerator}cg3.init (folderName + "\_" + fs.getFileName(fName) + ".msil")
 					from
 						statements := cufDsc.statements
 						n := statements.count
@@ -56,14 +56,14 @@ feature {Any}
 					until
 						i > n
 					loop
-						statements.item(i).generate_llvm_windows
-						statements.item(i).generate_llvm_linux
-						statements.item(i).generate_msil
+						statements.item(i).generate_llvm_windows (cg1)
+						statements.item(i).generate_llvm_linux (cg2)
+						statements.item(i).generate_msil (cg3)
 						i := i + 1
 					end -- loop
-					f1.close
-					f2.close
-					f3.close
+					cg1.dispose
+					cg2.dispose
+					cg3.dispose
 				end -- if
 			end -- if
 		else

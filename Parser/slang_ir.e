@@ -632,11 +632,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 	cutImplementation is
 	do
@@ -2904,9 +2912,16 @@ feature {Any}
 		non_void_contex: context /= Void
 	deferred
 	end -- checkValidity
-	generate is
+	generate_llvm_windows (cg: CodeGenerator) is
 	deferred
 	end -- if
+	generate_llvm_linux (cg: CodeGenerator) is
+	deferred
+	end -- if
+	generate_msil (cg: CodeGenerator) is
+	deferred
+	end -- if						
+
 feature {StatementDescriptor}
 	sameAs (other: like Current): Boolean is
 	do
@@ -2967,11 +2982,20 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
+
 
 	out: String is
 	do
@@ -3000,11 +3024,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 
 	out: String is
@@ -3036,11 +3068,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 	out: String is
 	do
@@ -3152,11 +3192,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 
 
@@ -3345,11 +3393,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 
 	init (aName: like name; aType: like type) is
@@ -3386,11 +3442,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 	setFlags (tmpDsc: TemporaryLocalAttributeDescriptor) is
 	do
@@ -3443,11 +3507,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 	out: String is
 	do
@@ -3814,11 +3886,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 
 
@@ -3844,11 +3924,19 @@ feature
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 	sameAs (other: like Current): Boolean is
 	do
@@ -4853,11 +4941,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 
 	init (t: like tuple; cc: like callChain) is
@@ -4955,11 +5051,19 @@ feature{Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 
 	init (expr: like expression; cc: like callChain) is
@@ -5047,11 +5151,19 @@ feature{Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 
 	init (ceDsc: like target; args: like arguments; cc: like callChain) is
@@ -5178,11 +5290,19 @@ feature{Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 
 	init (cd: like constDsc; aName: String; args: like arguments; cc: like callChain) is
@@ -5464,11 +5584,19 @@ feature{Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 	out: String is
 	do
@@ -5491,11 +5619,19 @@ feature{Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 	out: String is
 	do
@@ -5628,12 +5764,19 @@ feature{Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
-	
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 	
 	out: String is
 	do
@@ -5675,11 +5818,19 @@ feature{Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 
 	init (ut: like unitType; args: like arguments; cc: like callChain) is
@@ -5743,11 +5894,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 	
 	init (ut: like unitType; id: like identifier; args: like arguments) is
@@ -5847,11 +6006,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 	
 	
 	init (eic: like ifLines; ep: like elsePart) is
@@ -7657,11 +7824,19 @@ feature {Any}
 	isNotValid (context: CompilationUnitCommon): Boolean is
 	do
 		-- do nothing so far
-	end -- checkValidity
-	generate is
+	end -- isNotValid
+	generate_llvm_windows (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- if
+	end -- generate_llvm_windows
+	generate_llvm_linux (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_llvm_linux
+	generate_msil (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate_msil
 
 	init (iif: like ifExprLines; e: like elseExpr) is
 	require

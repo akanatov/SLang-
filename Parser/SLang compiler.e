@@ -27,7 +27,7 @@ feature {None}
 			i := i + 1
 		end
 	end -- delay
-	
+	-- eugene.zueff@gmail.com
 	init (args: Array[String]) is 
 	local
 		scanner: SLang_scanner
