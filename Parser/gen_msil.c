@@ -1,5 +1,5 @@
-bool llvm_msil_genStart (char* fileName) {
+bool msil_genStart (char* fileName) {
 	return false;
 }
-void llvm_msil_genEnd () {
+void msil_genEnd () {
 }
