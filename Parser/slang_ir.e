@@ -633,18 +633,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 	cutImplementation is
 	do
@@ -2912,15 +2904,9 @@ feature {Any}
 		non_void_contex: context /= Void
 	deferred
 	end -- checkValidity
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	deferred
 	end -- if
-	generate_llvm_linux (cg: CodeGenerator) is
-	deferred
-	end -- if
-	generate_msil (cg: CodeGenerator) is
-	deferred
-	end -- if						
 
 feature {StatementDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -2983,18 +2969,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 	out: String is
@@ -3025,18 +3003,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 	out: String is
@@ -3069,18 +3039,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 	out: String is
 	do
@@ -3193,18 +3155,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 
@@ -3394,18 +3348,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 	init (aName: like name; aType: like type) is
@@ -3443,18 +3389,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 	setFlags (tmpDsc: TemporaryLocalAttributeDescriptor) is
 	do
@@ -3508,18 +3446,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 	out: String is
 	do
@@ -3887,18 +3817,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 
@@ -3925,18 +3847,10 @@ feature
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 	sameAs (other: like Current): Boolean is
 	do
@@ -4942,18 +4856,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 	init (t: like tuple; cc: like callChain) is
@@ -5052,18 +4958,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 	init (expr: like expression; cc: like callChain) is
@@ -5152,18 +5050,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 	init (ceDsc: like target; args: like arguments; cc: like callChain) is
@@ -5291,18 +5181,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 	init (cd: like constDsc; aName: String; args: like arguments; cc: like callChain) is
@@ -5585,18 +5467,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 	out: String is
 	do
@@ -5620,18 +5494,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 	out: String is
 	do
@@ -5765,18 +5631,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 	
 	out: String is
 	do
@@ -5819,18 +5677,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 
 	init (ut: like unitType; args: like arguments; cc: like callChain) is
@@ -5895,18 +5745,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 	
 	init (ut: like unitType; id: like identifier; args: like arguments) is
@@ -6007,18 +5849,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 	
 	
 	init (eic: like ifLines; ep: like elsePart) is
@@ -7825,18 +7659,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isNotValid
-	generate_llvm_windows (cg: CodeGenerator) is
+	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate_llvm_windows
-	generate_llvm_linux (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_llvm_linux
-	generate_msil (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate_msil
+	end -- generate
 
 	init (iif: like ifExprLines; e: like elseExpr) is
 	require

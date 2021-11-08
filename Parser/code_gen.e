@@ -50,40 +50,38 @@ feature
 feature {None}
 	ready: Boolean
 end -- class CodeGenerator
-class LLVM_Windows_CodeGenerator
+class LLVM_CodeGenerator
 inherit
 	CodeGenerator
+		rename init as cg_init
+		export {None} cg_init
 	end
 create
 	init
 feature
+	init (fileName, triplet: String) is
+	require
+		file_name_not_void: fileName /= Void
+		triplet_not_void: triplet /= Void
+	do
+		cg_init (fileName)
+		setTriplet (triplet)
+	end -- init
+
+	setTriplet (triplet: String) is
+	external "C" alias "llvm_setTriplet" 	
+	end -- setTriplet
+
 	genStart (fileName: String): Boolean is
-	external "C" alias "llvm_win_genStart" 	
+	external "C" alias "llvm_genStart" 	
 	end -- genStart	
 	genEnd is
-	external "C" alias "llvm_win_genEnd"
+	external "C" alias "llvm_genEnd"
 	end -- genStart	
 	genAssignmentToLocal () is
-	external "C" alias "llvm_win_genAssignmentToLocal"
+	external "C" alias "llvm_genAssignmentToLocal"
 	end -- genAssignmentToLocal
 end -- class LLVM_Windows_CodeGenerator
-class LLVM_Linux_CodeGenerator
-inherit
-	CodeGenerator
-	end
-create
-	init
-feature
-	genStart (fileName: String): Boolean is
-	external "C" alias "llvm_lin_genStart" 	
-	end -- genStart	
-	genEnd is
-	external "C" alias "llvm_lin_genEnd"
-	end -- genStart	
-	genAssignmentToLocal () is
-	external "C" alias "llvm_lin_genAssignmentToLocal"
-	end -- genAssignmentToLocal
-end -- class LLVM_Linux_CodeGenerator
 class MSIL_CodeGenerator
 inherit
 	CodeGenerator
@@ -92,10 +90,10 @@ create
 	init
 feature
 	genStart (fileName: String): Boolean is
-	external "C" alias "llvm_msil_genStart" 	
+	external "C" alias "msil_genStart" 	
 	end -- genStart	
 	genEnd is
-	external "C" alias "llvm_msil_genEnd"
+	external "C" alias "msil_genEnd"
 	end -- genStart	
 	genAssignmentToLocal () is
 	external "C" alias "msil_genAssignmentToLocal"

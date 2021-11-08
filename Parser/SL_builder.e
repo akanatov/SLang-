@@ -46,9 +46,9 @@ feature {Any}
 					i := i + 1
 				end -- loop
 				if not skipCodeGen then
-					create {LLVM_Windows_CodeGenerator}cg1.init (folderName + "\_" + fs.getFileName(fName) + "_win.ll")
-					create {LLVM_Linux_CodeGenerator}cg2.init (folderName + "\_" + fs.getFileName(fName) + "_lin.ll")
-					create {MSIL_CodeGenerator}cg3.init (folderName + "\_" + fs.getFileName(fName) + ".msil")
+					create {LLVM_CodeGenerator}cg1.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc")
+					create {LLVM_CodeGenerator}cg2.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu")
+					create {MSIL_CodeGenerator}cg3.init (folderName + "\_" + fs.getFileName(fName))
 					from
 						statements := cufDsc.statements
 						n := statements.count
@@ -56,9 +56,9 @@ feature {Any}
 					until
 						i > n
 					loop
-						statements.item(i).generate_llvm_windows (cg1)
-						statements.item(i).generate_llvm_linux (cg2)
-						statements.item(i).generate_msil (cg3)
+						statements.item(i).generate (cg1)
+						statements.item(i).generate (cg2)
+						statements.item(i).generate (cg3)
 						i := i + 1
 					end -- loop
 					cg1.dispose
