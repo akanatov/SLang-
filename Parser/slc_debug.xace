@@ -19,4 +19,5 @@
 	<cluster name="SL_semanal" location="../SemAnal"/>
 	<cluster name="pool"/>
 	<mount location="${VE_Lib}/kernel/library.xace"/>
+	<option name="link" value="generators.o"/>
 </system>
