@@ -18,10 +18,12 @@ feature {Any}
 	local 
 		cufDsc : CompilationUnitFile
 		folderName: String
-		cg1, cg2, cg3: CodeGenerator
+		cg1, cg2, cg3, cg4: CodeGenerator
 		statements: Array [StatementDescriptor]
+		generators: Array [CodeGenerator]
 		skipCodeGen: Boolean
 		i, n: Integer
+		j, m: Integer
 	do
 		folderName := "_$_IR"
 		if fs.folderExists (folderName) then
@@ -49,6 +51,8 @@ feature {Any}
 					create {LLVM_CodeGenerator}cg1.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc")
 					create {LLVM_CodeGenerator}cg2.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu")
 					create {MSIL_CodeGenerator}cg3.init (folderName + "\_" + fs.getFileName(fName))
+					create {JVM_CodeGenerator}cg4.init (folderName + "\_" + fs.getFileName(fName))
+					generators := <<cg1, cg2, cg3, cg4>>					
 					from
 						statements := cufDsc.statements
 						n := statements.count
@@ -56,9 +60,15 @@ feature {Any}
 					until
 						i > n
 					loop
-						statements.item(i).generate (cg1)
-						statements.item(i).generate (cg2)
-						statements.item(i).generate (cg3)
+						from
+							m := generators.count
+							j := 1
+						until
+							j > m
+						loop
+							statements.item(i).generate (generators.item (j))
+							j := j + 1
+						end -- loop
 						i := i + 1
 					end -- loop
 					cg1.dispose

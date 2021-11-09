@@ -81,7 +81,7 @@ feature
 	genAssignmentToLocal () is
 	external "C" alias "llvm_genAssignmentToLocal"
 	end -- genAssignmentToLocal
-end -- class LLVM_Windows_CodeGenerator
+end -- class LLVM_CodeGenerator
 class MSIL_CodeGenerator
 inherit
 	CodeGenerator
@@ -99,3 +99,20 @@ feature
 	external "C" alias "msil_genAssignmentToLocal"
 	end -- genAssignmentToLocal
 end -- class MSIL_CodeGenerator
+class JVM_CodeGenerator
+inherit
+	CodeGenerator
+	end
+create
+	init
+feature
+	genStart (fileName: String): Boolean is
+	external "C" alias "jvm_genStart" 	
+	end -- genStart	
+	genEnd is
+	external "C" alias "jvm_genEnd"
+	end -- genStart	
+	genAssignmentToLocal () is
+	external "C" alias "jvm_genAssignmentToLocal"
+	end -- genAssignmentToLocal
+end -- class JVM_CodeGenerator
