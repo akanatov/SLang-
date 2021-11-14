@@ -47,7 +47,7 @@ feature
 	do
 		ready := genStart (fileName	)
 	end -- init
-feature {None}
+feature 
 	ready: Boolean
 end -- class CodeGenerator
 class LLVM_CodeGenerator
@@ -79,7 +79,8 @@ feature
 	external "C" alias "llvm_genEnd"
 	end -- genStart	
 	genAssignmentToLocal () is
-	external "C" alias "llvm_genAssignmentToLocal"
+	do
+	--external "C" alias "llvm_genAssignmentToLocal"
 	end -- genAssignmentToLocal
 end -- class LLVM_CodeGenerator
 class MSIL_CodeGenerator
@@ -96,7 +97,8 @@ feature
 	external "C" alias "msil_genEnd"
 	end -- genStart	
 	genAssignmentToLocal () is
-	external "C" alias "msil_genAssignmentToLocal"
+	do 
+	--external "C" alias "msil_genAssignmentToLocal"
 	end -- genAssignmentToLocal
 end -- class MSIL_CodeGenerator
 class JVM_CodeGenerator
@@ -113,6 +115,7 @@ feature
 	external "C" alias "jvm_genEnd"
 	end -- genStart	
 	genAssignmentToLocal () is
-	external "C" alias "jvm_genAssignmentToLocal"
+	do
+	--external "C" alias "jvm_genAssignmentToLocal"
 	end -- genAssignmentToLocal
 end -- class JVM_CodeGenerator

@@ -232,7 +232,7 @@ feature {Any}
 								end -- if				
 							end -- if
 						else
-							ast.addStatement (stmtDsc)
+							ast.addStatement (callDsc)
 						end -- if
 					end -- if				
 				when scanner.assignment_token then

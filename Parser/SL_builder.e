@@ -20,6 +20,7 @@ feature {Any}
 		folderName: String
 		cg1, cg2, cg3, cg4: CodeGenerator
 		statements: Array [StatementDescriptor]
+		stmtDsc: StatementDescriptor
 		generators: Array [CodeGenerator]
 		skipCodeGen: Boolean
 		i, n: Integer
@@ -48,32 +49,62 @@ feature {Any}
 					i := i + 1
 				end -- loop
 				if not skipCodeGen then
+					create generators.make (1, 0)
 					create {LLVM_CodeGenerator}cg1.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc")
+					if cg1.ready then
+						generators.force (cg1, generators.count + 1)
+					else
+						o.putNL ("Generation 'x86_64-pc-windows-msvc' failed to start")
+					end -- if
 					create {LLVM_CodeGenerator}cg2.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu")
+					if cg2.ready then
+						generators.force (cg2, generators.count + 1)
+					else
+						o.putNL ("Generation 'x86_64-pc-linux-gnu' failed to start")
+					end -- if
 					create {MSIL_CodeGenerator}cg3.init (folderName + "\_" + fs.getFileName(fName))
+					if cg3.ready then
+						generators.force (cg3, generators.count + 1)
+					else
+						o.putNL ("Generation 'MSIL' failed to start")
+					end -- if
 					create {JVM_CodeGenerator}cg4.init (folderName + "\_" + fs.getFileName(fName))
-					generators := <<cg1, cg2, cg3, cg4>>					
-					from
-						statements := cufDsc.statements
-						n := statements.count
-						i := 1
-					until
-						i > n
-					loop
+					if cg4.ready then
+						generators.force (cg4, generators.count + 1)
+					else
+						o.putNL ("Generation 'JVM' failed to start")
+					end -- if
+					m := generators.count
+					if m > 0 then
 						from
-							m := generators.count
+							statements := cufDsc.statements
+							n := statements.count
+							i := 1
+						until
+							i > n
+						loop
+							stmtDsc := statements.item(i)
+							from
+								j := 1
+							until
+								j > m
+							loop
+								stmtDsc.generate (generators.item (j))
+								j := j + 1
+							end -- loop
+							i := i + 1
+						end -- loop
+						from
 							j := 1
 						until
 							j > m
 						loop
-							statements.item(i).generate (generators.item (j))
+							generators.item (j).dispose
 							j := j + 1
 						end -- loop
-						i := i + 1
-					end -- loop
-					cg1.dispose
-					cg2.dispose
-					cg3.dispose
+					else
+						-- No generators
+					end -- if
 				end -- if
 			end -- if
 		else

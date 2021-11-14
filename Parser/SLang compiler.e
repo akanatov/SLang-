@@ -47,7 +47,7 @@ feature {None}
 		j, m: Integer
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.7 (Build <AVK Oct 10th 2021>)")
+		o.putNL ("SLang compiler v0.99.8 (Build <AVK Nov 09th 2021>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
