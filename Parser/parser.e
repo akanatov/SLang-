@@ -1517,8 +1517,8 @@ feature {None}
 	end -- parseStatement
 
 	parseStatement1 (statementExpected, checkForRepeatWhile: Boolean): Array [StatementDescriptor] is
-	-- Statement: Assignment| LocalAttributeCreation | MemberCall | NewStatement | IfCase | Loop | Break | ? Identifier | Return | Raise | HyperBlock 
-	--            ident       var ident                ident (      new            if       while  break   ?              return   raise   require do
+	-- Statement: Assignment| LocalAttributeCreation | MemberCall | NewStatement | IfCase | Loop | ? Identifier | Return | Raise | HyperBlock 
+	--            ident       var ident                ident (      new            if       while  ?              return   raise   require do
 	--                                                 old this 
 	--                                                 return
 	local
@@ -1668,11 +1668,6 @@ feature {None}
 			if stmtDsc /= Void then
 				Result := <<stmtDsc>>
 			end -- if
-		--when scanner.break_token then
-		--	stmtDsc := parseBreakStatement
-		--	if stmtDsc /= Void then
-		--		Result := <<stmtDsc>>
-		--	end -- if
 		when scanner.detach_token then
 			stmtDsc := parseDetachStatement
 			if stmtDsc /= Void then
@@ -6805,6 +6800,16 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	-- ( const|rigid Identifier {", " [const|rigid] Identifier} “:” Type)
 	-- |
 	-- ( const|rigid Identifier [“:” AttachedType] is ConstantExpression) 
+	
+-- Redo to a different grammar pattern below!!!	
+
+	-- 	 UnitAttributeDeclaration:	
+	-- const|rigid Identifier [“:” AttachedType] is ConstantExpression  [NewLine]
+	-- {“,” Identifier [“:” AttachedType] is ConstantExpression  [NewLine]}
+	
+
+	
+	
 	require
 		valid_token: scanner.token = scanner.const_token or else scanner.token = scanner.rigid_token
 	local
@@ -6817,6 +6822,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		unitAttrDsc : AttachedUnitAttributeDescriptor
 		toLeave: Boolean
 		i, n: Integer
+		noTailList: Boolean
 		commaFound: Boolean
 		wasError: Boolean
 	do
@@ -6835,6 +6841,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			inspect
 				scanner.token
 			when scanner.comma_token then 
+				noTailList := True
 				-- const|rigid Identifier {", " [const|rigid] Identifier} “:” Type
 				--                          ^
 				from
@@ -6868,11 +6875,15 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 								scanner.token
 							when scanner.const_token then 
 								isConst := True
+								isRigid := False
 								scanner.nextToken
 							when scanner.rigid_token then 
 								isRigid := True
+								isConst := False
 								scanner.nextToken
 							else
+								isConst := False
+								isRigid := False
 							end -- inspect
 							if scanner.token = scanner.identifier_token then
 								name := scanner.tokenString
@@ -6950,7 +6961,32 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				end -- if
 			else
 				syntax_error (<<scanner.comma_token, scanner.colon_token>>)
+				wasError := True
 			end -- inspect
+			if not wasError and then not noTailList and then scanner.token = scanner.comma_token then 
+				-- const|rigid continuation
+				check
+					consistent_constant: isConst or else isRigid
+					only_one_constant_found: Result.count = 1
+				end -- check
+				from
+					scanner.nextToken
+					toLeave := False
+toLeave := True
+				until
+					toLeave
+				loop
+					inspect
+						scanner.token
+					when scanner.identifier_token then 
+-- TBD					
+					else
+						syntax_error (<<scanner.identifier_token>>)
+						wasError := True
+						toLeave := True
+					end -- inspect
+				end -- loop
+			end -- if
 		else
 			syntax_error (<<scanner.identifier_token>>)
 		end -- if

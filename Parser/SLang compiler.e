@@ -14,20 +14,20 @@ feature {None}
 	end
 	IRfolderName: String is "_$_IR"
 
-	delay is 
-	local
-		i, n : Integer
-	do
-		from
-			i := 0
-			n := 100000
-		until
-			i >= n
-		loop
-			i := i + 1
-		end
-	end -- delay
-	-- eugene.zueff@gmail.com
+	--delay is 
+	--local
+	--	i, n : Integer
+	--do
+	--	from
+	--		i := 0
+	--		n := 100000
+	--	until
+	--		i >= n
+	--	loop
+	--		i := i + 1
+	--	end
+	--end -- delay
+
 	init (args: Array[String]) is 
 	local
 		scanner: SLang_scanner

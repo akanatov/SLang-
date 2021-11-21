@@ -71,7 +71,7 @@ virtual unit () // That is tuple unit
 		return >= 0
 	end
   
-	{this} fieldIndex (fieldNAme: String): Integer
+	{ this } fieldIndex (fieldNAme: String): Integer
 	foreign
 	ensure
 		return in 0 .. count /// If no such field then 0 otherwise valid position
@@ -253,6 +253,18 @@ final unit Platform
 	const RealBitsCount is 64
 	const RealMantissaBitsCount is 55
 	const RealOrderBitsCount is 8
+
+--	const
+--		BitsInByteCount is 8,
+--		IntegerBitsCount is 32,
+--		CardinalBitsCount is IntegerBitsCount,
+--		CharacterBitsCount is 8,
+--		BooleanBitsCount is 8,
+--		PointerBitsCount is 32,
+--		RealBitsCount is 64,
+--		RealMantissaBitsCount is 55,
+--		RealOrderBitsCount is 8
+
 require
 	RealBitsCount = RealMantissaBitsCount + RealOrderBitsCount + 1
 end // Platform
@@ -371,7 +383,7 @@ val unit Pointer
 		address >= 0 /// Pointer should be greater than zero
 		validPointer (address) /// Pointer should be valid from OS point of view
 	do
-		data := address.data
+		data is address.data
 	end
 	{} validPointer (p: Pointer): Boolean foreign
 require
@@ -380,11 +392,11 @@ end // Pointer
 
 val unit Cardinal alias uInt extend Cardinal [Platform.CardinalBitsCount]
 	init (value: as this) do
-		data := value.data
+		data is value.data
 	end
 	init do
 		/// Default init with zero
-		data := Bit [Platform.CardinalBitsCount]
+		data is Bit [Platform.CardinalBitsCount]
 	end
 end // Cardinal
 
@@ -397,11 +409,11 @@ end
 
 val unit Integer extend Integer [Platform.IntegerBitsCount]
 	init (value: Integer) do
-		data := value.data
+		data is value.data
 	end
 	init do
 		/// Default init with zero
-		data := Bit [Platform.IntegerBitsCount]
+		data is Bit [Platform.IntegerBitsCount]
 	end
 end // Integer
 
@@ -525,11 +537,11 @@ val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
 	end
 	{} data: Bit [BitsNumber]	
 	init (value: Integer) do
-		data := value.data
+		data is value.data
 	end
 	init do
 		/// Default init
-		data := Bit [BitsNumber]
+		data is Bit [BitsNumber]
 	end
 require
 	BitsNumber > 0 /// Number of bits in Integer must be greater than zero!
@@ -542,11 +554,11 @@ end // Integer
 val unit Byte
 	// WIP - to be fully implemented
 	init (value: Byte) do
-		data := value.data
+		data is value.data
 	end
 	init do
 		/// Default init
-		data := Bit [Platform.BitsInByteCount]
+		data is Bit [Platform.BitsInByteCount]
 	end
 	{} data: Bit [Platform.BitsInByteCount]	
 end
@@ -663,10 +675,10 @@ val unit Real extend Float [Platform.RealBitsCount]
 		raise "Not implemented!!!"
 	end
 	init (value: val Real) do
-		data := value.data
+		data is value.data
 	end
 	init do
-		data := Bit [Platform.RealBitsCount]
+		data is Bit [Platform.RealBitsCount]
 	end
 	{} data : Bit [Platform.RealBitsCount]	
 end // Real
@@ -700,10 +712,10 @@ val unit Character alias Char extend Enumeration
 		data := other
 	end
 	init (value: val Character) do
-		data := value.data
+		data is value.data
 	end
 	init do
-		data := Bit [Platform.CharacterBitsCount]
+		data is Bit [Platform.CharacterBitsCount]
 	end
 	{} data : Bit [Platform.CharacterBitsCount]	
 end // Character
@@ -745,16 +757,16 @@ val unit Boolean alias Bool extend Enumeration
 	pure ~ alias not : Boolean => if this do false else true
 	pure toInteger: Integer => if this do one else zero
 	init (value: val Boolean) do
-		data := value.data
+		data is value.data
 	end
 	init do
-		data := 0xb
+		data is 0xb
 	end
 	{} init (value: Integer) 
 	require	
 		value in zero..one /// Valid Integer value
 	do
-		data := value
+		data is value
 	end
 	{} data: Bit [Platform.BooleanBitsCount]	
 require
@@ -835,10 +847,10 @@ unit String extend AString
 		return.count = this.count + other.count /// Valid concatenated string length
 	end
 	init do
-		data := new Array [Character] (1, 0)
+		data is new Array [Character] (1, 0)
 	end
 	init (other: as this) do
-		data := other.data
+		data is other.data
 	end
 	{} data: Array [Character] // Dynamic empty array of characters
 end // String
@@ -978,9 +990,9 @@ unit Array [G init ()] extend OneDimentionalArray [G]
 	require
 		l <= u - 1 /// Consistent array borders, lower must be not greater than upper if array is not empty and 1 less than upper otherwise
 	do
-		lower := l; 
-		upper := u; 
-		fill (value); 
+		lower is l 
+		upper is u 
+		fill (value)
 	end
 	{} fill (value: G) do
 		if lower <= upper do
@@ -1126,8 +1138,8 @@ final unit ProcedureDescriptor extend RoutineDescriptor
 	() alias apply (args: ()) foreign
 		// That is a procedure call
 	init (aName: as name; args: as arguments) do
-		name := aName
-		arguments := args
+		name is aName
+		arguments is args
 	end
 end // Procedure [Arguments -> ()]
 
@@ -1152,17 +1164,17 @@ final unit VariableDescriptor  extend AttributeDescriptor
 		value := v
 	end
 	init (aName: as name; aType: as type; aValue: as value) do
-		name := aName
-		type := aType
-		value := aValue
+		name is aName
+		type is aType
+		value is aValue
 	end
 end // VariableDescriptor
 
 final unit ConstantDescriptor  extend AttributeDescriptor 
 	init (aName: as name; aType: as type; aValue: as value) do
-		name := aName
-		type := aType
-		value := aValue
+		name is aName
+		type is aType
+		value is aValue
 	end
 end // ConstantDescriptor
 
@@ -1172,9 +1184,9 @@ final unit TypeDescriptior
 	final attributes : Array [AttributeDescriptor]
 	final parents: Array [TypeDesciptor]
 	init (aName: as name; prtns: as parents; rtns: as routines; attrs: as attributes) do
-		name := aName
-		parents := prtns
-		routines := rtns
-		attributes := attrs
+		name is aName
+		parents is prtns
+		routines is rtns
+		attributes is attrs
 	end
 end
