@@ -8,3 +8,5 @@
 *.Slang#int
 *.ff
 *.out
+*.bak
+*.o

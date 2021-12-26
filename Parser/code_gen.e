@@ -6,7 +6,8 @@ inherit
 	end
 feature
 	genStart (fileName: String): Boolean is
-	-- fileName refers to the name of the file which is to be created by code generator and if sussecfull Ture is to be returned and false otherwise
+	-- fileName refers to the name of the file which is to be created by code generator
+	-- if sussecfull Ture is to be returned and false otherwise
 	deferred
 	end -- genStart	
 	dispose is
@@ -25,16 +26,16 @@ feature
 		ready: ready
 	deferred
 	end -- genAssignmentToLocal
-	--genAssignmentToAttribute () is
+	--genStaticAssignmentToAttribute () is
 	--require
 	--	ready: ready
 	--deferred
-	--end -- genAssignmentToStaticAttribute
-	--genAssignmentToDynamicAttribute () is
+	--end -- genStaticAssignmentToAttribute
+	--genDynamicAssignmentToAttribute () is
 	--require
 	--	ready: ready
 	--deferred
-	--end -- genAssignmentToDynamicAttribute
+	--end -- genDynamicAssignmentToAttribute
 	--genLabel (labelName: String) is
 	--require
 	--	ready: ready
@@ -119,3 +120,39 @@ feature
 	--external "C" alias "jvm_genAssignmentToLocal"
 	end -- genAssignmentToLocal
 end -- class JVM_CodeGenerator
+class MSIL_CodeGenerator
+inherit
+	CodeGenerator
+	end
+create
+	init
+feature
+	genStart (fileName: String): Boolean is
+	external "C" alias "msil_genStart" 	
+	end -- genStart	
+	genEnd is
+	external "C" alias "msil_genEnd"
+	end -- genStart	
+	genAssignmentToLocal () is
+	do 
+	--external "C" alias "msil_genAssignmentToLocal"
+	end -- genAssignmentToLocal
+end -- class MSIL_CodeGenerator
+class Ark_CodeGenerator
+inherit
+	CodeGenerator
+	end
+create
+	init
+feature
+	genStart (fileName: String): Boolean is
+	external "C" alias "ark_genStart" 	
+	end -- genStart	
+	genEnd is
+	external "C" alias "ark_genEnd"
+	end -- genEnd
+	genAssignmentToLocal () is
+	do
+	--external "C" alias "ark_genAssignmentToLocal"
+	end -- genAssignmentToLocal
+end -- class Ark_CodeGenerator

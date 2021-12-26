@@ -18,7 +18,8 @@ feature {Any}
 	local 
 		cufDsc : CompilationUnitFile
 		folderName: String
-		cg1, cg2, cg3, cg4: CodeGenerator
+		codeGenerator: CodeGenerator
+		--cg1, cg2, cg3, cg4, cg5: CodeGenerator
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
 		generators: Array [CodeGenerator]
@@ -50,29 +51,35 @@ feature {Any}
 				end -- loop
 				if not skipCodeGen then
 					create generators.make (1, 0)
-					create {LLVM_CodeGenerator}cg1.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc")
-					if cg1.ready then
-						generators.force (cg1, generators.count + 1)
+					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc")
+					if codeGenerator.ready then
+						generators.force (codeGenerator, generators.count + 1)
 					else
-						o.putNL ("Generation 'x86_64-pc-windows-msvc' failed to start")
+						o.putNL ("Generation 'LLVM - x86_64-pc-windows-msvc' failed to start")
 					end -- if
-					create {LLVM_CodeGenerator}cg2.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu")
-					if cg2.ready then
-						generators.force (cg2, generators.count + 1)
+					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu")
+					if codeGenerator.ready then
+						generators.force (codeGenerator, generators.count + 1)
 					else
-						o.putNL ("Generation 'x86_64-pc-linux-gnu' failed to start")
+						o.putNL ("Generation 'LLVM - x86_64-pc-linux-gnu' failed to start")
 					end -- if
-					create {MSIL_CodeGenerator}cg3.init (folderName + "\_" + fs.getFileName(fName))
-					if cg3.ready then
-						generators.force (cg3, generators.count + 1)
+					create {MSIL_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName))
+					if codeGenerator.ready then
+						generators.force (codeGenerator, generators.count + 1)
 					else
 						o.putNL ("Generation 'MSIL' failed to start")
 					end -- if
-					create {JVM_CodeGenerator}cg4.init (folderName + "\_" + fs.getFileName(fName))
-					if cg4.ready then
-						generators.force (cg4, generators.count + 1)
+					create {JVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName))
+					if codeGenerator.ready then
+						generators.force (codeGenerator, generators.count + 1)
 					else
 						o.putNL ("Generation 'JVM' failed to start")
+					end -- if
+					create {ARK_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName))
+					if codeGenerator.ready then
+						generators.force (codeGenerator, generators.count + 1)
+					else
+						o.putNL ("Generation 'ARK' failed to start")
 					end -- if
 					m := generators.count
 					if m > 0 then
