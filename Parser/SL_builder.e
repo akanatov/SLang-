@@ -51,31 +51,31 @@ feature {Any}
 				end -- loop
 				if not skipCodeGen then
 					create generators.make (1, 0)
-					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc")
+					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc", true)
 					if codeGenerator.ready then
 						generators.force (codeGenerator, generators.count + 1)
 					else
 						o.putNL ("Generation 'LLVM - x86_64-pc-windows-msvc' failed to start")
 					end -- if
-					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu")
+					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu", true)
 					if codeGenerator.ready then
 						generators.force (codeGenerator, generators.count + 1)
 					else
 						o.putNL ("Generation 'LLVM - x86_64-pc-linux-gnu' failed to start")
 					end -- if
-					create {MSIL_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName))
+					create {MSIL_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), true)
 					if codeGenerator.ready then
 						generators.force (codeGenerator, generators.count + 1)
 					else
 						o.putNL ("Generation 'MSIL' failed to start")
 					end -- if
-					create {JVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName))
+					create {JVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), true)
 					if codeGenerator.ready then
 						generators.force (codeGenerator, generators.count + 1)
 					else
 						o.putNL ("Generation 'JVM' failed to start")
 					end -- if
-					create {ARK_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName))
+					create {ARK_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), true)
 					if codeGenerator.ready then
 						generators.force (codeGenerator, generators.count + 1)
 					else

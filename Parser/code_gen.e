@@ -5,9 +5,11 @@ inherit
 			dispose
 	end
 feature
-	genStart (fileName: String): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Boolean is
 	-- fileName refers to the name of the file which is to be created by code generator
+	-- fileName has no extension it is to be added by the code generator
 	-- if sussecfull Ture is to be returned and false otherwise
+	-- if buildExecutable is false then dynamic and static libraries are to be created
 	deferred
 	end -- genStart	
 	dispose is
@@ -42,11 +44,11 @@ feature
 	--	lable_not_void: labelName /= Void
 	--deferred
 	--end -- genLabel
-	init (fileName: String) is
+	init (fileName: String; buildExecutable: Boolean) is
 	require
 		file_name_not_void: fileName /= Void
 	do
-		ready := genStart (fileName	)
+		ready := genStart (fileName, buildExecutable)
 	end -- init
 feature 
 	ready: Boolean
@@ -60,12 +62,12 @@ inherit
 create
 	init
 feature
-	init (fileName, triplet: String) is
+	init (fileName, triplet: String; buildExecutable: Boolean) is
 	require
 		file_name_not_void: fileName /= Void
 		triplet_not_void: triplet /= Void
 	do
-		cg_init (fileName)
+		cg_init (fileName, buildExecutable)
 		setTriplet (triplet)
 	end -- init
 
@@ -73,7 +75,7 @@ feature
 	external "C" alias "llvm_setTriplet" 	
 	end -- setTriplet
 
-	genStart (fileName: String): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Boolean is
 	external "C" alias "llvm_genStart" 	
 	end -- genStart	
 	genEnd is
@@ -91,7 +93,7 @@ inherit
 create
 	init
 feature
-	genStart (fileName: String): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Boolean is
 	external "C" alias "msil_genStart" 	
 	end -- genStart	
 	genEnd is
@@ -109,7 +111,7 @@ inherit
 create
 	init
 feature
-	genStart (fileName: String): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Boolean is
 	external "C" alias "jvm_genStart" 	
 	end -- genStart	
 	genEnd is
@@ -127,7 +129,7 @@ inherit
 create
 	init
 feature
-	genStart (fileName: String): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Boolean is
 	external "C" alias "msil_genStart" 	
 	end -- genStart	
 	genEnd is
@@ -145,7 +147,7 @@ inherit
 create
 	init
 feature
-	genStart (fileName: String): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Boolean is
 	external "C" alias "ark_genStart" 	
 	end -- genStart	
 	genEnd is
