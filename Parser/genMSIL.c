@@ -1,4 +1,4 @@
-// MSIL generation primitives
+// MSIL generation primitives to be implemented by Zouev
 /*	genStart (fileName: String; buildExecutable: Boolean): Boolean is
 	-- fileName refers to the name of the file which is to be created by code generator
 	-- fileName has no extension it is to be added by the code generator
