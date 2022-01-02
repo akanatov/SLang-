@@ -13,7 +13,7 @@
             <Keywords name="Numbers, suffix1"></Keywords>
             <Keywords name="Numbers, suffix2"></Keywords>
             <Keywords name="Numbers, range"></Keywords>
-            <Keywords name="Operators1">or xor not and implies := &gt; &gt;= &lt; &lt;= ( ) : /= = { } + - , ; .</Keywords>
+            <Keywords name="Operators1">xor implies := &gt; &gt;= &lt; &lt;= ( ) : /= = { } + - , ; . &quot;or else&quot; &quot;and then&quot; or not and</Keywords>
             <Keywords name="Operators2"></Keywords>
             <Keywords name="Folders in code1, open"></Keywords>
             <Keywords name="Folders in code1, middle"></Keywords>
@@ -24,7 +24,7 @@
             <Keywords name="Folders in comment, open"></Keywords>
             <Keywords name="Folders in comment, middle"></Keywords>
             <Keywords name="Folders in comment, close"></Keywords>
-            <Keywords name="Keywords1">as class assign expanded end loop from if then  require else ensure invariant deferred create creation feature inherit is do external redefine undefine export select rename elseif local</Keywords>
+            <Keywords name="Keywords1">as class assign expanded end loop from if then  require else ensure invariant deferred create creation feature inherit is do external redefine undefine export select rename elseif local until&#x000D;&#x000A;invariant select retry rescue</Keywords>
             <Keywords name="Keywords2"></Keywords>
             <Keywords name="Keywords3"></Keywords>
             <Keywords name="Keywords4"></Keywords>
