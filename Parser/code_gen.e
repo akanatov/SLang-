@@ -5,17 +5,19 @@ inherit
 			dispose
 	end
 feature
-	genStart (fileName: String; buildExecutable: Boolean): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Integer is
 	-- fileName refers to the name of the file which is to be created by code generator
 	-- fileName has no extension it is to be added by the code generator
-	-- if sussecfull Ture is to be returned and false otherwise
+	-- if sucsesfull 1 is to be returned and -1 if eror and 0 if code gneerator is not enabled yet
 	-- if buildExecutable is false then dynamic and static libraries are to be created
 	deferred
+	ensure 
+		-1 <= Result and then Result <= 1
 	end -- genStart	
 	dispose is
 	do
 		if ready then
-			ready := False
+			status := 0
 			genEnd
 		end -- if
 	end -- dispose
@@ -48,10 +50,16 @@ feature
 	require
 		file_name_not_void: fileName /= Void
 	do
-		ready := genStart (fileName, buildExecutable)
+		status := genStart (fileName, buildExecutable)
 	end -- init
 feature 
-	ready: Boolean
+	status: Integer
+	ready: Boolean is
+	do
+		Result := status = 1
+	end -- ready
+invariant
+	valid_generator_status: -1 <= status and then status <= 1
 end -- class CodeGenerator
 class LLVM_CodeGenerator
 inherit
@@ -75,7 +83,7 @@ feature
 	external "C" alias "llvm_setTriplet" 	
 	end -- setTriplet
 
-	genStart (fileName: String; buildExecutable: Boolean): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Integer is
 	external "C" alias "llvm_genStart" 	
 	end -- genStart	
 	genEnd is
@@ -93,7 +101,7 @@ inherit
 create
 	init
 feature
-	genStart (fileName: String; buildExecutable: Boolean): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Integer is
 	external "C" alias "msil_genStart" 	
 	end -- genStart	
 	genEnd is
@@ -111,7 +119,7 @@ inherit
 create
 	init
 feature
-	genStart (fileName: String; buildExecutable: Boolean): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Integer is
 	external "C" alias "jvm_genStart" 	
 	end -- genStart	
 	genEnd is
@@ -129,7 +137,7 @@ inherit
 create
 	init
 feature
-	genStart (fileName: String; buildExecutable: Boolean): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Integer is
 	external "C" alias "msil_genStart" 	
 	end -- genStart	
 	genEnd is
@@ -147,7 +155,7 @@ inherit
 create
 	init
 feature
-	genStart (fileName: String; buildExecutable: Boolean): Boolean is
+	genStart (fileName: String; buildExecutable: Boolean): Integer is
 	external "C" alias "ark_genStart" 	
 	end -- genStart	
 	genEnd is
