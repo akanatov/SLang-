@@ -38,6 +38,7 @@ feature {None}
 		files: Array [FSys_Dat]
 		fName: String
 		sName: String
+		ext: String
 		slangFileCount: Integer
 		actualFiles: Integer
 		skipBuild: Boolean
@@ -47,7 +48,7 @@ feature {None}
 		j, m: Integer
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.8 (Build <AVK Nov 09th 2021>)")
+		o.putNL ("SLang compiler v0.99.9 (Build <AVK Jan 2nd 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -65,7 +66,8 @@ feature {None}
 						j > m	
 					loop
 						fName := files.item (j).name
-						if fs.getFileExtension (fName).is_equal ("slang") then
+						ext := fs.getFileExtension (fName)
+						if ext.is_equal ("slang") or else ext.is_equal ("clang") then
 							if slangFileCount = 0 then
 								args.put (fName, 1)
 							else	
@@ -96,9 +98,10 @@ create {FileOutput}output.init ("_Dump.out")
 					i > n
 				loop
 					fName := args.item (i)
-					if fs.getFileExtension (fName).is_equal ("clang") then
+					ext := fs.getFileExtension (fName)
+					if ext.is_equal ("clang") then
 						Cmode := True
-					elseif fs.getFileExtension (fName).is_equal ("slang") then
+					elseif ext.is_equal ("slang") then
 						Cmode := False
 					else
 						-- Do not parse such file!!!

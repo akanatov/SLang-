@@ -8,7 +8,7 @@
 	<option name="console_application" value="true"/>
 	<option name="dead_code_removal" value="low_level"/>
 	<option name="debugger" value="true"/>
-	<option name="dynamic_runtime" value="true"/>
+	<option name="dynamic_runtime" value="false"/>
 	<option name="inlining" value="constant"/>
 	<option name="inlining" value="once"/>
 	<option name="jumps_optimization" value="true"/>
