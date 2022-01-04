@@ -50,37 +50,25 @@ feature {Any}
 					i := i + 1
 				end -- loop
 				if not skipCodeGen then
+
 					create generators.make (1, 0)
+					
+					-- LLVM Windows generation activation
 					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc", true)
-					if codeGenerator.ready then
-						generators.force (codeGenerator, generators.count + 1)
-					else
-						o.putNL ("Generation 'LLVM - x86_64-pc-windows-msvc' failed to start")
-					end -- if
+					registerCodeGenerator (codeGenerator, generators, o, "Generation 'LLVM - x86_64-pc-windows-msvc' failed to start")
+					-- LLVM Linux generation activation
 					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu", true)
-					if codeGenerator.ready then
-						generators.force (codeGenerator, generators.count + 1)
-					else
-						o.putNL ("Generation 'LLVM - x86_64-pc-linux-gnu' failed to start")
-					end -- if
+					registerCodeGenerator (codeGenerator, generators, o, "Generation 'LLVM - x86_64-pc-linux-gnu' failed to start")
+					-- MSIL generation activation
 					create {MSIL_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), true)
-					if codeGenerator.ready then
-						generators.force (codeGenerator, generators.count + 1)
-					else
-						o.putNL ("Generation 'MSIL' failed to start")
-					end -- if
+					registerCodeGenerator (codeGenerator, generators, o, "Generation 'MSIL' failed to start")
+					-- JVM generation activation
 					create {JVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), true)
-					if codeGenerator.ready then
-						generators.force (codeGenerator, generators.count + 1)
-					else
-						o.putNL ("Generation 'JVM' failed to start")
-					end -- if
+					registerCodeGenerator (codeGenerator, generators, o, "Generation 'JVM' failed to start")
+					-- ARK generation activation
 					create {ARK_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), true)
-					if codeGenerator.ready then
-						generators.force (codeGenerator, generators.count + 1)
-					else
-						o.putNL ("Generation 'ARK' failed to start")
-					end -- if
+					registerCodeGenerator (codeGenerator, generators, o, "Generation 'ARK' failed to start")
+					
 					m := generators.count
 					if m > 0 then
 						from
@@ -147,4 +135,17 @@ feature {Any}
 			o.putNL ("Error: Not able to create SLang folder with artefacts  '" + folderName + "'")
 		end -- if
 	end -- build
+feature {None}
+	registerCodeGenerator (codeGenerator: CodeGenerator; generators:Array [CodeGenerator]; o: Output; errorMessage: String) is
+	do
+		inspect
+			codeGenerator.status
+		when 0 then
+			-- do nothing as code generator is not enabled yet
+		when -1 then
+			o.putNL (errorMessage)
+		when 1 then
+			generators.force (codeGenerator, generators.count + 1)
+		end -- inspect
+	end
 end -- class SLang_builder
