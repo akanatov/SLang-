@@ -2078,10 +2078,8 @@ deferred class MemberDeclarationDescriptor
 -- MemberDeclaration: [MemberVisibility] ([override] [final] UnitAttribiteDeclaration|UnitRoutineDeclaration) | InitDeclaration
 inherit
 	Comparable
-		undefine
-			is_equal
 		redefine
-			out
+			out, is_equal
 	end
 feature {Any}
 	visibility: MemberVisibilityDescriptor
@@ -2127,14 +2125,18 @@ feature {Any}
 	is_equal (other: like Current): Boolean is
 	do
 		Result := name.is_equal (other.name)
-		if Result and then same_type (other ) then -- weight = other.weight then
-			Result := sameAs (other)
+		if Result then
+			if same_type (other) then
+				Result := sameAs (other)
+			else
+				Result := false
+			end -- if
 		end -- if
 	end -- is_equal
 	infix "<" (other: like Current): Boolean is
 	do
 		Result := name < (other.name)
-		if not Result and then name.is_equal (other.name) and then same_type (other) then -- weight = other.weight then
+		if not Result and then name.is_equal (other.name) and then same_type (other) then
 			Result := lessThan (other)
 		end -- if
 	end -- infix "<"
@@ -2148,12 +2150,7 @@ feature {Any}
 		names_are_equal: name.is_equal (other.name)
 	deferred
 	end -- lessThan
---feature {MemberDeclarationDescriptor}
---	weight: Integer is
---	deferred
---	end -- weigth
 invariant
---	visibility_not_void: visibility /= Void
 end -- class MemberDeclarationDescriptor
 
 class RoutineDescriptor
@@ -3657,6 +3654,10 @@ deferred class TypeOfExpressionDescriptor
 inherit
 	ExpressionDescriptor
 	end
+feature {Any}
+	expDsc: ExpressionDescriptor
+invariant
+	non_void_expression: expDsc /= Void
 end -- class TypeOfExpressionDescriptor
 class IsDetachedDescriptor
 inherit
@@ -3665,7 +3666,6 @@ inherit
 create
 	init
 feature {Any}
-	expDsc: ExpressionDescriptor
 	init (e: like expDsc) is
 	require
 		non_void_expression: e /= Void
@@ -3689,8 +3689,6 @@ feature {ExpressionDescriptor}
 	do
 		Result := -25
 	end -- weight
-invariant
-	non_void_expression: expDsc /= Void
 end -- class IsDetachedDescriptor
 class IsAttachedDescriptor
 inherit
@@ -7911,6 +7909,38 @@ feature {Any}
 invariant
 	consistent_values: values /= Void and then values.count > 1
 end -- class ValuesAlternative
+
+class UnitTypeAlternative
+-- UnitType
+inherit
+	ValueAlternativeDescriptor
+	end
+create
+	init
+feature {Any}
+	unitTypeDsc: UnitTypeCommonDescriptor
+	init (t: like unitTypeDsc) is
+	require
+		unit_type_not_void: t /= Void 
+	do
+		unitTypeDsc := t
+	end -- init
+	sameAs (other: like Current): Boolean is
+	do
+		Result := unitTypeDsc.sameAs (other.unitTypeDsc)
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
+	do
+		Result := unitTypeDsc < other.unitTypeDsc
+	end -- lessThan
+	out: String is
+	do
+		Result := unitTypeDsc.out
+	end -- out
+invariant
+	unit_type_not_void: unitTypeDsc /= Void 
+end -- class UnitTypeAlternative
+
 
 class ExpressionAlternative
 -- Expression

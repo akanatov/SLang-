@@ -1,11 +1,11 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.98 Jan 6th-9th 2021
+// Version 0.99.01 Jan 5th 2022
 system Kernel
 	use "." end // Kernel librray is to be built from all SLang files from the current folder
 end
 
 val unit Bit
-    enum // Bit is just 0 or 1
+    const: // Bit is just 0 or 1
          0b0, 0b1
     end
 	pure & alias and (other: Bit): as this => if this = 0b0 do 0b0 elsif other = 0b0 do 0b0 else 0b1
@@ -82,7 +82,7 @@ require
 end
 
 val unit Bit [N: Integer]
-	enum // All Bit constants not longer than B bits in it
+	const: // All Bit constants not longer than B bits in it
 	    //{Bit.0b0 | Bit.0b1}N
 	end
 	{} data: val Array [0 .. N-1, Bit] // Bit field ...
@@ -254,17 +254,17 @@ final unit Platform
 	const RealMantissaBitsCount is 55
 	const RealOrderBitsCount is 8
 
---	const
---		BitsInByteCount is 8,
---		IntegerBitsCount is 32,
---		CardinalBitsCount is IntegerBitsCount,
---		CharacterBitsCount is 8,
---		BooleanBitsCount is 8,
---		PointerBitsCount is 32,
---		RealBitsCount is 64,
---		RealMantissaBitsCount is 55,
---		RealOrderBitsCount is 8
-
+/*	const
+		BitsInByteCount is 8,
+		IntegerBitsCount is 32,
+		CardinalBitsCount is IntegerBitsCount,
+		CharacterBitsCount is 8,
+		BooleanBitsCount is 8,
+		PointerBitsCount is 32,
+		RealBitsCount is 64,
+		RealMantissaBitsCount is 55,
+		RealOrderBitsCount is 8
+*/
 require
 	RealBitsCount = RealMantissaBitsCount + RealOrderBitsCount + 1
 end // Platform
@@ -418,7 +418,7 @@ val unit Integer extend Integer [Platform.IntegerBitsCount]
 end // Integer
 
 val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
-	enum // That is ordered set defined as range of all Integer constant values (objects)
+	const: // That is ordered set defined as range of all Integer constant values (objects)
 		minInteger .. maxInteger
 	end
 	const minInteger is - (2 ^ (BitsNumber - 1))
@@ -585,7 +585,7 @@ virtual unit Float [nBits: Integer] extend Numeric, Comparable
 end
 
 val unit Real extend Float [Platform.RealBitsCount]
-	enum // All Real numbers 
+	const: // All Real numbers 
 		//{minReal + epsilon} <= maxReal
 		minReal {+epsilon} .. maxReal
 	end
@@ -684,7 +684,7 @@ val unit Real extend Float [Platform.RealBitsCount]
 end // Real
 
 val unit Character alias Char extend Enumeration
-	enum // The set of all constant objects of unit type Character
+	const: // The set of all constant objects of unit type Character
 		minCharacter .. maxCharacter
 	end	
 	const minCharacter is 0.ToCharacter
@@ -721,7 +721,7 @@ val unit Character alias Char extend Enumeration
 end // Character
 
 val unit Boolean alias Bool extend Enumeration
-	enum // That is an ordered set of two constant object of type Boolean
+	const: // That is an ordered set of two constant object of type Boolean
 		false(zero), true(one)		
 	end
 	{ this } const one is 1
@@ -783,14 +783,14 @@ end
 
 unit String [N:Integer] extend AString, Array [Character, N]
 	/// String with fixed length
-	enum // "" .. "Character*" - all Strings of size not more than N
+	const: // "" .. "Character*" - all Strings of size not more than N
 		//{Character.minCharacter |.. Character.maxCharacter}N		
 	end
 end
 
 unit String extend AString
 	/// Variable length String
-	enum // "" .. "Character*" - all Strings are defined here
+	const: // "" .. "Character*" - all Strings are defined here
 		//{Character.minCharacter |.. Character.maxCharacter}0+		
 	end
 	override < (other: as this): Boolean do

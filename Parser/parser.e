@@ -1414,6 +1414,10 @@ feature {None}
 		end -- loop
 		if Result.count = 0 then
 			Result := Void
+		--else
+		--	if scanner.token = scanner.colon_token then
+		--		-- If last statment was just identifier or type then it is the alternative tag 
+		--	end -- if
 		end -- if
 	end -- parseStatements1
 
@@ -3066,7 +3070,7 @@ feature {None}
 		end -- inspect
 	end -- parseMemberDescription
 	
-	parseAlternatives: Array [AlternativeDescriptor] is
+	parseAlternatives (firstTypeDsc: UnitTypeCommonDescriptor): Array [AlternativeDescriptor] is
 	-- Alternatives: ValueAlternatives “:” StatementsList {ValueAlternatives “:”StatementsList} 
 
 	-- ValueAlternative“:”StatementsList {ValueAlternative“:”StatementsList} 
@@ -3087,61 +3091,73 @@ trace (">>>parseAlternatives")
 		until
 			toLeave
 		loop
-			if valAlts.count = 0 then
--- Must be redone !!! No more scanner.token = scanner.colon_token
-not_implemented_yet ("Must be redone !!! No more scanner.token = scanner.colon_token")
-				if scanner.token = scanner.colon_token then
-					scanner.nextToken
-				else
-					if Result.count = 0 then
-						syntax_error (<<scanner.colon_token>>)
-						wasError := True
-					end -- if
-					toLeave := True
-				end -- if
+			if Result.count = 0 then
+				valAltDsc := parseValueAlternative (isOptionalAlternative, firstTypeDsc)
+			else
+				valAltDsc := parseValueAlternative (isOptionalAlternative, Void)
 			end -- if
-			if not toLeave then
-				valAltDsc := parseValueAlternative (isOptionalAlternative)
-				if valAltDsc = Void then
-					toLeave := True
-				else
-trace ("%Talternative: " + valAltDsc.out)
-					if valAlts.added (valAltDsc) then
-						isOptionalAlternative := True
-						inspect
-							scanner.token
-						when scanner.colon_token then
-							scanner.nextToken
-							statements := parseStatements (False)
-							--from
-							--	i := 1
-							--	n := valAlts.count
-							--until
-							--	i > n
-							--loop
-							--	create {IfIsBodyAlternative} altDsc.init (valAlts.item (i), statements)
-							--	Result.force (altDsc, Result.count + 1)
-							--	i := i + 1
-							--end -- loop
+			if valAltDsc = Void then
+				toLeave := True
+			else
+trace ("%Talternative-> " + valAltDsc.out)
+				if valAlts.added (valAltDsc) then
+					isOptionalAlternative := True
+					inspect
+						scanner.token
+					when scanner.colon_token then
+						scanner.nextToken
+						statements := parseStatements (False)
+trace ("%Talternative body-> " + statements.out)
+						--from
+						--	i := 1
+						--	n := valAlts.count
+						--until
+						--	i > n
+						--loop
+						--	create {IfIsBodyAlternative} altDsc.init (valAlts.item (i), statements)
+						--	Result.force (altDsc, Result.count + 1)
+						--	i := i + 1
+						--end -- loop
 
-							create {IfIsBodyAlternative} altDsc.init (valAlts, statements)
-							Result.force (altDsc, Result.count + 1)
+						create {IfIsBodyAlternative} altDsc.init (valAlts, statements)
+						Result.force (altDsc, Result.count + 1)
 
-							valAlts.resize (0) -- 1, 0)
-						when scanner.comma_token then
-							scanner.nextToken
-							isOptionalAlternative := False
-						else
-							syntax_error (<<scanner.colon_token, scanner.comma_token>>)
+						valAlts.resize (0) -- 1, 0)
+					when scanner.comma_token then
+						if Result.count = 0 then
+							syntax_error (<<>>)
 							wasError := True
 							toLeave := True
+						else
+							scanner.nextToken
+							isOptionalAlternative := False
 						end -- if
 					else
-						validity_error ("Diplicated alternative " + valAltDsc.out)
+						syntax_error (<<scanner.colon_token, scanner.comma_token>>)
 						wasError := True
+						toLeave := True
 					end -- if
+				else
+					validity_error ("Duplicated alternative " + valAltDsc.out)
+					wasError := True
 				end -- if
-			end -- if			
+			end -- if
+
+--			if valAlts.count = 0 then
+---- Must be redone !!! No more scanner.token = scanner.colon_token
+--not_implemented_yet ("Must be redone !!! No more scanner.token = scanner.colon_token")
+--				if scanner.token = scanner.colon_token then
+--					scanner.nextToken
+--				else
+--					if Result.count = 0 then
+--						syntax_error (<<scanner.colon_token>>)
+--						wasError := True
+--					end -- if
+--					toLeave := True
+--				end -- if
+--			end -- if
+--			if not toLeave then
+--			end -- if			
 		end -- loop
 		if wasError or else Result.count = 0 then
 			Result := Void
@@ -3149,7 +3165,7 @@ trace ("%Talternative: " + valAltDsc.out)
 trace ("<<<parseAlternatives")
 	end -- parseAlternatives
 
-	parseExprAlternatives: Array [ValueExprPair] is
+	parseExprAlternatives (firstTypeDsc: UnitTypeCommonDescriptor): Array [ValueExprPair] is
 	-- ValueAlternative“:”Expression {ValueAlternative“:”Expression}
 	local	
 		exprDsc: ExpressionDescriptor
@@ -3164,7 +3180,11 @@ trace ("<<<parseAlternatives")
 		until
 			toLeave
 		loop
-			valAltDsc := parseValueAlternative (isOptionalAlternative)
+			if Result.count = 0 then
+				valAltDsc := parseValueAlternative (isOptionalAlternative, firstTypeDsc)
+			else
+				valAltDsc := parseValueAlternative (isOptionalAlternative, Void)
+			end -- if
 			if valAltDsc = Void then
 				toLeave := True
 			else
@@ -3191,7 +3211,7 @@ trace ("<<<parseAlternatives")
 		end -- if
 	end -- parseExprAlternatives
 
-	parseValueAlternative (isOptionalAlternative: Boolean): ValueAlternativeDescriptor is
+	parseValueAlternative (isOptionalAlternative: Boolean; firstTypeDsc: UnitTypeCommonDescriptor): ValueAlternativeDescriptor is
 	-- Expression {“|”Expression}
 	-- |
 	-- Expression [“{”OperatorName ConstantExpression“}”] “..”Expression
@@ -3205,75 +3225,80 @@ trace ("<<<parseAlternatives")
 		wasError: Boolean
 	do
 --trace ("%TParse alternative expression started")
-		if isOptionalAlternative then
-			exprDsc := parseOptionalExpression
-		else
-			exprDsc := parseExpression
-		end -- if
-		if exprDsc /= Void then
-			inspect	
-				scanner.token
-			when scanner.period_token then
-				-- Expression “..” Expression
-				scanner.nextToken
-				lower := exprDsc
-				upper := parseExpression
-				if lower /= Void and then upper /= Void then
-					create {RangeAlternative} Result.init (lower, Void, Void, upper)
-				end -- if
-			when scanner.bar_token then
-				from
-					values := <<exprDsc>>					
-				until
-					toLeave
-				loop
-					if scanner.token = scanner.bar_token then
-						scanner.nextToken
-						exprDsc := parseExpression
-						if exprDsc = Void then
-							toLeave := True
-							wasError := True
-						else
-							values.force (exprDsc, values.count + 1 )
-						end -- if
-					else
-						toLeave := True
-					end -- if
-				end -- loop
-				if not wasError then
-					create {ValuesAlternative} Result.init (values)
-				end -- if
-			when scanner.left_curly_bracket_token then
-				scanner.nextToken
-				if scanner.token = scanner.identifier_token then
-					operator := scanner.tokenString
+		if firstTypeDsc = Void then
+			if isOptionalAlternative then
+				exprDsc := parseOptionalExpression
+			else
+				exprDsc := parseExpression
+			end -- if
+			if exprDsc /= Void then
+				inspect	
+					scanner.token
+				when scanner.period_token then
+					-- Expression “..” Expression
 					scanner.nextToken
 					lower := exprDsc
-					exprDsc := parseExpression
-					if exprDsc /= Void then
-						if scanner.token = scanner.right_curly_bracket_token then
+					upper := parseExpression
+					if lower /= Void and then upper /= Void then
+						create {RangeAlternative} Result.init (lower, Void, Void, upper)
+					end -- if
+				when scanner.bar_token then
+					from
+						values := <<exprDsc>>					
+					until
+						toLeave
+					loop
+						if scanner.token = scanner.bar_token then
 							scanner.nextToken
-							if scanner.token = scanner.period_token then
-								scanner.nextToken
-								upper := parseExpression
-								if lower /= Void and then upper /= Void then
-									create {RangeAlternative} Result.init (lower, operator, exprDsc, upper)
-								end -- if
+							exprDsc := parseExpression
+							if exprDsc = Void then
+								toLeave := True
+								wasError := True
 							else
---trace ("#2")
-								syntax_error (<<scanner.period_token>>)
+								values.force (exprDsc, values.count + 1 )
 							end -- if
 						else
-							syntax_error (<<scanner.right_curly_bracket_token>>)
+							toLeave := True
 						end -- if
+					end -- loop
+					if not wasError then
+						create {ValuesAlternative} Result.init (values)
+					end -- if
+				when scanner.left_curly_bracket_token then
+					scanner.nextToken
+					if scanner.token = scanner.identifier_token then
+						operator := scanner.tokenString
+						scanner.nextToken
+						lower := exprDsc
+						exprDsc := parseExpression
+						if exprDsc /= Void then
+							if scanner.token = scanner.right_curly_bracket_token then
+								scanner.nextToken
+								if scanner.token = scanner.period_token then
+									scanner.nextToken
+									upper := parseExpression
+									if lower /= Void and then upper /= Void then
+										create {RangeAlternative} Result.init (lower, operator, exprDsc, upper)
+									end -- if
+								else
+	--trace ("#2")
+									syntax_error (<<scanner.period_token>>)
+								end -- if
+							else
+								syntax_error (<<scanner.right_curly_bracket_token>>)
+							end -- if
+						end -- if
+					else
+						syntax_error (<<scanner.identifier_token>>)
 					end -- if
 				else
-					syntax_error (<<scanner.identifier_token>>)
-				end -- if
-			else
-				create {ExpressionAlternative} Result.init (exprDsc) -- It is just an expression			
-			end -- inspect
+					create {ExpressionAlternative} Result.init (exprDsc) -- It is just an expression			
+				end -- inspect
+			end -- if
+		else
+			create {UnitTypeAlternative} Result.init (firstTypeDsc) -- It is just is_type_check alternative
 		end -- if
+
 --if Result /= Void then
 --trace ("%TAlternative expression: " +  Result.out)
 --end -- if
@@ -3328,8 +3353,11 @@ trace ("<<<parseAlternatives")
 		exprAlternatives: Array [ValueExprPair] -- IS
 		doExpr: ExpressionDescriptor -- DO
 
-		isFound: Boolean
+		typeOfDsc: IsAttachedDescriptor
+		alternativeTypeDsc: UnitTypeCommonDescriptor
 
+		isFound: Boolean
+	
 		toLeave: Boolean
 		wasError: Boolean
 	do
@@ -3344,12 +3372,43 @@ trace ("%Tif " + ifExpr.out )
 				scanner.nextToken
 				isFound := True
 				if isStatement then
-					alternatives := parseAlternatives
+					alternatives := parseAlternatives (Void)
 				else
-					exprAlternatives := parseExprAlternatives
+					exprAlternatives := parseExprAlternatives (Void)
 				end -- if
+			when scanner.colon_token then
+				-- Unpleasant case IfExpr has last part as type to be dispatched. IfExpr shpould be of the form 'expr is Type'
+				-- expr is to be put as IfExpr and Type as ALternatvie start
+trace ("%Tis Type parsed already !!!")
+
+
+				typeOfDsc ?= ifExpr
+				if typeOfDsc = Void then
+					-- Syntax error !!! if someExpr :
+					wasError := True
+					if scanner.Cmode then
+						syntax_error (<<scanner.is_token, scanner.left_curly_bracket_token>>)
+					else
+						syntax_error (<<scanner.is_token, scanner.do_token>>)
+					end -- if
+				else
+					-- Take type
+					alternativeTypeDsc := typeOfDsc.typeDsc
+					
+					-- Adjust ifExpr
+					ifExpr := typeOfDsc.expDsc
+
+					isFound := True
+					if isStatement then
+						alternatives := parseAlternatives (alternativeTypeDsc)
+					else
+						exprAlternatives := parseExprAlternatives (alternativeTypeDsc)
+					end -- if
+
+				end -- if  
 			else
 				if scanner.blockStart then
+					-- then-part detected
 					scanner.nextToken
 					if isStatement then
 						statements := parseStatements (False)
@@ -3397,9 +3456,9 @@ trace ("%Tif " + ifExpr.out )
 								scanner.nextToken
 								isFound := True
 								if isStatement then
-									alternatives := parseAlternatives
+									alternatives := parseAlternatives (Void)
 								else
-									exprAlternatives := parseExprAlternatives
+									exprAlternatives := parseExprAlternatives (Void)
 								end -- if
 							else
 								if scanner.blockStart then
