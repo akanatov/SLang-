@@ -1,0 +1,58 @@
+system "slcd"
+
+root
+   SLang_Compiler
+
+creation
+   init
+
+cluster
+
+   -- Project cluster
+   [SL_parser "."                                     ] end
+   [SL_scanner "..\scanner"                           ] end
+   [SL_semanal "..\SemAnal"] end
+
+
+   -- Library clusters
+   [kernel                     "$VE_Lib\kernel"                        ]  end
+   [winlib] end
+   [POOL] end
+
+makepath
+
+
+link
+
+  generators.o
+
+option
+   -- General options
+   target             exe console
+   map                off
+   debug              on
+   debug instructions on
+   -- Assertions control options
+   assertions         on
+   check              on
+   require            on
+   ensure             on
+   class invariant    on
+   loop  invariant    on
+   loop  variant      on
+   -- Optimizations control options
+   optimize fst       on
+   optimize inline    on
+   optimize constants on
+   optimize once      on
+   optimize jumps     on
+   optimize reloads   on
+   optimize dead_code on
+   linker             default
+	   
+   run_time_in_dll    on
+
+   optimize leaves    on
+   optimize calls     off
+   finalize off
+end
