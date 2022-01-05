@@ -5,7 +5,7 @@ system Kernel
 end
 
 val unit Bit
-    const: // Bit is just 0 or 1
+    const : // Bit is just 0 or 1
          0b0, 0b1
     end
 	pure & alias and (other: Bit): as this => if this = 0b0 do 0b0 elsif other = 0b0 do 0b0 else 0b1
@@ -71,7 +71,7 @@ virtual unit () // That is tuple unit
 		return >= 0
 	end
   
-	{ this } fieldIndex (fieldNAme: String): Integer
+	{ this } pure fieldIndex (fieldName: String): Integer
 	foreign
 	ensure
 		return in 0 .. count /// If no such field then 0 otherwise valid position
@@ -210,16 +210,16 @@ virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ I
 
 
 	/// Shallow equality tests
-    = (that: ? as this ): Boolean foreign
-	final /= (that: ? as this ): Boolean => not ( this = that);
+    pure = (that: ? as this ): Boolean foreign
+	final pure /= (that: ? as this ): Boolean => not ( this = that);
     = (that: as this): Boolean foreign 
-	final /= (that: as this ): Boolean => not ( this = that);
+	final pure /= (that: as this ): Boolean => not ( this = that);
 	
 	/// Deep equality tests
-    == (that: ? as this ): Boolean foreign
-	final \= (that: ? as this ): Boolean => not ( this == that);
-    == (that: as this): Boolean foreign
-	final \= (that: as this ): Boolean => not ( this == that)
+    pure == (that: ? as this ): Boolean foreign
+	final pure \= (that: ? as this ): Boolean => not ( this == that);
+    pure == (that: as this): Boolean foreign
+	final pure \= (that: as this ): Boolean => not ( this == that)
 	
 	/// Assignment definition
 	// {} := (that: ? as this ) foreign 
@@ -231,15 +231,15 @@ virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ I
 //	{} := (that: as this ) foreign // No need to define default :=
 	
 	/// Utility
-	toString: String foreign
-	sizeof: Integer foreign
+	pure toString: String foreign
+	pure sizeOf: Integer foreign
 	
 end // Any
 
 final unit System
-	clone (object: Any): as object foreign
+	pure clone (object: Any): as object foreign
 		/// Shallow version of the object clone operation
-	deepClone (object: Any): as object foreign
+	pure deepClone (object: Any): as object foreign
 		/// Deep version of the object clone operation
 end // System
 
@@ -270,30 +270,30 @@ require
 end // Platform
 
 virtual unit Numeric
-	one: as this virtual
+	pure one: as this virtual
 		/// Definition of One
-	zero: as this virtual
+	pure zero: as this virtual
 		/// Definition of Zero
-	+ (other: as this): as this virtual
+	pure + (other: as this): as this virtual
 		/// Definition of addition
 	ensure
 		this - other = old this
 	end // +
-	- (other: as this): as this virtual
+	pure - (other: as this): as this virtual
 		/// Definition of subtraction 
 	ensure
 		this + other = old this		
 	end // -
-	- : as this virtual
+	pure - : as this virtual
 		/// Definition of negation
 	ensure
 		- old this = this
 	end
-	/ (other: as this): as this virtual
+	pure / (other: as this): as this virtual
 		/// Definition of division
-	* (other: as this): as this virtual
+	pure * (other: as this): as this virtual
 		/// Definition of multiplication
-	^ (other: Numeric): as this virtual
+	pure ^ (other: Numeric): as this virtual
 		/// Definition of power
 require
 	this = this * one	/// Multiplication constituent 1
@@ -308,8 +308,8 @@ require
 end // Numeric
 
 virtual unit Comparable 
-	< (other: as this ): Boolean virtual
-	override = (other: as this ): Boolean virtual
+	pure < (other: as this ): Boolean virtual
+	pure override = (other: as this ): Boolean => not (this < other) and not (other < this)
 	pure > (other: as this ): Boolean => other < this
 	pure <= (other: as this ): Boolean => not (other < this)
 	pure >= (other: as this ): Boolean => not (this < other)
@@ -320,37 +320,41 @@ require
 end // Comparable
 
 virtual unit Enumeration extend Comparable
-	succ: as this virtual
+	pure succ: as this virtual
 	/// successor of the current object
+	require
+		not (this = last)
 	ensure
 		return > this /// Successor of the current element is greater than current one
 		this.ord = return.ord - 1 /// Order number of this is order number of its successor minus one
 	end
 	
-	pred: as this virtual
+	pure pred: as this virtual
 	/// predecessor of the current object
+	require	
+		not (this = first)
 	ensure
 		return < this /// Predecessor of the current element is less than current one
 		this.ord = return.ord + 1 /// /// Order number of this is order number of its predecessor plus one
 	end
 	
-	first: as this 
+	pure first: as this 
 	/// first element of enumeration
 	require
 		count > 0
 	virtual
 	
-	last: as this 
+	pure last: as this 
 	/// last element of enumeration
 	require
 		count > 0
 	virtual
 	
-	count: Integer 
+	pure count: Integer 
 	/// number of elements in the enumeration
 	virtual
 	
-	ord: Integer 
+	pure ord: Integer 
 	/// order number of the current object in the enumeration
 	require
 		count > 0
@@ -361,8 +365,8 @@ virtual unit Enumeration extend Comparable
 		count > 0 implies return in 1 .. count		
 	end
 require 
-	count >= 0 /// Number of elements is noit negative
-	count > 0 implies pred < this and then this < succ
+	count >= 0 /// Number of elements is not negative
+//	count > 0 implies pred < this and then this < succ
 	count > 0 implies first <= last
 	count > 0 implies first.ord = 1
 	count > 0 implies last.ord = count
@@ -402,9 +406,9 @@ end // Cardinal
 
 val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	// WIP!!!!
-	// the caveat how to distingush Integer.1 from Cardinal.1 - now Cardinal constants are not imported into Any deu to name clash!!! .... 
+	// the caveat how to distingush Integer.1 from Cardinal.1 - now Cardinal constants are not imported into Any due to name clash!!! .... 
 	// Need to think more ...
-	// No need for cardinal so far ...
+	// No need for cardinal so far ... But count should return Cardinal not Integer ...
 end
 
 val unit Integer extend Integer [Platform.IntegerBitsCount]
