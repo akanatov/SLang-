@@ -6205,7 +6205,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		-- RegularExpression: Constant ({“|”Constant}) | (“|” ”..” Constant)
 
 	require
-		valid_token: scanner.token = scanner.enum_token
+		valid_token: scanner.token = scanner.colon_token -- enum_token
 		unit_descriptor_not_void: unitDsc /= Void
 	local
 		cobjDsc: ConstObjectDescriptor
@@ -6864,11 +6864,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 
 	-- 	 UnitAttributeDeclaration:	
 	-- const|rigid Identifier [“:” AttachedType] is ConstantExpression  [NewLine]
-	-- {“,” Identifier [“:” AttachedType] is ConstantExpression  [NewLine]}
-	
-
-	
-	
+	-- {“,” Identifier [“:” AttachedType] is ConstantExpression  [NewLine]}			
 	require
 		valid_token: scanner.token = scanner.const_token or else scanner.token = scanner.rigid_token
 	local
@@ -7644,12 +7640,12 @@ syntax_error (<<scanner.comma_token>>)
 			end -- if
 			o.putLine ("Parsing unit `" + unitDsc.fullUnitName + "`")
 
-			if scanner.token = scanner.extend_token then -- and then errorsCount = 0 then
+			if scanner.token = scanner.extend_token then
 				-- parse inheritance clause
 				parseInheritanceClause (unitDsc)
 			end -- if
 
-			if scanner.token = scanner.use_token then -- and then errorsCount = 0 then
+			if scanner.token = scanner.use_token then
 				-- parse EnclosedUseDirective
 				unitUsageAndConst := parseEnclosedUseDirective
 				if unitUsageAndConst /= Void then
@@ -7657,26 +7653,38 @@ syntax_error (<<scanner.comma_token>>)
 				end -- if				
 			end -- if
 
-			if scanner.token = scanner.select_token then -- and then errorsCount = 0 then
+			if scanner.token = scanner.select_token then
 				-- parse "select MemberSelection"
 				parseMemberSelection (unitDsc)
 			end -- if
 
 			currentVisibilityZone := anyDsc
 
-			if scanner.token = scanner.override_token then -- and then errorsCount = 0 then
+			if scanner.token = scanner.override_token then
 				-- parse "override InheritedMemberOverriding" or "override MemberDeclaration (goToMembers := True)"
 				goToMembers:= parseInheritedMemberOverridingOrMemberDeclaration (currentVisibilityZone, unitDsc)
 			end -- if
 
-			if scanner.token = scanner.init_token and then not goToMembers then -- and then errorsCount = 0 then
+			if scanner.token = scanner.init_token and then not goToMembers then
 				-- parse "init	InitProcedureInheritance" or "MemberDeclaration (goToMembers := True)"
 				goToMembers:= parseInitProcedureInheritanceOrMemberDeclaration (currentVisibilityZone, unitDsc)
 			end -- if
 
-			if scanner.token = scanner.enum_token and then not goToMembers then -- and then errorsCount = 0 then
-				-- parse "enum	ConstObjectsDeclaration"
-				parseConstObjectsDeclaration (unitDsc)
+			if scanner.token = scanner.const_token and then not goToMembers then
+				scanner.push
+				scanner.nextToken
+				if scanner.token = scanner.colon_token then
+					-- parse "const :	ConstObjectsDeclaration"
+					scanner.flush
+--trace ("Parse const objects")
+					parseConstObjectsDeclaration (unitDsc)
+				else
+					-- It is ordinary const start ...
+--trace ("Parse const attribute #1")
+					scanner.push
+					scanner.revert
+--trace ("Parse const attribute #2")
+				end -- if
 			end -- if
 
 			-- parse unit members

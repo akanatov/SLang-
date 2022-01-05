@@ -192,7 +192,6 @@ feature {Any}
 				"else",
 				"elsif",
 				"end",
-				"enum",
 				"ensure",
 				"extend",
 				"final",
@@ -287,7 +286,6 @@ feature {Any}
 	else_token,
 	elsif_token,
 	end_token,		
-	enum_token,
 	ensure_token,
 	extend_token,
 	final_token,
@@ -1464,7 +1462,7 @@ feature {None}
 			else
 				Result := identifier_token
 			end
-		when 'e' then -- "else" 4, "elsif" -5, "end" - 3, "enum" - 4, "ensure" 6, "extend" - 6
+		when 'e' then -- "else" 4, "elsif" -5, "end" - 3, "ensure" 6, "extend" - 6, "elseif" - 6
 			inspect
 				buff_len
 			when 3 then -- end
@@ -1480,8 +1478,6 @@ feature {None}
 			when 4 then -- else
 				if buffer.is_equal (keywords.item (else_token)) then
 					Result := else_token
-				elseif buffer.is_equal (keywords.item (enum_token)) then
-					Result := enum_token
 				else
 					Result := identifier_token
 				end
@@ -1491,11 +1487,13 @@ feature {None}
 				else
 					Result := identifier_token
 				end
-			when 6 then -- "ensure", "extend"
+			when 6 then -- "ensure", "extend", "elseif"
 				if buffer.item (2) = 'n' and then buffer.is_equal (keywords.item (ensure_token)) then
 					Result := ensure_token
 				elseif buffer.item (2) = 'x' and then buffer.is_equal (keywords.item (extend_token)) then
 					Result := extend_token
+				elseif buffer.is_equal ("elseif") then
+					Result := elsif_token
 				else
 					Result := identifier_token
 				end

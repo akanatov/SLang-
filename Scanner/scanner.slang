@@ -149,7 +149,6 @@ unit SLang_Scanner
 				"else",
 				"elsif",
 				"end",
-				"enum",
 				"ensure",
 				"extend",
 				"final",
@@ -1323,7 +1322,7 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		: 'e' : // "else" 4, "elsif" -5, "end" - 3, "enum" - 4, "ensure" 6, "extend" - 6
+		: 'e' : // "else" 4, "elsif" -5, "end" - 3, "ensure" 6, "extend" - 6
 			if buff_len is
 			: 3 : // end
 				if buffer (2) = 'n' and then buffer (3) = 'd' do
@@ -1338,8 +1337,6 @@ unit SLang_Scanner
 			: 4 : // else
 				if buffer.is_equal (keywords (else_token)) do
 					return else_token
-				elsif buffer.is_equal (keywords (enum_token)) do
-					return enum_token
 				else
 					return identifier_token
 				end

@@ -1499,9 +1499,8 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string ("enum%N")
+				Result.append_string ("%Tconst:%N%T%T")
 				i := 1
-				Result.append_character('%T')
 			until
 				i > n
 			loop
@@ -1511,7 +1510,7 @@ feature {Any}
 				end -- if
 				i := i + 1
 			end -- loop
-			Result.append_string ("%Nend%N")
+			Result.append_string ("%N%Tend%N")
 		end -- if
 
 		n := unitMembers.count
@@ -1525,6 +1524,7 @@ feature {Any}
 			until
 				i > n
 			loop
+				Result.append_character('%T')
 				Result.append_string (unitMembers.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')

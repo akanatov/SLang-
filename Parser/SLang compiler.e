@@ -46,9 +46,11 @@ feature {None}
 		Cmode: Boolean
 		i, n: Integer
 		j, m: Integer
+		-- It should be commented out in the final version!
+		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.9 (Build <AVK Jan 2nd 2022>)")
+		o.putNL ("SLang compiler v0.99.01 (Build <AVK Jan 5th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -85,8 +87,9 @@ feature {None}
 				o.putNL ("No source files to process ...")
 			else
 				from 
--- It should be commented out in the final version!
-create {FileOutput}output.init ("_Dump.out")
+					debug
+						create {FileOutput}dumpOutput.init ("_Dump.out")
+					end
 					if n > 1 then
 						o.putLine (n.out + " files to parse ...")
 					end -- if
@@ -113,7 +116,7 @@ create {FileOutput}output.init ("_Dump.out")
 						skipSourceFile := False
 					else
 						sName := "_" + fs.getFileName(fName)
-	--output.putNL ("// " + fName + ":" + fs.file_time (fName).out + " vs. " + 
+	--dumpOutput.putNL ("// " + fName + ":" + fs.file_time (fName).out + " vs. " + 
 	--	IRfolderName + "\" + sName + ".Slang#int" + ":" + fs.file_time (IRfolderName + "\" + sName + ".Slang#int").out )
 						if fs.younger (fName, IRfolderName + "\" + sName + ".Slang#int") then
 							-- No need to parse - interface was created later then last change of the source file
@@ -137,9 +140,9 @@ create {FileOutput}output.init ("_Dump.out")
 								if parser.systems /= Void and then parser.systems.count > 0 then
 									systems.append (parser.systems)
 								end -- if
--- It should be commented out in the final version!
-dumpAST (parser)
---memory.full_collect
+								debug
+									dumpAST (parser, dumpOutput)
+								end
 
 								inspect 
 									parser.errorsCount
@@ -195,37 +198,35 @@ dumpAST (parser)
 					if m > 0 then
 						from 
 							j := 1
--- It should be commented out in the final version!
-output.putNL ("//----------- System description dump start ------------")
+							debug
+								dumpOutput.putNL ("//----------- System description dump start ------------")
+							end
 						until
 							j > m
 						loop
 							sysDsc := systems.item (j)
--- It should be commented out in the final version!
-output.putNL (sysDsc.out)			
-							--o.putNL ("Building `" + sysDsc.name + "`")
-							create builder -- .init (o)
+							debug
+								dumpOutput.putNL (sysDsc.out)			
+							end
+							create builder
 							builder.build (sysDsc, fs, o)
 							j := j + 1
 						end -- loop
--- It should be commented out in the final version!
-output.putNL ("//----------- System description dump end  ------------")
+						debug
+							dumpOutput.putNL ("//----------- System description dump end  ------------")
+						end
 					end -- if
 				end -- if
 			end -- if
 		end -- if
 		o.putNL ("")
--- It should be commented out in the final version!
-if output /= Void then
-output.close
-end -- if
+		debug
+			dumpOutput.close
+		end
 		o.close
 	end -- init
 	
--- It should be commented out in the final version!
-output: Output
-
-	dumpAST (parser: SLang_parser) is
+	dumpAST (parser: SLang_parser; dumpOutput: Output) is
 	require
 		parser_not_void: parser /= Void
 	local
@@ -238,43 +239,43 @@ output: Output
 			parser.ast.routines.count > 0 or else
 			parser.ast.units.count > 0
 		then
-			output.putNL ("//-------------- IR dump per file start -------------------")
+			dumpOutput.putNL ("//-------------- IR dump per file start -------------------")
 			m := parser.ast.units.count
 			if m > 0 then
 				from
 					j := 1
 					if m = 1 then
-						output.put ("/* 1 unit compiled successfully: ")
+						dumpOutput.put ("/* 1 unit compiled successfully: ")
 					else
-						output.put ("/* " + m.out + " units compiled successfully: ")
+						dumpOutput.put ("/* " + m.out + " units compiled successfully: ")
 					end -- if
 				until
 					j > m
 				loop
-					output.putInToLine (parser.ast.units.item (j).name)
+					dumpOutput.putInToLine (parser.ast.units.item (j).name)
 					if j < m then
-						output.putInToLine (", ")
+						dumpOutput.putInToLine (", ")
 					end
 					if j \\ 12 = 0 then
-						output.newLine  
+						dumpOutput.newLine  
 					end -- if
 					j := j + 1
 				end -- loop
-				output.put ("*/")
-				output.newLine  
+				dumpOutput.put ("*/")
+				dumpOutput.newLine  
 			end -- if
 			m := parser.ast.useConst.count
 			if m > 0 then
 				from
-					output.putNL ("// Constants import")
-					output.putInToLine  ("use const ")
+					dumpOutput.putNL ("// Constants import")
+					dumpOutput.putInToLine  ("use const ")
 					j := 1
 				until
 					j > m
 				loop
-					output.putInToLine (parser.ast.useConst.item (j))
+					dumpOutput.putInToLine (parser.ast.useConst.item (j))
 					if j < m then
-						output.put (", ")
+						dumpOutput.put (", ")
 					end
 					j := j + 1
 				end -- loop
@@ -283,15 +284,15 @@ output: Output
 			m := parser.ast.statements.count
 			if m > 0 then
 				from
-					output.putNL ("// Anonymous routine")
+					dumpOutput.putNL ("// Anonymous routine")
 					j := 1
 				until
 					j > m
 				loop
 					str := parser.ast.statements.item (j).out
-					output.put (str)
+					dumpOutput.put (str)
 					if str.item(str.count) /= '%N' then
-						output.newLine
+						dumpOutput.newLine
 					end -- if
 					j := j + 1
 				end -- loop
@@ -300,18 +301,18 @@ output: Output
 			if m > 0 then
 				from
 					if m = 1 then
-						output.putNL ("// Standalone routine")
+						dumpOutput.putNL ("// Standalone routine")
 					else
-						output.putNL ("// " + m.out + " standalone routines")
+						dumpOutput.putNL ("// " + m.out + " standalone routines")
 					end -- if
 					j := 1
 				until
 					j > m
 				loop
 					str := parser.ast.routines.item (j).out
-					output.put (str)
+					dumpOutput.put (str)
 					if str.item(str.count) /= '%N' then
-						output.newLine
+						dumpOutput.newLine
 					end -- if
 					j := j + 1
 				end -- loop
@@ -320,18 +321,18 @@ output: Output
 			if m > 0 then
 				from
 					if m = 1 then
-						output.putNL ("// Unit")
+						dumpOutput.putNL ("// Unit")
 					else
-						output.putNL ("// " + m.out + " units")
+						dumpOutput.putNL ("// " + m.out + " units")
 					end -- if
 					j := 1
 				until
 					j > m
 				loop
 					str := parser.ast.units.item (j).out
-					output.put (str)
+					dumpOutput.put (str)
 					if str.item(str.count) /= '%N' then
-						output.newLine
+						dumpOutput.newLine
 					end -- if
 					j := j + 1
 				end -- loop
@@ -340,28 +341,28 @@ output: Output
 			if m > 0 then
 				from
 					if m = 1 then
-						output.put ("/* Depends on 1 type: ")
+						dumpOutput.put ("/* Depends on 1 type: ")
 					else
-						output.put ("/* Depends on " + m.out + " types: ")
+						dumpOutput.put ("/* Depends on " + m.out + " types: ")
 					end -- if
 					j := 1
 				until
 					j > m
 				loop
-					output.putArray (<<"(", parser.ast.typePool.item (j).weight, ")">>)
-					output.put (parser.ast.typePool.item (j).out)
+					dumpOutput.putArray (<<"(", parser.ast.typePool.item (j).weight, ")">>)
+					dumpOutput.put (parser.ast.typePool.item (j).out)
 					if j < m then
-						output.put(", ")
+						dumpOutput.put(", ")
 					end -- if
 					if j \\ 7 = 0 then
-						output.newLine						
+						dumpOutput.newLine						
 					end -- if
 					j := j + 1
 				end -- loop
-				output.put ("*/")
-				output.newLine
+				dumpOutput.put ("*/")
+				dumpOutput.newLine
 			end -- if			
-			output.putNL ("//-------------- IR dump per file end ---------------------")
+			dumpOutput.putNL ("//-------------- IR dump per file end ---------------------")
 		end -- if
 	end -- dumpAST
 	
