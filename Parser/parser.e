@@ -3243,12 +3243,12 @@ trace ("<<<parseAlternatives")
 
 	-- parseValueAlternative (isOptionalAlternative: Boolean; firstTypeDsc: UnitTypeCommonDescriptor): ValueAlternativeDescriptor is
 	parseValueAlternative (isOptionalAlternative: Boolean): ValueAlternativeDescriptor is
-	-- ":" Expression {“|”Expression}
+	-- Expression {“|”Expression}
 	-- |
-	-- ":" Expression [“{”OperatorName ConstantExpression“}”] “..”Expression
+	-- Expression [“{”OperatorName ConstantExpression“}”] “..”Expression
 	local
 		exprDsc: ExpressionDescriptor
-		values: Array [ExpressionDescriptor]
+		values: Sorted_Array [ExpressionDescriptor]
 		lower: ExpressionDescriptor
 		operator: String
 		upper: ExpressionDescriptor
@@ -3278,7 +3278,7 @@ trace ("<<<parseAlternatives")
 				end -- if
 			when scanner.bar_token then
 				from
-					values := <<exprDsc>>					
+					create values.fill (<<exprDsc>>)
 				until
 					toLeave
 				loop
