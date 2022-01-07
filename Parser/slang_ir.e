@@ -7874,7 +7874,7 @@ inherit
 create
 	init
 feature {Any}
-	values: Array [ExpressionDescriptor]
+	values: Sorted_Array [ExpressionDescriptor]
 	init (v: like values) is
 	require
 		consistent_values: v /= Void and then v.count > 1
