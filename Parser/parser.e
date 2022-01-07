@@ -3289,7 +3289,12 @@ trace ("<<<parseAlternatives")
 							toLeave := True
 							wasError := True
 						else
-							values.force (exprDsc, values.count + 1 )
+							--values.force (exprDsc, values.count + 1 )
+							if not values.added (exprDsc) then
+								-- Error -> such alternatuve is already in the list !!!
+								validity_error ("Duplicated alternative " + exprDsc.out)
+								wasError := True
+							end -- if
 						end -- if
 					else
 						toLeave := True
