@@ -3096,8 +3096,8 @@ feature {None}
 	require	
 		valid_alternative_start_token: scanner.token = scanner.colon_token
 	local
-		valAltDsc: ValueAlternativeDescriptor
-		valAlts: Sorted_Array [ValueAlternativeDescriptor]
+		valAltDsc: AlternativeTagDescriptor
+		valAlts: Sorted_Array [AlternativeTagDescriptor]
 		statements: Array [StatementDescriptor]
 		altDsc: AlternativeDescriptor
 		isOptionalAlternative: Boolean
@@ -3196,7 +3196,7 @@ trace ("<<<parseAlternatives")
 		valid_alternative_start_token: scanner.token = scanner.colon_token
 	local	
 		exprDsc: ExpressionDescriptor
-		valAltDsc: ValueAlternativeDescriptor
+		valAltDsc: AlternativeTagDescriptor
 		pairDsc: ValueExprPair
 		isOptionalAlternative: Boolean
 		toLeave: Boolean
@@ -3241,8 +3241,8 @@ trace ("<<<parseAlternatives")
 		end -- if
 	end -- parseExprAlternatives
 
-	-- parseValueAlternative (isOptionalAlternative: Boolean; firstTypeDsc: UnitTypeCommonDescriptor): ValueAlternativeDescriptor is
-	parseValueAlternative (isOptionalAlternative: Boolean): ValueAlternativeDescriptor is
+	-- parseValueAlternative (isOptionalAlternative: Boolean; firstTypeDsc: UnitTypeCommonDescriptor): AlternativeTagDescriptor is
+	parseValueAlternative (isOptionalAlternative: Boolean): AlternativeTagDescriptor is
 	-- Expression {“|”Expression}
 	-- |
 	-- Expression [“{”OperatorName ConstantExpression“}”] “..”Expression

@@ -6220,7 +6220,7 @@ inherit
 create
 	init
 feature {Any}
-	--alternatives: Sorted_Array [ValueAlternativeDescriptor]
+	--alternatives: Sorted_Array [AlternativeTagDescriptor]
 
 	statements: Array [StatementDescriptor]	
 	
@@ -6282,8 +6282,6 @@ feature {Any}
 	end -- init
 
 	out: String is
-	local
-		i, n: Integer
 	do
 		Result := out_alternatives
 		Result.append_character (' ')
@@ -7827,7 +7825,7 @@ inherit
 create
 	init
 feature {Any}
-	vAlt: ValueAlternativeDescriptor
+	vAlt: AlternativeTagDescriptor
 	expr: ExpressionDescriptor
 	out: String is
 	do
@@ -7848,67 +7846,44 @@ invariant
 	expression_not_void: expr /= Void
 end	-- class ValueExprPair
 	
-deferred class ValueAlternativeDescriptor
--- Expression ([[“|”OperatorName ConstantExpression] “..”Expression ] | {“|”Expression} )
+class AlternativeTagDescriptor
+-- Expression [[GroupStart OperatorName ConstantExpression GroupEnd] â€œ..â€Expression ]
 
--- {“,” Expression ([[“|”OperatorName ConstantExpression] “..”Expression ] | {“|”Expression} ) }
 inherit
 	SmartComparable
-		undefine
+		redefine
 			out
 	end
-feature {Any}
-end -- class ValueAlternativeDescriptor
-
-
-class ValuesAlternative
--- Expression {"|" Expression}
-inherit
-	ValueAlternativeDescriptor
-	end
-create
+creation
 	init
 feature {Any}
-	values: Sorted_Array [ExpressionDescriptor]
-	init (v: like values) is
+	expr: ExpressionDescriptor
+	init (e: like expr) is
 	require
-		consistent_values: v /= Void and then v.count > 1
+		expression_not_void: e /= Void
 	do
-		values := v
+		expr := e
 	end -- init
+	out: String is
+	do
+		Result := expr.out
+	end -- out
 	sameAs (other: like Current): Boolean is
 	do
+		Result := expr.is_equal (other.expr)
 	end -- sameAs
 	lessThan (other: like Current): Boolean is
 	do
+		Result := expr < other.expr
 	end -- lessThan
-	
-	out: String is
-	local
-		i, n: Integer
-	do
-		from
-			Result := ""
-			i := 1
-			n := values.count
-		until
-			i > n
-		loop
-			Result.append_string (values.item (i).out)
-			if i < n then
-				Result.append_string (" | ")
-			end -- if
-			i := i + 1
-		end -- loop
-	end -- out
 invariant
-	consistent_values: values /= Void and then values.count > 1
-end -- class ValuesAlternative
+	expression_not_void: expr /= Void
+end -- class AlternativeTagDescriptor
 
 class UnitTypeAlternative
 -- UnitType
 inherit
-	ValueAlternativeDescriptor
+	AlternativeTagDescriptor
 	end
 create
 	init
@@ -7936,45 +7911,17 @@ invariant
 	unit_type_not_void: unitTypeDsc /= Void 
 end -- class UnitTypeAlternative
 
-
-class ExpressionAlternative
--- Expression
-inherit
-	ValueAlternativeDescriptor
-	end
-create
-	init
-feature {Any}
-	expr: ExpressionDescriptor
-	init (e: like expr) is
-	require
-		expresssion_not_void: e /= Void 
-	do
-		expr := e
-	end -- init
-	sameAs (other: like Current): Boolean is
-	do
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	do
-	end -- lessThan
-	out: String is
-	do
-		Result := expr.out			
-	end -- out
-invariant
-	expresssion_not_void: expr /= Void 
-end -- class ExpressionAlternative
-
 class RangeAlternative
 -- Expression [“|”OperatorName ConstantExpression] “..”Expression
 inherit
-	ValueAlternativeDescriptor
+	AlternativeTagDescriptor
+		rename 
+			expr as lower
 	end
 create
 	init
 feature {Any}
-	lower: ExpressionDescriptor
+	-- lower: ExpressionDescriptor
 	operator: String
 	constExpr: ExpressionDescriptor
 	upper: ExpressionDescriptor
@@ -8023,7 +7970,7 @@ feature {Any}
 		Result.append_string (upper.out)
 	end -- out
 invariant
-	non_void_lower: lower /= Void
+	--non_void_lower: lower /= Void
 	non_void_upper: upper /= Void
 	consistent_reg_exp: operator /= Void implies constExpr /= Void
 end -- class RangeAlternative
