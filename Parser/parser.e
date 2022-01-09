@@ -3138,12 +3138,12 @@ trace ("%Talternative body-> " + statements.out)
 						--until
 						--	i > n
 						--loop
-						--	create {IfIsBodyAlternative} altDsc.init (valAlts.item (i), statements)
+						--	create {IfStatementAlternative} altDsc.init (valAlts.item (i), statements)
 						--	Result.force (altDsc, Result.count + 1)
 						--	i := i + 1
 						--end -- loop
 
-						create {IfIsBodyAlternative} altDsc.init (valAlts, statements)
+						create {IfStatementAlternative} altDsc.init (valAlts, statements)
 						Result.force (altDsc, Result.count + 1)
 
 						valAlts.resize (0) -- 1, 0)

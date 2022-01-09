@@ -5829,18 +5829,18 @@ end -- class NewExpressionDescriptor
 -- ExpressionList: Expression{“,” Expression}
 
 class IfStatementDescriptor
---37 IfCase: 
--- if Expression (is IfBody)|(do [StatementsList])
--- {elsif Expression (is IfBody)|(do [StatementsList]) }
--- [else [ StatementsList ]]
--- end
+-- IfCase:
+-- if Expression (is Alternatives)|(BlockStart StatementsList)
+-- {elsif Expression (is Alternatives)|(BlockStart StatementsList)}
+-- [else [StatementsList]]
+-- BlockEnd
 inherit
 	StatementDescriptor
 	end
 create
 	init
 feature {Any}
-	ifLines: Array [IfLineDecsriptor]
+	ifParts: Array [IfLineDecsriptor]
 	elsePart: Array [StatementDescriptor]
 	
 	isNotValid (context: CompilationUnitCommon): Boolean is
@@ -5852,27 +5852,27 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 	
-	
-	init (eic: like ifLines; ep: like elsePart) is
+	init (eic: like ifParts; ep: like elsePart) is
 	require
 		consistent_if: eic /= Void and then eic.count > 0
 	do
-		ifLines := eic
+		ifParts := eic
 		elsePart := ep
 	end -- out
+
 	out: String is
 	local
 		i, n: Integer
 	do
-		Result := "if" + ifLines.item (1).out + "%N"
+		Result := "if" + ifParts.item (1).out + "%N"
 		from
 			i := 2
-			n := ifLines.count
+			n := ifParts.count
 		until
 			i > n
 		loop
 			Result.append_character('%T')
-			Result.append_string ("elsif " + ifLines.item (i).out)
+			Result.append_string ("elsif " + ifParts.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
@@ -5902,11 +5902,14 @@ feature {Any}
 		Result.append_string("end // if%N")
 	end -- out		
 invariant
-	consistent_if: ifLines /= Void and then ifLines.count > 0
+	consistent_if: ifParts /= Void and then ifParts.count > 0
 end -- class IfStatementDescriptor
 
 deferred class IfLineDecsriptor
--- (if | elsif) Expression (is IfBody)|(do [StatementsList])
+-- if Expression (is Alternatives)|(BlockStart StatementsList)
+-- or
+-- {elsif Expression (is Alternatives)|(BlockStart StatementsList)}
+
 inherit
 	Comparable
 		undefine
@@ -5925,11 +5928,13 @@ feature {Any}
 		Result := expr < other.expr
 	end -- infix "<"
 invariant
-	expression_non_void: expr /= Void
+	if_expression_not_void: expr /= Void
 end -- class IfLineDecsriptor
 
 class IfIsLineDecsriptor
--- (if | elsif) Expression is IfBody
+-- if Expression is Alternatives
+-- or
+-- elsif Expression is Alternatives
 inherit
 	IfLineDecsriptor
 		redefine
@@ -5938,18 +5943,22 @@ inherit
 create
 	init 
 feature {Any}
-	alternatives: Array [AlternativeDescriptor]
+
+	alternatives: Array [IfStatementAlternative]
+
 	init (e: like expr; a: like alternatives) is
 	require
 		expression_non_void: e /= Void
+		alternatives_not_void: a /= Void
 	do
 		expr := e
-		if a = Void then
-			create alternatives.make (1, 0)
-		else	
+		--if a = Void then
+		--	create alternatives.make (1, 0)
+		--else	
 			alternatives := a
-		end -- if
+		--end -- if
 	end -- init
+
 	out: String is
 	local
 		i, n: Integer
@@ -5968,6 +5977,7 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- out
+
 	is_equal (other: like Current): Boolean is
 	local
 		i, n: Integer
@@ -6024,7 +6034,9 @@ invariant
 end -- class IfIsLineDecsriptor
 
 class IfDoLineDecsriptor
--- (if | elsif) Expression do [StatementsList]
+-- if Expression BlockStart StatementsList
+-- or
+-- elsif Expression BlockStart StatementsList
 inherit
 	IfLineDecsriptor
 		redefine
@@ -6034,15 +6046,15 @@ create
 	init 
 feature {Any}
 	statements: Array [StatementDescriptor]
-	init (e: like expr; db: like statements) is
+	init (e: like expr; s: like statements) is
 	require
 		expression_non_void: e /= Void
 	do
 		expr := e
-		if db = Void then
+		if s = Void then
 			create statements.make (1, 0)
 		else
-			statements := db
+			statements := s
 		end -- if
 	end -- init
 	out: String is
@@ -6120,60 +6132,29 @@ end -- class IfDoLineDecsriptor
 
 
 deferred class AlternativeDescriptor
--- ValueAlternative {"," ValueAlternative} ":" StatementsList
+-- AlternativeTags StatementsList
+-- or
+-- AlternativeTags Expression
 inherit
 	SmartComparable
 		undefine
 			out
-		--redefine
-		--	is_equal
 	end
---feature {Any}
---	is_equal (other: like Current): Boolean is
---	do
---		Result := Current = other or else Current.same_type (other) and then sameAs (other)
---	end -- is_equal
---	infix "<" (other: like Current): Boolean is
---	do
---		if Current /= other then
---			Result := Current.generating_type < other.generating_type
---			if not Result and then Current.same_type (other) then 
---				Result := lessThan (other)
---			end -- if
---		end -- if
---	end -- infix "<"
---feature {AlternativeDescriptor}
---	sameAs (other: like Current): Boolean is
---	deferred		
---	end -- sameAs
---	lessThan (other: like Current): Boolean is
---	deferred
---	end -- lessThan
-end -- class AlternativeDescriptor
-class IfIsBodyAlternative
--- ":"ValueAlternative {"," ValueAlternative} ":" StatementsList
-inherit
-	AlternativeDescriptor
-	end
-create
-	init
 feature {Any}
-	alternatives: Sorted_Array [ValueAlternativeDescriptor]
-	statements: Array [StatementDescriptor]
-	
+	alternativeTags: Sorted_Array[AlternativeTagDescriptor]
 	sameAs (other: like Current): Boolean is
 	local
 		i, n: Integer
 	do
-		n := alternatives.count
-		Result := n = other.alternatives.count
+		n := alternativeTags.count
+		Result := n = other.alternativeTags.count
 		if Result then
 			from
 				i := 1
 			until
 				i > n
 			loop
-				if alternatives.item (i).is_equal (other.alternatives.item (i)) then
+				if alternativeTags.item (i).is_equal (other.alternativeTags.item (i)) then
 					i := i + 1
 				else
 					Result := False
@@ -6181,34 +6162,13 @@ feature {Any}
 				end -- if
 			end -- loop
 		end -- if			
-
---		Result := alternatives.is_equal (other.alternatives)
-
---		if Result then
---			n := statements.count
---			Result := n = other.statements.count
---			if Result then
---				from
---					i := 1
---				until
---					i > n
---				loop
---					if statements.item (i).is_equal (other.statements.item (i)) then
---						i := i + 1
---					else
---						Result := False
---						i := n + 1
---					end -- if
---				end -- loop
---			end -- if			
---		end -- if
 	end -- sameAs
 	lessThan (other: like Current): Boolean is
 	local
 		i, n, m: Integer
 	do
-		n := alternatives.count
-		m := other.alternatives.count
+		n := alternativeTags.count
+		m := other.alternativeTags.count
 		Result := n < m
 		if not Result and then n = m then
 			from
@@ -6216,70 +6176,73 @@ feature {Any}
 			until
 				i > n
 			loop
-				if alternatives.item (i) < other.alternatives.item (i) then
+				if alternativeTags.item (i) < other.alternativeTags.item (i) then
 					Result := True
 					i := n + 1
-				elseif alternatives.item (i).is_equal (other.alternatives.item (i)) then
+				elseif alternativeTags.item (i).is_equal (other.alternativeTags.item (i)) then
 					i := i + 1
 				else
 					i := n + 1
 				end -- if
 			end -- loop
 		end -- if			
-
-		--Result := alternatives.is_equal (other.alternatives)
-		--if not Result and then alternatives.is_equal (other.alternatives) then
-		--	n := statements.count
-		--	m := other.statements.count
-		--	Result := n < m
-		--	if not Result and then n = m then
-		--		from
-		--  			i := 1
-		--		until
-		--			i > n
-		--	 	loop
-		--			if statements.item (i) < other.statements.item (i) then
-		--				Result := True
-		-- 				i := n + 1
-		-- 			elseif statements.item (i).is_equal (other.statements.item (i)) then
-		--				i := i + 1
-		--			else
-		--				i := n + 1
-		--			end -- if
-		--		end -- loop
-		--	end -- if			
-		--end -- if
 	end -- lessThan
-	
-	init (a: like alternatives; s: like statements) is
-	require
-		value_alternatives_not_void: a /= Void 
-	do
-		alternatives:= a
-		if s = Void then
-			create statements.make (1, 0)
-		else
-			statements := s
-		end -- if
-	end -- init
-	out: String is
+feature {AlternativeDescriptor}
+	out_alternatives: String is
 	local
 		i, n: Integer
 	do
-		Result := ": "
+		Result := ":"
 		from
 			i := 1
-			n := alternatives.count
+			n := alternativeTags.count
 		until
 			i > n
 		loop
 			if i > 1 then
 				Result.append_string (", ")
 			end -- if
-			Result.append_string (alternatives.item (i).out)
+			Result.append_string (alternativeTags.item (i).out)
 			i := i + 1
-		end -- loop
-		Result.append_string (" :%N")
+		end -- loop		
+	end -- out_alternatives
+	
+invariant
+	alternativeTags_not_void: alternativeTags /= Void
+end -- class AlternativeDescriptor
+
+class IfStatementAlternative
+-- ":"ValueAlternative {"," ValueAlternative} ":" StatementsList
+-- AlternativeTags StatementsList
+inherit
+	AlternativeDescriptor
+	end
+create
+	init
+feature {Any}
+	--alternatives: Sorted_Array [ValueAlternativeDescriptor]
+
+	statements: Array [StatementDescriptor]	
+	
+	init (a: like alternativeTags; s: like statements) is
+	require
+		alternativeTag_not_void: a /= Void 
+	do
+		alternativeTags := a
+		if s = Void then
+			create statements.make (1, 0)
+		else
+			statements := s
+		end -- if
+	end -- init
+
+	out: String is
+	local
+		i, n: Integer
+	do		
+		Result := out_alternatives
+		Result.append_character (' ')
+		Result.append_character ('%N')
 		from
 			i := 1
 			n := statements.count
@@ -6294,14 +6257,46 @@ feature {Any}
 		end -- loop
 	end -- out
 invariant
-	value_alternatives_not_void: alternatives /= Void 
 	statements_not_void: statements /= Void
-end -- class IfIsBodyAlternative
+end -- class IfStatementAlternative
+
+class IfExpressionAlternative
+-- ":"ValueAlternative {"," ValueAlternative} ":" Expression
+-- AlternativeTags Expression
+inherit
+	AlternativeDescriptor
+	end
+create
+	init
+feature {Any}
+
+	expr: ExpressionDescriptor
+	
+	init (a: like alternativeTags; e: like expr) is
+	require
+		alternativeTag_not_void: a /= Void 
+		expression_not_void: e /= Void
+	do
+		alternativeTags := a
+		expr := e
+	end -- init
+
+	out: String is
+	local
+		i, n: Integer
+	do
+		Result := out_alternatives
+		Result.append_character (' ')
+		Result.append_string (expr.out)
+	end -- out
+invariant
+	expression_not_void: expr /= Void
+end -- class IfExpressionAlternative
 
 -- MemberDescription : ( [rtn] RoutineName [Signature] )|( Idenitifer “:”UnitType )
 deferred class MemberDescriptionDescriptor
 inherit	
-	AlternativeDescriptor
+	AlternativeDescriptor -- WHY IT INHERITS IT ?????
 		redefine
 			is_equal, infix "<"
 	end 
