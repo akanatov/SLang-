@@ -3090,176 +3090,129 @@ feature {None}
 		end -- inspect
 	end -- parseMemberDescription
 	
---	parseAlternatives (firstTypeDsc: UnitTypeCommonDescriptor): Array [AlternativeDescriptor] is
-	parseAlternatives: Array [AlternativeDescriptor] is
-	-- Alternatives: “:” ValueAlternatives  StatementsList {“:” ValueAlternatives StatementsList} 
+	parseIfStatementAlternatives: Array [IfStatementAlternative] is
+	-- Alternatives: “:”AlternativeTags StatementsList {“:”AlternativeTags StatementsList} 
+	-- 	AlternativeTags: AlternativeTag {“,” AlternativeTag}
+
 	require	
 		valid_alternative_start_token: scanner.token = scanner.colon_token
 	local
-		valAltDsc: AlternativeTagDescriptor
-		valAlts: Sorted_Array [AlternativeTagDescriptor]
-		statements: Array [StatementDescriptor]
-		altDsc: AlternativeDescriptor
+		curTagsList: Sorted_Array [AlternativeTagDescriptor]
+		tagsList: Sorted_Array [AlternativeTagDescriptor]
+		altDsc: IfStatementAlternative
 		isOptionalAlternative: Boolean
 		toLeave : Boolean
-		wasError: Boolean
-		--i, n: Integer
 	do
--- Not fully implemented !!!
-		scanner.nextToken
-trace (">>>parseAlternatives")
-		from
-			create Result.make (1, 0)
-			create valAlts.make
-		until
-			toLeave
-		loop
-			--if Result.count = 0 then
-			--	valAltDsc := parseValueAlternative (isOptionalAlternative, firstTypeDsc)
-			--else
-			--	valAltDsc := parseValueAlternative (isOptionalAlternative, Void)
-			--end -- if
-			valAltDsc := parseValueAlternative (isOptionalAlternative)
-			if valAltDsc = Void then
-				toLeave := True
-			else
-trace ("%Talternative-> " + valAltDsc.out)
-				if valAlts.added (valAltDsc) then
-					isOptionalAlternative := True
-					inspect
-						scanner.token
-					when scanner.colon_token then
-						scanner.nextToken
-						statements := parseStatements (False)
-trace ("%Talternative body-> " + statements.out)
-						--from
-						--	i := 1
-						--	n := valAlts.count
-						--until
-						--	i > n
-						--loop
-						--	create {IfStatementAlternative} altDsc.init (valAlts.item (i), statements)
-						--	Result.force (altDsc, Result.count + 1)
-						--	i := i + 1
-						--end -- loop
-
-						create {IfStatementAlternative} altDsc.init (valAlts, statements)
-						Result.force (altDsc, Result.count + 1)
-
-						valAlts.resize (0) -- 1, 0)
-					when scanner.comma_token then
-						if Result.count = 0 then
-							syntax_error (<<>>)
-							wasError := True
-							toLeave := True
-						else
-							scanner.nextToken
-							isOptionalAlternative := False
-						end -- if
-					else
-						syntax_error (<<scanner.colon_token, scanner.comma_token>>)
-						wasError := True
-						toLeave := True
-					end -- if
-				else
-					validity_error ("Duplicated alternative " + valAltDsc.out)
-					wasError := True
-				end -- if
-			end -- if
-
---			if valAlts.count = 0 then
----- Must be redone !!! No more scanner.token = scanner.colon_token
---not_implemented_yet ("Must be redone !!! No more scanner.token = scanner.colon_token")
---				if scanner.token = scanner.colon_token then
---					scanner.nextToken
---				else
---					if Result.count = 0 then
---						syntax_error (<<scanner.colon_token>>)
---						wasError := True
---					end -- if
---					toLeave := True
---				end -- if
---			end -- if
---			if not toLeave then
---			end -- if			
-		end -- loop
-		if wasError or else Result.count = 0 then
-			Result := Void
-		end -- if
-trace ("<<<parseAlternatives")
-	end -- parseAlternatives
-
-	--parseExprAlternatives (firstTypeDsc: UnitTypeCommonDescriptor): Array [ValueExprPair] is
-	parseExprAlternatives: Array [ValueExprPair] is
-	-- “:” ValueAlternative Expression {“:” ValueAlternative Expression}
-	require	
-		valid_alternative_start_token: scanner.token = scanner.colon_token
-	local	
-		exprDsc: ExpressionDescriptor
-		valAltDsc: AlternativeTagDescriptor
-		pairDsc: ValueExprPair
-		isOptionalAlternative: Boolean
-		toLeave: Boolean
-		wasError: Boolean
-	do
--- Not fully implemented !!!
+--trace (">>>parseIfStatementAlternatives")
 		scanner.nextToken
 		from
 			create Result.make (1, 0)
+			create tagsList.make
 		until
 			toLeave
 		loop
-			--if Result.count = 0 then
-			--	valAltDsc := parseValueAlternative (isOptionalAlternative, firstTypeDsc)
-			--else
-			--	valAltDsc := parseValueAlternative (isOptionalAlternative, Void)
-			--end -- if
-			valAltDsc := parseValueAlternative (isOptionalAlternative)
-			if valAltDsc = Void then
+			curTagsList := parseAlternativeTags (isOptionalAlternative, tagsList)
+			if curTagsList = Void then
 				toLeave := True
 			else
 				isOptionalAlternative := True
+				create altDsc.init (curTagsList, parseStatements (False))
+				Result.force (altDsc, Result.count + 1)
 				if scanner.token = scanner.colon_token then
 					scanner.nextToken
-					exprDsc:= parseExpression
-					if exprDsc = Void then
-						wasError := True
-						toLeave := True		
-					else
-						create pairDsc.init (valAltDsc, exprDsc)
-						Result.force (pairDsc, Result.count + 1)
-					end -- if
+					-- parse next alternative
 				else
-					syntax_error (<<scanner.colon_token>>)
-					wasError := True
 					toLeave := True
-				end -- if
+				end -- if					
 			end -- if
 		end -- loop
-		if wasError or else Result.count = 0 then
+		if Result.count = 0 then
+			Result := Void
+		end -- if
+--trace ("<<<parseIfStatementAlternatives")
+	end -- parseIfStatementAlternatives
+
+	parseExprAlternatives: Array [IfExpressionAlternative] is
+	-- ExpressionAlternatives: “:”AlternativeTags Expression {“:”AlternativeTags Expression}
+	require	
+		valid_alternative_start_token: scanner.token = scanner.colon_token
+	local
+		curTagsList: Sorted_Array [AlternativeTagDescriptor]
+		tagsList: Sorted_Array [AlternativeTagDescriptor]
+		altDsc: IfExpressionAlternative --AlternativeDescriptor
+		isOptionalAlternative: Boolean
+		toLeave : Boolean
+	do
+		scanner.nextToken
+		from
+			create Result.make (1, 0)
+			create tagsList.make
+		until
+			toLeave
+		loop
+			curTagsList := parseAlternativeTags (isOptionalAlternative, tagsList)
+			if curTagsList = Void then
+				toLeave := True
+			else
+				isOptionalAlternative := True
+				create altDsc.init (curTagsList, parseOptionalExpression)
+				Result.force (altDsc, Result.count + 1)
+				if scanner.token = scanner.colon_token then
+					scanner.nextToken
+					-- parse next alternative
+				else
+					toLeave := True
+				end -- if					
+			end -- if
+		end -- loop
+		if Result.count = 0 then
 			Result := Void
 		end -- if
 	end -- parseExprAlternatives
 
-	-- parseValueAlternative (isOptionalAlternative: Boolean; firstTypeDsc: UnitTypeCommonDescriptor): AlternativeTagDescriptor is
-	parseValueAlternative (isOptionalAlternative: Boolean): AlternativeTagDescriptor is
-	-- Expression {“|”Expression}
-	-- |
+	parseAlternativeTags (isOptionalAlternative: Boolean; tagsList: Sorted_Array[AlternativeTagDescriptor]): Sorted_Array[AlternativeTagDescriptor] is
+	local
+		altTagDsc: AlternativeTagDescriptor
+		toLeave : Boolean
+		wasError: Boolean
+	do
+		from
+			create Result.make
+		until
+			toLeave
+		loop
+			altTagDsc := parseAlternativeTag (isOptionalAlternative)
+			if altTagDsc = Void then
+				toLeave := True
+				wasError := True -- already reported
+			else
+				if tagsList.added (altTagDsc) then
+					Result.add (altTagDsc)
+					if scanner.token = scanner.comma_token then
+						scanner.nextToken
+					else
+						toLeave := True
+					end -- if
+				else
+					validity_error ("Duplicated alternative " + altTagDsc.out)
+					wasError := True
+				end -- if
+			end -- if
+		end -- loop
+		if Result.count = 0 or else wasError then
+			Result := Void
+		end -- if
+	end -- parseAlternativeTags	
+
+	parseAlternativeTag (isOptionalAlternative: Boolean): AlternativeTagDescriptor is
 	-- Expression [“{”OperatorName ConstantExpression“}”] “..”Expression
 	local
 		exprDsc: ExpressionDescriptor
-		values: Sorted_Array [ExpressionDescriptor]
 		lower: ExpressionDescriptor
 		operator: String
 		upper: ExpressionDescriptor
-		toLeave: Boolean
-		wasError: Boolean
 	do
 --trace ("%TParse alternative expression started")
---		if firstTypeDsc = Void then
---		else
---			create {UnitTypeAlternative} Result.init (firstTypeDsc) -- It is just is_type_check alternative
---		end -- if
 		if isOptionalAlternative then
 			exprDsc := parseOptionalExpression
 		else
@@ -3275,33 +3228,6 @@ trace ("<<<parseAlternatives")
 				upper := parseExpression
 				if lower /= Void and then upper /= Void then
 					create {RangeAlternative} Result.init (lower, Void, Void, upper)
-				end -- if
-			when scanner.bar_token then
-				from
-					create values.fill (<<exprDsc>>)
-				until
-					toLeave
-				loop
-					if scanner.token = scanner.bar_token then
-						scanner.nextToken
-						exprDsc := parseExpression
-						if exprDsc = Void then
-							toLeave := True
-							wasError := True
-						else
-							--values.force (exprDsc, values.count + 1 )
-							if not values.added (exprDsc) then
-								-- Error -> such alternatuve is already in the list !!!
-								validity_error ("Duplicated alternative " + exprDsc.out)
-								wasError := True
-							end -- if
-						end -- if
-					else
-						toLeave := True
-					end -- if
-				end -- loop
-				if not wasError then
-					create {ValuesAlternative} Result.init (values)
 				end -- if
 			when scanner.left_curly_bracket_token then
 				scanner.nextToken
@@ -3331,19 +3257,17 @@ trace ("<<<parseAlternatives")
 					syntax_error (<<scanner.identifier_token>>)
 				end -- if
 			else
-				create {ExpressionAlternative} Result.init (exprDsc) -- It is just an expression			
+				create {AlternativeTagDescriptor} Result.init (exprDsc) -- It is just an expression			
 			end -- inspect
 		end -- if
-
-
 --if Result /= Void then
 --trace ("%TAlternative expression: " +  Result.out)
 --end -- if
-	end -- parseValueAlternative
+	end -- parseAlternativeTag
 	
 	parseIfStatement: StatementDescriptor is
 	do
-		Result := parseIfStatementOrExpression (True, False)
+		Result ?= parseIfStatementOrExpression (True, False)
 	end -- parseIfStatement
 
 	parseIfExpression (checkSemicolonAfter: Boolean): IfExpressionDescriptor is
@@ -3351,7 +3275,7 @@ trace ("<<<parseAlternatives")
 		Result ?= parseIfStatementOrExpression (False, checkSemicolonAfter)
 	end -- parseIfExpression
 
-	parseIfStatementOrExpression (isStatement, checkSemicolonAfter: Boolean): StatementDescriptor is
+	parseIfStatementOrExpression (isStatement, checkSemicolonAfter: Boolean): Any is -- StatementDescriptor is
 	--56	IfCase:
 	--	if Expression (is IfBody)|(do [StatementsList])
 	--	{elsif Expression (is IfBody)|(do [StatementsList]) }
@@ -3387,7 +3311,8 @@ trace ("<<<parseAlternatives")
 		alternatives: Array [AlternativeDescriptor] -- IS
 		statements: Array [StatementDescriptor] -- DO
 
-		exprAlternatives: Array [ValueExprPair] -- IS
+--		exprAlternatives: Array [ValueExprPair] -- IS
+		exprAlternatives: Array [IfExpressionAlternative] -- IS
 		doExpr: ExpressionDescriptor -- DO
 
 		--typeOfDsc: IsAttachedDescriptor
@@ -3398,11 +3323,11 @@ trace ("<<<parseAlternatives")
 		toLeave: Boolean
 		wasError: Boolean
 	do
-trace (">>>parse_if")
+--trace (">>>parse_if")
 		scanner.nextToken
 		ifExpr := parseExpression
 		if ifExpr /= Void then
-trace ("%Tif " + ifExpr.out )
+--trace ("%Tif " + ifExpr.out )
 			inspect	
 				scanner.token
 			when scanner.is_token then
@@ -3411,43 +3336,20 @@ trace ("%Tif " + ifExpr.out )
 				if scanner.token = scanner.colon_token then
 					isFound := True
 					if isStatement then
-						alternatives := parseAlternatives --(Void)
+						alternatives := parseIfStatementAlternatives
+						if alternatives = Void then
+							wasError := True
+						end -- if
 					else
-						exprAlternatives := parseExprAlternatives -- (Void)
+						exprAlternatives := parseExprAlternatives
+						if exprAlternatives = Void then
+							wasError := True
+						end -- if
 					end -- if
 				else
 					wasError := True
 					syntax_error (<<scanner.colon_token>>)
 				end -- if
---			when scanner.colon_token then
---				-- Unpleasant case IfExpr has last part as type to be dispatched. IfExpr shpould be of the form 'expr is Type'
---				-- expr is to be put as IfExpr and Type as ALternatvie start
---trace ("%Tis Type parsed already !!!")
---
---
---				typeOfDsc ?= ifExpr
---				if typeOfDsc = Void then
---					-- Syntax error !!! if someExpr :
---					wasError := True
---					if scanner.Cmode then
---						syntax_error (<<scanner.is_token, scanner.left_curly_bracket_token>>)
---					else
---						syntax_error (<<scanner.is_token, scanner.do_token>>)
---					end -- if
---				else
---					-- Take type
---					alternativeTypeDsc := typeOfDsc.typeDsc
---					
---					-- Adjust ifExpr
---					ifExpr := typeOfDsc.expDsc
---
---					isFound := True
---					if isStatement then
---						alternatives := parseAlternatives (alternativeTypeDsc)
---					else
---						exprAlternatives := parseExprAlternatives (alternativeTypeDsc)
---					end -- if
---				end -- if  
 			else
 				if scanner.blockStart then
 					-- then-part detected
@@ -3499,9 +3401,17 @@ trace ("%Tif " + ifExpr.out )
 								if scanner.token = scanner.colon_token then
 									isFound := True
 									if isStatement then
-										alternatives := parseAlternatives --(Void)
+										alternatives := parseIfStatementAlternatives
+										if alternatives = Void then
+											wasError := True
+											toLeave := True
+										end -- if
 									else
-										exprAlternatives := parseExprAlternatives -- (Void)
+										exprAlternatives := parseExprAlternatives
+										if exprAlternatives = Void then
+											wasError := True
+											toLeave := True
+										end -- if
 									end -- if
 								else
 									wasError := True
@@ -3584,7 +3494,7 @@ trace ("%Tif " + ifExpr.out )
 				end -- if
 			end -- if
 		end -- if
-trace ("<<<parse_if")
+--trace ("<<<parse_if")
 	end -- parseIfStatementOrExpression
 	
 	parseWhileStatement (checkForRepeatWhile: Boolean): LoopStatementDescriptor is

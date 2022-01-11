@@ -5944,7 +5944,9 @@ create
 	init 
 feature {Any}
 
-	alternatives: Array [IfStatementAlternative]
+--	alternatives: Array [IfStatementAlternative]
+	alternatives: Array [AlternativeDescriptor]
+	
 
 	init (e: like expr; a: like alternatives) is
 	require
@@ -6220,7 +6222,6 @@ inherit
 create
 	init
 feature {Any}
-	--alternatives: Sorted_Array [AlternativeTagDescriptor]
 
 	statements: Array [StatementDescriptor]	
 	
@@ -6294,7 +6295,10 @@ end -- class IfExpressionAlternative
 -- MemberDescription : ( [rtn] RoutineName [Signature] )|( Idenitifer “:”UnitType )
 deferred class MemberDescriptionDescriptor
 inherit	
-	AlternativeDescriptor -- WHY IT INHERITS IT ?????
+--	AlternativeDescriptor -- WHY IT INHERITS IT ?????
+	SmartComparable
+		undefine	
+			out
 		redefine
 			is_equal, infix "<"
 	end 
@@ -7627,18 +7631,13 @@ end -- class UnitTypeNameDescriptor
 
 -----------------------------------------------------------------
 class IfExpressionDescriptor
--- if Expression (is IfBodyExpression)|(do Expression)
--- {elsif Expression (is IfBodyExpression)|(do Expression)}
--- else Expression
--- IfBodyExpression: ValueAlternative“:”Expression {ValueAlternative“:”Expression}
+-- if Expression (is ExpressionAlternatives)|( BlockStart Expression)
+-- {elsif Expression (is ExpressionAlternatives)|( BlockStart Expression)}
+-- else Expression â€œ}â€Cmod
+--
+--ExpressionAlternatives: â€œ:â€AlternativeTags Expression {â€œ:â€AlternativeTags Expression}
 inherit
 	ExpressionDescriptor
-	end
-	StatementDescriptor
-		undefine
-			is_equal, infix "<"
-		redefine
-			sameAs, lessThan
 	end
 create 
 	init
@@ -7760,7 +7759,8 @@ inherit
 create
 	init
 feature {Any}
-	alternatives: Array [ValueExprPair]
+	alternatives: Array [IfExpressionAlternative]
+	
 	init (e: like expr; a: like alternatives) is
 	require
 		non_void_expr: e /= Void
@@ -7815,36 +7815,6 @@ invariant
 	do_expr_not_void: doExpr /= Void
 end -- class IfDoExprLineDescriptor
 
-class ValueExprPair
--- ":"ValueAlternative“:”Expression
-inherit
-	Any
-		redefine
-			out
-	end
-create
-	init
-feature {Any}
-	vAlt: AlternativeTagDescriptor
-	expr: ExpressionDescriptor
-	out: String is
-	do
-		Result := ":" + vAlt.out
-		Result.append_string (": ")
-		Result.append_string (expr.out)
-	end -- out
-	init (va: like vAlt; e: like expr) is
-	require
-		value_alternative_not_void: va /= Void
-		expression_not_void: e /= Void
-	do
-		vAlt:= va
-		expr:= e
-	end -- init
-invariant
-	value_alternative_not_void: vAlt /= Void
-	expression_not_void: expr /= Void
-end	-- class ValueExprPair
 	
 class AlternativeTagDescriptor
 -- Expression [[GroupStart OperatorName ConstantExpression GroupEnd] â€œ..â€Expression ]
@@ -7912,16 +7882,19 @@ invariant
 end -- class UnitTypeAlternative
 
 class RangeAlternative
--- Expression [“|”OperatorName ConstantExpression] “..”Expression
+-- Expression ["|"OperatorName ConstantExpression] ".." Expression
 inherit
 	AlternativeTagDescriptor
 		rename 
-			expr as lower
+			expr as lower,
+			init as non_used_init
+		export {None} non_used_init
+		redefine	
+			out, sameAs, lessThan
 	end
 create
 	init
 feature {Any}
-	-- lower: ExpressionDescriptor
 	operator: String
 	constExpr: ExpressionDescriptor
 	upper: ExpressionDescriptor
@@ -7970,7 +7943,6 @@ feature {Any}
 		Result.append_string (upper.out)
 	end -- out
 invariant
-	--non_void_lower: lower /= Void
 	non_void_upper: upper /= Void
 	consistent_reg_exp: operator /= Void implies constExpr /= Void
 end -- class RangeAlternative
