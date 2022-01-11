@@ -1,5 +1,5 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.01 Jan 5th 2022
+// Version 0.99.03 Jan 11th 2022
 system Kernel
 	use "." end // Kernel librray is to be built from all SLang files from the current folder
 end
@@ -1042,31 +1042,30 @@ end // Array [G extend Any init ()]
 end // Array [G extend Any init (), dimentions: (Integer|Integer .. Integer)]
 */
 unit StandardIO alias io
-	readInt: Integer foreign
-	readReal: Real foreign
-	readBoolean: Boolean foreign
-	readChar: Char foreign
-	readString: String foreign
-	// Init procedure is missed or how to set the output is missed !!!!
+	pure get: Integer foreign
+	pure get: Real foreign
+	pure get: Boolean foreign
+	pure get: Character foreign
+	pure get: String foreign
+	// Init procedure is missed or way how to setup IO !!!!
 	pure put (arguments: ()) do
 		while argument in arguments do
 			if argument is
-				:Integer:
+				:Integer
 					putInteger (argument)
-				:Character:
+				:Character
 					putCharacter (argument)
-				:String:
+				:String
 					putString (argument)
-				:Real:
+				:Real
 					putReal (argument)
-				:Boolean:
+				:Boolean
 					putBoolean (argument)
 				else
 					putString (argument.ToString)
 			end
 		end
 	end // put
-	{}: // Implementation routines
 	putInteger (anInteger: Integer) foreign
 	putCharacter (aCharacter: Character) foreign
 	putString (aString: String) foreign
