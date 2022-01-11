@@ -309,7 +309,7 @@ end // Numeric
 
 virtual unit Comparable 
 	pure < (other: as this ): Boolean virtual
-	pure override = (other: as this ): Boolean => not (this < other) and not (other < this)
+	override pure = (other: as this ): Boolean => not (this < other) and not (other < this)
 	pure > (other: as this ): Boolean => other < this
 	pure <= (other: as this ): Boolean => not (other < this)
 	pure >= (other: as this ): Boolean => not (this < other)
@@ -320,19 +320,21 @@ require
 end // Comparable
 
 virtual unit Enumeration extend Comparable
-	pure succ: as this virtual
+	pure succ: as this 
 	/// successor of the current object
 	require
 		not (this = last)
+	virtual
 	ensure
 		return > this /// Successor of the current element is greater than current one
 		this.ord = return.ord - 1 /// Order number of this is order number of its successor minus one
 	end
 	
-	pure pred: as this virtual
+	pure pred: as this 
 	/// predecessor of the current object
 	require	
 		not (this = first)
+	virtual
 	ensure
 		return < this /// Predecessor of the current element is less than current one
 		this.ord = return.ord + 1 /// /// Order number of this is order number of its predecessor plus one
@@ -409,8 +411,8 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	// the caveat how to distingush Integer.1 from Cardinal.1 - now Cardinal constants are not imported into Any due to name clash!!! .... 
 	// Need to think more ...
 	// No need for cardinal so far ... But count should return Cardinal not Integer ...
-	init (other: Integer [???]) do
-	end
+/*	init (other: Integer [???]) do
+	end */
 end
 
 val unit Integer extend Integer [Platform.IntegerBitsCount]
