@@ -1066,11 +1066,11 @@ unit StandardIO alias io
 			end
 		end
 	end // put
-	putInteger (anInteger: Integer) foreign
-	putCharacter (aCharacter: Character) foreign
-	putString (aString: String) foreign
-	putReal (aReal: Real) foreign
-	putBoolean (aBoolean: Boolean) foreign
+	put (anInteger: Integer) foreign
+	put (aCharacter: Character) foreign
+	put (aString: String) foreign
+	put (aReal: Real) foreign
+	put (aBoolean: Boolean) foreign
 end // StandardIO
 
 // How to deal with dynamic objects .... WIP !!!
