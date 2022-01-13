@@ -7850,36 +7850,36 @@ invariant
 	expression_not_void: expr /= Void
 end -- class AlternativeTagDescriptor
 
-class UnitTypeAlternative
--- UnitType
-inherit
-	AlternativeTagDescriptor
-	end
-create
-	init
-feature {Any}
-	unitTypeDsc: UnitTypeCommonDescriptor
-	init (t: like unitTypeDsc) is
-	require
-		unit_type_not_void: t /= Void 
-	do
-		unitTypeDsc := t
-	end -- init
-	sameAs (other: like Current): Boolean is
-	do
-		Result := unitTypeDsc.sameAs (other.unitTypeDsc)
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	do
-		Result := unitTypeDsc < other.unitTypeDsc
-	end -- lessThan
-	out: String is
-	do
-		Result := unitTypeDsc.out
-	end -- out
-invariant
-	unit_type_not_void: unitTypeDsc /= Void 
-end -- class UnitTypeAlternative
+-- class UnitTypeAlternative
+-- -- UnitType
+-- inherit
+-- 	AlternativeTagDescriptor
+-- 	end
+-- create
+-- 	init
+-- feature {Any}
+-- 	unitTypeDsc: UnitTypeCommonDescriptor
+-- 	init (t: like unitTypeDsc) is
+-- 	require
+-- 		unit_type_not_void: t /= Void 
+-- 	do
+-- 		unitTypeDsc := t
+-- 	end -- init
+-- 	sameAs (other: like Current): Boolean is
+-- 	do
+-- 		Result := unitTypeDsc.sameAs (other.unitTypeDsc)
+-- 	end -- sameAs
+-- 	lessThan (other: like Current): Boolean is
+-- 	do
+-- 		Result := unitTypeDsc < other.unitTypeDsc
+-- 	end -- lessThan
+-- 	out: String is
+-- 	do
+-- 		Result := unitTypeDsc.out
+-- 	end -- out
+-- invariant
+-- 	unit_type_not_void: unitTypeDsc /= Void 
+-- end -- class UnitTypeAlternative
 
 class RangeAlternative
 -- Expression ["|"OperatorName ConstantExpression] ".." Expression

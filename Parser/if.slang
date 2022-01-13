@@ -21,12 +21,12 @@ else
 end
 
 if a is
-   :1:
-   :2: 
+   :1
+   :2 
 elsif b do
 elsif c is
-   :3:
-   :4:
+   :3
+   :4
 else
 end
 

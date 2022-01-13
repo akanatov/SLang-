@@ -6,13 +6,15 @@ if argument is
 	:String
 		putString (argument)
 	: T1, T2, T3
-	: T4, T5
+	: T4, T5, T6 .. T7
 		do_action
 		a := if a is 
 			:T1 1
 			:T2 2
 			else 3
 		
+	: T7
+	: T2
 	else
 		putString (argument.ToString)
 end

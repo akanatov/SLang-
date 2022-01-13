@@ -3311,7 +3311,6 @@ feature {None}
 		alternatives: Array [AlternativeDescriptor] -- IS
 		statements: Array [StatementDescriptor] -- DO
 
---		exprAlternatives: Array [ValueExprPair] -- IS
 		exprAlternatives: Array [IfExpressionAlternative] -- IS
 		doExpr: ExpressionDescriptor -- DO
 
