@@ -3941,7 +3941,7 @@ feature {None}
 	end -- parseMultiVarParameter
 
 	parseParameterBlock (autoGen: Boolean): Array [ParameterDescriptor] is
-	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“as” Identifier))
+	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“as” Identifier [“:=”]))
 	-- Just put them all into array!!!
 	require
 		valid_token: scanner.token = scanner.identifier_token or else scanner.token = scanner.var_token
@@ -3949,23 +3949,25 @@ feature {None}
 		parDsc: ParameterDescriptor
 		exprDsc: ExpressionDescriptor
 		typeDsc: TypeDescriptor
-		--anchorDsc : AnchorTypeDescriptor
 		name: String
-		--wasError: Boolean
+		genAssignment: Boolean
 	do
 		inspect
 			scanner.token
 		when scanner.as_token then
 			scanner.nextToken
 			if scanner.token = scanner.identifier_token then
-				--create anchorDsc.init (scanner.tokenString, Void)
-				--anchorDsc.setAutoGen (autoGen)
-				create {AsAttributeParameterDescriptor} parDsc.init (scanner.tokenString) --False, Void, anchorDsc, Void)
-					-- Process name as Void !!!
-				Result := <<parDsc>>
+				name := scanner.tokenString
 				scanner.nextToken
+				if scanner.token = scanner.assignment_token then
+					scanner.nextToken
+					genAssignment := True
+				else
+					genAssignment := autoGen
+				end -- if
+				create {AsAttributeParameterDescriptor} parDsc.init (name, genAssignment)
+				Result := <<parDsc>>
 			else
-				--wasError := True
 				syntax_error (<<scanner.identifier_token>>)
 			end -- if
 		when scanner.identifier_token then
@@ -4012,7 +4014,7 @@ feature {None}
 	end -- parseParameterBlock
 	
 	parseParameters: Array [ParameterDescriptor] is
-	-- Parameters: “(”[“:=”]Parameter{”;” Parameter}“)”
+	-- Parameters: “(”[[“:=”]Parameter{”;””|”,” Parameter}]“)”
 	--              ^
 	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“as” Identifier))
 
@@ -4046,7 +4048,7 @@ feature {None}
 	end -- parseParameters
 
 	parseParameters1 (autoGen: Boolean): Array [ParameterDescriptor] is
-	-- Parameters: Parameter{”;” Parameter}“)”
+	-- Parameters: Parameter{”;””|”,” Parameter}“)”
 	--             ^
 	-- Parameter : ([[var] Identifier{“,” [var] Identifier} “:”] Type)|(Identifier “is” Expression)
 	require
@@ -4088,13 +4090,13 @@ feature {None}
 						end -- loop 
 						inspect
 							scanner.token
-						when scanner.semicolon_token then
+						when scanner.semicolon_token, scanner.comma_token then
 							scanner.nextToken
 						when scanner.right_paranthesis_token then
 							scanner.nextToken
 							toLeave := True
 						else
-							syntax_error (<<scanner.semicolon_token, scanner.right_paranthesis_token>>)
+							syntax_error (<<scanner.semicolon_token, scanner.comma_token, scanner.right_paranthesis_token>>)
 							toLeave := True
 							wasError := True
 						end -- if
@@ -7869,11 +7871,11 @@ feature {None}
 			o.newLine
 		end -- if
 		errorsCount := errorsCount + 1
-		if message = Void then
-			o.put ("Error at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "` is found, but expected: `")
-		else
-			o.put ("Error at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - " + message + ": `" + scanner.tokenName(scanner.token) + "` is found, but expected: `")
+		o.put ("Error at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - ")
+		if message /= Void then
+			o.put (message + ": ")
 		end -- if
+		o.put ("`" + scanner.tokenName(scanner.token) + "` is found, but expected: `")
 		from 
 			i := 1
 			n := tokens_expected.count
@@ -7888,16 +7890,15 @@ feature {None}
 		end
 		o.put ('`')
 		o.newLine
---if  i / 0 = 0 then end 
-		if toForward then
--- Temporary solution when follwers are not used!!!
-inspect 
-	tokens_expected.item(1)
-when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
-	followers.put (scanner.end_token, 1)
-else
-end -- loop
---followers.force (scanner.semicolon_token, followers.count + 1) // Stop skipiing at the end of line or semicolon
+		if True then -- toForward then
+---- Temporary solution when follwers are not used!!!
+--inspect 
+--	tokens_expected.item(1)
+--when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
+--	followers.put (scanner.end_token, 1)
+--else
+--end -- inspect
+--followers.force (scanner.semicolon_token, followers.count + 1) // Stop skiping at the end of line or semicolon
 			from 
 				n := followers.count
 				i := 1
@@ -7925,20 +7926,27 @@ end -- loop
 					if followers.item (i) = scanner.semicolon_token then
 						skipTillSeparator := True
 					end -- if
-					if scanner.token = followers.item (i) then
-						--scanner.nextToken -- get next token 
+					inspect 
+						scanner.token
+					when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
 						o.putNL ("Code skipped upto " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "`, parsing resumed")
 						toLeave := True
 						i := n + 1
 					else
-						i := i + 1
-					end -- if
+						if scanner.token = followers.item (i) then
+							o.putNL ("Code skipped upto " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "`, parsing resumed")
+							toLeave := True
+							i := n + 1
+						else
+							i := i + 1
+						end -- if
+					end -- inspect
 				end -- loop
 			end -- loop
 		end -- if
 	end -- syntaxError
 
-	toForward: Boolean is True
+	--toForward: Boolean is True
 
 	scanner: SLang_Scanner
 

@@ -965,33 +965,35 @@ feature {Any}
 	name: String
 	is_equal (other: like Current): Boolean is
 	do
-		Result := weight = other.weight and then name.is_equal (other.name) and then sameAs (other)
+		Result := name.is_equal (other.name)
+--		Result := weight = other.weight and then name.is_equal (other.name) and then sameAs (other)
 	end -- is_equal
 	infix "<"  (other: like Current): Boolean is
 	do
-		Result := weight < other.weight
-		if not Result and then weight = other.weight then
-			Result := name < other.name
-			if not Result and then name.is_equal (other.name) then
-				Result := lessThan (other)
-			end -- if
-		end -- if
+		Result := name < other.name
+--		Result := weight < other.weight
+--		if not Result and then weight = other.weight then
+--			Result := name < other.name
+--			if not Result and then name.is_equal (other.name) then
+--				Result := lessThan (other)
+--			end -- if
+--		end -- if
 	end -- infix "<"
 	setType (aType: TypeDescriptor) is
 	require
 		type_not_void: aType /= Void
 	do
 	end -- setType
-	sameAs (other: like Current): Boolean is
-	deferred
-	end -- sameAs
-	lessThan(other: like Current): Boolean is
-	deferred
-	end -- lessThan
-feature {ParameterDescriptor}
-	weight: Integer is
-	deferred
-	end -- weight
+--	sameAs (other: like Current): Boolean is
+--	deferred
+--	end -- sameAs
+--	lessThan(other: like Current): Boolean is
+--	deferred
+--	end -- lessThan
+--feature {ParameterDescriptor}
+--	weight: Integer is
+--	deferred
+--	end -- weight
 invariant
 	name_not_void: name /= Void
 end -- class ParameterDescriptor
@@ -1016,17 +1018,17 @@ feature {Any}
 			Result := name + ": " + type.out
 		end -- if
 	end
-	sameAs (other: like Current): Boolean is
-	do
-		Result := isVar = other.isVar and then type.is_equal (other.type)
-	end -- sameAs
-	lessThan(other: like Current): Boolean is
-	do
-		Result := not isVar and then other.isVar
-		if not Result and then isVar = other.isVar then
-			Result := type < other.type
-		end -- if
-	end -- lessThan
+--	sameAs (other: like Current): Boolean is
+--	do
+--		Result := isVar = other.isVar and then type.is_equal (other.type)
+--	end -- sameAs
+--	lessThan(other: like Current): Boolean is
+--	do
+--		Result := not isVar and then other.isVar
+--		if not Result and then isVar = other.isVar then
+--			Result := type < other.type
+--		end -- if
+--	end -- lessThan
 	setType (aType: like type) is
 	do
 		type := aType
@@ -1041,7 +1043,7 @@ feature {None}
 		name := aName
 		type := aType
 	end -- init
-	weight: Integer is 0
+--	weight: Integer is 0
 invariant
 	type_not_void: type /= Void
 end  -- class NamedParameterDescriptor
@@ -1059,14 +1061,14 @@ feature {Any}
 	do
 		Result := name + " is " + value.out
 	end
-	sameAs (other: like Current): Boolean is
-	do
-		Result := value.is_equal (other.value)
-	end -- sameAs
-	lessThan(other: like Current): Boolean is
-	do
-		Result := value < other.value
-	end -- lessThan
+--	sameAs (other: like Current): Boolean is
+--	do
+--		Result := value.is_equal (other.value)
+--	end -- sameAs
+--	lessThan(other: like Current): Boolean is
+--	do
+--		Result := value < other.value
+--	end -- lessThan
 feature {None}
 	init (aName: like name; v: like value) is
 	require
@@ -1076,7 +1078,7 @@ feature {None}
 		name := aName
 		value := v
 	end -- init
-	weight: Integer is 1
+--	weight: Integer is 1
 invariant
 	value_not_void: value /= Void
 end  -- class InitialisedParameterDescriptor
@@ -1089,25 +1091,27 @@ inherit
 create 
 	init
 feature {Any}
+	autoGenAssignment: Boolean
 	out: String is
 	do
 		Result := "as " + name
 	end -- out
-	sameAs (other: like Current): Boolean is
-	once
-		Result := True
-	end -- sameAs
-	lessThan(other: like Current): Boolean is
-	once
-	end -- lessThan
+--	sameAs (other: like Current): Boolean is
+--	once
+--		Result := True
+--	end -- sameAs
+--	lessThan(other: like Current): Boolean is
+--	once
+--	end -- lessThan
 feature {None}
-	init (aName: like name) is
+	init (aName: like name; b: Boolean) is
 	require
 		non_void_name: aName /= Void
 	do
 		name := aName
+		autoGenAssignment := b
 	end -- init
-	weight: Integer is 2
+--	weight: Integer is 2
 end  -- class AsAttributeParameterDescriptor
 
 class EnclosedUseEementDescriptor
@@ -2212,7 +2216,8 @@ feature {Any}
 				until
 					i > n
 				loop
-					if parameters.item (i).sameAs (other.parameters.item (i)) then
+--					if parameters.item (i).sameAs (other.parameters.item (i)) then
+					if parameters.item (i).is_equal (other.parameters.item (i)) then
 						i := i + 1
 					else
 						Result := False
@@ -2239,10 +2244,12 @@ feature {Any}
 			until
 				i > n
 			loop
-				if parameters.item (i).lessThan (other.parameters.item (i)) then
+--				if parameters.item (i).lessThan (other.parameters.item (i)) then
+				if parameters.item (i) < other.parameters.item (i) then
 					Result := True
 					i := n + 1
-				elseif parameters.item (i).sameAs (other.parameters.item (i)) then
+--				elseif parameters.item (i).sameAs (other.parameters.item (i)) then
+				elseif parameters.item (i).is_equal (other.parameters.item (i)) then
 					i := i + 1
 				else
 					i := n + 1
