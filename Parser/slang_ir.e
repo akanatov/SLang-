@@ -979,11 +979,11 @@ feature {Any}
 --			end -- if
 --		end -- if
 	end -- infix "<"
-	setType (aType: TypeDescriptor) is
-	require
-		type_not_void: aType /= Void
-	do
-	end -- setType
+--	setType (aType: TypeDescriptor) is
+--	require
+--		type_not_void: aType /= Void
+--	do
+--	end -- setType
 --	sameAs (other: like Current): Boolean is
 --	deferred
 --	end -- sameAs
@@ -999,11 +999,11 @@ invariant
 end -- class ParameterDescriptor
 
 class NamedParameterDescriptor
--- Parameter: [[var] Identifier “:” Type
+-- Parameter: [[var] Identifier ":" Type
 inherit	
 	ParameterDescriptor
-		redefine
-			setType
+--		redefine
+--			setType
 	end
 create 
 	init --, make
@@ -1030,6 +1030,8 @@ feature {Any}
 --		end -- if
 --	end -- lessThan
 	setType (aType: like type) is
+	require
+		type_not_void: aType /= Void
 	do
 		type := aType
 	end -- setType
@@ -1049,52 +1051,56 @@ invariant
 end  -- class NamedParameterDescriptor
 
 class InitialisedParameterDescriptor
--- Parameter: Identifier “is” Expression
+-- Parameter: Identifier "is" Expression
 inherit	
 	ParameterDescriptor
 	end
 create 
 	init
 feature {Any}
-	value: ExpressionDescriptor
+	expr: ExpressionDescriptor
 	out: String is
 	do
-		Result := name + " is " + value.out
+		Result := name + " is " + expr.out
 	end
 --	sameAs (other: like Current): Boolean is
 --	do
---		Result := value.is_equal (other.value)
+--		Result := expr.is_equal (other.expr)
 --	end -- sameAs
 --	lessThan(other: like Current): Boolean is
 --	do
---		Result := value < other.value
+--		Result := expr < other.expr
 --	end -- lessThan
 feature {None}
-	init (aName: like name; v: like value) is
+	init (aName: like name; e: like expr) is
 	require
 		non_void_name: aName /= Void
-		non_void_value: v /= Void
+		non_void_expression: e /= Void
 	do
 		name := aName
-		value := v
+		expr := e
 	end -- init
 --	weight: Integer is 1
 invariant
-	value_not_void: value /= Void
+	expression_not_void: expr /= Void
+	name_not_void: name /= Void
 end  -- class InitialisedParameterDescriptor
 
-class AsAttributeParameterDescriptor
--- Parameter: “as” Identifier
+class AssignAttributeParameterDescriptor
+-- Parameter: ":=" [Identifier]
 inherit	
 	ParameterDescriptor
 	end
 create 
 	init
 feature {Any}
-	autoGenAssignment: Boolean
+	--autoGenAssignment: Boolean
 	out: String is
 	do
-		Result := "as " + name
+		Result := ":= "
+		if name /= Void then
+			Result.append_string (name)
+		end -- if
 	end -- out
 --	sameAs (other: like Current): Boolean is
 --	once
@@ -1104,15 +1110,15 @@ feature {Any}
 --	once
 --	end -- lessThan
 feature {None}
-	init (aName: like name; b: Boolean) is
-	require
-		non_void_name: aName /= Void
+	init (aName: like name) is --; b: Boolean) is
+	--require
+	--	non_void_name: aName /= Void
 	do
 		name := aName
-		autoGenAssignment := b
+		--autoGenAssignment := b
 	end -- init
 --	weight: Integer is 2
-end  -- class AsAttributeParameterDescriptor
+end  -- class AssignAttributeParameterDescriptor
 
 class EnclosedUseEementDescriptor
 --9 UnitTypeNameDescriptor [as Identifier]]

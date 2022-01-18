@@ -315,6 +315,7 @@ virtual unit Comparable
 	pure >= (other: as this ): Boolean => not (this < other)
 	pure max (other: as this ): as this => if this > other do this else other
 	pure min (other: as this ): as this => if this < other do this else other
+	pure compare alias cmp (other: as this): -1 .. 1 => if this = other do 1 elsif this < other do -1 else 1;
 require
 	not ( this < this ) /// Irreflexive comparison
 end // Comparable
@@ -411,6 +412,8 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	// the caveat how to distingush Integer.1 from Cardinal.1 - now Cardinal constants are not imported into Any due to name clash!!! .... 
 	// Need to think more ...
 	// No need for cardinal so far ... But count should return Cardinal not Integer ...
+	// x is y.count
+	// if x = 1 it means that both Cardinal & Integer should have function '=' with another integral type !!!!
 /*	init (other: Integer [???]) do
 	end */
 end
@@ -426,7 +429,7 @@ val unit Integer extend Integer [Platform.IntegerBitsCount]
 end // Integer
 
 val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
-	const: // That is ordered set defined as range of all Integer constant values (objects)
+	const : // That is ordered set defined as range of all Integer constant values (objects)
 		minInteger .. maxInteger
 	end
 	const minInteger is - (2 ^ (BitsNumber - 1))
@@ -516,8 +519,13 @@ val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
 		raise "Not implemented!!!"
 	end
 	override = (other: as this): Boolean do
-		// Bit-level implementation of Inetegr equal
+		// Bit-level implementation of Integer equal
 		return data = other.data
+	end
+	override = (other: Cardinal[BitsNumber]): Boolean do
+		// Bit-level implementation of Integer-Cardinal comparison
+		raise "Not implemented!!!"
+		//return data = other.data
 	end
 	override := (other: val Integer) do
 		init (other)
@@ -536,6 +544,10 @@ val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
 			data := other.data // Size of data is different!!!
 		else
 		end*/
+	end
+	:= (other: Cardinal[BitsNumber]) do
+		// Assign cardinal to integer
+		raise "Not implemented!!!"
 	end
 	pure toCharacter: Character
 	require
@@ -1136,7 +1148,8 @@ end
 
 virtual unit MemberDescriptor
 	final name: String
-end
+end // MemberDescriptor
+
 virtual unit RoutineDescriptor extend MemberDescriptor
 	final arguments: Array [ArgumentDescriptor]
 end // RoutineDescriptor
@@ -1148,6 +1161,7 @@ final unit ProcedureDescriptor extend RoutineDescriptor
 		name is aName
 		arguments is args
 	end
+//	init (:= name; := arguments)
 end // Procedure [Arguments -> ()]
 
 final unit FunctionDescriptor extend RoutineDescriptor
@@ -1155,11 +1169,12 @@ final unit FunctionDescriptor extend RoutineDescriptor
 	() alias apply (args: Arguments): Any foreign
 		// That is a function call
 	init (aName: as name; args: as arguments; aType: as type) do
-		name := aName
-		arguments := args
-		type := aType
+		name is aName
+		arguments is args
+		type is aType
 	end
-end // Function [Arguments -> (), Result]*/
+//	init (:= name; := arguments; := type)
+end // Function [Arguments -> (), Result]
 
 virtual unit AttributeDescriptor extend MemberDescriptor
 	value: Any
@@ -1175,6 +1190,7 @@ final unit VariableDescriptor  extend AttributeDescriptor
 		type is aType
 		value is aValue
 	end
+//	init (:= name; := type; := value)
 end // VariableDescriptor
 
 final unit ConstantDescriptor  extend AttributeDescriptor 
@@ -1183,6 +1199,7 @@ final unit ConstantDescriptor  extend AttributeDescriptor
 		type is aType
 		value is aValue
 	end
+//	init (:= name; := type; := value)
 end // ConstantDescriptor
 
 final unit TypeDescriptior
@@ -1196,4 +1213,5 @@ final unit TypeDescriptior
 		routines is rtns
 		attributes is attrs
 	end
-end
+//	init (:= name; := parents; := routines; := attributes)
+end // TypeDescriptior

@@ -17,6 +17,26 @@ end -- trace
 
 	o: Output
 
+feature {None}
+	validToken (tokens: Array [Integer]): Boolean is
+	require
+		non_void_tokens: tokens /= Void
+	local
+		i, n: Integer
+	do
+		from
+			n := tokens.count
+		until
+			i > n
+		loop
+			if scanner.token = tokens.item (i) then
+				Result := True	
+				i := n + 1
+			else
+				i := i + 1
+			end -- if
+		end -- loop
+	end -- validToken
 feature {Any}
 
 	errorsCount: Integer
@@ -363,7 +383,7 @@ feature {None}
 
 	parseSystemDescription: SystemDescriptor is
 	require
-		valid_token: scanner.token = scanner.system_token
+		valid_token: validToken (<<scanner.system_token>>)
 		-- Context: system (Identifier| StringConstant) 
 		-- [init Identifier]
 		-- [use {(Identifier| StringConstant) [“:” Options end]} end]
@@ -457,7 +477,7 @@ feature {None}
 	parseFunctionOrLocalAttribute (name: String) is
 		-- ident: function defintion or local attribute !!!
 	require
-		valid_token: scanner.token = scanner.colon_token
+		valid_token: validToken (<<scanner.colon_token>>)
 		name_not_void: name /= Void
 	local
 		type: TypeDescriptor
@@ -532,12 +552,7 @@ feature {None}
 	--        ^ 
 	require
 		target_not_void: name /= Void
-		valid_token: 
-			scanner.token = scanner.operator_token or else
-			scanner.token = scanner.minus_token or else
-			scanner.token = scanner.bar_token or else
-			scanner.token = scanner.tilda_token or else
-			scanner.token = scanner.identifier_token
+		valid_token: validToken (<<scanner.operator_token, scanner.minus_token, scanner.bar_token, scanner.tilda_token, scanner.identifier_token>>)
 	local
 		callChain: Array [CallChainElement]
 		arguments: Array [ExpressionDescriptor]
@@ -578,7 +593,7 @@ feature {None}
 	-- 		name (id,..., operator		>> unqualified call or assignment
 	require
 		name_not_void: name /= Void
-		valid_token: scanner.token = scanner.left_paranthesis_token
+		valid_token: validToken (<<scanner.left_paranthesis_token>>)
 	local	
 		nextName: String
 		toLeave: Boolean
@@ -795,7 +810,7 @@ feature {None}
 
 	parseTupleExpression (firstExprDsc: ExpressionDescriptor): ExpressionDescriptor is
 	require
-		valid_token: scanner.token = scanner.comma_token
+		valid_token: validToken (<<scanner.comma_token>>)
 	local
 		expressions: Array [ExpressionDescriptor]
 		exprDsc: ExpressionDescriptor
@@ -848,7 +863,7 @@ feature {None}
 	parseAssignmentOrQualifiedCall: StatementDescriptor is
 	-- Anonymous routine: turple assignment statement (a, b) := expr or ().foo ...
 	require
-		valid_token: scanner.token = scanner.left_paranthesis_token
+		valid_token: validToken (<<scanner.left_paranthesis_token>>)
 	local
 		expressions: Array [ExpressionDescriptor]
 		exprDsc: ExpressionDescriptor
@@ -927,8 +942,8 @@ feature {None}
 	-- 3: ident: ....
 	-- 4: is Expr 
 	require
-		valid_token_1: isVar implies scanner.token = scanner.var_token
-		valid_token_2: not isVar implies name /= Void and then (scanner.token = scanner.comma_token or else scanner.token = scanner.colon_token or else scanner.token = scanner.is_token)	
+		valid_token_1: isVar implies validToken (<<scanner.var_token>>)
+		valid_token_2: not isVar implies name /= Void and then (validToken (<<scanner.comma_token, scanner.colon_token, scanner.is_token>>))	
 	local
 		type: TypeDescriptor
 		detDsc: DetachableTypeDescriptor
@@ -1125,7 +1140,7 @@ feature {None}
 	parseAssignmentToIdentifierStatement (name:String): AssignmentStatementDescriptor is
 	-- Anonymous routine assignemnt : ident := 
 	require
-		valid_token: scanner.token = scanner.assignment_token
+		valid_token: validToken (<<scanner.assignment_token>>)
 	local
 		writable: IdentifierDescriptor
 		expr: ExpressionDescriptor
@@ -1199,7 +1214,7 @@ feature {None}
 	parseInnerBlock (checkForLoop: Boolean): InnerBlockDescriptor is 
 	-- do [“{”Identifier {“,” Identifier} “}”]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
 	require
-		valid_token: scanner.token = scanner.do_token or else scanner.token = scanner.left_curly_bracket_token
+		valid_token: validToken (<<scanner.do_token, scanner.left_curly_bracket_token>>)
 	local
 		invariantOffList: Sorted_Array [String]
 		commaFound: Boolean
@@ -1348,7 +1363,7 @@ feature {None}
 	parseExceptionHandlingCaluse (whenClauses: Array [WhenClauseDescriptor]; whenElseClause: Array [StatementDescriptor]) is
 	-- [ WhenClause {WhenClause} [else [StatementsList]]]
 	require
-		valid_token: scanner.token = scanner.when_token
+		valid_token: validToken (<<scanner.when_token>>)
 		non_void_whenClauses: whenClauses /= Void
 		non_void_whenElseClause: whenElseClause /= Void
 	local
@@ -1423,7 +1438,7 @@ feature {None}
 
 	parseMemberCallWithConstant (constDsc: ConstantDescriptor): ConstantCallDescriptor is
 	require
-		valid_token: scanner.token = scanner.dot_token
+		valid_token: validToken (<<scanner.dot_token>>)
 		const_dsc_not_void:  constDsc /= Void
 	local
 		callChain: Array [CallChainElement]
@@ -1456,8 +1471,7 @@ feature {None}
 	--         ^                   ^            ^
 	require
 		non_void_entity_descriptor: ceDsc /= Void
-		valid_token: scanner.token = scanner.dot_token or else scanner.token = scanner.left_paranthesis_token or else
-			scanner.token = scanner.left_curly_bracket_token
+		valid_token: validToken (<<scanner.dot_token, scanner.left_paranthesis_token, scanner.left_curly_bracket_token>>)
 	local
 		callChain: Array [CallChainElement]
 		arguments: Array [ExpressionDescriptor]
@@ -2421,10 +2435,7 @@ feature {None}
 	--32 Expression [“{”OperatorName ConstantExpression "}"] “..”Expression
 	-- Conflict !!!! a is 5 {} foo do end !!!
 	require
-		valid_token: 
-			scanner.token = scanner.period_token or else 
-			scanner.token = scanner.left_curly_bracket_token or else
-			scanner.token = scanner.left_square_bracket_token
+		valid_token: validToken (<<scanner.period_token, scanner.left_curly_bracket_token, scanner.left_square_bracket_token>>)
 		non_void_lower_expr: left /= Void
 	local
 		right: ExpressionDescriptor
@@ -2477,13 +2488,8 @@ feature {None}
 	--parseBinaryOperatorExpression (exprDsc1: MemberCallDescriptor; checkSemicolonAfter: Boolean ): ExpressionCallDescriptor is --ExprOperatorExprDescriptor is
 	require
 		first_expression_not_void: exprDsc1 /= Void
-		valid_token:
-			scanner.token = scanner.operator_token or else 
-			scanner.token = scanner.minus_token or else 
-			scanner.token = scanner.less_token or else 
-			scanner.token = scanner.greater_token or else 
-			scanner.token = scanner.tilda_token or else
-			scanner.token = scanner.bar_token
+		valid_token: validToken (<<scanner.operator_token, scanner.minus_token, scanner.less_token, scanner.greater_token,
+			scanner.tilda_token, scanner.bar_token>>)
 	local
 		exprDsc2: ExpressionDescriptor
 		operator: String
@@ -2567,7 +2573,7 @@ feature {None}
 	-- LambdaExpression: (rtn Identifier [Signature]) | InlineLambdaExpression
 	-- InlineLambdaExpression  : [pure|safe] rtn [Parameters] [“:” Type] ( [RequireBlock] InnerBlock | foreign [EnsureBlock] [end] )|(“=>”Expression )
 	require
-		valid_token: scanner.token = scanner.rtn_token or else scanner.token =  scanner.pure_token or else scanner.token =  scanner.safe_token
+		valid_token: validToken (<<scanner.rtn_token, scanner.pure_token, scanner.safe_token>>)
 	local
 		name: String
 		signDsc: SignatureDescriptor
@@ -2693,7 +2699,7 @@ feature {None}
 	parseReturnStatement: StatementDescriptor is
 	--51
 	require
-		valid_start_token: scanner.token = scanner.return_token
+		valid_start_token: validToken (<<scanner.return_token>>)
 	local
 		exprDsc: ExpressionDescriptor
 		skipReturnCheck: Boolean
@@ -2728,7 +2734,7 @@ feature {None}
 	parseRaiseStatement: RaiseStatementDescriptor is
 	--52
 	require
-		valid_start_token: scanner.token = scanner.raise_token
+		valid_start_token: validToken (<<scanner.raise_token>>)
 	do
 		scanner.nextWithSemicolon (True)
 		inspect
@@ -2754,7 +2760,7 @@ feature {None}
 	parseDetachStatement: DetachStatementDescriptor is
 	--53
 	require
-		valid_start_token: scanner.token = scanner.detach_token
+		valid_start_token: validToken (<<scanner.detach_token>>)
 	do
 		scanner.nextToken
 		if scanner.token = scanner.identifier_token then -- ? identifier
@@ -2767,7 +2773,7 @@ feature {None}
 	parseNewExpression: NewExpressionDescriptor is
 	-- NewExpression: new UnitType [“.”init] [ Arguments ]
 	require
-		valid_start_token: scanner.token = scanner.new_token
+		valid_start_token: validToken (<<scanner.new_token>>)
 	local
 		utDsc: UnitTypeCommonDescriptor
 		args: Array [ExpressionDescriptor]
@@ -2795,7 +2801,7 @@ feature {None}
 	-- NewExpression: new UnitType [“.”init] [ Arguments ]
 
 	require
-		valid_start_token: scanner.token = scanner.new_token
+		valid_start_token: validToken (<<scanner.new_token>>)
 	local
 		utDsc: UnitTypeCommonDescriptor
 		args: Array [ExpressionDescriptor]
@@ -3095,7 +3101,7 @@ feature {None}
 	-- 	AlternativeTags: AlternativeTag {“,” AlternativeTag}
 
 	require	
-		valid_alternative_start_token: scanner.token = scanner.colon_token
+		valid_alternative_start_token: validToken (<<scanner.colon_token>>)
 	local
 		curTagsList: Sorted_Array [AlternativeTagDescriptor]
 		tagsList: Sorted_Array [AlternativeTagDescriptor]
@@ -3135,7 +3141,7 @@ feature {None}
 	parseExprAlternatives: Array [IfExpressionAlternative] is
 	-- ExpressionAlternatives: “:”AlternativeTags Expression {“:”AlternativeTags Expression}
 	require	
-		valid_alternative_start_token: scanner.token = scanner.colon_token
+		valid_alternative_start_token: validToken (<<scanner.colon_token>>)
 	local
 		curTagsList: Sorted_Array [AlternativeTagDescriptor]
 		tagsList: Sorted_Array [AlternativeTagDescriptor]
@@ -3292,7 +3298,7 @@ feature {None}
 	-- IfBodyExpression: “:” ValueAlternative Expression {“:” ValueAlternative Expression}
 	
 	require
-		valid_start_token: scanner.token = scanner.if_token
+		valid_start_token: validToken (<<scanner.if_token>>)
 		semicolon_consistency: checkSemicolonAfter implies not isStatement
 	local
 		-- IfStatementDescriptor
@@ -3500,7 +3506,7 @@ feature {None}
 	--57 General Loop	: [while BooleanExpression] [RequireBlock] InnerBlock [while BooleanExpression] [EnsureBlock] end
 	--57 While Loop		: while BooleanExpression [RequireBlock] InnerBlock [EnsureBlock] end
 	require
-		valid_start_token: scanner.token = scanner.while_token
+		valid_start_token: validToken (<<scanner.while_token>>)
 	local
 		exprDsc: ExpressionDescriptor
 		preconditions: Array [PredicateDescriptor]
@@ -3558,7 +3564,7 @@ feature {None}
 	-- [RequireBlock]  ( ( InnerBlock [EnsureBlock] end ) | ( foreign| (“=>”Expression ) [EnsureBlock end] )
 
 	require
-		valid_token : scanner.token = scanner.identifier_token
+		valid_token : validToken (<<scanner.identifier_token>>)
 		pure_consistent: is_pure implies not is_safe
 		safe_consistent: is_safe implies not is_pure
 	local
@@ -3595,7 +3601,7 @@ feature {None}
 	parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc: UnitDeclarationDescriptor; isOverriding, isFinal: Boolean; is_pure, is_safe: Boolean; name: String; returnType: TypeDescriptor): MemberDeclarationDescriptor is
 	require
 		return_type_not_void: returnType /= Void
-		valid_token: scanner.token = scanner.require_token
+		valid_token: validToken (<<scanner.require_token>>)
 		current_unit_not_void: unitDsc /= Void
 	local
 		preconditions: Array [PredicateDescriptor]	
@@ -3842,7 +3848,7 @@ feature {None}
 		end -- if	
 	end -- parseAnyRoutineWithPreconditions
 
-	parseMultiVarParameter (aResult: Array [ParameterDescriptor]): Array [ParameterDescriptor] is
+	parseMultiVarParameter (aResult: Array [NamedParameterDescriptor]): Array [NamedParameterDescriptor] is
 	-- when scanner.comma_token then
 	-- ident , ....
 	--         ^
@@ -3850,7 +3856,7 @@ feature {None}
 	-- var ident ...
 	-- ^
 	require
-		array_not_void: aResult /= Void
+		array_not_void: aResult /= Void and then aResult.count < 2
 		consistent1: scanner.token = scanner.var_token implies aResult.count = 0
 		consistent2: scanner.token = scanner.comma_token implies aResult.count = 1	
 	local
@@ -3941,34 +3947,37 @@ feature {None}
 	end -- parseMultiVarParameter
 
 	parseParameterBlock (autoGen: Boolean): Array [ParameterDescriptor] is
-	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“as” Identifier [“:=”]))
+	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“:=” [Identifier]))
 	-- Just put them all into array!!!
 	require
-		valid_token: scanner.token = scanner.identifier_token or else scanner.token = scanner.var_token
+		valid_token: validToken (<<scanner.identifier_token, scanner.var_token, scanner.assignment_token>>)
 	local
 		parDsc: ParameterDescriptor
+		namedParDsc: NamedParameterDescriptor
 		exprDsc: ExpressionDescriptor
 		typeDsc: TypeDescriptor
 		name: String
-		genAssignment: Boolean
+		--genAssignment: Boolean
 	do
 		inspect
 			scanner.token
-		when scanner.as_token then
+		when scanner.assignment_token then
 			scanner.nextToken
 			if scanner.token = scanner.identifier_token then
 				name := scanner.tokenString
-				scanner.nextToken
-				if scanner.token = scanner.assignment_token then
-					scanner.nextToken
-					genAssignment := True
-				else
-					genAssignment := autoGen
-				end -- if
-				create {AsAttributeParameterDescriptor} parDsc.init (name, genAssignment)
+				scanner.nextWithSemicolon (True)
+				--if scanner.token = scanner.assignment_token then
+				--	scanner.nextWithSemicolon (True)
+				--	genAssignment := True
+				--else
+				--	genAssignment := autoGen
+				--end -- if
+				create {AssignAttributeParameterDescriptor} parDsc.init (name) --, genAssignment)
 				Result := <<parDsc>>
 			else
-				syntax_error (<<scanner.identifier_token>>)
+				create {AssignAttributeParameterDescriptor} parDsc.init (Void) 
+				Result := <<parDsc>>
+				--syntax_error (<<scanner.identifier_token>>)
 			end -- if
 		when scanner.identifier_token then
 			name := scanner.tokenString
@@ -3989,70 +3998,73 @@ feature {None}
 				typeDsc := parseTypeDescriptorWithSemicolon
 				if typeDsc /= Void then
 --trace ("Parameter: " + name + ": " + typeDsc.out)
-					create {NamedParameterDescriptor} parDsc.init (False, name, typeDsc)
-					Result := <<parDsc>>
+					create namedParDsc.init (False, name, typeDsc)
+					Result := <<namedParDsc>>
 				end -- if
 			when scanner.comma_token then
 				-- ident , ....
 				--         ^
-				create {NamedParameterDescriptor} parDsc.init (False, name, asThisType)
-				Result := <<parDsc>>
+				create namedParDsc.init (False, name, asThisType)
+--				Result := <<namedParDsc>>
 				scanner.nextToken
-				Result := parseMultiVarParameter (Result)
+--				Result := parseMultiVarParameter (Result)
+				Result := parseMultiVarParameter (<<namedParDsc>>)
 			else
 				syntax_error (<<scanner.is_token, scanner.colon_token, scanner.comma_token>>)
 			end -- inspect
 		when scanner.var_token then
 			-- var ident ...
 			-- ^
-			create Result.make (1, 0)
-			Result := parseMultiVarParameter (Result)
+--			create Result.make (1, 0)
+--			Result := parseMultiVarParameter (Result)
+			Result := parseMultiVarParameter (<<>>)
 		else
-			syntax_error (<<scanner.var_token, scanner.identifier_token>>)
+			syntax_error (<<scanner.var_token, scanner.identifier_token, scanner.assignment_token>>)
 		end -- inspect
 --trace ("parameter block parsed")
 	end -- parseParameterBlock
 	
 	parseParameters: Array [ParameterDescriptor] is
-	-- Parameters: “(”[[“:=”]Parameter{”;””|”,” Parameter}]“)”
+	-- Parameters: “(”[Parameter{”;””|”,” Parameter}]“)”
 	--              ^
-	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“as” Identifier))
+	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(":=" [Identifier]))
 
 	require
-		valid_token: scanner.token = scanner.left_paranthesis_token 
+		valid_token: validToken (<<scanner.left_paranthesis_token>>)
 	do
 		scanner.nextToken
 		inspect 
 			scanner.token
-		when scanner.assignment_token then
-			-- all as attrName parameters will lead to automatic assignments generation
-			scanner.nextToken
-			inspect 
-				scanner.token
-			when scanner.var_token, scanner.identifier_token then
-				Result := parseParameters1 (True)
-			when scanner.right_paranthesis_token then
-				scanner.nextToken
-				Result := <<>>
-			else
-				syntax_error (<<scanner.var_token, scanner.identifier_token, scanner.right_paranthesis_token>>)
-			end -- if			
+--		when scanner.assignment_token then
+--			-- all as attrName parameters will lead to automatic assignments generation
+--			scanner.nextToken
+--			inspect 
+--				scanner.token
+--			when scanner.identifier_token, scanner.var_token then
+--				Result := parseParameters1 (True)
+--			--when scanner.right_paranthesis_token then
+--			--	scanner.nextToken
+--			--	Result := <<>>
+--			else
+--				syntax_error (<<scanner.identifier_token, scanner.var_token>>)
+--			end -- if			
 		when scanner.var_token, scanner.identifier_token then
 			Result := parseParameters1 (False)
 		when scanner.right_paranthesis_token then
 			scanner.nextToken
 			Result := <<>>
 		else
-			syntax_error (<<scanner.var_token, scanner.identifier_token, scanner.right_paranthesis_token>>)
+--			syntax_error (<<scanner.var_token, scanner.identifier_token, assignment_token, scanner.right_paranthesis_token>>)
+			syntaxError (Void, <<scanner.var_token, scanner.identifier_token, scanner.right_paranthesis_token>>, <<scanner.right_paranthesis_token>>)
 		end -- if
 	end -- parseParameters
 
 	parseParameters1 (autoGen: Boolean): Array [ParameterDescriptor] is
 	-- Parameters: Parameter{”;””|”,” Parameter}“)”
 	--             ^
-	-- Parameter : ([[var] Identifier{“,” [var] Identifier} “:”] Type)|(Identifier “is” Expression)
+	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“:=” [Identifier]))
 	require
-		valid_token: scanner.token = scanner.var_token  or else scanner.token = scanner.identifier_token
+		valid_token: validToken (<<scanner.var_token, scanner.identifier_token, scanner.assignment_token>>)
 	local
 		parBlock: Array [ParameterDescriptor]
 		pars: Sorted_Array [ParameterDescriptor]
@@ -4068,42 +4080,39 @@ feature {None}
 		loop
 			inspect 
 				scanner.token 
-			when scanner.identifier_token, scanner.var_token then 
-					parBlock := parseParameterBlock (autoGen)
-					if parBlock = Void then
+			when scanner.identifier_token, scanner.var_token, scanner.assignment_token then 
+				parBlock := parseParameterBlock (autoGen)
+				if parBlock = Void then
+					toLeave := True
+					wasError := True
+				else
+					from
+						i := 1
+						n := parBlock.count
+					until
+						i > n
+					loop
+						if pars.added (parBlock.item (i)) then
+							Result.force (parBlock.item (i), Result.count + 1)
+						else
+							validity_error( "Duplicated parameter declaration '" + parBlock.item(i).name + "'")
+							wasError := True
+						end -- if							
+						i := i + 1							
+					end -- loop 
+					inspect
+						scanner.token
+					when scanner.semicolon_token, scanner.comma_token then
+						scanner.nextToken
+					when scanner.right_paranthesis_token then
+						scanner.nextToken
+						toLeave := True
+					else
+						syntax_error (<<scanner.semicolon_token, scanner.comma_token, scanner.right_paranthesis_token>>)
 						toLeave := True
 						wasError := True
-					else
-						from
-							i := 1
-							n := parBlock.count
-						until
-							i > n
-						loop
-							if pars.added (parBlock.item (i)) then
-								Result.force (parBlock.item (i), Result.count + 1)
-							else
-								validity_error( "Duplicated parameter declaration '" + parBlock.item(i).name + "'")
-								wasError := True
-							end -- if							
-							i := i + 1							
-						end -- loop 
-						inspect
-							scanner.token
-						when scanner.semicolon_token, scanner.comma_token then
-							scanner.nextToken
-						when scanner.right_paranthesis_token then
-							scanner.nextToken
-							toLeave := True
-						else
-							syntax_error (<<scanner.semicolon_token, scanner.comma_token, scanner.right_paranthesis_token>>)
-							toLeave := True
-							wasError := True
-						end -- if
 					end -- if
-			--when scanner.right_paranthesis_token then
-			--	scanner.nextToken
-			--	toLeave := True
+				end -- if
 			else
 				syntax_error (<<scanner.identifier_token, scanner.var_token>>) --, scanner.semicolon_token>>) , scanner.right_paranthesis_token
 				toLeave := True
@@ -4119,7 +4128,7 @@ feature {None}
 	-- const FullUnitName {“,” FullUnitName}
 	-- ^
 	require
-		valid_token : scanner.token = scanner.const_token
+		valid_token : validToken (<<scanner.const_token>>)
 	local
 		--astUnitDsc: FullUnitNameDescriptor
 		astUnitDsc: UnitTypeNameDescriptor
@@ -4166,7 +4175,7 @@ feature {None}
 	parseUseClause is
 	-- UseDirective: use (const UnitTypeName {“,” UnitTypeName}) | (AttachedType as Identifier) [“;”|newLine]
 	require
-		valid_token : scanner.token = scanner.use_token
+		valid_token : validToken (<<scanner.use_token>>)
 	local	
 		constants: Sorted_Array [UnitTypeNameDescriptor]
 		atDsc: AttachedTypeDescriptor
@@ -4209,10 +4218,7 @@ feature {None}
 	parseConstant (checkSemicolonAfter: Boolean): ConstantDescriptor is
 	--  Constant : StringConstant |CharacterConstant |IntegerConstant |RealConstant
 	require
-		valid_token: scanner.token = scanner.string_const_token or else 
-			scanner.token = scanner.char_const_token or else
-			scanner.token = scanner.integer_const_token or else
-			scanner.token = scanner.real_const_token
+		valid_token: validToken (<<scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token>>)
 	do
 		inspect
 			scanner.token
@@ -4233,7 +4239,7 @@ feature {None}
 	parseRoutineType (checkSemicolonAfter: Boolean): RoutineTypeDescriptor is
 	--40 rtn [SignatureDescriptor]
 	require
-		valid_token: scanner.token = scanner.rtn_token
+		valid_token: validToken (<<scanner.rtn_token>>)
 	local
 		signDsc: SignatureDescriptor
 	do
@@ -4263,10 +4269,7 @@ feature {None}
 	parseSignature1 (checkSemicolonAfter: Boolean): SignatureDescriptor is
 	--41 “(”[TypeDescriptor {“,” TypeDescriptor}]“)”[“:” TypeDescriptor]
 	require
-		valid_token: 
-			scanner.token = scanner.colon_token or else 
-			scanner.token = scanner.implies_token or else 
-			scanner.token = scanner.left_paranthesis_token
+		valid_token: validToken (<<scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token>>)
 	local
 		params: Array [TypeDescriptor]
 		td: TypeDescriptor
@@ -4357,7 +4360,7 @@ feature {None}
 	parseAnchorType (checkSemicolonAfter: Boolean): AnchoredCommonDescriptor is
 	--43 as (this|(Identifier [Signature]))
 	require
-		valid_start_token: scanner.token = scanner.as_token
+		valid_token: validToken (<<scanner.as_token>>)
 	local	
 		anchorName: String
 	do
@@ -4391,7 +4394,7 @@ feature {None}
 	parseDetachableType (checkSemicolonAfter: Boolean): DetachableTypeDescriptor is
 	--64
 	require
-		valid_start_token: scanner.token = scanner.detach_token
+		valid_start_token: validToken (<<scanner.detach_token>>)
 	local
 		atd: AttachedTypeDescriptor
 --pos: Integer
@@ -4421,7 +4424,7 @@ feature {None}
 	-- [Identifier {“,” Identifier}“:”] UnitTypeDescriptor
 	-- TupleField: [Identifier {“,” Identifier}“:”] UnitType
 	require
-		valid_token: scanner.token =  scanner.identifier_token
+		valid_token: validToken (<<scanner.identifier_token>>)
 	local
 		names: Sorted_Array [String]
 		types: Array [UnitTypeCommonDescriptor]
@@ -4523,7 +4526,7 @@ feature {None}
 	--66
 	-- “(”[TupleFieldDescriptor {“,”|”;” TupleFieldDescriptor}]“)”
 	require
-		valid_start_token: scanner.token = scanner.left_paranthesis_token
+		valid_start_token: validToken (<<scanner.left_paranthesis_token>>)
 	local
 		tupleField: TupleFieldDescriptor
 		typesList: ListOfTypesDescriptor
@@ -4664,10 +4667,7 @@ feature {None}
 	-- 	|
 	-- 	(ConstantExpression {“|” ConstantExpression})
 	require
-		valid_token: scanner.token = scanner.integer_const_token or else
-			scanner.token = scanner.real_const_token or else
-			scanner.token = scanner.string_const_token or else
-			scanner.token = scanner.char_const_token
+		valid_token: validToken (<<scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token>>)
 	local
 		--expr: ExpressionDescriptor
 		constExpr1: ConstExpressionDescriptor
@@ -4760,7 +4760,7 @@ feature {None}
 		-- It could be RangeType when all identifiers are in fact constants!!!
 	require
 		first_element_not_void: firstDsc /= Void
-		valid_token: scanner.token = scanner.bar_token
+		valid_token: validToken (<<scanner.bar_token>>)
 	local
 		typeDsc: UnitTypeCommonDescriptor
 		toLeave: Boolean
@@ -4823,7 +4823,7 @@ feature {None}
 		--                       ^
 	require
 		first_elelemnt_not_void: typeDsc /= Void and then typeDsc.generics.count = 0
-		valid_token: scanner.token = scanner.period_token
+		valid_token: validToken (<<scanner.period_token>>)
 	local
 		--exprDsc: ExpressionDescriptor
 		exprDsc: ConstExpressionDescriptor
@@ -4842,7 +4842,7 @@ feature {None}
 	-- AnonymousUnitType: “unit” MemberDesciption {[“;”] MemberDesciption} “end”
 	--                     ^
 	require
-		valid_token: scanner.token = scanner.unit_token
+		valid_token: validToken (<<scanner.unit_token>>)
 	local
 		members: Sorted_Array [MemberDescriptionDescriptor]
 		m1: Sorted_Array [MemberDescriptionDescriptor]
@@ -5108,15 +5108,8 @@ feature {None}
 	-- ConstantExpression: (Identifier {“.” Identifier}) | Constant [Operator ConstantExpression]
 	--                     ^ 
 	require
-		valid_token: 
-			scanner.token = scanner.identifier_token 	or else 
-			scanner.token = scanner.as_token			or else 
-			scanner.token = scanner.detach_token 		or else 
-			scanner.token = scanner.rtn_token 			or else 
-			scanner.token = scanner.integer_const_token or else 
-			scanner.token = scanner.real_const_token 	or else 
-			scanner.token = scanner.string_const_token	or else 
-			scanner.token = scanner.char_const_token
+		valid_token: validToken (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token, 
+			scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token>>)
 	local
 		identDsc: IdentifierDescriptor
 		utnDsc: UnitTypeNameDescriptor
@@ -5213,8 +5206,7 @@ feature {None}
 
 	parseUnitType1 (checkSemicolonAfter: Boolean): UnitTypeCommonDescriptor is
 	require
-		valid_token: scanner.token =  scanner.identifier_token or else scanner.token =  scanner.ref_token 
-			or else scanner.token =  scanner.val_token or else scanner.token =  scanner.concurrent_token
+		valid_token: validToken (<<scanner.identifier_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)
 	local
 		isRef,
 		isVal,
@@ -5265,7 +5257,7 @@ feature {None}
 	-- Identifier ([“extend” UnitTypeName ] [“init” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
 
 	require
-		valid_token: scanner.token = scanner.identifier_token
+		valid_token: validToken (<<scanner.identifier_token>>)
 	local
 		typeDsc: UnitTypeNameDescriptor
 		name: String
@@ -5402,7 +5394,7 @@ feature {None}
 	-- Parent: UnitTypeName | (“~” UnitTypeName [“(”MemberName{“,”MemberName}“)”])
 	-- MemberName: Identifier|(RoutineName [Signature])
 	require
-		valid_token: scanner.token = scanner.extend_token
+		valid_token: validToken (<<scanner.extend_token>>)
 		unit_descriptor_not_void: unitDsc /= Void
 	local
 		parentDsc: ParentDescriptor
@@ -5507,7 +5499,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 	-- usage: Sorted_Array [EnclosedUseEementDescriptor]
 	-- constants: Sorted_Array [FullUnitNameDescriptor]
 	require
-		valid_token: scanner.token = scanner.use_token
+		valid_token: validToken (<<scanner.use_token>>)
 		-- unit_descriptor_not_void: unitDsc /= Void
 	local
 		usage: Sorted_Array [EnclosedUseEementDescriptor]
@@ -5647,9 +5639,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 	parseMemberVisibility: MemberVisibilityDescriptor is
 	--18 “{” [this| UnitTypeNameDescriptor {“,” UnitTypeNameDescriptor}  ] “}”
 	require
-		valid_token:
-			scanner.token = scanner.left_curly_bracket_token or else
-			scanner.token = scanner.left_square_bracket_token
+		valid_token: validToken (<<scanner.left_curly_bracket_token, scanner.left_square_bracket_token>>)
 	local
 		toLeave: Boolean
 		utnDsc: UnitTypeNameDescriptor
@@ -5748,7 +5738,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 	--	memberSelections: Sorted_Array [SelectionDescriptor]
 	-- SelectionDescriptor => Identifier[Signature]
 	require
-		valid_token: scanner.token = scanner.select_token
+		valid_token: validToken (<<scanner.select_token>>)
 		unit_descriptor_not_void: unitDsc /= Void
 	local
 		sDsc: SelectionDescriptor
@@ -5806,7 +5796,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 	require
 		utnd_not_void: uDsc /= Void
 		unit_dsc_not_void: unitDsc /= Void
-		valid_token: scanner.token = scanner.dot_token
+		valid_token: validToken (<<scanner.dot_token>>)
 	local
 		signDsc: SignatureDescriptor
 		imoDsc : InheritedMemberOverridingDescriptor
@@ -5906,7 +5896,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		--       "override MemberDeclaration (goToMembers := True)"	
 		--                 ^[final] UnitAttribiteDeclaration|UnitRoutineDeclaration	
 	require
-		valid_token: scanner.token = scanner.override_token
+		valid_token: validToken (<<scanner.override_token>>)
 		unit_descriptor_not_void: unitDsc /= Void
 	local
 		utnDsc: UnitTypeNameDescriptor
@@ -5978,11 +5968,8 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 	--75 InitDeclaration: init [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
 	--                         ^
 	require
-		valid_token: scanner.token = scanner.left_paranthesis_token or else
-			scanner.token = scanner.use_token  or else
-			scanner.token = scanner.require_token or else
-			scanner.token = scanner.foreign_token or else
-			scanner.token = scanner.do_token or else scanner.token = scanner.left_curly_bracket_token
+		valid_token: validToken (<<scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.foreign_token,
+			scanner.do_token, scanner.left_curly_bracket_token>>)
 	local
 		parameters: Array [ParameterDescriptor]
 		preconditions: Array [PredicateDescriptor]
@@ -6058,7 +6045,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		-- "MemberDeclaration (goToMembers := True)"
 		-- init ( require do foreign use
 	require
-		valid_token: scanner.token = scanner.init_token
+		valid_token: validToken (<<scanner.init_token>>)
 		unit_descriptor_not_void: unitDsc /= Void
 	local
 		utnDsc: UnitTypeNameDescriptor
@@ -6160,12 +6147,12 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 	
 	parseConstObjectsDeclaration(unitDsc: UnitDeclarationDescriptor) is 
 		--77
-		-- ConstObjectsDeclaration: enum [ ConstObject { “,” ConstObject} ] end
+		-- ConstObjectsDeclaration: const: [ ConstObject { “,” ConstObject} ] end
 		-- ConstObject : Constant | (“{” RegularExpression “}” IntegerConstant [“+”])  | (Idenitifer [ CallChain ]) [ “..”  Constant | (Idenitifer [ CallChain ]) ]
 		-- RegularExpression: Constant ({“|”Constant}) | (“|” ”..” Constant)
 
 	require
-		valid_token: scanner.token = scanner.colon_token -- enum_token
+		valid_token: validToken (<<scanner.colon_token>>)
 		unit_descriptor_not_void: unitDsc /= Void
 	local
 		cobjDsc: ConstObjectDescriptor
@@ -6398,7 +6385,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	-- or
 	-- UnitAttributeDeclaration: UnitAttributeNamesList “:” Type [ (rtn “:=” [[ Parameters] HyperBlock ])|( is ConstantExpression) ]
 	require
-		valid_token: scanner.token = scanner.identifier_token or else scanner.token = scanner.const_token or else scanner.token = scanner.rigid_token
+		valid_token: validToken (<<scanner.identifier_token, scanner.const_token, scanner.rigid_token>>)
 	local
 		name: String
 		memDsc: MemberDeclarationDescriptor
@@ -6826,7 +6813,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	-- const|rigid Identifier [“:” AttachedType] is ConstantExpression  [NewLine]
 	-- {“,” Identifier [“:” AttachedType] is ConstantExpression  [NewLine]}			
 	require
-		valid_token: scanner.token = scanner.const_token or else scanner.token = scanner.rigid_token
+		valid_token: validToken (<<scanner.const_token, scanner.rigid_token>>)
 	local
 		isConst: Boolean
 		isRigid: Boolean
@@ -7011,16 +6998,9 @@ toLeave := True
 	--80
 	-- UnitRoutineDeclaration:  Operator [AliasName] [final Identifier] [Parameters] [“:” Type] [EnclosedUseDirective] ([RequireBlock] InnerBlock|virtual|foreign [EnsureBlock] [end]) | (“=>”Expression )
 	require
-		valid_token:
-			scanner.token = scanner.operator_token or else 
-			scanner.token = scanner.minus_token or else 
-			scanner.token = scanner.implies_token or else
-			scanner.token = scanner.less_token or else
-			scanner.token = scanner.greater_token or else 		
-			scanner.token = scanner.bar_token or else
-			scanner.token = scanner.tilda_token or else 
-			scanner.token = scanner.assignment_token or else
-			scanner.token = scanner.left_paranthesis_token -- Tricky:  () (Params):Type  or (): Type or () (): Type
+		valid_token: validToken (<<scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, 
+			scanner.bar_token, scanner.tilda_token, scanner.assignment_token, scanner.left_paranthesis_token>>)
+		-- Tricky:  () (Params):Type  or (): Type or () (): Type
 	local
 		rtnName: String
 		aliasName: String
@@ -7071,7 +7051,7 @@ toLeave := True
 	--82
 	require
 		member_name_not_void: name /= Void
-		valid_token: scanner.token = scanner.colon_token or else scanner.token = scanner.greater_token
+		valid_token: validToken (<<scanner.colon_token, scanner.greater_token>>)
 	local
 		type: TypeDescriptor
 		detachedType: DetachableTypeDescriptor
@@ -7459,7 +7439,7 @@ toLeave := True
 	--		FormalGeneric: Identifier ([“extend” UnitTypeName] [“init” [Signature]])| [“:” (UnitType | RoutineType]
 
 	require
-		valid_token: scanner.token = scanner.left_square_bracket_token or else scanner.token = scanner.less_token
+		valid_token: validToken (<<scanner.left_square_bracket_token, scanner.less_token>>) 
 	local
 		fgt: FormalGenericDescriptor
 		toLeave: Boolean
@@ -7540,7 +7520,7 @@ syntax_error (<<scanner.comma_token>>)
 	-- require	[InvariantBlock]
 	-- end
 	require
-		valid_token: scanner.token = scanner.identifier_token or else scanner.token = scanner.unit_token
+		valid_token: validToken (<<scanner.identifier_token, scanner.unit_token>>)
 	local	
 		unitDsc: UnitDeclarationDescriptor
 		goToMembers: Boolean
@@ -7914,25 +7894,27 @@ feature {None}
 			from
 				n := followers.count
 			until
-				toLeave or else scanner.token = scanner.eof_token
+				toLeave --or else scanner.token = scanner.eof_token
 			loop
 				-- scanner.nextToken
 				scanner.nextWithSemicolon (skipTillSeparator)
-				from 
-					i := 1
-				until
-					i > n
-				loop
-					if followers.item (i) = scanner.semicolon_token then
-						skipTillSeparator := True
-					end -- if
-					inspect 
-						scanner.token
-					when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
-						o.putNL ("Code skipped upto " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "`, parsing resumed")
-						toLeave := True
-						i := n + 1
-					else
+				inspect 
+					scanner.token
+				when scanner.eof_token then
+					toLeave := True
+				when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
+					scanner.nextToken
+					o.putNL ("Code skipped upto " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "`, parsing resumed")
+					toLeave := True
+				else
+					from 
+						i := 1
+					until
+						i > n
+					loop
+						if followers.item (i) = scanner.semicolon_token then
+							skipTillSeparator := True
+						end -- if
 						if scanner.token = followers.item (i) then
 							o.putNL ("Code skipped upto " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "`, parsing resumed")
 							toLeave := True
@@ -7940,8 +7922,8 @@ feature {None}
 						else
 							i := i + 1
 						end -- if
-					end -- inspect
-				end -- loop
+					end -- loop
+				end -- inspect
 			end -- loop
 		end -- if
 	end -- syntaxError
