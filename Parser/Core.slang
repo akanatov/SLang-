@@ -315,7 +315,7 @@ virtual unit Comparable
 	pure >= (other: as this ): Boolean => not (this < other)
 	pure max (other: as this ): as this => if this > other do this else other
 	pure min (other: as this ): as this => if this < other do this else other
-	pure compare alias cmp (other: as this): -1 .. 1 => if this = other do 1 elsif this < other do -1 else 1;
+	pure compare (other: as this): -1 .. 1 => if this = other do 1 elsif this < other do -1 else 1;
 require
 	not ( this < this ) /// Irreflexive comparison
 end // Comparable

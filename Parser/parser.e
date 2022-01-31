@@ -781,7 +781,7 @@ feature {None}
 			if isRtnDecl then
 				-- >> routine declaration
 --trace ("Parsing analysis done OK: >> routine declaration")
-				parameters := parseParameters1 (False)
+				parameters := parseParameters1 -- (False)
 				if parameters /= Void then
 					rtnDsc ?= parseAnyRoutine (False, False, False, False, name, Void, Void, True, False, parameters, False)			
 					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
@@ -1903,7 +1903,7 @@ feature {None}
 		cceDsc1: CallChainElement
 		order: Integer
 	do
---trace (">>> parseExpression1") -- with checkSemicolonAfter: " + checkSemicolonAfter.out)
+--trace (">>> parseExpression1") -- with checkSemicolonAfter: + checkSemicolonAfter.out)
 		inspect
 			scanner.token
 		when scanner.if_token then
@@ -3946,39 +3946,20 @@ feature {None}
 		end -- if
 	end -- parseMultiVarParameter
 
-	parseParameterBlock (autoGen: Boolean): Array [ParameterDescriptor] is
+	parseParameterBlock: Array [ParameterDescriptor] is
 	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“:=” [Identifier]))
 	-- Just put them all into array!!!
 	require
-		valid_token: validToken (<<scanner.identifier_token, scanner.var_token, scanner.assignment_token>>)
+		valid_token: validToken (<<scanner.identifier_token, scanner.var_token>>)
 	local
 		parDsc: ParameterDescriptor
 		namedParDsc: NamedParameterDescriptor
 		exprDsc: ExpressionDescriptor
 		typeDsc: TypeDescriptor
 		name: String
-		--genAssignment: Boolean
 	do
 		inspect
 			scanner.token
-		when scanner.assignment_token then
-			scanner.nextToken
-			if scanner.token = scanner.identifier_token then
-				name := scanner.tokenString
-				scanner.nextWithSemicolon (True)
-				--if scanner.token = scanner.assignment_token then
-				--	scanner.nextWithSemicolon (True)
-				--	genAssignment := True
-				--else
-				--	genAssignment := autoGen
-				--end -- if
-				create {AssignAttributeParameterDescriptor} parDsc.init (name) --, genAssignment)
-				Result := <<parDsc>>
-			else
-				create {AssignAttributeParameterDescriptor} parDsc.init (Void) 
-				Result := <<parDsc>>
-				--syntax_error (<<scanner.identifier_token>>)
-			end -- if
 		when scanner.identifier_token then
 			name := scanner.tokenString
 			scanner.nextToken
@@ -3986,6 +3967,7 @@ feature {None}
 				scanner.token
 			when scanner.is_token then
 				-- ident is Expression
+				initialisedParFound := True
 				scanner.nextToken
 				exprDsc := parseExpressionWithSemicolon
 				if exprDsc /= Void then
@@ -3994,6 +3976,9 @@ feature {None}
 				end -- if
 			when scanner.colon_token then
 				-- ident : Type
+				if initialisedParFound then
+					validity_error( "Initialised parameter should not be followed by the non-initilized one '" + name + "'")
+				end -- if
 				scanner.nextToken
 				typeDsc := parseTypeDescriptorWithSemicolon
 				if typeDsc /= Void then
@@ -4004,25 +3989,26 @@ feature {None}
 			when scanner.comma_token then
 				-- ident , ....
 				--         ^
+				if initialisedParFound then
+					validity_error( "Initialised parameter should not be followed by the non-initilized one '" + name + "'")
+				end -- if
 				create namedParDsc.init (False, name, asThisType)
---				Result := <<namedParDsc>>
 				scanner.nextToken
---				Result := parseMultiVarParameter (Result)
 				Result := parseMultiVarParameter (<<namedParDsc>>)
 			else
-				syntax_error (<<scanner.is_token, scanner.colon_token, scanner.comma_token>>)
+				--syntax_error (<<scanner.is_token, scanner.colon_token, scanner.comma_token>>)
+				syntaxError (Void, <<scanner.is_token, scanner.colon_token, scanner.comma_token>>, 
+					<<scanner.right_paranthesis_token>>)
 			end -- inspect
 		when scanner.var_token then
 			-- var ident ...
 			-- ^
---			create Result.make (1, 0)
---			Result := parseMultiVarParameter (Result)
 			Result := parseMultiVarParameter (<<>>)
-		else
-			syntax_error (<<scanner.var_token, scanner.identifier_token, scanner.assignment_token>>)
 		end -- inspect
 --trace ("parameter block parsed")
 	end -- parseParameterBlock
+	
+	initialisedParFound: Boolean
 	
 	parseParameters: Array [ParameterDescriptor] is
 	-- Parameters: “(”[Parameter{”;””|”,” Parameter}]“)”
@@ -4032,34 +4018,23 @@ feature {None}
 	require
 		valid_token: validToken (<<scanner.left_paranthesis_token>>)
 	do
+		initialisedParFound := False
 		scanner.nextToken
 		inspect 
 			scanner.token
---		when scanner.assignment_token then
---			-- all as attrName parameters will lead to automatic assignments generation
---			scanner.nextToken
---			inspect 
---				scanner.token
---			when scanner.identifier_token, scanner.var_token then
---				Result := parseParameters1 (True)
---			--when scanner.right_paranthesis_token then
---			--	scanner.nextToken
---			--	Result := <<>>
---			else
---				syntax_error (<<scanner.identifier_token, scanner.var_token>>)
---			end -- if			
-		when scanner.var_token, scanner.identifier_token then
-			Result := parseParameters1 (False)
+		when scanner.var_token, scanner.identifier_token, scanner.assignment_token then
+			Result := parseParameters1
 		when scanner.right_paranthesis_token then
 			scanner.nextToken
 			Result := <<>>
 		else
---			syntax_error (<<scanner.var_token, scanner.identifier_token, assignment_token, scanner.right_paranthesis_token>>)
-			syntaxError (Void, <<scanner.var_token, scanner.identifier_token, scanner.right_paranthesis_token>>, <<scanner.right_paranthesis_token>>)
+--			syntax_error (<<scanner.var_token, scanner.identifier_token, scanner.assignment_token, scanner.right_paranthesis_token>>)
+			syntaxError (Void, <<scanner.var_token, scanner.identifier_token, scanner.assignment_token, scanner.right_paranthesis_token>>, 
+				<<scanner.right_paranthesis_token>>)
 		end -- if
 	end -- parseParameters
 
-	parseParameters1 (autoGen: Boolean): Array [ParameterDescriptor] is
+	parseParameters1: Array [ParameterDescriptor] is
 	-- Parameters: Parameter{”;””|”,” Parameter}“)”
 	--             ^
 	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“:=” [Identifier]))
@@ -4067,9 +4042,13 @@ feature {None}
 		valid_token: validToken (<<scanner.var_token, scanner.identifier_token, scanner.assignment_token>>)
 	local
 		parBlock: Array [ParameterDescriptor]
-		pars: Sorted_Array [ParameterDescriptor]
+		pars: Sorted_Array [String]
+		name: String
+		parDsc: AssignAttributeParameterDescriptor
+		assignSingleFound: Boolean
 		toLeave: Boolean
 		i, n: Integer
+		parFound: Boolean
 		wasError: Boolean
 	do
 		from
@@ -4080,8 +4059,29 @@ feature {None}
 		loop
 			inspect 
 				scanner.token 
-			when scanner.identifier_token, scanner.var_token, scanner.assignment_token then 
-				parBlock := parseParameterBlock (autoGen)
+			when scanner.assignment_token then 
+				parFound := True
+				scanner.nextToken
+				if scanner.token = scanner.identifier_token then
+					name := scanner.tokenString
+					if not pars.added (name) then
+						validity_error( "Duplicated parameter declaration ':= " + name + "'")
+						wasError := True
+					end -- if							
+					create {AssignAttributeParameterDescriptor} parDsc.init (name) --, genAssignment)
+					Result.force (parDsc, Result.count + 1)
+					scanner.nextWithSemicolon (True)
+				elseif assignSingleFound then
+					validity_error( "Duplicated parameter declaration ':='")
+					wasError := True
+				else
+					assignSingleFound := True
+					create {AssignAttributeParameterDescriptor} parDsc.init ("") 
+					Result.force (parDsc, Result.count + 1)
+				end -- if
+			when scanner.identifier_token, scanner.var_token then 
+				parFound := True
+				parBlock := parseParameterBlock
 				if parBlock = Void then
 					toLeave := True
 					wasError := True
@@ -4092,29 +4092,33 @@ feature {None}
 					until
 						i > n
 					loop
-						if pars.added (parBlock.item (i)) then
+						if pars.added (parBlock.item (i).name) then
 							Result.force (parBlock.item (i), Result.count + 1)
 						else
-							validity_error( "Duplicated parameter declaration '" + parBlock.item(i).name + "'")
+							validity_error( "Duplicated parameter declaration '" + parBlock.item(i).out + "'")
 							wasError := True
 						end -- if							
 						i := i + 1							
 					end -- loop 
-					inspect
-						scanner.token
-					when scanner.semicolon_token, scanner.comma_token then
-						scanner.nextToken
-					when scanner.right_paranthesis_token then
-						scanner.nextToken
-						toLeave := True
-					else
-						syntax_error (<<scanner.semicolon_token, scanner.comma_token, scanner.right_paranthesis_token>>)
-						toLeave := True
-						wasError := True
-					end -- if
 				end -- if
+			when scanner.semicolon_token, scanner.comma_token then
+				if parFound then
+					scanner.nextToken
+					parFound := False
+				else
+					syntax_error (<<scanner.identifier_token, scanner.var_token, scanner.assignment_token>>)
+					toLeave := True
+					wasError := True
+				end -- if
+			when scanner.right_paranthesis_token then
+				scanner.nextToken
+				toLeave := True
 			else
-				syntax_error (<<scanner.identifier_token, scanner.var_token>>) --, scanner.semicolon_token>>) , scanner.right_paranthesis_token
+				if parFound then
+					syntax_error (<<scanner.semicolon_token, scanner.comma_token, scanner.right_paranthesis_token>>)
+				else
+					syntax_error (<<scanner.identifier_token, scanner.var_token, scanner.assignment_token>>)
+				end -- if
 				toLeave := True
 				wasError := True
 			end -- inspect
@@ -7902,10 +7906,10 @@ feature {None}
 					scanner.token
 				when scanner.eof_token then
 					toLeave := True
-				when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
-					scanner.nextToken
-					o.putNL ("Code skipped upto " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "`, parsing resumed")
-					toLeave := True
+				--when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
+				--	scanner.nextToken
+				--	o.putNL ("Code skipped upto " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "`, parsing resumed")
+				--	toLeave := True
 				else
 					from 
 						i := 1
@@ -7923,6 +7927,16 @@ feature {None}
 							i := i + 1
 						end -- if
 					end -- loop
+					if not toLeave then
+						inspect 
+							scanner.token
+						when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
+							--scanner.nextToken
+							o.putNL ("Code skipped upto nearest end at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " and parsing resumed")
+							toLeave := True
+						else
+						end -- inspect
+					end -- if
 				end -- inspect
 			end -- loop
 		end -- if

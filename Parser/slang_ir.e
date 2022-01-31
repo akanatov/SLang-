@@ -965,35 +965,32 @@ feature {Any}
 	name: String
 	is_equal (other: like Current): Boolean is
 	do
-		Result := name.is_equal (other.name)
+--		Result := name.is_equal (other.name)
 --		Result := weight = other.weight and then name.is_equal (other.name) and then sameAs (other)
+		Result := weight = other.weight and then sameAs (other)
 	end -- is_equal
 	infix "<"  (other: like Current): Boolean is
 	do
-		Result := name < other.name
---		Result := weight < other.weight
---		if not Result and then weight = other.weight then
+--		Result := name < other.name
+		Result := weight < other.weight
+		if not Result and then weight = other.weight then
+			Result := lessThan (other)
 --			Result := name < other.name
 --			if not Result and then name.is_equal (other.name) then
 --				Result := lessThan (other)
 --			end -- if
---		end -- if
+		end -- if
 	end -- infix "<"
---	setType (aType: TypeDescriptor) is
---	require
---		type_not_void: aType /= Void
---	do
---	end -- setType
---	sameAs (other: like Current): Boolean is
---	deferred
---	end -- sameAs
---	lessThan(other: like Current): Boolean is
---	deferred
---	end -- lessThan
---feature {ParameterDescriptor}
---	weight: Integer is
---	deferred
---	end -- weight
+	sameAs (other: like Current): Boolean is
+	deferred
+	end -- sameAs
+	lessThan(other: like Current): Boolean is
+	deferred
+	end -- lessThan
+feature {ParameterDescriptor}
+	weight: Integer is
+	deferred
+	end -- weight
 invariant
 	name_not_void: name /= Void
 end -- class ParameterDescriptor
@@ -1002,11 +999,9 @@ class NamedParameterDescriptor
 -- Parameter: [[var] Identifier ":" Type
 inherit	
 	ParameterDescriptor
---		redefine
---			setType
 	end
 create 
-	init --, make
+	init
 feature {Any}
 	isVar: Boolean
 	type: TypeDescriptor
@@ -1018,17 +1013,19 @@ feature {Any}
 			Result := name + ": " + type.out
 		end -- if
 	end
---	sameAs (other: like Current): Boolean is
---	do
+	sameAs (other: like Current): Boolean is
+	do
 --		Result := isVar = other.isVar and then type.is_equal (other.type)
---	end -- sameAs
---	lessThan(other: like Current): Boolean is
---	do
+		Result := type.is_equal (other.type)
+	end -- sameAs
+	lessThan(other: like Current): Boolean is
+	do
+		Result := type < other.type
 --		Result := not isVar and then other.isVar
 --		if not Result and then isVar = other.isVar then
 --			Result := type < other.type
 --		end -- if
---	end -- lessThan
+	end -- lessThan
 	setType (aType: like type) is
 	require
 		type_not_void: aType /= Void
@@ -1045,7 +1042,7 @@ feature {None}
 		name := aName
 		type := aType
 	end -- init
---	weight: Integer is 0
+	weight: Integer is 0
 invariant
 	type_not_void: type /= Void
 end  -- class NamedParameterDescriptor
@@ -1063,14 +1060,17 @@ feature {Any}
 	do
 		Result := name + " is " + expr.out
 	end
---	sameAs (other: like Current): Boolean is
---	do
---		Result := expr.is_equal (other.expr)
---	end -- sameAs
---	lessThan(other: like Current): Boolean is
---	do
---		Result := expr < other.expr
---	end -- lessThan
+	sameAs (other: like Current): Boolean is
+	do
+-- REDO!!!!
+		Result := expr.is_equal (other.expr)
+--		Result := expr.type.is_equal (other.expr.type)
+	end -- sameAs
+	lessThan(other: like Current): Boolean is
+	do
+		Result := expr < other.expr
+--		Result := expr.type < other.expr.type
+	end -- lessThan
 feature {None}
 	init (aName: like name; e: like expr) is
 	require
@@ -1080,7 +1080,7 @@ feature {None}
 		name := aName
 		expr := e
 	end -- init
---	weight: Integer is 1
+	weight: Integer is 1
 invariant
 	expression_not_void: expr /= Void
 	name_not_void: name /= Void
@@ -1094,30 +1094,30 @@ inherit
 create 
 	init
 feature {Any}
-	--autoGenAssignment: Boolean
 	out: String is
 	do
-		Result := ":= "
-		if name /= Void then
-			Result.append_string (name)
+		if name.count = 0 then
+			Result := ":="
+		else
+			Result := ":= " + name
 		end -- if
 	end -- out
---	sameAs (other: like Current): Boolean is
---	once
---		Result := True
---	end -- sameAs
---	lessThan(other: like Current): Boolean is
---	once
---	end -- lessThan
+	sameAs (other: like Current): Boolean is
+	do
+		Result := name.is_equal (other.name)
+	end -- sameAs
+	lessThan(other: like Current): Boolean is
+	do
+		Result := name < other.name
+	end -- lessThan
 feature {None}
-	init (aName: like name) is --; b: Boolean) is
-	--require
-	--	non_void_name: aName /= Void
+	init (aName: like name) is
+	require
+		non_void_name: aName /= Void
 	do
 		name := aName
-		--autoGenAssignment := b
 	end -- init
---	weight: Integer is 2
+	weight: Integer is 2
 end  -- class AssignAttributeParameterDescriptor
 
 class EnclosedUseEementDescriptor
