@@ -40,18 +40,39 @@ inherit
 			out, is_equal
 	end
 create
-	init
+	init_program, init_library
 feature {Any}
 	name: String
-	entry: String
-	clusters: Sorted_Array [String] -- temporary!!! String - in fact ClusterDescriptor
+	from_paths: Sorted_Array [String] -- List of paths to build the library from
+	entry: String -- Name of class or routine to start execution of the program
+	clusters: Sorted_Array [String] -- Clusters to search for usage of units and routines. temporary!!! String - in fact ClusterDescriptor
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
-	init (n,e : String; c: like clusters; l: like libraries) is
+
+	init_program (n,e : String; c: like clusters; l: like libraries) is
+	require
+		name_not_void: n /= Void
+		entry_not_void: e /= Void
+	do
+		name:= n
+		entry:= e
+		set_clusters_and_libraries (c, l)
+	end -- init_program
+	
+	init_library (n : String; fp: like from_paths; c: like clusters; l: like libraries) is
 	require
 		name_not_void: n /= Void
 	do
 		name:= n
-		entry:= e
+		if fp = Void then
+			create from_paths.make
+		else
+			from_paths := fp
+		end -- if
+		set_clusters_and_libraries (c, l)
+	end -- init_program
+
+	set_clusters_and_libraries (c: like clusters; l: like libraries) is
+	do
 		if c = Void then
 			create clusters.make
 		else
@@ -62,7 +83,8 @@ feature {Any}
 		else
 			libraries:= l
 		end -- if
-	end -- init
+	end -- set_clusters_and_libraries
+	
 	is_equal (other: like Current): Boolean is
 	do
 		Result := name.is_equal (other.name)
@@ -75,46 +97,63 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := "system %"" + name + "%"%N"
+		Result := "build %"" + name + "%"%N"
 		if entry /= Void then
-			Result.append_string ("%Tinit " + entry + "%N")
+			Result.append_string ("%T=> " + entry + "%N")
+		else
+			check
+				invariant_check: from_paths /= Void
+			end -- check
+			n := from_paths.count
+			if n > 0 then 
+				from
+					Result.append_string ("%T:")
+					i := 1
+				until
+					i > n
+				loop
+					Result.append_character (' ')
+					Result.append_string (from_paths.item (i))
+					i := i + 1
+				end -- loop
+			end -- if
 		end -- if
 		n := clusters.count
 		if n > 0 then
 			from
 				i := 1
-				Result.append_string ("%Tuse ")
+				Result.append_string ("%Tuse")
 			until
 				i > n
 			loop
+				Result.append_character (' ')
 				Result.append_character ('"')
 				Result.append_string (clusters.item(i))
 				Result.append_character ('"')
-				Result.append_character (' ')
 				i := i + 1
 			end -- loop
-			Result.append_string ("end%N")
 		end -- if
 		n := libraries.count
 		if n > 0 then
 			from
 				i := 1
-				Result.append_string ("%Tforeign ")
+				Result.append_string ("%Tforeign")
 			until
 				i > n
 			loop
+				Result.append_character (' ')
 				Result.append_character ('"')
 				Result.append_string (libraries.item(i))
 				Result.append_character ('"')
-				Result.append_character (' ')
 				i := i + 1
 			end -- loop
-			Result.append_string ("end%N")
 		end -- if		
 		Result.append_string ("end%N")
 	end -- out
 invariant
 	name_not_void: name /= Void
+	is_program: entry /= Void implies from_paths = Void
+	is_library: entry = Void implies from_paths /= Void
 	clusters_not_void: clusters /= Void
 	libraries_not_void: libraries /= Void	
 end -- class SystemDescriptor

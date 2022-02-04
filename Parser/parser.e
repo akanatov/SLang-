@@ -64,34 +64,81 @@ feature {Any}
 		loop
 			inspect
 				scanner.token
-			when scanner.eof_token, scanner.illegal_token then
+			when scanner.illegal_token then
+				syntaxError ("Compilation unit start expected", <<scanner.illegal_token>>, unit_folowers)
 				toExit := True
-			when scanner.system_token then
+			when scanner.eof_token then
+				toExit := True
+			when scanner.build_token then
 				sysDsc := parseSystemDescription
 				if sysDsc /= Void and then not systems.added (sysDsc) then
 					validity_warning ( "Duplicated system declaration '" + sysDsc.name + "', ignored")
 				end -- if
-				--scanner.disableSystemMode
-			when scanner.use_token then
-				-- parse use_const clause
-				parseUseClause
-			-- Unit start: ([final] [ref|val|concurrent])|[virtual]|[extend]
-			when scanner.final_token then -- parse final unit
-				scanner.nextToken
-				inspect	
+			else
+				scanner.disableSystemMode
+				inspect
 					scanner.token
+				when scanner.use_token then
+					-- parse use_const clause
+					parseUseClause
+				-- Unit start: ([final] [ref|val|concurrent])|[virtual]|[extend]
+				when scanner.final_token then -- parse final unit
+					scanner.nextToken
+					inspect	
+						scanner.token
+					when scanner.ref_token then -- parse ref unit
+						scanner.nextToken
+						inspect	
+							scanner.token
+						when scanner.unit_token then -- parse unit
+							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+							parseUnit (True, True, False, False, False, False)
+						else
+							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+							toExit := True
+						end
+					when scanner.val_token then -- parse val unit
+						scanner.nextToken
+						inspect	
+							scanner.token
+						when scanner.unit_token then -- parse unit
+							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+							parseUnit (True, False, True, False, False, False)
+						else
+							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						end
+					when scanner.concurrent_token then -- parse concurrent unit
+						scanner.nextToken
+						inspect	
+							scanner.token
+						when scanner.unit_token then -- parse unit
+							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+							parseUnit (True, False, False, True, False, False)
+						else
+							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						end
+					when scanner.unit_token then -- parse unit
+						scanner.nextToken
+						inspect	
+							scanner.token
+						when scanner.identifier_token then -- parse unit
+							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+							parseUnit (True, False, False, False, False, False)
+						else
+							syntaxError ("Unit name expected", <<scanner.identifier_token>>,<<>>)
+						end
+					else
+						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.unit_token>>, unit_folowers)
+					end
 				when scanner.ref_token then -- parse ref unit
 					scanner.nextToken
 					inspect	
 						scanner.token
 					when scanner.unit_token then -- parse unit
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-						parseUnit (True, True, False, False, False, False)
+						parseUnit (False, True, False, False, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>,
-							<<scanner.final_token, scanner.ref_token, scanner.val_token, scanner.unit_token, scanner.concurrent_token, scanner.virtual_token>>
-						)
-						toExit := True
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 				when scanner.val_token then -- parse val unit
 					scanner.nextToken
@@ -99,10 +146,9 @@ feature {Any}
 						scanner.token
 					when scanner.unit_token then -- parse unit
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-						parseUnit (True, False, True, False, False, False)
+						parseUnit (False, False, True, False, False, False)
 					else
-						syntax_error (<<scanner.unit_token>>)
-						toExit := True
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 				when scanner.concurrent_token then -- parse concurrent unit
 					scanner.nextToken
@@ -110,10 +156,29 @@ feature {Any}
 						scanner.token
 					when scanner.unit_token then -- parse unit
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-						parseUnit (True, False, False, True, False, False)
+						parseUnit (False, False, False, True, False, False)
 					else
-						syntax_error (<<scanner.unit_token>>)
-						toExit := True
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+					end
+				when scanner.virtual_token then -- parse virtual unit
+					scanner.nextToken
+					inspect	
+						scanner.token
+					when scanner.unit_token then -- parse unit
+						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+						parseUnit (False, False, False, False, True, False)
+					else
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+					end
+				when scanner.extend_token then -- parse extend unit
+					scanner.nextToken
+					inspect	
+						scanner.token
+					when scanner.unit_token then -- parse unit
+						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+						parseUnit (False, False, False, False, False, True)
+					else
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 				when scanner.unit_token then -- parse unit
 					scanner.nextToken
@@ -121,269 +186,202 @@ feature {Any}
 						scanner.token
 					when scanner.identifier_token then -- parse unit
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-						parseUnit (True, False, False, False, False, False)
+						parseUnit (False, False, False, False, False, False)
 					else
 						syntax_error (<<scanner.identifier_token>>)
 						toExit := True
 					end
-				else
-					syntax_error (<<
-						scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.unit_token
-					>>)
-					toExit := True
-				end
-			when scanner.ref_token then -- parse ref unit
-				scanner.nextToken
-				inspect	
-					scanner.token
-				when scanner.unit_token then -- parse unit
-					-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-					parseUnit (False, True, False, False, False, False)
-				else
-					syntax_error (<<scanner.unit_token>>)
-					toExit := True
-				end
-			when scanner.val_token then -- parse val unit
-				scanner.nextToken
-				inspect	
-					scanner.token
-				when scanner.unit_token then -- parse unit
-					-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-					parseUnit (False, False, True, False, False, False)
-				else
-					syntax_error (<<scanner.unit_token>>)
-					toExit := True
-				end
-			when scanner.concurrent_token then -- parse concurrent unit
-				scanner.nextToken
-				inspect	
-					scanner.token
-				when scanner.unit_token then -- parse unit
-					-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-					parseUnit (False, False, False, True, False, False)
-				else
-					syntax_error (<<scanner.unit_token>>)
-					toExit := True
-				end
-			when scanner.virtual_token then -- parse virtual unit
-				scanner.nextToken
-				inspect	
-					scanner.token
-				when scanner.unit_token then -- parse unit
-					-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-					parseUnit (False, False, False, False, True, False)
-				else
-					syntax_error (<<scanner.unit_token>>)
-					toExit := True
-				end
-			when scanner.extend_token then -- parse extend unit
-				scanner.nextToken
-				inspect	
-					scanner.token
-				when scanner.unit_token then -- parse unit
-					-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-					parseUnit (False, False, False, False, False, True)
-				else
-					syntax_error (<<scanner.unit_token>>)
-					toExit := True
-				end
-			when scanner.unit_token then -- parse unit
-				scanner.nextToken
-				inspect	
-					scanner.token
-				when scanner.identifier_token then -- parse unit
-					-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
-					parseUnit (False, False, False, False, False, False)
-				else
-					syntax_error (<<scanner.identifier_token>>)
-					toExit := True
-				end
-			when scanner.pure_token then -- start of standalone pure routine
-				scanner.nextToken
-				inspect	
-					scanner.token
-				when scanner.identifier_token then -- standalone pure routine
-					rtnDsc := parseStandAloneRoutine (True, False)
-					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-						validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
-					end -- if
-				else
-					syntax_error (<<scanner.identifier_token>>)
-					toExit := True
-				end
-			when scanner.safe_token then -- start of standalone safe routine
-				scanner.nextToken
-				inspect	
-					scanner.token
-				when scanner.identifier_token then -- standalone safe routine
-					rtnDsc := parseStandAloneRoutine (False, True)
-					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-						validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
-					end -- if
-				else
-					syntax_error (<<scanner.identifier_token>>)
-					toExit := True
-				end
-			when scanner.identifier_token then -- start of standalone routine or statement of the anonymous one
-				name := scanner.tokenString
-				create identDsc.init (scanner.tokenString)
-				scanner.nextToken
-				inspect	
-					scanner.token
-				when scanner.colon_token then
-					-- ident: function defintion or local attribute !!!
-					parseFunctionOrLocalAttribute (name)
-				when scanner.left_paranthesis_token then -- identifier ( .... Huh .... prase further ...
-					parseAssignmentOrUnqualifiedCallOrRoutineStart (name)
-				when scanner.dot_token then
-					-- Anonymous routine call statement : ident.
-					callDsc := parseWritableCall (identDsc)
-					if callDsc /= Void then
-						inspect
-							scanner.token
-						when scanner.assignment_token then
-							-- <writable> := <expr>
-							scanner.nextToken
-							exprDsc := parseExpression
-							if exprDsc /= Void then
-								create {AssignmentStatementDescriptor} stmtDsc.init (callDsc, exprDsc)
-								if stmtDsc /= Void then
-									ast.addStatement (stmtDsc)
-								end -- if				
-							end -- if
-						else
-							ast.addStatement (callDsc)
-						end -- if
-					end -- if				
-				when scanner.assignment_token then
-					-- Anonymous routine assignemnt: ident := 
-					stmtDsc := parseAssignmentToIdentifierStatement (name)
-					if stmtDsc /= Void then
-						ast.addStatement (stmtDsc)
-					end -- if				
-				when scanner.is_token then 
-					-- ident is <Expression>
+				when scanner.pure_token then -- start of standalone pure routine
 					scanner.nextToken
-					exprDsc := parseExpression
-					if exprDsc /= Void then
-						create {AssignmentStatementDescriptor} stmtDsc.init (identDsc, exprDsc)
+					inspect	
+						scanner.token
+					when scanner.identifier_token then -- standalone pure routine
+						rtnDsc := parseStandAloneRoutine (True, False)
+						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
+							validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+						end -- if
+					else
+						syntax_error (<<scanner.identifier_token>>)
+						toExit := True
+					end
+				when scanner.safe_token then -- start of standalone safe routine
+					scanner.nextToken
+					inspect	
+						scanner.token
+					when scanner.identifier_token then -- standalone safe routine
+						rtnDsc := parseStandAloneRoutine (False, True)
+						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
+							validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+						end -- if
+					else
+						syntax_error (<<scanner.identifier_token>>)
+						toExit := True
+					end
+				when scanner.identifier_token then -- start of standalone routine or statement of the anonymous one
+					name := scanner.tokenString
+					create identDsc.init (scanner.tokenString)
+					scanner.nextToken
+					inspect	
+						scanner.token
+					when scanner.colon_token then
+						-- ident: function defintion or local attribute !!!
+						parseFunctionOrLocalAttribute (name)
+					when scanner.left_paranthesis_token then -- identifier ( .... Huh .... prase further ...
+						parseAssignmentOrUnqualifiedCallOrRoutineStart (name)
+					when scanner.dot_token then
+						-- Anonymous routine call statement : ident.
+						callDsc := parseWritableCall (identDsc)
+						if callDsc /= Void then
+							inspect
+								scanner.token
+							when scanner.assignment_token then
+								-- <writable> := <expr>
+								scanner.nextToken
+								exprDsc := parseExpression
+								if exprDsc /= Void then
+									create {AssignmentStatementDescriptor} stmtDsc.init (callDsc, exprDsc)
+									if stmtDsc /= Void then
+										ast.addStatement (stmtDsc)
+									end -- if				
+								end -- if
+							else
+								ast.addStatement (callDsc)
+							end -- if
+						end -- if				
+					when scanner.assignment_token then
+						-- Anonymous routine assignemnt: ident := 
+						stmtDsc := parseAssignmentToIdentifierStatement (name)
 						if stmtDsc /= Void then
 							ast.addStatement (stmtDsc)
 						end -- if				
-					end -- if
-				when scanner.final_token, scanner.alias_token, 
-					scanner.require_token, scanner.one_line_function_token,
-					scanner.use_token, scanner.foreign_token
-				then
-					-- Standalone routine start
-					rtnDsc := parseStandAloneRoutine1 (False, False, name)
-					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-						validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
-					end -- if					
-				else
-					--if scanner.Cmode and then (scanner.token = scanner.less_token or else scanner.token = scanner.left_curly_bracket_token)
-					--	or else (scanner.token = scanner.left_square_bracket_token or else scanner.token = scanner.do_token)
-					--then
-					if scanner.blockStart or else scanner.genericsStart then
+					when scanner.is_token then 
+						-- ident is <Expression>
+						scanner.nextToken
+						exprDsc := parseExpression
+						if exprDsc /= Void then
+							create {AssignmentStatementDescriptor} stmtDsc.init (identDsc, exprDsc)
+							if stmtDsc /= Void then
+								ast.addStatement (stmtDsc)
+							end -- if				
+						end -- if
+					when scanner.final_token, scanner.alias_token, 
+						scanner.require_token, scanner.one_line_function_token,
+						scanner.use_token, scanner.foreign_token, scanner.implies_token
+					then
 						-- Standalone routine start
 						rtnDsc := parseStandAloneRoutine1 (False, False, name)
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 							validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
 						end -- if					
-					elseif scanner.Cmode then
-						syntax_error (<<
-							scanner.final_token, scanner.alias_token, scanner.left_paranthesis_token, scanner.colon_token,
-							scanner.left_curly_bracket_token,
-							scanner.require_token, scanner.one_line_function_token, scanner.less_token, scanner.dot_token, 
-							scanner.assignment_token, scanner.use_token, scanner.foreign_token, scanner.is_token
-						>>)
-						toExit := True
 					else
-						syntax_error (<<
-							scanner.final_token, scanner.alias_token, scanner.left_paranthesis_token, scanner.colon_token, scanner.do_token,
-							scanner.require_token, scanner.one_line_function_token, scanner.left_square_bracket_token, scanner.dot_token, 
-							scanner.assignment_token, scanner.use_token, scanner.foreign_token, scanner.is_token
-						>>)
-						toExit := True
+						--if scanner.Cmode and then (scanner.token = scanner.less_token or else scanner.token = scanner.left_curly_bracket_token)
+						--	or else (scanner.token = scanner.left_square_bracket_token or else scanner.token = scanner.do_token)
+						--then
+						if scanner.blockStart or else scanner.genericsStart then
+							-- Standalone routine start
+							rtnDsc := parseStandAloneRoutine1 (False, False, name)
+							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
+								validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+							end -- if					
+						elseif scanner.Cmode then
+							syntax_error (<<
+								scanner.final_token, scanner.alias_token, scanner.left_paranthesis_token, scanner.colon_token,
+								scanner.left_curly_bracket_token,
+								scanner.require_token, scanner.one_line_function_token, scanner.less_token, scanner.dot_token, 
+								scanner.assignment_token, scanner.use_token, scanner.foreign_token, scanner.is_token
+							>>)
+							toExit := True
+						else
+							syntax_error (<<
+								scanner.final_token, scanner.alias_token, scanner.left_paranthesis_token, scanner.colon_token, scanner.do_token,
+								scanner.require_token, scanner.one_line_function_token, scanner.left_square_bracket_token, scanner.dot_token, 
+								scanner.assignment_token, scanner.use_token, scanner.foreign_token, scanner.is_token
+							>>)
+							toExit := True
+						end -- if
+					end -- inspect
+				-- Statement: Assignment | LocalAttributeCreation | +IfCase | ? Identifier | Return | +HyperBlock | Raise |MemberCallOrCreation 		|  +Loop
+				--            ( ident      var ident                if        ?              return    +require do   raise   ident new old this return     while require do
+				-- Anonymous routine start (statements list)
+				when scanner.if_token then -- Anonymous routine: if statement
+					stmtDsc := parseIfStatement
+					if stmtDsc /= Void then
+						ast.addStatement (stmtDsc)
 					end -- if
-				end -- inspect
-			-- Statement: Assignment | LocalAttributeCreation | +IfCase | ? Identifier | Return | +HyperBlock | Raise |MemberCallOrCreation 		|  +Loop
-			--            ( ident      var ident                if        ?              return    +require do   raise   ident new old this return     while require do
-			-- Anonymous routine start (statements list)
-			when scanner.if_token then -- Anonymous routine: if statement
-				stmtDsc := parseIfStatement
-				if stmtDsc /= Void then
-					ast.addStatement (stmtDsc)
-				end -- if
-			when scanner.while_token then -- Anonymous routine: loop statement
-				stmtDsc := parseWhileStatement (False)
-				if stmtDsc /= Void then
-					ast.addStatement (stmtDsc)
-				end -- if				
-			when scanner.new_token then -- Anonymous routine: new statement
-				stmtDsc := parseNewStatement
-				if stmtDsc /= Void then
-					ast.addStatement (stmtDsc)
-				end -- if				
-			when scanner.detach_token then -- Anonymous routine:  ? statement
-				stmtDsc := parseDetachStatement
-				if stmtDsc /= Void then
-					ast.addStatement (stmtDsc)
-				end -- if				
-			when scanner.raise_token then -- Anonymous routine: raise statement
-				stmtDsc := parseRaiseStatement
-				if stmtDsc /= Void then
-					ast.addStatement (stmtDsc)
-				end -- if				
-			when scanner.return_token then -- Anonymous routine: return statement
-				stmtDsc := parseReturnStatement
-				if stmtDsc /= Void then
-					ast.addStatement (stmtDsc)
-				end -- if
-			when scanner.left_paranthesis_token then -- Anonymous routine: turple assignment or call (a, b) := expr or ().foo ...
-				stmtDsc := parseAssignmentOrQualifiedCall
-				if stmtDsc /= Void then
-					ast.addStatement (stmtDsc)
-				end -- if
-			when scanner.var_token then -- Anonymous rotuine - local attribute declaration
-				parseLocalsDeclaration (ast.statements, True, Void)
-			when scanner.require_token then -- Anonymous routine: block/loop statement
-				stmtDsc := parseBlock (scanner.token)
-				if stmtDsc /= Void then
-					ast.addStatement (stmtDsc)
-				end -- if				
-			else
-				if scanner.blockStart then  -- Anonymous routine: block/loop statement
+				when scanner.while_token then -- Anonymous routine: loop statement
+					stmtDsc := parseWhileStatement (False)
+					if stmtDsc /= Void then
+						ast.addStatement (stmtDsc)
+					end -- if				
+				when scanner.new_token then -- Anonymous routine: new statement
+					stmtDsc := parseNewStatement
+					if stmtDsc /= Void then
+						ast.addStatement (stmtDsc)
+					end -- if				
+				when scanner.detach_token then -- Anonymous routine:  ? statement
+					stmtDsc := parseDetachStatement
+					if stmtDsc /= Void then
+						ast.addStatement (stmtDsc)
+					end -- if				
+				when scanner.raise_token then -- Anonymous routine: raise statement
+					stmtDsc := parseRaiseStatement
+					if stmtDsc /= Void then
+						ast.addStatement (stmtDsc)
+					end -- if				
+				when scanner.return_token then -- Anonymous routine: return statement
+					stmtDsc := parseReturnStatement
+					if stmtDsc /= Void then
+						ast.addStatement (stmtDsc)
+					end -- if
+				when scanner.left_paranthesis_token then -- Anonymous routine: turple assignment or call (a, b) := expr or ().foo ...
+					stmtDsc := parseAssignmentOrQualifiedCall
+					if stmtDsc /= Void then
+						ast.addStatement (stmtDsc)
+					end -- if
+				when scanner.var_token then -- Anonymous rotuine - local attribute declaration
+					parseLocalsDeclaration (ast.statements, True, Void)
+				when scanner.require_token then -- Anonymous routine: block/loop statement
 					stmtDsc := parseBlock (scanner.token)
 					if stmtDsc /= Void then
 						ast.addStatement (stmtDsc)
 					end -- if				
-				elseif scanner.Cmode then
-					syntax_error (<<
-						scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
-						scanner.virtual_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
-						scanner.if_token, scanner.require_token, scanner.left_curly_bracket_token, scanner.while_token, scanner.new_token, scanner.detach_token,
-						scanner.raise_token, scanner.return_token, scanner.left_paranthesis_token, scanner.var_token
-					>>)
-					toExit := True
 				else
-					syntax_error (<<
-						scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
-						scanner.virtual_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
-						scanner.if_token, scanner.require_token, scanner.do_token, scanner.while_token, scanner.new_token, scanner.detach_token,
-						scanner.raise_token, scanner.return_token, scanner.left_paranthesis_token, scanner.var_token
-					>>)
-					toExit := True
-				end -- if
+					if scanner.blockStart then  -- Anonymous routine: block/loop statement
+						stmtDsc := parseBlock (scanner.token)
+						if stmtDsc /= Void then
+							ast.addStatement (stmtDsc)
+						end -- if				
+					else
+						syntaxError ("Start of compilation unit expected", unit_folowers, <<>>)
+					end -- if
+				end -- inspect
 			end -- inspect
+			if not toExit then
+				scanner.enableSystemMode
+			end -- if			
 		end -- loop
 	end -- parseSourceFile
 	
 feature {None}
 
+	unit_folowers: Array [Integer] is
+	do
+		Result := <<
+			 scanner.build_token, scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
+			 scanner.virtual_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
+			 scanner.if_token, scanner.while_token, scanner.new_token, scanner.detach_token, scanner.raise_token, scanner.return_token,
+			 scanner.left_paranthesis_token, scanner.var_token, scanner.require_token
+		>>
+		if scanner.Cmode then			
+			Result.force (scanner.left_curly_bracket_token, Result.count + 1)
+		else
+			Result.force (scanner.do_token, Result.count + 1)
+		end -- if
+	end -- unit_folowers
+
 	parseSystemDescription: SystemDescriptor is
 	require
-		valid_token: validToken (<<scanner.system_token>>)
+		valid_token: validToken (<<scanner.build_token>>)
 		-- Context: system (Identifier| StringConstant) 
 		-- [init Identifier]
 		-- [use {(Identifier| StringConstant) [“:” Options end]} end]
@@ -392,10 +390,12 @@ feature {None}
 	local 
 		name: String
 		entry: String
+		paths: Sorted_Array [String]
 		clusters: Sorted_Array [String] -- temporary!!! String - in fact ClusterDescriptor
 		libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 		wasError: Boolean
 	do
+-- trace (">>parseSystemDescription")
 		scanner.nextToken
 		inspect
 			scanner.token
@@ -407,18 +407,27 @@ feature {None}
 			wasError := True
 		end -- inspect
 		if not wasError then
-			if scanner.token = scanner.init_token then
+-- trace ("%TparseSystemDescription: " + name)
+			inspect
+				scanner.token
+			when scanner.colon_token then
+				scanner.nextToken
+				paths := parse_paths				
+			when scanner.one_line_function_token then -- =>
 				scanner.nextToken
 				inspect
 					scanner.token
-				when scanner.identifier_token, scanner.string_const_token then
+				when scanner.identifier_token then
 					entry := scanner.tokenString
 					scanner.nextToken
 				else
-					syntax_error (<<scanner.identifier_token, scanner.string_const_token>>)
+					syntax_error (<<scanner.identifier_token>>)
 					wasError := True
 				end -- inspect
-			end -- if
+			else
+				syntax_error (<<scanner.colon_token, scanner.one_line_function_token>>)
+				wasError := True
+			end -- inspect
 			if not wasError then
 				if scanner.token = scanner.use_token then
 					scanner.nextToken
@@ -430,14 +439,24 @@ feature {None}
 				end -- if
 				if scanner.token = scanner.end_token then
 					scanner.nextToken
-					create Result.init (name, entry, clusters, libraries)
+					if entry = Void then
+						create Result.init_library (name, paths, clusters, libraries)
+					else
+						create Result.init_program (name, entry, clusters, libraries)
+					end -- if
 				else
 					syntax_error (<<scanner.end_token>>)
 				end -- if
 			end -- if
 		end -- if 
+-- trace ("<<parseSystemDescription")
 	end -- parseSystemDescription
 
+	parse_paths: Sorted_Array [String] is
+	do
+		Result := parseStrings
+	end -- parse_paths
+	
 	parseClusters: Sorted_Array [String] is
 	do
 		Result := parseStrings
@@ -446,6 +465,7 @@ feature {None}
 	do
 		Result := parseStrings
 	end -- parseLibraries
+
 	parseStrings: Sorted_Array [String] is
 	local
 		name: String
@@ -464,14 +484,13 @@ feature {None}
 					validity_warning ( "Duplicated name '" + name + "', ignored")
 				end -- if
 				scanner.nextToken
-			when scanner.end_token then
-				scanner.nextToken			
-				toLeave := True
 			else
-				syntax_error (<<scanner.identifier_token, scanner.string_const_token, scanner.end_token>>)
 				toLeave := True
 			end -- inspect
 		end -- loop
+		if Result.count = 0 then
+			Result := Void
+		end -- if
 	end -- parseStrings
 	
 	parseFunctionOrLocalAttribute (name: String) is
@@ -552,7 +571,10 @@ feature {None}
 	--        ^ 
 	require
 		target_not_void: name /= Void
-		valid_token: validToken (<<scanner.operator_token, scanner.minus_token, scanner.bar_token, scanner.tilda_token, scanner.identifier_token>>)
+		valid_token: validToken (<<
+			scanner.operator_token, -- scanner.minus_token,
+			scanner.bar_token, scanner.tilda_token, scanner.identifier_token
+		>>)
 	local
 		callChain: Array [CallChainElement]
 		arguments: Array [ExpressionDescriptor]
@@ -616,7 +638,9 @@ feature {None}
 			--              ^
 			-- Identifier Parameters [“:” Type] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | ( foreign| (“=>”Expression ) [EnsureBlock end] )
 			isRtnDecl := True
-		when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.bar_token, scanner.tilda_token then
+		when scanner.operator_token, -- scanner.minus_token,
+			scanner.implies_token, scanner.bar_token, scanner.tilda_token
+		then
 			-- name ( operator		>> unqualified call or assignment ().x or ().x := expr
 			--        ^
 		when scanner.identifier_token then
@@ -646,7 +670,9 @@ feature {None}
 				--          ^
 				--        ^ 
 				scanner.revert
-			when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.bar_token, scanner.tilda_token, scanner.less_token, scanner.greater_token then
+			when scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.bar_token, scanner.tilda_token, scanner.less_token, scanner.greater_token
+			then
 				-- name ( id operator 	>> unqualified call or assignment
 				--           ^
 				--        ^
@@ -672,7 +698,9 @@ feature {None}
 						validity_error( "Unexpected end of file '" + scanner.sourceFileName + "'")
 						toLeave := True
 						wasError := True
-					when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.bar_token, scanner.tilda_token then
+					when scanner.operator_token, -- scanner.minus_token,
+						scanner.implies_token, scanner.bar_token, scanner.tilda_token
+					then
 						-- 	name (id,..., operator		>> unqualified call or assignment
 						--				  ^
 --trace ("operator found reverting ...")
@@ -707,7 +735,9 @@ feature {None}
 								scanner.push
 								scanner.revert
 								toLeave := True
-							when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token then
+							when scanner.operator_token, -- scanner.minus_token,
+								scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+							then
 								-- 	name (id,..., id operator	>> unqualified call or assignment
 								--					 ^
 								scanner.push
@@ -719,7 +749,8 @@ feature {None}
 							end -- inspect
 						else
 							syntax_error (<<
-								scanner.comma_token, scanner.right_paranthesis_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token,
+								scanner.comma_token, scanner.right_paranthesis_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.implies_token, scanner.less_token, scanner.greater_token,
 								scanner.bar_token, scanner.tilda_token, scanner.colon_token
 							>>)
 							scanner.flush
@@ -729,7 +760,8 @@ feature {None}
 					when scanner.comma_token then 
 						if commaFound then
 							syntax_error (<<
-								scanner.var_token, scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token,
+								scanner.var_token, scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.implies_token, scanner.less_token, scanner.greater_token,
 								scanner.bar_token, scanner.tilda_token
 							>>)
 							scanner.flush
@@ -744,7 +776,8 @@ feature {None}
 					when scanner.right_paranthesis_token then 
 						if commaFound then
 							syntax_error (<<
-								scanner.var_token, scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token,
+								scanner.var_token, scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.implies_token, scanner.less_token, scanner.greater_token,
 								scanner.bar_token, scanner.tilda_token
 							>>)
 							scanner.flush
@@ -757,7 +790,8 @@ feature {None}
 						end -- if
 					else
 						syntax_error (<<
-							scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token, 
+							scanner.operator_token, -- scanner.minus_token,
+							scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token, 
 							scanner.var_token, scanner.identifier_token, scanner.comma_token,
 							scanner.right_paranthesis_token
 						>>)
@@ -768,13 +802,17 @@ feature {None}
 				end -- loop
 			else
 				syntax_error (<<
-					scanner.colon_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.dot_token, scanner.right_paranthesis_token
+					scanner.colon_token, scanner.operator_token, -- scanner.minus_token,
+					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.dot_token, scanner.right_paranthesis_token
 				>>)
 				scanner.flush				
 				wasError := True
 			end -- inspect			
 		else
-			syntax_error (<<scanner.var_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.identifier_token>>)
+			syntax_error (<<
+				scanner.var_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.identifier_token
+			>>)
 			wasError := True
 		end -- inspect
 		if not wasError then
@@ -1450,7 +1488,9 @@ feature {None}
 		scanner.nextToken
 		inspect
 			scanner.token
-		when scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token then
+		when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+			scanner.implies_token, scanner.less_token, scanner.greater_token
+		then
 			-- x.** (expr) is allowed :-)
 			name1 := scanner.tokenString
 			scanner.nextToken
@@ -1458,7 +1498,10 @@ feature {None}
 			callChain := parseCallChain
 			create Result.init (constDsc, name1, arguments, callChain)
 		else
-			syntax_error (<<scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token>>)
+			syntax_error (<<
+				scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token
+			>>)
 		end -- if
 	end -- parseMemberCallWithConstant
 
@@ -1509,7 +1552,9 @@ feature {None}
 				scanner.nextToken
 				inspect
 					scanner.token
-				when scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token then -- , scanner.bar_token, scanner.tilda_token ????
+				when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+					scanner.implies_token, scanner.less_token, scanner.greater_token 
+				then -- , scanner.bar_token, scanner.tilda_token ????
 					-- x.** (expr) is allowed :-)
 					name1 := scanner.tokenString
 					scanner.nextToken
@@ -1517,7 +1562,10 @@ feature {None}
 					callChain := parseCallChain
 					create {QualifiedCallDescriptor}Result.init (ceDsc, name1, arguments, callChain)
 				else
-					syntax_error (<<scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token>>)
+					syntax_error (<<
+						scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+						scanner.implies_token, scanner.less_token, scanner.greater_token
+					>>)
 				end -- if
 			when scanner.left_paranthesis_token then
 				--#1 Identifier|this|return Arguments {CallChain}
@@ -1547,7 +1595,7 @@ feature {None}
 		identDsc: IdentifierDescriptor
 		assignDsc: AssignmentStatementDescriptor
 		writableCallDsc: MemberCallDescriptor
-		initCallDsc: InitCallDescriptor
+		--initCallDsc: InitCallDescriptor
 	do
 --trace (">>>parseStatement1")
 		inspect
@@ -1603,23 +1651,23 @@ feature {None}
 				create {UnqualifiedCallDescriptor} stmtDsc.init (identDsc, Void, Void)
 				Result := <<stmtDsc>>
 			end
-		when scanner.init_token then
-			scanner.nextToken
-			inspect	
-				scanner.token
-			when scanner.left_paranthesis_token then
-				-- parse init call: init(  .... 
-				--callDsc := parseWritableCall (initDsc)
-				create {InitCallDescriptor}initCallDsc.init (parseArguments)
-				Result := <<initCallDsc>>
-				--if callDsc /= Void then
-				--	Result := <<callDsc>>
-				--end -- if 
-			else
-				-- That is just init procedure call with no arguments!!! 
-				create {UnqualifiedCallDescriptor} stmtDsc.init (initDsc, Void, Void)
-				Result := <<stmtDsc>>
-			end
+		--when scanner.init_token then
+		--	scanner.nextToken
+		--	inspect	
+		--		scanner.token
+		--	when scanner.left_paranthesis_token then
+		--		-- parse init call: init(  .... 
+		--		--callDsc := parseWritableCall (initDsc)
+		--		create {InitCallDescriptor}initCallDsc.init (parseArguments)
+		--		Result := <<initCallDsc>>
+		--		--if callDsc /= Void then
+		--		--	Result := <<callDsc>>
+		--		--end -- if 
+		--	else
+		--		-- That is just init procedure call with no arguments!!! 
+		--		create {UnqualifiedCallDescriptor} stmtDsc.init (initDsc, Void, Void)
+		--		Result := <<stmtDsc>>
+		--	end
 		when scanner.var_token then
 			create Result.make (1, 0)
 			parseLocalsDeclaration(Result, True, Void)
@@ -1717,7 +1765,9 @@ feature {None}
 					syntax_error (<<
 						scanner.identifier_token, scanner.var_token, scanner.left_paranthesis_token, scanner.old_token, scanner.this_token, scanner.new_token,
 						scanner.if_token, scanner.while_token, scanner.detach_token, scanner.return_token, scanner.raise_token, scanner.require_token, 
-						scanner.left_curly_bracket_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.init_token
+						scanner.left_curly_bracket_token, scanner.operator_token, -- scanner.minus_token,
+						scanner.implies_token, scanner.less_token, scanner.greater_token
+						--, scanner.init_token
 					>>)
 				end -- if
 			else
@@ -1725,7 +1775,9 @@ feature {None}
 					syntax_error (<<
 						scanner.identifier_token, scanner.var_token, scanner.left_paranthesis_token, scanner.old_token, scanner.this_token, scanner.new_token,
 						scanner.if_token, scanner.while_token, scanner.detach_token, scanner.return_token, scanner.raise_token, scanner.require_token, 
-						scanner.do_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.init_token
+						scanner.do_token, scanner.operator_token, -- scanner.minus_token,
+						scanner.implies_token, scanner.less_token, scanner.greater_token
+						--, scanner.init_token
 					>>)
 				end -- if
 			end --if
@@ -1816,7 +1868,7 @@ feature {None}
 		cceDsc: CallChainElement 
 		--cceDsc1: CallChainElement
 	do
---trace (">>>parseUnaryExpression")
+trace (">>>parseUnaryExpression")
 		inspect
 			scanner.token
 		when scanner.identifier_token then 
@@ -1923,7 +1975,9 @@ feature {None}
 		when scanner.rtn_token, scanner.pure_token, scanner.safe_token then
 			-- LambdaExpression
 			Result := parseLambdaExpression (checkSemicolonAfter)
-		when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+		when scanner.operator_token, -- scanner.minus_token,
+			scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
+		then
 			-- operator Expression
 			operator := scanner.tokenString
 			scanner.nextToken
@@ -1976,7 +2030,9 @@ feature {None}
 			scanner.nextWithSemicolon (checkSemicolonAfter)
 			inspect
 				scanner.token
-			when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+			when scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
+			then
 				-- ident operator
 				Result := parseBinaryOperatorExpression (returnDsc, checkSemicolonAfter)
 			when scanner.in_token then
@@ -2023,7 +2079,9 @@ feature {None}
 --trace ("<ident>: " + identDsc.out)
 				inspect
 					scanner.token
-				when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+				when scanner.operator_token, -- scanner.minus_token,
+					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
+				then
 					-- ident operator
 --trace ("<ident>: " + identDsc.out + " <operator>" )
 					Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
@@ -2111,7 +2169,9 @@ feature {None}
 --trace ("this ")
 			inspect
 				scanner.token
-			when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+			when scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
+			then
 				-- ident operator
 				Result := parseBinaryOperatorExpression (thisDsc, checkSemicolonAfter)
 			when scanner.bar_token then 
@@ -2154,7 +2214,9 @@ feature {None}
 			end
 			inspect
 				scanner.token
-			when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then 
+			when scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
+			then 
 				Result := parseBinaryOperatorExpression (constDsc, checkSemicolonAfter)
 			when scanner.in_token then
 				-- const in Expr1 .. Expr2
@@ -2209,7 +2271,9 @@ feature {None}
 					--	Keep semicolon!!! scanner.nextToken
 --trace ("#55 EOE due to ;")
 					toExit := True
-				when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.bar_token, scanner.tilda_token, scanner.less_token, scanner.greater_token then
+				when scanner.operator_token, -- scanner.minus_token,
+					scanner.implies_token, scanner.bar_token, scanner.tilda_token, scanner.less_token, scanner.greater_token
+				then
 					-- Expr operator Expr
 					operator := scanner.tokenString
 					scanner.nextToken
@@ -2382,12 +2446,17 @@ feature {None}
 	do
 		inspect 
 			scanner.token
-		when scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token then
+		when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+			scanner.implies_token, scanner.less_token, scanner.greater_token
+		then
 			identifier := scanner.tokenString
 			scanner.nextToken			
 			create Result.init (identifier, parseArguments)
 		else
-			syntax_error (<<scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token>>)
+			syntax_error (<<
+				scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token
+			>>)
 		end -- inspect
 	end -- if
 
@@ -2447,7 +2516,9 @@ feature {None}
 			scanner.nextToken
 			inspect
 				scanner.token
-			when scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token then
+			when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+			then
 				operator := scanner.tokenString
 				scanner.nextToken
 				exprDsc := parseExpression
@@ -2464,7 +2535,8 @@ feature {None}
 				end -- if
 			else
 				syntax_error (<<
-					scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, 
+					scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+					scanner.implies_token, 
 					scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
 				>>)
 				wasError := True
@@ -2488,8 +2560,11 @@ feature {None}
 	--parseBinaryOperatorExpression (exprDsc1: MemberCallDescriptor; checkSemicolonAfter: Boolean ): ExpressionCallDescriptor is --ExprOperatorExprDescriptor is
 	require
 		first_expression_not_void: exprDsc1 /= Void
-		valid_token: validToken (<<scanner.operator_token, scanner.minus_token, scanner.less_token, scanner.greater_token,
-			scanner.tilda_token, scanner.bar_token>>)
+		valid_token: validToken (<<
+			scanner.operator_token, -- scanner.minus_token,
+			scanner.less_token, scanner.greater_token,
+			scanner.tilda_token, scanner.bar_token
+		>>)
 	local
 		exprDsc2: ExpressionDescriptor
 		operator: String
@@ -2781,17 +2856,17 @@ feature {None}
 		scanner.nextToken
 		utDsc := parseUnitType
 		if utDsc /= Void then
-			if scanner.token = scanner.dot_token then
-				scanner.nextToken
-				if scanner.token = scanner.init_token then
-					scanner.nextToken
-					args := parseArguments
-				else
-					syntax_error (<<scanner.init_token>>)
-				end -- if
-			else
+			--if scanner.token = scanner.dot_token then
+			--	scanner.nextToken
+			--	if scanner.token = scanner.init_token then
+			--		scanner.nextToken
+			--		args := parseArguments
+			--	else
+			--		syntax_error (<<scanner.init_token>>)
+			--	end -- if
+			--else
 				args := parseArguments
-			end -- if
+			--end -- if
 			create Result.init (utDsc, args)
 		end -- if
 	end -- parseNewExpression
@@ -2840,17 +2915,17 @@ feature {None}
 				syntax_error (<<scanner.right_curly_bracket_token>>)
 			end -- if
 			if not wasError then
-				if scanner.token = scanner.dot_token then
-					scanner.nextToken
-					if scanner.token = scanner.init_token then
-						scanner.nextToken
-						args := parseArguments
-					else
-						syntax_error (<<scanner.init_token>>)
-					end -- if
-				else
+				--if scanner.token = scanner.dot_token then
+				--	scanner.nextToken
+				--	if scanner.token = scanner.init_token then
+				--		scanner.nextToken
+				--		args := parseArguments
+				--	else
+				--		syntax_error (<<scanner.init_token>>)
+				--	end -- if
+				--else
 					args := parseArguments
-				end -- if
+				--end -- if
 				create Result.init (utDsc, name, args)
 			end -- if
 		else
@@ -3057,7 +3132,9 @@ feature {None}
 			scanner.nextToken
 			inspect
 				scanner.token
-			when scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token then
+			when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+			then
 				name := scanner.tokenString
 				scanner.nextToken
 				if scanner.token = scanner.left_paranthesis_token then
@@ -3073,9 +3150,14 @@ feature {None}
 					create Result.fill (<<rtnDDsc>>)
 				end -- if	
 			else
-				syntax_error (<<scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token>>)
+				syntax_error (<<
+					scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+				>>)
 			end -- inspect
-		when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token then
+		when scanner.operator_token, -- scanner.minus_token,
+			scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+		then
 			-- MemberDescription:[rtn] RoutineName [Signature]
 			name := scanner.tokenString
 			scanner.nextToken
@@ -3092,7 +3174,10 @@ feature {None}
 				create Result.fill (<<rtnDDsc>>)
 			end -- if			
 		else
-			syntax_error (<<scanner.rtn_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token>>)
+			syntax_error (<<
+				scanner.rtn_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+			>>)
 		end -- inspect
 	end -- parseMemberDescription
 	
@@ -3648,8 +3733,8 @@ feature {None}
 	parseAnyRoutine(
 		isOverriding, isFinal, is_pure, is_safe: Boolean; name, anAliasName: String; type: TypeDescriptor;
 		isStandAlone, isLambda: Boolean; pars: Array [ParameterDescriptor]; checkSemicolonAfter: Boolean): RoutineDescriptor is
-	-- StandaloneRoutine: 		[pure|safe] Identifier [FormalGenerics] [Parameters] [“:” Type] [EnclosedUseDirective] ([RequireBlock] (InnerBlock [EnsureBlock] end)|(foreign|(“=>”Expression) [EnsureBlock end])
-	-- UnitRoutineDeclaration: 	[pure|safe] RoutineName [final Identifier] [Parameters] [“:” Type] [EnclosedUseDirective]  [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign|(“=>”Expression) [EnsureBlock end])
+	-- StandaloneRoutine: 		[pure|safe] Identifier [FormalGenerics] [Parameters] [“:”|"->" Type] [EnclosedUseDirective] ([RequireBlock] (InnerBlock [EnsureBlock] end)|(foreign|(“=>”Expression) [EnsureBlock end])
+	-- UnitRoutineDeclaration: 	[pure|safe] RoutineName [final Identifier] [Parameters] [“:”|"->" Type] [EnclosedUseDirective]  [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign|(“=>”Expression) [EnsureBlock end])
     --                                      ^
 	require
 		name_not_void: name /= Void
@@ -3723,20 +3808,29 @@ feature {None}
 				parameters := parseParameters
 --trace ("parameters parsed")				
 			end -- if
-			if scanner.token = scanner.colon_token  or else scanner.token = scanner.implies_token then
+			inspect
+				scanner.token
+			when scanner.colon_token, scanner.implies_token then
+  				-- It is a function
 				scanner.nextToken
 				returnType := parseTypeDescriptor
-			elseif scanner.token = scanner.minus_token then
-				scanner.nextToken
-				if scanner.token = scanner.greater_token then
-					-- "->"
-					scanner.nextToken
-					returnType := parseTypeDescriptor
-				else
-					syntax_error (<<scanner.greater_token>>)
-					wasError := True
-				end -- if
-			end -- if
+			else
+				-- It is a procedure
+			end -- inspect
+--			if scanner.token = scanner.colon_token  or else scanner.token = scanner.implies_token then
+--				scanner.nextToken
+--				returnType := parseTypeDescriptor
+--			elseif scanner.token = scanner.minus_token then
+--				scanner.nextToken
+--				if scanner.token = scanner.greater_token then
+--					-- "->"
+--					scanner.nextToken
+--					returnType := parseTypeDescriptor
+--				else
+--					syntax_error (<<scanner.greater_token>>)
+--					wasError := True
+--				end -- if
+--			end -- if
 			if scanner.token = scanner.use_token and then not isLambda then
 				ucb := parseEnclosedUseDirective
 				if ucb /= Void then
@@ -3997,7 +4091,7 @@ feature {None}
 				Result := parseMultiVarParameter (<<namedParDsc>>)
 			else
 				--syntax_error (<<scanner.is_token, scanner.colon_token, scanner.comma_token>>)
-				syntaxError (Void, <<scanner.is_token, scanner.colon_token, scanner.comma_token>>, 
+				syntaxError ("Parameter definition or next parameter expected", <<scanner.is_token, scanner.colon_token, scanner.comma_token>>, 
 					<<scanner.right_paranthesis_token>>)
 			end -- inspect
 		when scanner.var_token then
@@ -4029,7 +4123,7 @@ feature {None}
 			Result := <<>>
 		else
 --			syntax_error (<<scanner.var_token, scanner.identifier_token, scanner.assignment_token, scanner.right_paranthesis_token>>)
-			syntaxError (Void, <<scanner.var_token, scanner.identifier_token, scanner.assignment_token, scanner.right_paranthesis_token>>, 
+			syntaxError ("Parameter declaration expected", <<scanner.var_token, scanner.identifier_token, scanner.assignment_token, scanner.right_paranthesis_token>>, 
 				<<scanner.right_paranthesis_token>>)
 		end -- if
 	end -- parseParameters
@@ -4613,7 +4707,9 @@ feature {None}
 			scanner.nextWithSemicolon (checkSemicolonAfter)
 			inspect
 				scanner.token
-			when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+			when scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
+			then
 				-- ident operator
 --trace ("<ident>: " + identDsc.out + " <operator>" )
 				Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
@@ -4641,7 +4737,9 @@ feature {None}
 			end
 			inspect
 				scanner.token
-			when scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then 
+			when scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
+			then 
 				Result := parseBinaryOperatorExpression (constDsc, checkSemicolonAfter)
 			when scanner.semicolon_token then
 				-- Just constant
@@ -5258,7 +5356,7 @@ feature {None}
 	
 	parseFormalGenericType: FormalGenericDescriptor is
 	--70
-	-- Identifier ([“extend” UnitTypeName ] [“init” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
+	-- Identifier ([“extend” UnitTypeName ] [“new” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
 
 	require
 		valid_token: validToken (<<scanner.identifier_token>>)
@@ -5278,7 +5376,7 @@ feature {None}
 			scanner.nextToken
 			typeDsc := parseUnitTypeName
 			if typeDsc /= Void then
-				if scanner.token = scanner.init_token then
+				if scanner.token = scanner.new_token then -- init_token then
 					scanner.nextToken
 					inspect
 						scanner.token
@@ -5295,7 +5393,7 @@ feature {None}
 					create {FormalGenericTypeDescriptor} Result.init (name, typeDsc, signDsc)
 				end -- if
 			end -- if
-		when scanner.init_token then
+		when scanner.new_token then
 			scanner.nextToken
 			inspect
 				scanner.token
@@ -5338,7 +5436,10 @@ feature {None}
 --trace ("parseFormalGenericType: tuple type parsed " + Result.out)
 				end -- if				
 			else
-				syntax_error (<<scanner.identifier_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.rtn_token, scanner.left_paranthesis_token>>)
+				syntax_error (<<
+					scanner.identifier_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
+					scanner.rtn_token, scanner.left_paranthesis_token
+				>>)
 			end -- inspect
 		else
 			create {FormalGenericTypeDescriptor} Result.init (name, Void, Void)
@@ -5918,7 +6019,8 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			parseMember (currentVisibilityZone, unitDsc, True, Void)
 			Result := True
 		when 
-			scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
+			scanner.operator_token, -- scanner.minus_token,
+			scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
 			scanner.assignment_token, scanner.left_paranthesis_token
 		then
 			-- override operator ...
@@ -6039,17 +6141,17 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		(currentVisibilityZone: MemberVisibilityDescriptor; unitDsc: UnitDeclarationDescriptor): Boolean is 
 		--76
 		-- parse
-		-- "init	InitProcedureInheritance"
-		-- init InitFromParentDescriptor {[“,”] InitFromParentDescriptor}
+		-- "new	InitProcedureInheritance"
+		-- new InitFromParentDescriptor {[“,”] InitFromParentDescriptor}
 		--		inhertitedInits: Sorted_Array [InitFromParentDescriptor]
 		-- InitFromParentDescriptor => UnitTypeName [Signature]
 		-- identifier
 
 		-- or
 		-- "MemberDeclaration (goToMembers := True)"
-		-- init ( require do foreign use
+		-- new ( require do foreign use
 	require
-		valid_token: validToken (<<scanner.init_token>>)
+		valid_token: validToken (<<scanner.new_token>>)
 		unit_descriptor_not_void: unitDsc /= Void
 	local
 		utnDsc: UnitTypeNameDescriptor
@@ -6198,6 +6300,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		regExpDsc: RegExpConstObjectDescriptor
 		cwiDsc: ConstWithInitDescriptor
 		identDsc: IdentifierDescriptor
+		arguments: Array [ExpressionDescriptor]
 		name: String
 		operator: String
 		exprDsc: ExpressionDescriptor	
@@ -6213,16 +6316,16 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			scanner.nextToken
 			inspect
 				scanner.token
-			when scanner.dot_token then
-				-- Init call
-				scanner.nextToken
-				if scanner.token = scanner.init_token then
-					scanner.nextToken					
-					create {ConstWithInitDescriptor} Result.init (name, parseArguments)
-				else
-					syntax_error (<<scanner.init_token>>)
-					wasError:= True 
-				end -- if
+			--when scanner.dot_token then
+			--	-- Init call
+			--	scanner.nextToken
+			--	if scanner.token = scanner.init_token then
+			--		scanner.nextToken					
+			--		create {ConstWithInitDescriptor} Result.init (name, parseArguments)
+			--	else
+			--		syntax_error (<<scanner.init_token>>)
+			--		wasError:= True 
+			--	end -- if
 			when scanner.left_paranthesis_token then
 				-- name ( expr) - init short form
 				create {ConstWithInitDescriptor} Result.init (name, parseArguments)
@@ -6231,7 +6334,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				scanner.nextToken
 				inspect
 					scanner.token
-				when scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token then
+				when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+				then
 					operator := scanner.tokenString
 					scanner.nextToken
 					exprDsc := parseExpression
@@ -6265,21 +6370,28 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						create {IdentifierDescriptor} identDsc.init (scanner.tokenString)
 						name := scanner.tokenString
 						scanner.nextToken
-						if scanner.token = scanner.dot_token then
-							scanner.nextToken
-							if scanner.token = scanner.init_token then
-								scanner.nextToken					
-								--create {ConstWithInitDescriptor} cwiDsc.init (identDsc, parseArguments)
-								create {ConstWithInitDescriptor} cwiDsc.init (name, parseArguments)
-								create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
-							else
-								syntax_error (<<scanner.init_token>>)
-								wasError:= True 
-								Result := Void
-							end -- if
-						else
+						arguments := parseArguments
+						if arguments = Void then
 							create {ConstRangeObjectDescriptor} Result.init (Result, identDsc)
+						else
+							create {ConstWithInitDescriptor} cwiDsc.init (name, arguments)
+							create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
 						end -- if
+						--if scanner.token = scanner.dot_token then
+						--	scanner.nextToken
+						--	if scanner.token = scanner.init_token then
+						--		scanner.nextToken					
+						--		--create {ConstWithInitDescriptor} cwiDsc.init (identDsc, parseArguments)
+						--		create {ConstWithInitDescriptor} cwiDsc.init (name, parseArguments)
+						--		create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
+						--	else
+						--		syntax_error (<<scanner.init_token>>)
+						--		wasError:= True 
+						--		Result := Void
+						--	end -- if
+						--else
+						--	create {ConstRangeObjectDescriptor} Result.init (Result, identDsc)
+						--end -- if
 					when scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token then
 						constDsc := parseConstant (False)
 						if constDsc = Void then
@@ -6308,7 +6420,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					scanner.nextToken
 					inspect
 						scanner.token
-					when scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token then
+					when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+						scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+					then
 						operator := scanner.tokenString
 						scanner.nextToken
 						exprDsc := parseExpression
@@ -6336,18 +6450,18 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							-- Init call
 							name := scanner.tokenString
 							scanner.nextToken
-							if scanner.token = scanner.dot_token then
-								scanner.nextToken
-								if scanner.token = scanner.init_token then
-									scanner.nextToken					
+							--if scanner.token = scanner.dot_token then
+							--	scanner.nextToken
+							--	if scanner.token = scanner.init_token then
+							--		scanner.nextToken					
 									create {ConstWithInitDescriptor} cwiDsc.init (name, parseArguments)
 									create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
-								else
-									syntax_error (<<scanner.init_token>>)
-									wasError:= True 
-									Result := Void
-								end -- if
-							end -- if
+							--	else
+							--		syntax_error (<<scanner.init_token>>)
+							--		wasError:= True 
+							--		Result := Void
+							--	end -- if
+							--end -- if
 						when scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token then
 							constDsc := parseConstant (False)
 							if constDsc = Void then
@@ -6418,58 +6532,58 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					create {AttachedUnitAttributeDescriptor} attrDsc.init (isOverriding, isFinal, True, False, name, Void, Void, exprDsc)
 					create Result.fill (<<attrDsc>>)
 				end -- if
-			when scanner.minus_token then
-				scanner.nextToken
-				if scanner.token = scanner.greater_token then
-					scanner.nextToken
-	--trace ("parse function")
-					typeDsc := parseTypeDescriptor
-					if typeDsc /= Void then
-						-- UnitRoutineDeclaration: Identifier “->” Type [EnclosedUseDirective] 
-						--                                             ^
-						-- 		[RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign| (“=>”Expression ) [EnsureBlock end] )
-						-- or
-						-- UnitAttributeDeclaration: Identifier “:” Type [ (rtn “:=” [[ Parameters] HyperBlock ])|( is ConstantExpression) ]
-						--                                               ^
-						inspect
-							scanner.token
-						when scanner.require_token then 
-							-- Function or it is the last attribute with no assigner in the unit and require is invariant !!!!
-							memDsc := parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc, isOverriding, isFinal, False, False, name, typeDsc)
-							if memDsc /= Void then
-								create Result.fill (<<memDsc>>)
-							end -- if
-						when scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token then 
-							-- function
-							rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
-							if rtnDsc /= Void then
-								create Result.fill (<<rtnDsc>>)
-							end -- if
-						else
-							if scanner.blockStart then
-								-- function
-								rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
-								if rtnDsc /= Void then
-									create Result.fill (<<rtnDsc>>)
-								end -- if
-							elseif scanner.Cmode then
-								syntax_error (<<
-									scanner.require_token, 
-									scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token,
-									scanner.left_curly_bracket_token
-								>>)
-							else
-								syntax_error (<<
-									scanner.require_token, 
-									scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token,
-									scanner.do_token
-								>>)
-							end --if
-						end -- inspect
-					end -- if
-				else
-					syntax_error (<<scanner.greater_token>>)
-				end -- if
+--			when scanner.minus_token then
+--				scanner.nextToken
+--				if scanner.token = scanner.greater_token then
+--					scanner.nextToken
+--	--trace ("parse function")
+--					typeDsc := parseTypeDescriptor
+--					if typeDsc /= Void then
+--						-- UnitRoutineDeclaration: Identifier “->” Type [EnclosedUseDirective] 
+--						--                                             ^
+--						-- 		[RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign| (“=>”Expression ) [EnsureBlock end] )
+--						-- or
+--						-- UnitAttributeDeclaration: Identifier “:” Type [ (rtn “:=” [[ Parameters] HyperBlock ])|( is ConstantExpression) ]
+--						--                                               ^
+--						inspect
+--							scanner.token
+--						when scanner.require_token then 
+--							-- Function or it is the last attribute with no assigner in the unit and require is invariant !!!!
+--							memDsc := parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc, isOverriding, isFinal, False, False, name, typeDsc)
+--							if memDsc /= Void then
+--								create Result.fill (<<memDsc>>)
+--							end -- if
+--						when scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token then 
+--							-- function
+--							rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
+--							if rtnDsc /= Void then
+--								create Result.fill (<<rtnDsc>>)
+--							end -- if
+--						else
+--							if scanner.blockStart then
+--								-- function
+--								rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
+--								if rtnDsc /= Void then
+--									create Result.fill (<<rtnDsc>>)
+--								end -- if
+--							elseif scanner.Cmode then
+--								syntax_error (<<
+--									scanner.require_token, 
+--									scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token,
+--									scanner.left_curly_bracket_token
+--								>>)
+--							else
+--								syntax_error (<<
+--									scanner.require_token, 
+--									scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token,
+--									scanner.do_token
+--								>>)
+--							end --if
+--						end -- inspect
+--					end -- if
+--				else
+--					syntax_error (<<scanner.greater_token>>)
+--				end -- if
 			when scanner.implies_token then
 				-- ident ->
 				scanner.nextToken
@@ -7002,8 +7116,12 @@ toLeave := True
 	--80
 	-- UnitRoutineDeclaration:  Operator [AliasName] [final Identifier] [Parameters] [“:” Type] [EnclosedUseDirective] ([RequireBlock] InnerBlock|virtual|foreign [EnsureBlock] [end]) | (“=>”Expression )
 	require
-		valid_token: validToken (<<scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, 
-			scanner.bar_token, scanner.tilda_token, scanner.assignment_token, scanner.left_paranthesis_token>>)
+		valid_token: validToken (<<
+			scanner.operator_token, -- scanner.minus_token,
+			scanner.implies_token, scanner.less_token, scanner.greater_token, 
+			scanner.bar_token, scanner.tilda_token,
+			scanner.assignment_token, scanner.left_paranthesis_token
+		>>)
 		-- Tricky:  () (Params):Type  or (): Type or () (): Type
 	local
 		rtnName: String
@@ -7143,7 +7261,7 @@ toLeave := True
 			end -- inspect
 		when
 			scanner.operator_token,
-			scanner.minus_token,
+			--scanner.minus_token,
 			scanner.implies_token,
 			scanner.less_token,
 			scanner.greater_token,
@@ -7155,22 +7273,29 @@ toLeave := True
 			-- rotuine - operator
 			Result := parseOperatorRoutine (isOverriding, isFinal, isPure, isSafe)
 		else
-			syntax_error (<<scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token, scanner.assignment_token, scanner.left_paranthesis_token>>)
+			syntax_error (<<
+				scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
+				scanner.assignment_token, scanner.left_paranthesis_token
+			>>)
 		end -- if
 	end -- parsePureSafe
 
 	parseMemberDeclaration (unitDsc: UnitDeclarationDescriptor; isO: Boolean; currentVisibilityZone: MemberVisibilityDescriptor; name: String): Sorted_Array [MemberDeclarationDescriptor] is
 	--83
-	-- scanner.override_token, scanner.final_token, scanner.const_token, scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.bar_token, scanner.tilda_token, pure , safe
-	--	scanner.assignment_token, scanner.left_paranthesis_token
-	-- name already parse => scanner.left_paranthesis_token, scanner.colon_token, scanner.do_token, scanner.require_token
+	-- scanner.override_token, scanner.final_token, scanner.const_token, scanner.identifier_token, 
+	-- scanner.operator_token, --scanner.minus_token,
+	-- scanner.implies_token, scanner.bar_token, scanner.tilda_token, 
+	-- pure , safe
+	-- scanner.assignment_token, scanner.left_paranthesis_token
+	-- name already parsed => scanner.left_paranthesis_token, scanner.colon_token, scanner.do_token, scanner.require_token
 	-- MemberDeclaration: [MemberVisibility]  ([override] [final] UnitAttribiteDeclaration|UnitRoutineDeclaration) | InitDeclaration
 	require
 		current_unit_not_void: unitDsc /= Void
 	local
 		rtnDsc: UnitRoutineDescriptor
 		memDsc: MemberDeclarationDescriptor
-		initDcl: InitDeclarationDescriptor
+--		initDcl: InitDeclarationDescriptor
 		isOverriding: Boolean
 		isFinal: Boolean
 		isPure: Boolean
@@ -7200,7 +7325,8 @@ toLeave := True
 				when scanner.identifier_token then
 					Result := parseUnitRoutineOrAttribute (unitDsc, isOverriding, isFinal)
 				when
-					scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
+					scanner.operator_token, -- scanner.minus_token,
+					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
 					scanner.assignment_token, scanner.left_paranthesis_token
 				then
 --trace ("operator !!! ")
@@ -7227,7 +7353,8 @@ toLeave := True
 				else
 					syntax_error (<<
 						scanner.override_token, scanner.final_token, scanner.const_token, scanner.rigid_token, scanner.left_paranthesis_token,
-						scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.pure_token, scanner.safe_token, scanner.assignment_token
+						scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+						scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.pure_token, scanner.safe_token, scanner.assignment_token
 					>>)
 				end -- inpsect
 			when scanner.final_token then	
@@ -7245,7 +7372,8 @@ toLeave := True
 				when scanner.identifier_token then
 					Result := parseUnitRoutineOrAttribute (unitDsc, isOverriding, isFinal)
 				when
-					scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
+					scanner.operator_token, -- scanner.minus_token, 
+					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
 					scanner.assignment_token, scanner.left_paranthesis_token
 				then
 					rtnDsc := parseOperatorRoutine (isOverriding, isFinal, isPure, isSafe)
@@ -7271,7 +7399,8 @@ toLeave := True
 				else
 					syntax_error (<<
 						scanner.override_token, scanner.final_token, scanner.const_token, scanner.rigid_token, scanner.left_paranthesis_token,
-						scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.pure_token, scanner.safe_token, scanner.assignment_token
+						scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+						scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.pure_token, scanner.safe_token, scanner.assignment_token
 					>>)
 				end -- inpsect
 			when scanner.identifier_token, scanner.const_token, scanner.rigid_token then
@@ -7280,7 +7409,8 @@ toLeave := True
 				Result := parseUnitRoutineOrAttribute (unitDsc, isOverriding, isFinal)
 --trace ("NEXT!")
 			when
-				scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
+				scanner.operator_token, --scanner.minus_token,
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
 				scanner.assignment_token, scanner.left_paranthesis_token
 			then
 				-- rotuine - operator
@@ -7304,40 +7434,43 @@ toLeave := True
 				if rtnDsc /= Void then
 					create Result.fill (<<rtnDsc>>)
 				end -- if					
-			when scanner.init_token then
-				-- init routine
-				scanner.nextToken
-				if scanner.Cmode and then scanner.token = scanner.left_square_bracket_token then
-					-- parse init declaration
-					initDcl := parseInitDeclaration (currentVisibilityZone)
-					if initDcl /= Void then
-						create Result.fill (<<initDcl>>)
-					end -- if					
-				else
-					inspect
-						scanner.token
-					when scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.do_token, scanner.use_token then
-						-- parse init declaration
-						initDcl := parseInitDeclaration (currentVisibilityZone)
-						if initDcl /= Void then
-							create Result.fill (<<initDcl>>)
-						end -- if					
-					else
-						if scanner.Cmode then
-							syntax_error (<<
-								scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.left_curly_bracket_token, scanner.use_token
-							>>)
-						else
-							syntax_error (<<
-								scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.do_token, scanner.use_token
-							>>)
-						end -- if
-					end -- inspect	
-				end -- if
+			--when scanner.init_token then
+			--	-- init routine
+			--	scanner.nextToken
+			--	if scanner.Cmode and then scanner.token = scanner.left_square_bracket_token then
+			--		-- parse init declaration
+			--		initDcl := parseInitDeclaration (currentVisibilityZone)
+			--		if initDcl /= Void then
+			--			create Result.fill (<<initDcl>>)
+			--		end -- if					
+			--	else
+			--		inspect
+			--			scanner.token
+			--		when scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.do_token, scanner.use_token then
+			--			-- parse init declaration
+			--			initDcl := parseInitDeclaration (currentVisibilityZone)
+			--			if initDcl /= Void then
+			--				create Result.fill (<<initDcl>>)
+			--			end -- if					
+			--		else
+			--			if scanner.Cmode then
+			--				syntax_error (<<
+			--					scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.left_curly_bracket_token, scanner.use_token
+			--				>>)
+			--			else
+			--				syntax_error (<<
+			--					scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.do_token, scanner.use_token
+			--				>>)
+			--			end -- if
+			--		end -- inspect	
+			--	end -- if
 			else
 				syntax_error (<<
 					scanner.override_token, scanner.final_token, scanner.const_token, scanner.rigid_token,
-					scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.pure_token, scanner.safe_token, scanner.init_token, scanner.assignment_token
+					scanner.identifier_token, scanner.operator_token, -- scanner.minus_token, 
+					scanner.implies_token,
+					scanner.less_token, scanner.greater_token, scanner.pure_token, scanner.safe_token, --scanner.init_token,
+					scanner.assignment_token
 				>>)
 			end -- inpsect
 		else
@@ -7609,8 +7742,8 @@ syntax_error (<<scanner.comma_token>>)
 				goToMembers:= parseInheritedMemberOverridingOrMemberDeclaration (currentVisibilityZone, unitDsc)
 			end -- if
 
-			if scanner.token = scanner.init_token and then not goToMembers then
-				-- parse "init	InitProcedureInheritance" or "MemberDeclaration (goToMembers := True)"
+			if scanner.token = scanner.new_token and then not goToMembers then
+				-- parse "new	InitProcedureInheritance" or "MemberDeclaration (goToMembers := True)"
 				goToMembers:= parseInitProcedureInheritanceOrMemberDeclaration (currentVisibilityZone, unitDsc)
 			end -- if
 
@@ -7639,8 +7772,10 @@ syntax_error (<<scanner.comma_token>>)
 			loop
 				inspect
 					scanner.token
-				when scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.init_token,
-					scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token,
+				when scanner.final_token, scanner.pure_token, scanner.safe_token, -- scanner.init_token,
+					scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
+					scanner.bar_token,
 					scanner.const_token, scanner.rigid_token, scanner.assignment_token
 				then
 					parseMember (currentVisibilityZone, unitDsc, False, Void)
@@ -7649,8 +7784,10 @@ syntax_error (<<scanner.comma_token>>)
 					scanner.nextToken
 					inspect
 						scanner.token
-					when scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.init_token,
-						scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token,
+					when scanner.final_token, scanner.pure_token, scanner.safe_token, -- scanner.init_token,
+						scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+						scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
+						scanner.bar_token,
 						scanner.const_token, scanner.rigid_token, scanner.assignment_token
 					then
 						parseMember (currentVisibilityZone, unitDsc, True, Void)
@@ -7668,15 +7805,19 @@ syntax_error (<<scanner.comma_token>>)
 						if scanner.Cmode then
 							syntax_error (<<
 								scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
-								scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token,
-								scanner.tilda_token, scanner.bar_token,
+								scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.implies_token, scanner.less_token, scanner.greater_token,
+								scanner.tilda_token,
+								scanner.bar_token,
 								scanner.left_square_bracket_token,
 								scanner.assignment_token
 							>>)
 						else
 							syntax_error (<<
 								scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
-								scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.tilda_token, scanner.bar_token,
+								scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.implies_token, scanner.tilda_token,
+								scanner.bar_token,
 								scanner.left_curly_bracket_token,
 								scanner.assignment_token
 							>>)
@@ -7708,8 +7849,10 @@ syntax_error (<<scanner.comma_token>>)
 							when scanner.colon_token then
 								currentVisibilityZone := mvDsc
 								scanner.nextToken
-							when scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.init_token,
-								scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token,
+							when scanner.final_token, scanner.pure_token, scanner.safe_token, -- scanner.init_token,
+								scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
+								scanner.bar_token,
 								scanner.const_token, scanner.rigid_token, scanner.assignment_token
 							then
 								-- parse MemberDeclaration
@@ -7720,8 +7863,10 @@ syntax_error (<<scanner.comma_token>>)
 								scanner.nextToken
 								inspect
 									scanner.token
-								when scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.init_token,
-									scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token,
+								when scanner.final_token, scanner.pure_token, scanner.safe_token, -- scanner.init_token,
+									scanner.identifier_token, scanner.operator_token, -- scanner.minus_token, 
+									scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
+									scanner.bar_token,
 									scanner.const_token, scanner.rigid_token, scanner.assignment_token
 								then
 									parseMember (mvDsc, unitDsc, True, Void)
@@ -7739,15 +7884,19 @@ syntax_error (<<scanner.comma_token>>)
 									if scanner.Cmode then
 										syntax_error (<<
 											scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
-											scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token,
-											scanner.tilda_token, scanner.bar_token,
+											scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+											scanner.implies_token, scanner.less_token, scanner.greater_token,
+											scanner.tilda_token,
+											scanner.bar_token,
 											scanner.left_square_bracket_token,
 											scanner.assignment_token
 										>>)
 									else
 										syntax_error (<<
 											scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
-											scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.tilda_token, scanner.bar_token,
+											scanner.identifier_token, scanner.operator_token, -- scanner.minus_token, 
+											scanner.implies_token, scanner.tilda_token,
+											scanner.bar_token,
 											scanner.left_curly_bracket_token,
 											scanner.assignment_token
 										>>)
@@ -7767,7 +7916,9 @@ syntax_error (<<scanner.comma_token>>)
 							else
 								syntax_error (<<
 									scanner.override_token, scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
-									scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token, scanner.left_curly_bracket_token,
+									scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+									scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
+									scanner.bar_token, scanner.left_curly_bracket_token,
 									scanner.assignment_token
 								>>)
 								toLeave := True
@@ -7775,16 +7926,20 @@ syntax_error (<<scanner.comma_token>>)
 						end -- if
 					elseif scanner.Cmode then
 						syntax_error (<<
-							scanner.override_token, scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.init_token, 
-							scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token,
+							scanner.override_token, scanner.final_token, scanner.pure_token, scanner.safe_token, --scanner.init_token, 
+							scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+							scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
+							scanner.bar_token,
 							scanner.left_square_bracket_token,
 							scanner.assignment_token
 						>>)
 						toLeave := True
 					else
 						syntax_error (<<
-							scanner.override_token, scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.init_token, 
-							scanner.identifier_token, scanner.operator_token, scanner.minus_token, scanner.implies_token, scanner.tilda_token, scanner.bar_token, 
+							scanner.override_token, scanner.final_token, scanner.pure_token, scanner.safe_token, --scanner.init_token, 
+							scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+							scanner.implies_token, scanner.tilda_token,
+							scanner.bar_token, 
 							scanner.left_curly_bracket_token,
 							scanner.assignment_token
 						>>)
@@ -7839,7 +7994,7 @@ feature {None}
 	
 	syntax_error (tokens_expected: Array [Integer]) is
 	do
-		syntaxError (Void, tokens_expected, tokens_expected)
+		syntaxError (Void, tokens_expected, <<scanner.eof_token>>) -- skip till end fo file!!! Temporary !!!
 	end -- syntax_error
 	
 	syntaxError (message: String; tokens_expected, followers: Array [Integer]) is
@@ -7849,13 +8004,17 @@ feature {None}
 	local	
 		i, n: Integer
 		toLeave: Boolean
-		skipTillSeparator: Boolean
+		--skipTillSeparator: Boolean
 	do
 		if errorsCount = 0 then
 			o.newLine
 		end -- if
 		errorsCount := errorsCount + 1
-		o.put ("Error at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - ")
+		if scanner.tokenCol = 0 then
+			o.put ("Error at line " + scanner.tokenRow.out + " - ")
+		else
+			o.put ("Error at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - ")
+		end -- if
 		if message /= Void then
 			o.put (message + ": ")
 		end -- if
@@ -7874,7 +8033,7 @@ feature {None}
 		end
 		o.put ('`')
 		o.newLine
-		if True then -- toForward then
+		--if True then -- toForward then
 ---- Temporary solution when follwers are not used!!!
 --inspect 
 --	tokens_expected.item(1)
@@ -7883,25 +8042,27 @@ feature {None}
 --else
 --end -- inspect
 --followers.force (scanner.semicolon_token, followers.count + 1) // Stop skiping at the end of line or semicolon
-			from 
-				n := followers.count
-				i := 1
-			until
-				i > n
-			loop
-				if followers.item (i) = scanner.semicolon_token then
-					skipTillSeparator := True
-					i := n + 1
-				end -- if
-				i := i + 1
-			end -- loop
+			
+			--from 
+			--	n := followers.count
+			--	i := 1
+			--until
+			--	i > n
+			--loop
+			--	if followers.item (i) = scanner.semicolon_token then
+			--		skipTillSeparator := True
+			--		i := n + 1
+			--	end -- if
+			--	i := i + 1
+			--end -- loop
+			
 			from
 				n := followers.count
 			until
 				toLeave --or else scanner.token = scanner.eof_token
 			loop
-				-- scanner.nextToken
-				scanner.nextWithSemicolon (skipTillSeparator)
+				scanner.nextToken
+				--scanner.nextWithSemicolon (skipTillSeparator)
 				inspect 
 					scanner.token
 				when scanner.eof_token then
@@ -7916,9 +8077,9 @@ feature {None}
 					until
 						i > n
 					loop
-						if followers.item (i) = scanner.semicolon_token then
-							skipTillSeparator := True
-						end -- if
+						--if followers.item (i) = scanner.semicolon_token then
+						--	skipTillSeparator := True
+						--end -- if
 						if scanner.token = followers.item (i) then
 							o.putNL ("Code skipped upto " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "`, parsing resumed")
 							toLeave := True
@@ -7927,19 +8088,19 @@ feature {None}
 							i := i + 1
 						end -- if
 					end -- loop
-					if not toLeave then
-						inspect 
-							scanner.token
-						when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
-							--scanner.nextToken
-							o.putNL ("Code skipped upto nearest end at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " and parsing resumed")
-							toLeave := True
-						else
-						end -- inspect
-					end -- if
+					--if not toLeave then
+					--	inspect 
+					--		scanner.token
+					--	when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
+					--		--scanner.nextToken
+					--		o.putNL ("Code skipped upto nearest end at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " and parsing resumed")
+					--		toLeave := True
+					--	else
+					--	end -- inspect
+					--end -- if
 				end -- inspect
 			end -- loop
-		end -- if
+		--end -- if
 	end -- syntaxError
 
 	--toForward: Boolean is True

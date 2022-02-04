@@ -20,18 +20,25 @@ feature {None}
 					scanner.setPool (pool)
 					--scanner.enableComments
 					scanner.nextToken
-					o.putNL("R:C%TT'name%T%TT'string%TT'value")
+					o.putNL("R:C%TT'code%TT'name%T%TT'string%TT'value")
 				until
 					scanner.token = scanner.eof_token
 				loop
-					o.putArray(<<
-						scanner.tokenRow, ':', scanner.tokenCol, '%T', scanner.tokenName(scanner.token), '%T', scanner.tokenString, '%T', '%T',scanner.tokenValue					
-					>>)
+					if scanner.tokenRow < 10 then
+						o.putArray(<<
+							scanner.tokenRow, ':', scanner.tokenCol, '%T', '%T', scanner.token, ' ', scanner.tokenName(scanner.token), '%T', scanner.tokenString, '%T', '%T',scanner.tokenValue					
+						>>)
+					else
+						o.putArray(<<
+							scanner.tokenRow, ':', scanner.tokenCol, '%T', scanner.token, ' ', scanner.tokenName(scanner.token), '%T', scanner.tokenString, '%T', '%T',scanner.tokenValue					
+						>>)
+					end -- if
 					o.newLine
 					scanner.nextToken
 				end -- loop
+				-- Print EOF
 				o.putArray(<<
-					scanner.tokenRow, ':', scanner.tokenCol, '%T', scanner.tokenName(scanner.token), '%T', scanner.tokenString
+					scanner.tokenRow, ':', scanner.tokenCol, '%T', scanner.token, ' ', scanner.tokenName(scanner.token), '%T', scanner.tokenString
 				>>)
 				o.newLine
 				scanner.close

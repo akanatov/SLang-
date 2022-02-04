@@ -1,7 +1,6 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.03 Jan 11th 2022
-system Kernel
-	use "." end // Kernel librray is to be built from all SLang files from the current folder
+// Version 0.99.05 Feb 3rd 2022
+build Kernel:"." // Kernel librray is to be built from all SLang files from the current folder
 end
 
 val unit Bit
@@ -36,9 +35,9 @@ val unit Bit
 			raise "Bit underflow"
 		end
 	end // -
-end
+end // Bit
 
-virtual unit () // That is tuple unit
+/*virtual unit () // That is a tuple unit
 	
 	() (pos: Integer; value: Any)
 	/// It puts element into tuple at position, put by position
@@ -79,10 +78,10 @@ virtual unit () // That is tuple unit
   
 require
 	count >= 0 /// Tuple has 0 or more elements
-end
+end*/
 
 val unit Bit [N: Integer]
-	const: // All Bit constants not longer than B bits in it
+	const : // All Bit constants not longer than B bits in it
 	    //{Bit.0b0 | Bit.0b1}N
 	end
 	{} data: val Array [0 .. N-1, Bit] // Bit field ...
@@ -195,15 +194,15 @@ val unit Bit [N: Integer]
 	ensure
 		( old this )(pos) /= this (pos) /// bit Toggled
 	end // toggle
-	init do
+	Bit do
 		/// Every BIT field is initialized with 0s
 		while pos in 0 .. N - 1 do
 			this (pos) := 0b0
 		end
-	end // init
+	end // Bit
 require
 	N > 0 /// Number of Bits is greater than zero
-end // Bit
+end // Bit [N]
 
 virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Integer.MaxInteger]
 	// Adding all constant objects from basic units allows to use these constants without respective unit name prefix.
@@ -217,9 +216,9 @@ virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ I
 	
 	/// Deep equality tests
     pure == (that: ? as this ): Boolean foreign
-	final pure \= (that: ? as this ): Boolean => not ( this == that);
+	final pure != (that: ? as this ): Boolean => not ( this == that);
     pure == (that: as this): Boolean foreign
-	final pure \= (that: as this ): Boolean => not ( this == that)
+	final pure != (that: as this ): Boolean => not ( this == that)
 	
 	/// Assignment definition
 	// {} := (that: ? as this ) foreign 
@@ -385,7 +384,7 @@ val unit Pointer
 	read: Byte foreign
 	read: Array [Byte] foreign
 	{} data : Bit [Platform.PointerBitsCount]
-	init (address: Integer) 
+	Pointer (address: Integer) 
 	require
 		address >= 0 /// Pointer should be greater than zero
 		validPointer (address) /// Pointer should be valid from OS point of view
@@ -398,11 +397,11 @@ require
 end // Pointer
 
 val unit Cardinal alias uInt extend Cardinal [Platform.CardinalBitsCount]
-	init (value: as this) do
+	Cardinal (value: as this) do
 		data is value.data
 	end
-	init do
-		/// Default init with zero
+	Cardinal do
+		/// Default with zero
 		data is Bit [Platform.CardinalBitsCount]
 	end
 end // Cardinal
@@ -414,16 +413,16 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	// No need for cardinal so far ... But count should return Cardinal not Integer ...
 	// x is y.count
 	// if x = 1 it means that both Cardinal & Integer should have function '=' with another integral type !!!!
-/*	init (other: Integer [???]) do
+/*	Cardinal (other: Integer [???]) do
 	end */
-end
+end // Cardinal
 
 val unit Integer extend Integer [Platform.IntegerBitsCount]
-	init (value: Integer) do
+	Integer (value: Integer) do
 		data is value.data
 	end
-	init do
-		/// Default init with zero
+	Integer do
+		/// Default with zero
 		data is Bit [Platform.IntegerBitsCount]
 	end
 end // Integer
@@ -528,10 +527,10 @@ val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
 		//return data = other.data
 	end
 	override := (other: val Integer) do
-		init (other)
+		Integer (other)
 	end
 	override := (other: ref Integer) do
-		init (other)
+		Integer (other)
 	end
 	:= (other: Real) do
 		// Bit-level implementation of Real assignment
@@ -553,14 +552,14 @@ val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
 	require
 		this in 0 .. 2 ^ Platform.CharacterBitsCount /// containsChacraterCode: 
 	do
-		return new Character.init (data.getLowBits (Platform.CharacterBitsCount))
+		return new Character (data.getLowBits (Platform.CharacterBitsCount))
 	end
 	{} data: Bit [BitsNumber]	
-	init (value: Integer) do
+	Integer (value: Integer) do
 		data is value.data
 	end
-	init do
-		/// Default init
+	Integer do
+		/// Default zero value
 		data is Bit [BitsNumber]
 	end
 require
@@ -573,15 +572,15 @@ end // Integer
 
 val unit Byte
 	// WIP - to be fully implemented
-	init (value: Byte) do
+	Byte (value: Byte) do
 		data is value.data
 	end
-	init do
-		/// Default init
+	Byte do
+		/// Default zero value
 		data is Bit [Platform.BitsInByteCount]
 	end
 	{} data: Bit [Platform.BitsInByteCount]	
-end
+end // Byte
 
 virtual unit Rational extend Numeric, Comparable
 	numerator: Integer
@@ -590,22 +589,22 @@ virtual unit Rational extend Numeric, Comparable
 	// TBD!!!
 require
 	denominator /= 0 /// denominator must not be zero
-end
+end // Rational
 
 virtual unit Fixed extend Numeric, Comparable
 	value: Integer
 	scaleFactor: Integer // if scaleFactor is negative do scale is 1/-scaleFactor otherwise scaleFactor is scaleFactor :-)
 	pure toReal: Real => if scaleFactor < 0 do value / - scaleFactor else value * scaleFactor
 	// TBD!!!
-end
+end // Fixed
 
 virtual unit Float [nBits: Integer] extend Numeric, Comparable
 	toReal: Real virtual
 	// TBD!!!
-end
+end // Float
 
 val unit Real extend Float [Platform.RealBitsCount]
-	const: // All Real numbers 
+	const : // All Real numbers 
 		//{minReal + epsilon} <= maxReal
 		minReal {+epsilon} .. maxReal
 	end
@@ -694,17 +693,17 @@ val unit Real extend Float [Platform.RealBitsCount]
 		// Bit-level implementation
 		raise "Not implemented!!!"
 	end
-	init (value: val Real) do
+	Real (value: val Real) do
 		data is value.data
 	end
-	init do
+	Real do
 		data is Bit [Platform.RealBitsCount]
 	end
 	{} data : Bit [Platform.RealBitsCount]	
 end // Real
 
 val unit Character alias Char extend Enumeration
-	const: // The set of all constant objects of unit type Character
+	const : // The set of all constant objects of unit type Character
 		minCharacter .. maxCharacter
 	end	
 	const minCharacter is 0.ToCharacter
@@ -721,7 +720,7 @@ val unit Character alias Char extend Enumeration
 	end
 	override const sizeof: Integer is Platform.CharacterBitsCount / Platform.BitsInByteCount
 	pure toInteger: Integer do
-		return new Integer.init (data.ToInteger)
+		return new Integer (data.ToInteger)
 	ensure
 		return in return.minInteger .. return.maxInteger
 	end
@@ -731,17 +730,17 @@ val unit Character alias Char extend Enumeration
 	do
 		data := other
 	end
-	init (value: val Character) do
+	Character (value: val Character) do
 		data is value.data
 	end
-	init do
+	Character do
 		data is Bit [Platform.CharacterBitsCount]
 	end
 	{} data : Bit [Platform.CharacterBitsCount]	
 end // Character
 
 val unit Boolean alias Bool extend Enumeration
-	const: // That is an ordered set of two constant object of type Boolean
+	const : // That is an ordered set of two constant object of type Boolean
 		false(zero), true(one)		
 	end
 	{ this } const one is 1
@@ -776,13 +775,13 @@ val unit Boolean alias Bool extend Enumeration
 	pure -> alias implies (other: as this): Boolean => not this or other
 	pure ~ alias not : Boolean => if this do false else true
 	pure toInteger: Integer => if this do one else zero
-	init (value: val Boolean) do
+	Boolean (value: val Boolean) do
 		data is value.data
 	end
-	init do
+	Boolean do
 		data is 0xb
 	end
-	{} init (value: Integer) 
+	{} Boolean (value: Integer) 
 	require	
 		value in zero..one /// Valid Integer value
 	do
@@ -803,14 +802,14 @@ end
 
 unit String [N:Integer] extend AString, Array [Character, N]
 	/// String with fixed length
-	const: // "" .. "Character*" - all Strings of size not more than N
+	const : // "" .. "Character*" - all Strings of size not more than N
 		//{Character.minCharacter |.. Character.maxCharacter}N		
 	end
 end
 
 unit String extend AString
 	/// Variable length String
-	const: // "" .. "Character*" - all Strings are defined here
+	const : // "" .. "Character*" - all Strings are defined here
 		//{Character.minCharacter |.. Character.maxCharacter}0+		
 	end
 	override < (other: as this): Boolean do
@@ -866,12 +865,13 @@ unit String extend AString
 	ensure
 		return.count = this.count + other.count /// Valid concatenated string length
 	end
-	init do
+	String do
 		data is new Array [Character] (1, 0)
 	end
-	init (other: as this) do
+	String (other: as this) do
 		data is other.data
 	end
+	//String (:= data)
 	{} data: Array [Character] // Dynamic empty array of characters
 end // String
 
@@ -919,13 +919,13 @@ require
 	lower <= upper - 1 /// Consistent  array range – lower index is not greater than upper when array is not empty. Array is empty when lower = upper - 1
 end // AnArray [G]
 
-virtual unit OneDimentionalArray [G init ()] extend AnArray [G]
+virtual unit OneDimentionalArray [G new ()] extend AnArray [G]
 	override () (pos: Integer): G foreign
 	override () (pos: Integer; value: G) foreign
 	override pure () (from, to: Integer): Array [G]
 	/// get subarray
 	do 
-		result is new Array [G].init(from, to)
+		result is new Array [G](from, to)
 		while pos in from .. to do
 			result (pos) := this (pos)
 		end
@@ -933,7 +933,7 @@ virtual unit OneDimentionalArray [G init ()] extend AnArray [G]
 	end
 end
 
-unit Array [G init (), N: Integer] extend OneDimentionalArray [G]
+unit Array [G new (), N: Integer] extend OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a0 is Array [Integer, 5]
@@ -942,21 +942,21 @@ unit Array [G init (), N: Integer] extend OneDimentionalArray [G]
 	override lower: Integer is 1
 	override upper: Integer is N
 
-	init (other: as this) do
+	Array (other: as this) do
 		while pos in other.lower .. other.upper do
 			this (lower + pos - 1) := other (pos)
 		end
 	end
 
-	init do
-		element is new G.init
+	Array do
+		element is new G
 		while pos in lower .. upper do
 			this (pos) := element
 		end
 	end
-end // Array [G extend Any init (), N: Integer]
+end // Array
 
-unit Array [G init (), N: (Integer,Integer)] extend OneDimentionalArray [G]
+unit Array [G new (), N: (Integer,Integer)] extend OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a1 is Array [Real, (10,25)]
@@ -964,49 +964,49 @@ unit Array [G init (), N: (Integer,Integer)] extend OneDimentionalArray [G]
 */
 	override lower: Integer is N(1)
 	override upper: Integer is N(2)
-	init (other: as this) do
+	Array (other: as this) do
 		while pos in other.lower .. other.upper do
 			this (lower + pos - 1) := other (pos)
 		end
 	end
-	init do
-		element is new G.init
+	Array do
+		element is new G
 		while pos in lower .. upper do
 			this (pos) := element
 		end
 	end
-end // Array [G extend Any init (), N: (Integer,Integer)]
+end // Array
 
 
-unit Array [G init ()] extend OneDimentionalArray [G]
+unit Array [G new ()] extend OneDimentionalArray [G]
 ///   Dynamic array
 // We can put info Array only objects which has constructor with empty signature !!! We are always safe - no uninitilized data!!! 
 	override () (pos: Integer): G foreign
 	override () (pos: Integer; value: G) foreign
 	override lower: Integer
 	override upper: Integer
-	init 
+	Array
 		/// It creates an empty array, but lower index is set a 1
 	do
-		init (1, 0, G()) 
+		Array (1, 0, G()) 
 	end
-	init (n: Integer; value: G) 
+	Array (n: Integer; value: G) 
 		/// It creates an array of n elements,  lower index is 1
 	require
 		n >= 0 
 	do 
-		init (1, n, value) 
+		Array (1, n, value) 
 	end
-	init (n: Integer) 
+	Array (n: Integer) 
 	require
 		n >= 0 
 	do 
-		init (1, n, G()) 
+		Array (1, n, G()) 
 	end
-	init (l, u: Integer) do
-		init (l, u, G())
+	Array (l, u: Integer) do
+		Array (l, u, G())
 	end
-	init (l, u: Integer; value: G) 
+	Array (l, u: Integer; value: G) 
 	require
 		l <= u - 1 /// Consistent array borders, lower must be not greater than upper if array is not empty and 1 less than upper otherwise
 	do
@@ -1027,9 +1027,9 @@ unit Array [G init ()] extend OneDimentionalArray [G]
 	require
 		l <= u /// Consistent array borders
 	foreign
-end // Array [G extend Any init ()]
+end // Array
 
-/*unit Array [G init (), dimentions: (Integer|Integer .. Integer)] extend Array [G, numberOfElementsInLinearArray ]
+/*unit Array [G new (), dimentions: (Integer|Integer .. Integer)] extend Array [G, numberOfElementsInLinearArray ]
 ///   Multi dimentional static array .... WIP!!!
 /*
 	a0 is Array [Integer, (5, 4)]
@@ -1051,15 +1051,17 @@ end // Array [G extend Any init ()]
 		end
 		return result
 	end
-end // Array [G extend Any init (), dimentions: (Integer|Integer .. Integer)]
+end // Array 
 */
 unit StandardIO alias io
+	StandardIO do
+		// Init procedure is missed or way how to setup IO !!!!
+	end -- StandardIO
 	pure get: Integer foreign
 	pure get: Real foreign
 	pure get: Boolean foreign
 	pure get: Character foreign
 	pure get: String foreign
-	// Init procedure is missed or way how to setup IO !!!!
 	pure put (arguments: ()) do
 		while argument in arguments do
 			if argument is
@@ -1130,21 +1132,21 @@ unit DynamicObject
 	final call (rtnDsc: FunctionDecsriptor; args: ()): Any foreign
 	final get_value (attr: AttributeDescriptor): Any => attr.value
 	final set_value (attr: VariableDescriptor; value: Any) foreign
-	{this} final findRoutine (rtn_name: String): ?RoutineDescriptor foreign
-	{this} final findAttribute (attr_name: String): ?AttributeDescriptor foreign
-	init do
+	{ this } final findRoutine (rtn_name: String): ?RoutineDescriptor foreign
+	{ this } final findAttribute (attr_name: String): ?AttributeDescriptor foreign
+	DynamicObject do
 		/// Create empty dynamic object
 	end
-	init (fileName: String) do
+	DynamicObject (fileName: String) do
 		/// Load dynamic object from file
 		raise "Not implemented yet!!!"
 	end
-	init (bytes: Array [Byte]) foreign
+	DynamicObject (bytes: Array [Byte]) foreign
 		/// Create dynamic object from binary data sequence
-	init (other: Any) foreign
+	DynamicObject (other: Any) foreign
 		/// Create dynamic object from any other object
 	
-end
+end // DynamicObject
 
 virtual unit MemberDescriptor
 	final name: String
@@ -1157,23 +1159,23 @@ end // RoutineDescriptor
 final unit ProcedureDescriptor extend RoutineDescriptor
 	() alias apply (args: ()) foreign
 		// That is a procedure call
-	init (aName: as name; args: as arguments) do
+	ProcedureDescriptor (aName: as name; args: as arguments) do
 		name is aName
 		arguments is args
 	end
-//	init (:= name; := arguments)
+//	ProcedureDescriptor (:= name; := arguments)
 end // Procedure [Arguments -> ()]
 
 final unit FunctionDescriptor extend RoutineDescriptor
 	type: TypeDescriptor
 	() alias apply (args: Arguments): Any foreign
 		// That is a function call
-	init (aName: as name; args: as arguments; aType: as type) do
+	FunctionDescriptor (aName: as name; args: as arguments; aType: as type) do
 		name is aName
 		arguments is args
 		type is aType
 	end
-//	init (:= name; := arguments; := type)
+//	FunctionDescriptor (:= name; := arguments; := type)
 end // Function [Arguments -> (), Result]
 
 virtual unit AttributeDescriptor extend MemberDescriptor
@@ -1181,25 +1183,25 @@ virtual unit AttributeDescriptor extend MemberDescriptor
 	type: TypeDescriptor
 end // AttributeDescriptor
 
-final unit VariableDescriptor  extend AttributeDescriptor 
+final unit VariableDescriptor extend AttributeDescriptor 
 	override := alias set (v: as value) do 
 		value := v
 	end
-	init (aName: as name; aType: as type; aValue: as value) do
+	VariableDescriptor (aName: as name; aType: as type; aValue: as value) do
 		name is aName
 		type is aType
 		value is aValue
 	end
-//	init (:= name; := type; := value)
+//	VariableDescriptor (:= name; := type; := value)
 end // VariableDescriptor
 
-final unit ConstantDescriptor  extend AttributeDescriptor 
-	init (aName: as name; aType: as type; aValue: as value) do
+final unit ConstantDescriptor extend AttributeDescriptor 
+	ConstantDescriptor (aName: as name; aType: as type; aValue: as value) do
 		name is aName
 		type is aType
 		value is aValue
 	end
-//	init (:= name; := type; := value)
+//	ConstantDescriptor (:= name; := type; := value)
 end // ConstantDescriptor
 
 final unit TypeDescriptior
@@ -1207,11 +1209,11 @@ final unit TypeDescriptior
 	final routines : Array [RoutineDescriptor]
 	final attributes : Array [AttributeDescriptor]
 	final parents: Array [TypeDesciptor]
-	init (aName: as name; prtns: as parents; rtns: as routines; attrs: as attributes) do
+	TypeDescriptior (aName: as name; prtns: as parents; rtns: as routines; attrs: as attributes) do
 		name is aName
 		parents is prtns
 		routines is rtns
 		attributes is attrs
 	end
-//	init (:= name; := parents; := routines; := attributes)
+//	TypeDescriptior (:= name; := parents; := routines; := attributes)
 end // TypeDescriptior

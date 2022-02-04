@@ -186,6 +186,7 @@ feature {Any}
 				"<illegal>",
 				"alias",
 				"as",
+				"build",
 				"concurrent",
 				"const",
 				"do",
@@ -198,7 +199,6 @@ feature {Any}
 				"foreign",
 				"if",
 				"in",
-				"init",
 				"is",
 				"new",
 				"old",
@@ -212,7 +212,6 @@ feature {Any}
 				"rtn",
 				"safe",
 				"select",
-				"system",
 				"this",
 				"unit",
 				"use",
@@ -244,7 +243,7 @@ feature {Any}
 				"end // loop",
 				"<",
 				">",
-				"-",
+--				"-",
 				"->"
 			>>
 		end
@@ -279,7 +278,8 @@ feature {Any}
 	char_const_token,
 	illegal_token,	
 	alias_token,	
-	as_token,		
+	as_token,	
+	build_token,
 	concurrent_token,
 	const_token,	
 	do_token,		
@@ -292,7 +292,6 @@ feature {Any}
 	foreign_token,
 	if_token,	
 	in_token,
-	init_token,
 	is_token,		
 	new_token,
 	old_token,
@@ -306,7 +305,6 @@ feature {Any}
 	rtn_token,
 	safe_token,
 	select_token,
-	system_token,
 	this_token,
 	unit_token,
 	use_token,
@@ -338,7 +336,7 @@ feature {Any}
 	end_loop_expected,
 	less_token,
 	greater_token,
-	minus_token,
+--	minus_token,
 	implies_token
 	: Integer is unique
 	
@@ -384,6 +382,9 @@ feature {Any}
 			if ch = '%U' then
 				tokenRow := row
 				tokenCol := col
+				if tokenCol = 0 then
+					tokenCol := 1
+				end -- if
 				setTokenNoRead (eof_token)
 			else
 				inspect
@@ -392,6 +393,8 @@ feature {Any}
 					if returnSemicolon then
 						setToken (semicolon_token)
 						returnSemicolon := False
+					else
+						setTokenNoRead (eof_token)
 					end -- if
 				when '(' then
 					setToken (left_paranthesis_token)
@@ -404,41 +407,18 @@ feature {Any}
 				when ',' then
 					setToken (comma_token)
 				when '{' then
-					--if Cmode then
-					--	-- C P
-					--	-- { do
-					--	setToken (do_token)
-					--else
-						setToken (left_curly_bracket_token)
-					--end -- if
+					setToken (left_curly_bracket_token)
 				when '}' then
-					--if Cmode then
-					--	-- C P
-					--	-- } end
-					--	setToken (end_token)
-					--else
-						setToken (right_curly_bracket_token)
-					--end -- if
+					setToken (right_curly_bracket_token)
 				when '[' then
-					--if Cmode then
-					--	-- C P
-					--	-- [ {
-					--	setToken (left_curly_bracket_token)
-					--else
-						setToken (left_square_bracket_token)
-					--end -- if
+					setToken (left_square_bracket_token)
 				when ']' then
-					--if Cmode then
-					--	-- C P
-					--	-- ] }
-					--	setToken (right_curly_bracket_token)					
-					--else
-						setToken (right_square_bracket_token)
-					--end -- if
+					setToken (right_square_bracket_token)
 				when '~' then
 					setToken (tilda_token)
 				when '-' then
-					setToken (minus_token)
+					setToken (operator_token)
+--					setToken (minus_token)
 				when 'A'..'Z', 'a'..'z' then
 					if toRead then
 						tokenRow := row
@@ -534,6 +514,7 @@ feature {Any}
 						end
 					else
 						setTokenNoRead (colon_token)
+						ch := '%U'
 					end
 				when '/' then -- may be a comment as well !!!
 					if pos > size then
@@ -642,7 +623,7 @@ feature {Any}
 									token := no_token_assigned							
 								end -- if
 							end -- if
-						when '=', '<', '>', '+', '-', '\', '^', '&', '|', '~' then
+						when '=', '<', '>', '+', '-', '\', '^', '&', '|', '~', '#', '%%', '@', '!', '$' then
 							token := operator_token
 							setCharBuff ('/')
 							buffer.append_character (ch)
@@ -652,19 +633,21 @@ feature {Any}
 							toRead := False
 						end
 					end
-				when '=', '<', '>', '+', '-', '*', '\', '^', '&' then
+				when '=', '<', '>', '+', '-', '*', '\', '^', '&', '#', '%%', '@', '!', '$' then
 					token := operator_token
 					setCharBuff (ch)
 					if pos <= size then
 						getNextChar
 						inspect
 							ch
-						when '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' then
+						when '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|', '#', '%%', '@', '!', '$' then
 							buffer.append_character (ch)
 							if buffer.item (1) = '=' and then buffer.item (2) = '>' then
 								token := one_line_function_token
 							elseif buffer.item (1) = '-' and then buffer.item (2) = '>' then
 								token := implies_token
+							else
+				 				-- do nothing as all is done already. 2 char operator already scanned
 							end -- if
 						else	
 							--if Cmode then
@@ -679,7 +662,8 @@ feature {Any}
 									-- > ]
 									setToken (greater_token)
 								when '-' then
-									setToken (minus_token)
+									setToken (operator_token)
+--									setToken (minus_token)
 								else
 								end -- inspect
 							--end -- if
@@ -695,21 +679,21 @@ feature {Any}
 				when '?' then
 					setToken (detach_token)				
 				when '|' then
-					setCharBuff (ch)
 					if pos <= size then
 						getNextChar
 						inspect
 							ch
-						when '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' then
-							buffer.append_character (ch)
+						when '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|', '#', '%%', '@', '!', '$' then
+							buffer := "  "
+							buffer.put ('|', 1)
+							buffer.put (ch, 2)
 							token := operator_token
 						else	
-							setToken (bar_token)
-							toRead := False
+							setTokenNoRead (bar_token)
 						end
 					else
-						setToken (bar_token)
-						toRead := False
+						setTokenNoRead (bar_token)
+						ch := '%U'
 					end -- if
 				when '.' then 
 					if pos <= size then
@@ -751,6 +735,9 @@ feature {Any}
 									buffer.append_character ('%T')
 								when '\' then
 									buffer.append_character ('\')
+								-- Add Unicode support - UTF-8 probably
+								--when 'U' then
+								--when 'u' then
 								else	
 									token := illegal_token
 									buffer.append_character ('\')
@@ -830,6 +817,9 @@ feature {Any}
 								buffer.append_character (ch)
 								toRead := False
 							end
+						-- Add Unicode support - UTF-8 probably
+						--when 'U' then
+						--when 'u' then
 						else	
 							buffer := ""
 							buffer.append_character (ch)
@@ -856,53 +846,29 @@ feature {Any}
 				when ',' then
 					setToken (comma_token)
 				when '{' then
-					--if Cmode then
-					--	-- C P
-					--	-- { do
-					--	setToken (do_token)
-					--else
-						setToken (left_curly_bracket_token)
-					--end -- if
+					setToken (left_curly_bracket_token)
 				when '}' then
-					--if Cmode then
-					--	-- C P
-					--	-- } end
-					--	setToken (end_token)
-					--else
-						setToken (right_curly_bracket_token)
-					--end -- if
+					setToken (right_curly_bracket_token)
 				when '[' then
-					--if Cmode then
-					--	-- C P
-					--	-- [ {
-					--	setToken (left_curly_bracket_token)
-					--else
-						setToken (left_square_bracket_token)
-					--end -- if
+					setToken (left_square_bracket_token)
 				when ']' then
-					--if Cmode then
-					--	-- C P
-					--	-- ] }
-					--	setToken (right_curly_bracket_token)					
-					--else
-						setToken (right_square_bracket_token)
-					--end -- if
+					setToken (right_square_bracket_token)
 				when '~' then
-					setCharBuff (ch)
 					if pos <= size then
 						getNextChar
 						inspect
 							ch
-						when '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' then
-							buffer.append_character (ch)
+						when '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|', '#', '%%', '@', '!', '$' then
+							buffer := "  "
+							buffer.put ('~', 1)
+							buffer.put (ch, 2)
 							token := operator_token
 						else	
-							setToken (tilda_token)
-							toRead := False
+							setTokenNoRead (tilda_token)
 						end
 					else
-						setToken (tilda_token)
-						toRead := False
+						setTokenNoRead (tilda_token)
+						ch := '%U'
 					end -- if
 				when 'A' .. 'Z', 'g', 'h', 'j', 'k', 'l', 'm', 'q', 'x', 'y', 'z' then -- start of identifier
 					token := identifier_token
@@ -1434,6 +1400,12 @@ feature {None}
 			else
 				Result := identifier_token
 			end
+		when 'b' then -- "build"
+			if systemMode and then buffer.is_equal (keywords.item (build_token)) then
+				Result := build_token
+			else
+				Result := identifier_token
+			end -- if
 		when 'c' then -- "concurrent", "const"
 			inspect
 				buff_len
@@ -1518,7 +1490,7 @@ feature {None}
 			else
 				Result := identifier_token
 			end
-		when 'i' then -- "if", "in", "init", "is"
+		when 'i' then -- "if", "in", "is"
 			inspect
 				buff_len
 			when 2 then
@@ -1528,12 +1500,6 @@ feature {None}
 					Result := if_token
 				elseif buffer.item (2) = 'n' then
 					Result := in_token
-				else
-					Result := identifier_token
-				end
-			when 4 then
-				if buffer.is_equal (keywords.item (init_token)) then
-					Result := init_token
 				else
 					Result := identifier_token
 				end
@@ -1604,7 +1570,7 @@ feature {None}
 			else
 				Result := identifier_token
 			end
-		when 's' then -- "safe", "select", "system"
+		when 's' then -- "safe", "select"
 			inspect
 				buff_len
 			when 4 then
@@ -1616,8 +1582,6 @@ feature {None}
 			when 6 then
 				if buffer.is_equal (keywords.item (select_token)) then
 					Result := select_token
-				elseif systemMode and then buffer.is_equal (keywords.item (system_token)) then
-					Result := system_token
 				else
 					Result := identifier_token
 				end
