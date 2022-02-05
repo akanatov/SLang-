@@ -1,5 +1,5 @@
 unit A
-	enum
+	const :
 		a .. b,
 		5 .. 45
 	end

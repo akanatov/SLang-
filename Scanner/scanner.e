@@ -201,6 +201,7 @@ feature {Any}
 				"in",
 				"is",
 				"new",
+				"none",
 				"old",
 				"override",
 				"pure",
@@ -294,6 +295,7 @@ feature {Any}
 	in_token,
 	is_token,		
 	new_token,
+	none_token,
 	old_token,
 	override_token,
 	pure_token,	
@@ -562,7 +564,7 @@ feature {Any}
 												if returnComments then
 													token := comment_token
 												else
-													token := no_token_assigned							
+													token := no_token_assigned
 												end -- if
 												toLeave := True
 											else
@@ -588,7 +590,7 @@ feature {Any}
 									buffer.append_character (ch)
 								end -- inspect
 							end -- loop
-							if pos > size and then token /= comment_token then
+							if pos > size and then not (token = comment_token or else token = no_token_assigned) then
 								token := illegal_token
 								toRead := False
 							end
@@ -1506,12 +1508,24 @@ feature {None}
 			else
 				Result := identifier_token
 			end
-		when 'n' then -- "new"
-			if buff_len = 3 and then buffer.item (2) = 'e' and then buffer.item (3) = 'w' then
-				Result := new_token
+		when 'n' then -- "new", "none"
+			inspect
+				buff_len				
+			when 3 then
+				if buffer.item (2) = 'e' and then buffer.item (3) = 'w' then
+					Result := new_token
+				else
+					Result := identifier_token
+				end
+			when 4 then
+				if buffer.is_equal (keywords.item (none_token)) then
+					Result := none_token
+				else
+					Result := identifier_token
+				end
 			else
 				Result := identifier_token
-			end
+			end -- inspect
 		when 'o' then -- "old", "override"
 			inspect
 				buff_len

@@ -37,7 +37,7 @@ val unit Bit
 	end // -
 end // Bit
 
-/*virtual unit () // That is a tuple unit
+virtual unit () // That is a tuple unit
 	
 	() (pos: Integer; value: Any)
 	/// It puts element into tuple at position, put by position
@@ -68,7 +68,7 @@ end // Bit
 	foreign
 	ensure
 		return >= 0
-	end
+	end // count
   
 	{ this } pure fieldIndex (fieldName: String): Integer
 	foreign
@@ -78,7 +78,7 @@ end // Bit
   
 require
 	count >= 0 /// Tuple has 0 or more elements
-end*/
+end
 
 val unit Bit [N: Integer]
 	const : // All Bit constants not longer than B bits in it
@@ -365,7 +365,7 @@ virtual unit Enumeration extend Comparable
 		return > 0	// Order number of any element is greater than 0
 		count > 0 implies return <= count // Order number of any element not greater than numbe rof elements
 		count > 0 implies return in 1 .. count		
-	end
+	end // ord
 require 
 	count >= 0 /// Number of elements is not negative
 //	count > 0 implies pred < this and then this < succ
@@ -1159,23 +1159,14 @@ end // RoutineDescriptor
 final unit ProcedureDescriptor extend RoutineDescriptor
 	() alias apply (args: ()) foreign
 		// That is a procedure call
-	ProcedureDescriptor (aName: as name; args: as arguments) do
-		name is aName
-		arguments is args
-	end
-//	ProcedureDescriptor (:= name; := arguments)
+	ProcedureDescriptor (:= name; := arguments) none
 end // Procedure [Arguments -> ()]
 
 final unit FunctionDescriptor extend RoutineDescriptor
 	type: TypeDescriptor
 	() alias apply (args: Arguments): Any foreign
 		// That is a function call
-	FunctionDescriptor (aName: as name; args: as arguments; aType: as type) do
-		name is aName
-		arguments is args
-		type is aType
-	end
-//	FunctionDescriptor (:= name; := arguments; := type)
+	FunctionDescriptor (:= name; := arguments; := type) none
 end // Function [Arguments -> (), Result]
 
 virtual unit AttributeDescriptor extend MemberDescriptor
@@ -1187,21 +1178,11 @@ final unit VariableDescriptor extend AttributeDescriptor
 	override := alias set (v: as value) do 
 		value := v
 	end
-	VariableDescriptor (aName: as name; aType: as type; aValue: as value) do
-		name is aName
-		type is aType
-		value is aValue
-	end
-//	VariableDescriptor (:= name; := type; := value)
+	VariableDescriptor (:= name; := type; := value) none
 end // VariableDescriptor
 
 final unit ConstantDescriptor extend AttributeDescriptor 
-	ConstantDescriptor (aName: as name; aType: as type; aValue: as value) do
-		name is aName
-		type is aType
-		value is aValue
-	end
-//	ConstantDescriptor (:= name; := type; := value)
+	ConstantDescriptor (:= name; := type; := value) none
 end // ConstantDescriptor
 
 final unit TypeDescriptior
@@ -1209,11 +1190,5 @@ final unit TypeDescriptior
 	final routines : Array [RoutineDescriptor]
 	final attributes : Array [AttributeDescriptor]
 	final parents: Array [TypeDesciptor]
-	TypeDescriptior (aName: as name; prtns: as parents; rtns: as routines; attrs: as attributes) do
-		name is aName
-		parents is prtns
-		routines is rtns
-		attributes is attrs
-	end
-//	TypeDescriptior (:= name; := parents; := routines; := attributes)
+	TypeDescriptior (:= name; := parents; := routines; := attributes) none
 end // TypeDescriptior

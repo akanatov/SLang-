@@ -912,7 +912,13 @@ feature {Any}
 				end -- if
 				Result.append_character('%T')
 				Result.append_string ("foreign%N")	
-			elseif innerBlock /= Void then
+			elseif innerBlock = Void then
+				if Result.item (Result.count) /= '%N' then
+					Result.append_character ('%N')
+				end -- if
+				Result.append_character('%T')
+				Result.append_string ("none%N")
+			else
 				Result.append_character('%T')
 				Result.append_string (innerBlock.out)	
 			end -- if
@@ -1035,33 +1041,34 @@ invariant
 end -- class ParameterDescriptor
 
 class NamedParameterDescriptor
--- Parameter: [[var] Identifier ":" Type
+-- Parameter: [[rigid] Identifier ":" Type
 inherit	
 	ParameterDescriptor
 	end
 create 
 	init
 feature {Any}
-	isVar: Boolean
+	isRigid: Boolean
 	type: TypeDescriptor
 	out: String is
 	do
-		if isVar then
-			Result := "var " + name + ": " + type.out
+		if isRigid then
+			Result := "rigid "
 		else
-			Result := name + ": " + type.out
+			Result := ""
 		end -- if
+		Result.append_string (name + ": " + type.out)
 	end
 	sameAs (other: like Current): Boolean is
 	do
---		Result := isVar = other.isVar and then type.is_equal (other.type)
+--		Result := isRigid = other.isRigid and then type.is_equal (other.type)
 		Result := type.is_equal (other.type)
 	end -- sameAs
 	lessThan(other: like Current): Boolean is
 	do
 		Result := type < other.type
---		Result := not isVar and then other.isVar
---		if not Result and then isVar = other.isVar then
+--		Result := not isRigid and then other.isRigid
+--		if not Result and then isRigid = other.isRigid then
 --			Result := type < other.type
 --		end -- if
 	end -- lessThan
@@ -1077,7 +1084,7 @@ feature {None}
 		non_void_name: aName /= Void
 		non_void_type: aType /= Void
 	do
-		isVar := iv
+		isRigid := iv
 		name := aName
 		type := aType
 	end -- init

@@ -1,0 +1,267 @@
+Parsing file `attr.slang`
+Parsing unit `A`
+File `attr.slang` parsed with no errors!
+Parsing file `Bit.slang`
+Parsing unit `Bit [N: Integer]`
+File `Bit.slang` parsed with no errors!
+Parsing file `bit1.slang`
+Parsing unit `X`
+File `bit1.slang` parsed with no errors!
+Parsing file `bit2.slang`
+Parsing unit `Bit [N: Integer]`
+File `bit2.slang` parsed with no errors!
+File `call.slang` was not changed. Parsing skipped.
+Parsing file `co.slang`
+Parsing unit `A`
+File `co.slang` parsed with no errors!
+Parsing file `Comparable.slang`
+Parsing unit `Comparable`
+File `Comparable.slang` parsed with no errors!
+Parsing file `constCall.slang`
+Parsing unit `A`
+File `constCall.slang` parsed with no errors!
+Parsing file `const_attr.slang`
+Parsing unit `A`
+File `const_attr.slang` parsed with no errors!
+Parsing file `Core.slang`
+Parsing unit `Bit`
+Parsing unit `()`
+Parsing unit `Bit [N: Integer]`
+Parsing unit `Any`
+Parsing unit `System`
+Parsing unit `Platform`
+Parsing unit `Numeric`
+Parsing unit `Comparable`
+Parsing unit `Enumeration`
+Parsing unit `Pointer`
+Parsing unit `Cardinal`
+Parsing unit `Cardinal [BitsNumber: Cardinal]`
+Parsing unit `Integer`
+Parsing unit `Integer [BitsNumber: Integer]`
+Parsing unit `Byte`
+Parsing unit `Rational`
+Parsing unit `Fixed`
+Parsing unit `Float [nBits: Integer]`
+Parsing unit `Real`
+Parsing unit `Character`
+Parsing unit `Boolean`
+Parsing unit `AString`
+Parsing unit `String [N: Integer]`
+Parsing unit `String`
+Parsing unit `AnArray [G]`
+Parsing unit `OneDimentionalArray [G init ]`
+Parsing unit `Array [G init , N: Integer]`
+Parsing unit `Array [G init , N: (Integer, Integer)]`
+Parsing unit `Array [G init ]`
+Parsing unit `StandardIO`
+Parsing unit `DynamicObject`
+Parsing unit `MemberDescriptor`
+Parsing unit `RoutineDescriptor`
+Parsing unit `ProcedureDescriptor`
+Parsing unit `FunctionDescriptor`
+Parsing unit `AttributeDescriptor`
+Parsing unit `VariableDescriptor`
+Parsing unit `ConstantDescriptor`
+Parsing unit `TypeDescriptior`
+File `Core.slang` parsed with no errors!
+Parsing file `dyn.slang`
+Parsing unit `DynamicObject`
+File `dyn.slang` parsed with no errors!
+Parsing file `Enumeration.slang`
+Parsing unit `Enumeration`
+File `Enumeration.slang` parsed with no errors!
+Parsing file `expr.slang`
+Parsing unit `A`
+Error at 14:1 - Compilation unit start expected: `<illegal>` is found, but expected: `<illegal>`
+File `expr.slang` parsed with 1 error!
+Parsing file `expr1.slang`
+Parsing unit `A`
+File `expr1.slang` parsed with no errors!
+Parsing file `generic alias extend.slang`
+Parsing unit `A [B]`
+Error at 2:6 - `<identifier>` is found, but expected: `final ( use require do virtual foreign => : , is`
+Error at line 7 - `<EOF>` is found, but expected: `override final pure safe <identifier> <operator> -> ~ | { :=`
+Error at line 7 - `<EOF>` is found, but expected: `end // unit`
+File `generic alias extend.slang` parsed with 3 errors!
+Parsing file `HelloWorld.slang`
+File `HelloWorld.slang` parsed with no errors!
+Parsing file `HelloWorld1.slang`
+Error at 1:8 - `<illegal>` is found, but expected: `final alias ( : do require => [ . := use foreign is`
+File `HelloWorld1.slang` parsed with 1 error!
+Parsing file `if.clang`
+Error at 3:1 - `<identifier>` is found, but expected: `}`
+File `if.clang` parsed with 1 error!
+Parsing file `if.slang`
+File `if.slang` parsed with no errors!
+Parsing file `init procedure.slang`
+Parsing unit `A`
+File `init procedure.slang` parsed with no errors!
+Parsing file `invariant.slang`
+Parsing unit `A`
+File `invariant.slang` parsed with no errors!
+Parsing file `lambda.slang`
+File `lambda.slang` parsed with no errors!
+Parsing file `loop.slang`
+File `loop.slang` parsed with no errors!
+Parsing file `new Type.slang`
+File `new Type.slang` parsed with no errors!
+Parsing file `no end.slang`
+Parsing unit `A`
+File `no end.slang` parsed with no errors!
+Parsing file `operators.slang`
+Error at 7:3 - Start of compilation unit expected: `:=` is found, but expected: `build use final ref val concurrent virtual extend unit pure safe <identifier> if while new ? raise return ( var require do`
+File `operators.slang` parsed with 1 error!
+Parsing file `overloading.slang`
+Parsing unit `A`
+File `overloading.slang` parsed with no errors!
+Parsing file `override.slang`
+Parsing unit `Bit [N: Integer]`
+File `override.slang` parsed with no errors!
+Parsing file `p.slang`
+Parsing unit `VariableDescriptor`
+File `p.slang` parsed with no errors!
+Parsing file `par-negative.slang`
+Parsing unit `X`
+Error at 2:19 - Initialised parameter should not be followed by the non-initilized one 'b'
+Error at 3:20 - Duplicated parameter declaration 'a: T'
+Error at 3:30 - Duplicated parameter declaration 'a is 6'
+File `par-negative.slang` parsed with 3 errors!
+Parsing file `par.slang`
+Parsing unit `X`
+Error at 2:63 - `is` is found, but expected: `; , )`
+Error at 5:3 - `<EOF>` is found, but expected: `do foreign => virtual none`
+Error at 5:3 - `<EOF>` is found, but expected: `override final pure safe <identifier> <operator> -> ~ | { :=`
+Error at 5:3 - `<EOF>` is found, but expected: `end // unit`
+File `par.slang` parsed with 4 errors!
+Parsing file `pure.slang`
+Parsing unit `X`
+File `pure.slang` parsed with no errors!
+Parsing file `r.slang`
+Parsing unit `A`
+Error at 2:6 - `<identifier>` is found, but expected: `final ( use require do virtual foreign => : , is`
+Error at line 6 - `<EOF>` is found, but expected: `override final pure safe <identifier> <operator> -> ~ | { :=`
+Error at line 6 - `<EOF>` is found, but expected: `end // unit`
+File `r.slang` parsed with 3 errors!
+Parsing file `r1.slang`
+Parsing unit `Real`
+File `r1.slang` parsed with no errors!
+Parsing file `r2.slang`
+Parsing unit `Real`
+File `r2.slang` parsed with no errors!
+Parsing file `r3.slang`
+Parsing unit `Real`
+File `r3.slang` parsed with no errors!
+File `range type.slang` was not changed. Parsing skipped.
+Parsing file `range.slang`
+File `range.slang` parsed with no errors!
+File `rtn.slang` was not changed. Parsing skipped.
+Parsing file `rtn1.slang`
+Parsing unit `A`
+File `rtn1.slang` parsed with no errors!
+File `rtn_starts.slang` was not changed. Parsing skipped.
+File `sizetest.slang` was not changed. Parsing skipped.
+File `standalone.slang` was not changed. Parsing skipped.
+Parsing file `StandardIO.slang`
+Parsing unit `StandardIO`
+Error at 11:24 - `:` is found, but expected: `is do`
+Error at line 33 - `<EOF>` is found, but expected: `end // loop`
+Error at line 33 - `<EOF>` is found, but expected: `end // routine`
+Error at 33:1 - `<EOF>` is found, but expected: `override final pure safe <identifier> <operator> -> ~ | { :=`
+Error at 33:1 - `<EOF>` is found, but expected: `end // unit`
+File `StandardIO.slang` parsed with 5 errors!
+Parsing file `system.slang`
+Error at 1:8 - `<identifier>` is found, but expected: `final alias ( : do require => [ . := use foreign is`
+File `system.slang` parsed with 1 error!
+File `test.slang` was not changed. Parsing skipped.
+Parsing file `testP.slang`
+Parsing unit `A`
+Parsing unit `B`
+Parsing unit `C`
+Parsing unit `D`
+Parsing unit `E`
+Parsing unit `A1`
+Parsing unit `B1`
+Parsing unit `C1`
+Parsing unit `D1`
+File `testP.slang` parsed with no errors!
+File `testX.clang` was not changed. Parsing skipped.
+Parsing file `tuple unit.slang`
+Error at 2:6 - `(` is found, but expected: `<identifier>`
+File `tuple unit.slang` parsed with 1 error!
+Parsing file `tuple.slang`
+Parsing unit `()`
+File `tuple.slang` parsed with no errors!
+Parsing file `typeTest.slang`
+File `typeTest.slang` parsed with no errors!
+Parsing file `when.slang`
+File `when.slang` parsed with no errors!
+Parsing file `x.slang`
+Parsing unit `A`
+Error at 3:1 - Start of compilation unit expected: `end` is found, but expected: `build use final ref val concurrent virtual extend unit pure safe <identifier> if while new ? raise return ( var require do`
+File `x.slang` parsed with 1 error!
+File `y.slang` was not changed. Parsing skipped.
+Parsing file `z.slang`
+Parsing unit `A`
+File `z.slang` parsed with no errors!
+Parsing file `_b.slang`
+Parsing unit `Boolean`
+Error at 3:9 - `<identifier>` is found, but expected: `final ( use require do virtual foreign => : , is`
+Error at 5:3 - `<EOF>` is found, but expected: `override final pure safe <identifier> <operator> -> ~ | { :=`
+Error at 5:3 - `<EOF>` is found, but expected: `end // unit`
+File `_b.slang` parsed with 3 errors!
+Parsing file `_call.slang`
+File `_call.slang` parsed with no errors!
+Parsing file `_e.slang`
+File `_e.slang` parsed with no errors!
+Parsing file `_override const.slang`
+Parsing unit `Pointer`
+File `_override const.slang` parsed with no errors!
+Parsing file `_r.slang`
+Parsing unit `Real`
+Error at 3:5 - `<identifier>` is found, but expected: `final ( use require do virtual foreign => : , is`
+Error at line 6 - `<EOF>` is found, but expected: `override final pure safe <identifier> <operator> -> ~ | { :=`
+Error at line 6 - `<EOF>` is found, but expected: `end // unit`
+File `_r.slang` parsed with 3 errors!
+Parsing file `_r1.slang`
+Parsing unit `Real`
+File `_r1.slang` parsed with no errors!
+Parsing file `_tuple expression.slang`
+File `_tuple expression.slang` parsed with no errors!
+Parsing file `__assign.slang`
+Parsing unit `TypeDescriptior`
+Error at 5:5 - `ensure` is found, but expected: `do foreign => virtual none`
+Error at line 9 - `<EOF>` is found, but expected: `override final pure safe <identifier> <operator> -> ~ | { :=`
+Error at line 9 - `<EOF>` is found, but expected: `end // unit`
+File `__assign.slang` parsed with 3 errors!
+Parsing file `__const.slang`
+Parsing unit `A`
+File `__const.slang` parsed with no errors!
+Parsing file `__if negative.slang`
+File `__if negative.slang` parsed with no errors!
+Parsing file `__if.slang`
+Error at 18:5 - Duplicated alternative T2
+File `__if.slang` parsed with 1 error!
+File `__minus.slang` was not changed. Parsing skipped.
+File `__par.slang` was not changed. Parsing skipped.
+Parsing file `__syn_error.slang`
+Parsing unit `A`
+File `__syn_error.slang` parsed with no errors!
+Parsing file `__u.slang`
+Parsing unit `DynamicObject`
+Parsing unit `MemberDescriptor`
+Parsing unit `RoutineDescriptor`
+Parsing unit `ProcedureDescriptor`
+Parsing unit `FunctionDescriptor`
+Parsing unit `AttributeDescriptor`
+Parsing unit `VariableDescriptor`
+Parsing unit `ConstantDescriptor`
+Parsing unit `TypeDescriptior`
+File `__u.slang` parsed with no errors!
+Parsing file `__x.slang`
+File `__x.slang` parsed with no errors!
+Parsing file `__y.clang`
+Parsing unit `A`
+File `__y.clang` parsed with no errors!
+11 files are actual, parsing skipped ...
+Due to parsing errors, build is dropped
+

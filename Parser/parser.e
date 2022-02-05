@@ -269,6 +269,7 @@ feature {Any}
 						scanner.use_token, scanner.foreign_token, scanner.implies_token
 					then
 						-- Standalone routine start
+trace (">>#6")
 						rtnDsc := parseStandAloneRoutine1 (False, False, name)
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 							validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
@@ -279,6 +280,7 @@ feature {Any}
 						--then
 						if scanner.blockStart or else scanner.genericsStart then
 							-- Standalone routine start
+trace (">>#5")
 							rtnDsc := parseStandAloneRoutine1 (False, False, name)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 								validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
@@ -538,6 +540,7 @@ feature {None}
 				end -- if
 			when scanner.require_token, scanner.foreign_token, scanner.use_token then
 				-- function
+trace (">>#4")
 				rtnDsc := parseStandAloneRoutine1 (False, False, name)
 				if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 					validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
@@ -545,6 +548,7 @@ feature {None}
 			else
 				if scanner.blockStart then
 					-- function
+trace (">>#3")
 					rtnDsc := parseStandAloneRoutine1 (False, False, name)
 					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 						validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
@@ -632,9 +636,9 @@ feature {None}
 		scanner.nextToken
 		inspect	
 			scanner.token 
-		when scanner.var_token then
-			-- name (var 			>> routine declaration
-			-- identifier ( var --> routine declaration
+		when scanner.rigid_token then
+			-- name (rigid 			>> routine declaration
+			-- identifier ( rigid --> routine declaration
 			--              ^
 			-- Identifier Parameters [“:” Type] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | ( foreign| (“=>”Expression ) [EnsureBlock end] )
 			isRtnDecl := True
@@ -657,9 +661,10 @@ feature {None}
 				--                 ^
 				--        ^
 				scanner.revert
-			when scanner.colon_token then
+			when scanner.colon_token, scanner.is_token then
 				-- name (id: 			>> routine declaration
 				-- ident ( ident :
+				-- ident ( ident is
 				--               ^
 				--         ^
 				-- revert to ident!!! 
@@ -678,7 +683,7 @@ feature {None}
 				--        ^
 				scanner.revert
 			when scanner.comma_token then
-				--	name (id,..., var			>> routine declaration
+				--	name (id,..., rigid			>> routine declaration
 				-- 	name (id,..., id:			>> routine declaration
 				-- 	name (id,..., id.	 		>> unqualified call or assignment
 				-- 	name (id,..., id operator	>> unqualified call or assignment
@@ -708,8 +713,8 @@ feature {None}
 						scanner.revert
 						toLeave := True
 --trace ("operator found reverted !!!")
-					when scanner.var_token then
-						--	name (id,..., var			>> routine declaration
+					when scanner.rigid_token then
+						--	name (id,..., rigid			>> routine declaration
 						--				  ^
 						scanner.push
 						scanner.revert
@@ -760,7 +765,7 @@ feature {None}
 					when scanner.comma_token then 
 						if commaFound then
 							syntax_error (<<
-								scanner.var_token, scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.rigid_token, scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
 								scanner.implies_token, scanner.less_token, scanner.greater_token,
 								scanner.bar_token, scanner.tilda_token
 							>>)
@@ -776,7 +781,7 @@ feature {None}
 					when scanner.right_paranthesis_token then 
 						if commaFound then
 							syntax_error (<<
-								scanner.var_token, scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.rigid_token, scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
 								scanner.implies_token, scanner.less_token, scanner.greater_token,
 								scanner.bar_token, scanner.tilda_token
 							>>)
@@ -792,7 +797,7 @@ feature {None}
 						syntax_error (<<
 							scanner.operator_token, -- scanner.minus_token,
 							scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token, 
-							scanner.var_token, scanner.identifier_token, scanner.comma_token,
+							scanner.rigid_token, scanner.identifier_token, scanner.comma_token,
 							scanner.right_paranthesis_token
 						>>)
 						scanner.flush
@@ -803,14 +808,15 @@ feature {None}
 			else
 				syntax_error (<<
 					scanner.colon_token, scanner.operator_token, -- scanner.minus_token,
-					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.dot_token, scanner.right_paranthesis_token
+					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.dot_token, scanner.right_paranthesis_token,
+					scanner.is_token
 				>>)
 				scanner.flush				
 				wasError := True
 			end -- inspect			
 		else
 			syntax_error (<<
-				scanner.var_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.rigid_token, scanner.operator_token, -- scanner.minus_token,
 				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.identifier_token
 			>>)
 			wasError := True
@@ -818,7 +824,7 @@ feature {None}
 		if not wasError then
 			if isRtnDecl then
 				-- >> routine declaration
---trace ("Parsing analysis done OK: >> routine declaration")
+-- trace ("Parsing analysis done OK: >> routine declaration")
 				parameters := parseParameters1 -- (False)
 				if parameters /= Void then
 					rtnDsc ?= parseAnyRoutine (False, False, False, False, name, Void, Void, True, False, parameters, False)			
@@ -828,7 +834,7 @@ feature {None}
 				end -- if
 			else
 				-- >> unqualified call or assignment
---trace ("Parsing analysis done OK: >> >> unqualified call or assignment")
+-- trace ("Parsing analysis done OK: >> >> unqualified call or assignment")
 				callDsc := parseUnqalifiedCallWithFirstArgument (name)
 				if callDsc /= Void then
 					if scanner.token = scanner.assignment_token then
@@ -2318,7 +2324,7 @@ feature {None}
 							create cceDsc1.init (operator, <<exprCall.expression>>)
 							create exprCall1.init (Result, <<cceDsc1>>)
 							create {ExpressionCallDescriptor} Result.init (exprCall1, <<exprCall.callChain.item (1)>>)
---	trace ("#1.1:[" + Result.getOrder.out + "]" + Result.out)
+--trace ("#1.1:[" + Result.getOrder.out + "]" + Result.out)
 						end -- if
 --trace ("#1.2: " + Result.out)
 						--if getOrder (operator) > exprDsc.getOrder then
@@ -3680,12 +3686,14 @@ feature {None}
 			scanner.require_token, scanner.one_line_function_token, scanner.use_token, scanner.foreign_token
 		then
 			-- Standalone routine start
+trace (">>#2")
 			Result := parseStandAloneRoutine1 (is_pure, is_safe, name)
 		else
 			if scanner.Cmode and then ( scanner.token = scanner.less_token or else scanner.token = scanner.left_curly_bracket_token)
 				or else (scanner.token = scanner.left_square_bracket_token or else scanner.token = scanner.do_token)
 			then
 				-- Standalone routine start
+trace (">>#1")
 				Result := parseStandAloneRoutine1 (is_pure, is_safe, name)
 			elseif scanner.Cmode then
 				syntax_error (<< scanner.final_token, scanner.alias_token, scanner.colon_token,
@@ -3823,7 +3831,6 @@ feature {None}
 			if scanner.token = scanner.left_paranthesis_token then
 				-- scanner.nextToken
 				parameters := parseParameters
---trace ("parameters parsed")				
 			end -- if
 			inspect
 				scanner.token
@@ -3887,6 +3894,7 @@ feature {None}
 		wasError: Boolean
 	do
 		wasError := we
+--		checkForEnd := preconditions /= Void
 		if scanner.Cmode and then scanner.token = scanner.left_curly_bracket_token then
 			innerBlock := parseInnerBlock (False)
 			checkForEnd := True
@@ -3908,16 +3916,26 @@ feature {None}
 				--  expr
 				scanner.nextToken
 				expr := parseExpressionWithSemicolon
+			when scanner.none_token then
+				scanner.nextToken
 			else
 				if scanner.blockStart then
 					innerBlock := parseInnerBlock (False)
 					checkForEnd := True
 				elseif scanner.Cmode then
-					syntax_error (<<scanner.left_curly_bracket_token, scanner.foreign_token, scanner.one_line_function_token, scanner.virtual_token>>)
+					syntax_error (<<
+						scanner.left_curly_bracket_token, scanner.foreign_token, scanner.one_line_function_token, scanner.virtual_token,
+						scanner.none_token
+					>>)
 					wasError := True
 				else
-					syntax_error (<<scanner.do_token, scanner.foreign_token, scanner.one_line_function_token, scanner.virtual_token>>)
+					syntax_error (<<
+						scanner.do_token, scanner.foreign_token, scanner.one_line_function_token, scanner.virtual_token,
+						scanner.none_token
+					>>)
 					wasError := True
+--				else 
+--					-- No inner block at all !!!					
 				end -- if
 			end -- inspect
 		end -- if
@@ -3964,11 +3982,11 @@ feature {None}
 	-- ident , ....
 	--         ^
 	-- scanner.token = scanner.var_token
-	-- var ident ...
+	-- rigid ident ...
 	-- ^
 	require
 		array_not_void: aResult /= Void and then aResult.count < 2
-		consistent1: scanner.token = scanner.var_token implies aResult.count = 0
+		consistent1: scanner.token = scanner.rigid_token implies aResult.count = 0
 		consistent2: scanner.token = scanner.comma_token implies aResult.count = 1	
 	local
 		parDsc: NamedParameterDescriptor -- ParameterDescriptor
@@ -3984,7 +4002,7 @@ feature {None}
 		loop
 			inspect
 				scanner.token
-			when scanner.var_token then 
+			when scanner.rigid_token then 
 				if commaFound or else aResult.count <= 1 then
 					commaFound := False
 					scanner.nextToken
@@ -4058,10 +4076,10 @@ feature {None}
 	end -- parseMultiVarParameter
 
 	parseParameterBlock: Array [ParameterDescriptor] is
-	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“:=” [Identifier]))
+	-- Parameter: ([[rigid] Identifier{“,” [rigid] Identifier} “:” Type)|(Identifier “is” Expression|(“:=” [Identifier]))
 	-- Just put them all into array!!!
 	require
-		valid_token: validToken (<<scanner.identifier_token, scanner.var_token>>)
+		valid_token: validToken (<<scanner.identifier_token, scanner.rigid_token>>)
 	local
 		parDsc: ParameterDescriptor
 		namedParDsc: NamedParameterDescriptor
@@ -4069,6 +4087,7 @@ feature {None}
 		typeDsc: TypeDescriptor
 		name: String
 	do
+-- trace (">> parseParameterBlock")
 		inspect
 			scanner.token
 		when scanner.identifier_token then
@@ -4111,7 +4130,7 @@ feature {None}
 				syntaxError ("Parameter definition or next parameter expected", <<scanner.is_token, scanner.colon_token, scanner.comma_token>>, 
 					<<scanner.right_paranthesis_token>>)
 			end -- inspect
-		when scanner.var_token then
+		when scanner.rigid_token then
 			-- var ident ...
 			-- ^
 			Result := parseMultiVarParameter (<<>>)
@@ -4139,9 +4158,9 @@ feature {None}
 			scanner.nextToken
 			Result := <<>>
 		else
---			syntax_error (<<scanner.var_token, scanner.identifier_token, scanner.assignment_token, scanner.right_paranthesis_token>>)
-			syntaxError ("Parameter declaration expected", <<scanner.var_token, scanner.identifier_token, scanner.assignment_token, scanner.right_paranthesis_token>>, 
-				<<scanner.right_paranthesis_token>>)
+			syntax_error (<<scanner.var_token, scanner.identifier_token, scanner.assignment_token, scanner.right_paranthesis_token>>)
+--			syntaxError ("Parameter declaration expected", <<scanner.var_token, scanner.identifier_token, scanner.assignment_token, scanner.right_paranthesis_token>>, 
+--	 Incorrect followers !!!			<<scanner.right_paranthesis_token>>)
 		end -- if
 	end -- parseParameters
 
@@ -4162,6 +4181,7 @@ feature {None}
 		parFound: Boolean
 		wasError: Boolean
 	do
+-- trace (">> parseParameters1")
 		from
 			create Result.make (1, 0)
 			create pars.make
@@ -4190,7 +4210,7 @@ feature {None}
 					create {AssignAttributeParameterDescriptor} parDsc.init ("") 
 					Result.force (parDsc, Result.count + 1)
 				end -- if
-			when scanner.identifier_token, scanner.var_token then 
+			when scanner.identifier_token, scanner.rigid_token then 
 				parFound := True
 				parBlock := parseParameterBlock
 				if parBlock = Void then
@@ -4228,7 +4248,7 @@ feature {None}
 				if parFound then
 					syntax_error (<<scanner.semicolon_token, scanner.comma_token, scanner.right_paranthesis_token>>)
 				else
-					syntax_error (<<scanner.identifier_token, scanner.var_token, scanner.assignment_token>>)
+					syntax_error (<<scanner.identifier_token, scanner.rigid_token, scanner.assignment_token>>)
 				end -- if
 				toLeave := True
 				wasError := True
@@ -4237,6 +4257,7 @@ feature {None}
 		if wasError then
 			Result := Void
 		end -- if
+-- trace ("<< parseParameters1")
 	end -- parseParameters1
 
 	parseUseConst: Sorted_Array[UnitTypeNameDescriptor] is
@@ -4882,8 +4903,8 @@ feature {None}
 							if constExpr2 = Void then
 								toLeave := True
 							else
-	--trace (" bar: constant expr: " + expr.out)
-	-- const check does not work any more!!! paredExpression parses the whole construction ce1 | ce2 | ce ....
+--trace (" bar: constant expr: " + expr.out)
+-- const check does not work any more!!! paredExpression parses the whole construction ce1 | ce2 | ce ....
 								cDsc ?= constExpr2 -- expr
 								if cDsc /= Void and then not constants.added (cDsc) then
 									validity_error( "Duplicated constant '" + cDsc.value.out + "' in range type ")
@@ -6590,7 +6611,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 --				scanner.nextToken
 --				if scanner.token = scanner.greater_token then
 --					scanner.nextToken
---	--trace ("parse function")
+--	-- trace ("parse function")
 --					typeDsc := parseTypeDescriptor
 --					if typeDsc /= Void then
 --						-- UnitRoutineDeclaration: Identifier “->” Type [EnclosedUseDirective] 
