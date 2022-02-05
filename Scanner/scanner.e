@@ -1692,15 +1692,16 @@ feature {None}
 	--	keyword_token: alias_token <= aToken and then aToken <= one_line_function_token or else aToken = eof_token
 	do	
 		token := aToken
-		buffer := keywords.item (token)
+		if aToken >= alias_token then
+			buffer := keywords.item (token)
+		end -- if
 	end -- setToken
 
 	setTokenNoRead (aToken: Integer) is
 	--require
 	--	keyword_token: alias_token <= aToken and then aToken <= one_line_function_token or else aToken = eof_token
 	do
-		token  := aToken
-		buffer := keywords.item (token)
+		setToken (aToken)
 		toRead := False
 	end -- setTokenNoRead
 	

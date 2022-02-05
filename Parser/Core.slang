@@ -1056,7 +1056,7 @@ end // Array
 unit StandardIO alias io
 	StandardIO do
 		// Init procedure is missed or way how to setup IO !!!!
-	end -- StandardIO
+	end // StandardIO
 	pure get: Integer foreign
 	pure get: Real foreign
 	pure get: Boolean foreign

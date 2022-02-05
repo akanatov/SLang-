@@ -165,7 +165,7 @@ class CompilationUnitCommon
 create {None}
 	init
 feature {Any}
-	-- use const UnitTypeName {“,” UnitTypeName}
+	-- use const UnitTypeName {"," UnitTypeName}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
 	stringPool: Sorted_Array [String]
 	typePool: Sorted_Array[TypeDescriptor]
@@ -3854,36 +3854,35 @@ invariant
 	non_void_expression: expr /= Void
 end -- class ParenthedExpressionDescriptor
 
-class InitDescriptor
-inherit
-	MemberCallDescriptor
-		redefine
-			sameAs, lessThan
-	end
-feature {Any}
-	out: String is do Result := "init" end
+--class InitDescriptor
+--inherit
+--	MemberCallDescriptor
+--		redefine
+--			sameAs, lessThan
+--	end
+--feature {Any}
+--	out: String is do Result := "init" end
+--
+--	isNotValid (context: CompilationUnitCommon): Boolean is
+--	do
+--		-- do nothing so far
+--	end -- isNotValid
+--	generate (cg: CodeGenerator) is
+--	do
+--		-- do nothing so far
+--	end -- generate
+--
+--	sameAs (other: like Current): Boolean is
+--	do
+--		Result := True
+--	end -- sameAs
+--	lessThan (other: like Current): Boolean is
+--	do
+--	end -- theSame
+--feature {ExpressionDescriptor}
+--	weight: Integer is -29
+--end -- class InitDescriptor
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
-	do
-		-- do nothing so far
-	end -- isNotValid
-	generate (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate
-
-
-
-	sameAs (other: like Current): Boolean is
-	do
-		Result := True
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	do
-	end -- theSame
-feature {ExpressionDescriptor}
-	weight: Integer is -29
-end -- class InitDescriptor
 class OldDescriptor
 inherit
 	MemberCallDescriptor
@@ -4592,6 +4591,22 @@ feature	{Any}
 	unitPrefix: UnitTypeDescriptor
 	token: Integer
 	value: Any
+	negate is
+	local
+		ir: Integer_Ref
+		rr: Real_Ref
+	do
+		ir ?= value
+		if ir = Void then
+			rr ?= value
+			if rr /= Void then
+				value := - rr.item
+			end -- if
+		else
+			value := - ir.item
+		end -- if
+	end -- negate
+	
 	init (up: like unitPrefix; t: Integer; v: like value) is
 	require
 		non_void_value: v /= Void

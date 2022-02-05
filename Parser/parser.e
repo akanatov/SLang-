@@ -1839,10 +1839,10 @@ feature {None}
 	end -- parseCommentedExpression
 
 	
-	initDsc: InitDescriptor is
-	once
-		create Result
-	end -- initDsc
+--	initDsc: InitDescriptor is
+--	once
+--		create Result
+--	end -- initDsc
 	thisDsc: ThisDescriptor is
 	once
 		create Result
@@ -1868,7 +1868,7 @@ feature {None}
 		cceDsc: CallChainElement 
 		--cceDsc1: CallChainElement
 	do
-trace (">>>parseUnaryExpression")
+--trace (">>>parseUnaryExpression")
 		inspect
 			scanner.token
 		when scanner.identifier_token then 
@@ -1884,7 +1884,24 @@ trace (">>>parseUnaryExpression")
 			scanner.nextWithSemicolon (checkSemicolonAfter)
 			create {CallChainElement} cceDsc.init (operator, Void)
 			create {ExpressionCallDescriptor} Result.init (returnDsc, <<cceDsc>>)
-		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+		when scanner.integer_const_token, scanner.real_const_token then
+			if operator.is_equal ("+") then
+				-- ignore plus sign
+				Result := parseConstant (checkSemicolonAfter)				
+			elseif operator.is_equal ("-") then
+				-- negate the constant 
+				constDsc := parseConstant (checkSemicolonAfter)
+				constDsc.negate
+				Result := constDsc
+			else				
+				constDsc := parseConstant (checkSemicolonAfter)
+				check
+					non_void_constant_dsc: constDsc /= Void
+				end
+				create {CallChainElement} cceDsc.init (operator, Void)
+				create {ExpressionCallDescriptor} Result.init (constDsc, <<cceDsc>>)
+			end -- if
+		when scanner.string_const_token, scanner.char_const_token then
 			constDsc := parseConstant (checkSemicolonAfter)
 			check
 				non_void_constant_dsc: constDsc /= Void
@@ -4697,12 +4714,14 @@ trace (">>>parseUnaryExpression")
 	local
 		identDsc: IdentifierDescriptor
 		constDsc: ConstantDescriptor
+		cceDsc: CallChainElement 
+		operator: String
 	do
 --trace (">>> parseConstExpression")
 		inspect
 			scanner.token
 		when scanner.identifier_token then
---not_implemented_yet ("parseConstExpression: <ident>")
+-- not_implemented_yet ("parseConstExpression: <ident>")
 			create identDsc.init (scanner.tokenString)
 			scanner.nextWithSemicolon (checkSemicolonAfter)
 			inspect
@@ -4753,10 +4772,40 @@ trace (">>>parseUnaryExpression")
 			end -- inspect
 		-- when scanner.left_paranthesis_token then
 			-- (ConstExpr) -- skipped sp far
+		when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+			-- Unary expression kind of - 5 or + 6
+-- not_implemented_yet ("parseConstExpression: +<const> or -<const>")
+			operator := scanner.tokenString
+			scanner.nextToken
+			inspect
+				scanner.token
+			when scanner.integer_const_token, scanner.real_const_token then
+				if operator.is_equal ("+") then
+					-- ignore plus sign
+					Result := parseConstant (checkSemicolonAfter)				
+				elseif operator.is_equal ("-") then
+					-- negate the constant 
+					constDsc := parseConstant (checkSemicolonAfter)
+					constDsc.negate
+					Result := constDsc
+				else				
+					constDsc := parseConstant (checkSemicolonAfter)
+					check
+						non_void_constant_dsc: constDsc /= Void
+					end
+					create {CallChainElement} cceDsc.init (operator, Void)
+					create {ExpressionCallDescriptor} Result.init (constDsc, <<cceDsc>>)
+				end -- if
+			else
+				syntax_error (<<
+					scanner.integer_const_token, scanner.real_const_token
+				>>)
+			end -- inspect			
 		else
 			syntax_error (<<
 				scanner.identifier_token,
-				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
+				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
+				scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
 			>>)
 		end -- inspect
 --trace ("<<< parseConstExpression")
@@ -4769,7 +4818,10 @@ trace (">>>parseUnaryExpression")
 	-- 	|
 	-- 	(ConstantExpression {“|” ConstantExpression})
 	require
-		valid_token: validToken (<<scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token>>)
+		valid_token: validToken (<<
+			scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
+			scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token			
+		>>)
 	local
 		--expr: ExpressionDescriptor
 		constExpr1: ConstExpressionDescriptor
@@ -5048,7 +5100,9 @@ trace (">>>parseUnaryExpression")
 		when scanner.unit_token then
 			-- Anonymous unit type
 			Result := parseAnonymousUnitType (checkSemicolonAfter)
-		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
+			scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
+		then
 			-- RangeType with constants
 			-- 	(ConstantExpression “..”ConstantExpression)
 			-- 	|
