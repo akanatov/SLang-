@@ -269,7 +269,7 @@ feature {Any}
 						scanner.use_token, scanner.foreign_token, scanner.implies_token
 					then
 						-- Standalone routine start
-trace (">>#6")
+--trace (">>#6")
 						rtnDsc := parseStandAloneRoutine1 (False, False, name)
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 							validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
@@ -280,7 +280,7 @@ trace (">>#6")
 						--then
 						if scanner.blockStart or else scanner.genericsStart then
 							-- Standalone routine start
-trace (">>#5")
+--trace (">>#5")
 							rtnDsc := parseStandAloneRoutine1 (False, False, name)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 								validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
@@ -540,7 +540,7 @@ feature {None}
 				end -- if
 			when scanner.require_token, scanner.foreign_token, scanner.none_token, scanner.use_token then
 				-- function
-trace (">>#4")
+--trace (">>#4")
 				rtnDsc := parseStandAloneRoutine1 (False, False, name)
 				if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 					validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
@@ -548,7 +548,7 @@ trace (">>#4")
 			else
 				if scanner.blockStart then
 					-- function
-trace (">>#3")
+--trace (">>#3")
 					rtnDsc := parseStandAloneRoutine1 (False, False, name)
 					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 						validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
@@ -6575,6 +6575,64 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		end -- inspect
 	end -- parseConstantObject
 
+	checkForInit (unitDsc: UnitDeclarationDescriptor; rtnDsc: UnitRoutineDeclarationDescriptor): UnitRoutineDescriptor is
+	require
+		current_unit_not_void: unitDsc /= Void
+		current_routine_not_void: rtnDsc /= Void
+	local
+		wasError: Boolean
+	do
+		Result := rtnDsc
+		if unitDsc.name.is_equal (rtnDsc.name) then
+			-- That should be a vlaid init procedure !!!
+			-- 
+--trace ("Init found for unit " + unitDsc.name)
+			if rtnDsc.type /= Void then
+				-- init must be a procedure !!!
+				validity_error ("Init must be a procedure for unit `" + unitDsc.name + "`")
+				wasError := True
+			end -- if
+			if rtnDsc.isVirtual then
+				-- init must be effective !!!
+				validity_error ("Init must be non-virtual for unit `" + unitDsc.name + "`")
+				wasError := True
+			end -- if
+			if rtnDsc.isOverriding then
+				-- there is no overrding for init !!!
+				validity_error ("Init must not be a overiding in unit `" + unitDsc.name + "`")
+				wasError := True
+			end -- if
+			if rtnDsc.isFinal then
+				-- there is no overrding control for init !!!
+				validity_error ("Init must not final in unit `" + unitDsc.name + "`")
+				wasError := True
+			end -- if			
+			if not wasError then
+				create {InitDeclarationDescriptor}Result.init (unitDsc,
+					rtnDsc.visibility,
+					rtnDsc.parameters,
+					rtnDsc.usage,
+					rtnDsc.constants,
+					rtnDsc.preconditions,
+					rtnDsc.isforeign,
+					rtnDsc.innerblock,
+					rtnDsc.postconditions
+				)
+--			create Result.init (
+--	currentVisibilityZone,
+--	parameters,
+--	ucb.usage,
+--	ucb.constants,
+--	preconditions,
+--	isForeign,
+--	innerBlock,
+--	postconditions
+--	)
+
+			end -- if
+		end -- if
+	end -- checkForInit
+	
 	parseUnitRoutineOrAttribute (unitDsc: UnitDeclarationDescriptor; isOverriding, isFinal: Boolean): Sorted_Array [MemberDeclarationDescriptor] is
 	--78
 	-- UnitRoutineDeclaration: Identifier [final Identifier] [Parameters] [“:” Type] [EnclosedUseDirective] 
@@ -6681,20 +6739,25 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						-- Function or it is the last attribute with no assigner in the unit and require is invariant !!!!
 						memDsc := parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc, isOverriding, isFinal, False, False, name, typeDsc)
 						if memDsc /= Void then
-							create Result.fill (<<memDsc>>)
+							rtnDsc ?= memDsc 
+							if rtnDsc /= Void then
+								create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+							else
+								create Result.fill (<<memDsc>>)
+							end -- if
 						end -- if
 					when scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token then 
 						-- function
 						rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
 						if rtnDsc /= Void then
-							create Result.fill (<<rtnDsc>>)
+							create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
 						end -- if
 					else
 						if scanner.blockStart then
 							-- function
 							rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
 							if rtnDsc /= Void then
-								create Result.fill (<<rtnDsc>>)
+								create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
 							end -- if
 						elseif scanner.Cmode then
 							syntax_error (<<
@@ -6749,20 +6812,25 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						-- Function or it is the last attribute with no assigner in the unit and require is invariant !!!!
 						memDsc := parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc, isOverriding, isFinal, False, False, name, typeDsc)
 						if memDsc /= Void then
-							create Result.fill (<<memDsc>>)
+							rtnDsc ?= memDsc 
+							if rtnDsc /= Void then
+								create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+							else
+								create Result.fill (<<memDsc>>)
+							end -- if
 						end -- if
 					when scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.none_token, scanner.one_line_function_token then 
 						-- function
 						rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
 						if rtnDsc /= Void then
-							create Result.fill (<<rtnDsc>>)
+							create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
 						end -- if
 					else
 						if scanner.blockStart then
 							-- function
 							rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
 							if rtnDsc /= Void then
-								create Result.fill (<<rtnDsc>>)
+								create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
 							end -- if
 						else
 							-- attribute without assigner
@@ -6788,7 +6856,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				-- That is a routine start!
 				rtnDsc := parseUnitRoutine (isOverriding, isFinal, False, False, name, Void, scanner.token = scanner.one_line_function_token)
 				if rtnDsc /= Void then
-					create Result.fill (<<rtnDsc>>)
+					create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
 				end -- if
 			else
 				if scanner.blockStart then

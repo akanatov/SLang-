@@ -2552,9 +2552,16 @@ feature {Any}
 	isVirtual: Boolean is False
 	isOverriding: Boolean is False
 	isFinal: Boolean is False
-	name: String is "init"
-	init (currentVisibilityZone: like visibility; p: like parameters; u: like usage; c: like constants; pre: like preconditions; isF: Boolean; b: like innerBlock; post: like postconditions) is
+	name: String is -- "init"
 	do
+		Result := unitDsc.name		
+	end -- name
+	unitDsc: UnitDeclarationDescriptor
+	init (ud: like unitDsc; currentVisibilityZone: like visibility; p: like parameters; u: like usage; c: like constants; pre: like preconditions; isF: Boolean; b: like innerBlock; post: like postconditions) is
+	require
+		current_unit_not_void: ud /= Void
+	do
+		unitDsc := ud
 		visibility := currentVisibilityZone
 		parameters := p
 		usage := u
