@@ -39,39 +39,39 @@ end // Bit
 
 virtual unit () // That is a tuple unit
 	
-	() (pos: Integer; value: Any)
+	() (pos: Cardinal; value: Any)
 	/// It puts element into tuple at position, put by position
 	require
 		pos in 1 .. count /// Valid elelment position
-	foreign
+	none
 	
 	() (fieldName: String; value: Any)
 	/// It puts element into field called fieldName, put by name
 	require
 		fieldIndex(fieldName) > 0 /// Tuple must have this field
-	foreign
+	none
 
-	pure () (index: Integer): Any
+	pure () (index: Cardinal): Any
 	/// Get tuple element at at postion index
 	require
 		index in 1 .. count /// Valid index
-	foreign
+	none
 
 	pure () (fieldName: String): Any
 	/// Get tuple element by fieldName
 	require
 		fieldIndex(fieldName) > 0 /// Tuple must have this field
-	foreign
+	none
 	
-	pure count: Integer 
+	pure count: Cardinal
 	/// Return the number of elelments in the tuple
-	foreign
-	ensure
-		return >= 0
-	end // count
+	none
+//	ensure
+//		return >= 0
+//	end // count
   
-	{ this } pure fieldIndex (fieldName: String): Integer
-	foreign
+	{ this } pure fieldIndex (fieldName: String): Cardinal
+	none
 	ensure
 		return in 0 .. count /// If no such field then 0 otherwise valid position
 	end // fieldIndex
@@ -80,11 +80,12 @@ require
 	count >= 0 /// Tuple has 0 or more elements
 end
 
-val unit Bit [N: Integer]
+val unit Bit [N: Cardinal]
 	const : // All Bit constants not longer than B bits in it
 	    //{Bit.0b0 | Bit.0b1}N
 	end
 	{} data: val Array [0 .. N-1, Bit] // Bit field ...
+	:= (other: Cardinal) none
 	:= (other: Integer) do
 	/// Set N low bits from Integer other into this
 	// WIP!!!
@@ -95,7 +96,7 @@ val unit Bit [N: Integer]
 			this (pos) := other.data (pos)
 		end*/
 	end
-	override pure sizeof: Integer do
+	override pure sizeof: Cardinal do
 		// return sizeof in bytes !!!! N is a number of bits !!!
 		return N / Platform.BitsInByteCount + if N \ Platform.BitsInByteCount = 0 do 0 else 1
 	end
@@ -127,13 +128,13 @@ val unit Bit [N: Integer]
 		end
 		return result
 	end // not
-	() (pos: Integer; value: Boolean)
+	() (pos: Cardinal; value: Boolean)
 	require
 		pos in 0 .. N - 1 /// Valid bit position
 	do	
 		this (pos) := if value do 1 else 0
 	end // ()
-	() (pos: Integer; value: Integer)
+	() (pos: Cardinal; value: Integer)
 	/// Set bit as position 'pos' to value 'value'
 	require
 		pos in 0 .. N - 1 /// Valid bit position
@@ -145,7 +146,7 @@ val unit Bit [N: Integer]
 			data (pos) := 0b1
 		end
 	end // ()
-	pure () (pos: Integer): Boolean
+	pure () (pos: Cardinal): Boolean
 	require
 		pos in 0 .. N - 1 // Valid position
 	do
@@ -176,7 +177,19 @@ val unit Bit [N: Integer]
 		end
 		return result
 	end // ToInteger
-	pure getLowBits (bitsCount: Integer) : Bit [bitsCount]
+	pure toCardinal: Cardinal do
+		/// Build Integer from Bit
+		var result: Cardinal is 0
+		var factor is 1
+		while pos in 0 .. N - 1 do
+			if this (pos) = 1 do
+				result := result + factor
+				factor := factor * 2
+			end
+		end
+		return result
+	end // ToCardinal
+	pure getLowBits (bitsCount: Cardinal) : Bit [bitsCount]
 	require
 		bitsCount in 1 .. N /// Valid Bits Count
 	do
@@ -186,7 +199,7 @@ val unit Bit [N: Integer]
 		end
 		return result
 	end // getLowBits
-	toggle (pos: Integer)
+	toggle (pos: Cardinal)
 	require
 		pos in 0 .. N - 1 /// validPos
 	do
@@ -230,8 +243,8 @@ virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ I
 //	{} := (that: as this ) foreign // No need to define default :=
 	
 	/// Utility
-	pure toString: String foreign
-	pure sizeOf: Integer foreign
+	pure toString: String none
+	pure sizeOf: Cardinal none
 	
 end // Any
 
@@ -243,7 +256,7 @@ final unit System
 end // System
 
 final unit Platform
-	const BitsInByteCount is 8
+/*	const BitsInByteCount is 8
 	const IntegerBitsCount is 32
 	const CardinalBitsCount is IntegerBitsCount
 	const CharacterBitsCount is 8
@@ -251,9 +264,9 @@ final unit Platform
 	const PointerBitsCount is 32
 	const RealBitsCount is 64
 	const RealMantissaBitsCount is 55
-	const RealOrderBitsCount is 8
+	const RealOrderBitsCount is 8*/
 
-/*	const
+	const
 		BitsInByteCount is 8,
 		IntegerBitsCount is 32,
 		CardinalBitsCount is IntegerBitsCount,
@@ -263,7 +276,7 @@ final unit Platform
 		RealBitsCount is 64,
 		RealMantissaBitsCount is 55,
 		RealOrderBitsCount is 8
-*/
+
 require
 	RealBitsCount = RealMantissaBitsCount + RealOrderBitsCount + 1
 end // Platform
@@ -309,12 +322,12 @@ end // Numeric
 virtual unit Comparable 
 	pure < (other: as this ): Boolean virtual
 	override pure = (other: as this ): Boolean => not (this < other) and not (other < this)
-	pure > (other: as this ): Boolean => other < this
-	pure <= (other: as this ): Boolean => not (other < this)
-	pure >= (other: as this ): Boolean => not (this < other)
-	pure max (other: as this ): as this => if this > other do this else other
-	pure min (other: as this ): as this => if this < other do this else other
-	pure compare (other: as this): -1 .. 1 => if this = other do 1 elsif this < other do -1 else 1;
+	final pure > (other: as this ): Boolean => other < this
+	final pure <= (other: as this ): Boolean => not (other < this)
+	final pure >= (other: as this ): Boolean => not (this < other)
+	final pure max (other: as this ): as this => if this > other do this else other
+	final pure min (other: as this ): as this => if this < other do this else other
+	final pure compare (other: as this): -1 .. 1 => if this = other do 1 elsif this < other do -1 else 1;
 require
 	not ( this < this ) /// Irreflexive comparison
 end // Comparable
@@ -379,15 +392,15 @@ val unit Pointer
 	/// Unit Pointer allows to introduce address arithmetics in a safe way :-)
 	// WIP!!!
 	override const sizeof: Integer is Platform.PointerBitsCount / Platform.BitsInByteCount
-	write (b: Byte) foreign
-	write (ab: Array [Byte]) foreign
-	read: Byte foreign
-	read: Array [Byte] foreign
+	write (b: Byte) none
+	write (ab: Array [Byte]) none
+	read: Byte none
+	read: Array [Byte] none
 	{} data : Bit [Platform.PointerBitsCount]
 	Pointer (address: Integer) 
 	require
 		address >= 0 /// Pointer should be greater than zero
-		validPointer (address) /// Pointer should be valid from OS point of view
+		validPointer (address) /// Pointer should be valid from the OS point of view
 	do
 		data is address.data
 	end
@@ -920,8 +933,8 @@ require
 end // AnArray [G]
 
 virtual unit OneDimentionalArray [G new ()] extend AnArray [G]
-	override () (pos: Integer): G foreign
-	override () (pos: Integer; value: G) foreign
+	override () (pos: Integer): G none
+	override () (pos: Integer; value: G) none
 	override pure () (from, to: Integer): Array [G]
 	/// get subarray
 	do 
@@ -981,8 +994,8 @@ end // Array
 unit Array [G new ()] extend OneDimentionalArray [G]
 ///   Dynamic array
 // We can put info Array only objects which has constructor with empty signature !!! We are always safe - no uninitilized data!!! 
-	override () (pos: Integer): G foreign
-	override () (pos: Integer; value: G) foreign
+	override () (pos: Integer): G none
+	override () (pos: Integer; value: G) none
 	override lower: Integer
 	override upper: Integer
 	Array
@@ -1026,7 +1039,7 @@ unit Array [G new ()] extend OneDimentionalArray [G]
 	{} allocateArray (l, u: Integer; size: Integer)
 	require
 		l <= u /// Consistent array borders
-	foreign
+	none
 end // Array
 
 /*unit Array [G new (), dimentions: (Integer|Integer .. Integer)] extend Array [G, numberOfElementsInLinearArray ]
@@ -1057,11 +1070,11 @@ unit StandardIO alias io
 	StandardIO do
 		// Init procedure is missed or way how to setup IO !!!!
 	end // StandardIO
-	pure get: Integer foreign
-	pure get: Real foreign
-	pure get: Boolean foreign
-	pure get: Character foreign
-	pure get: String foreign
+	pure get: Integer none
+	pure get: Real none
+	pure get: Boolean none
+	pure get: Character none
+	pure get: String none
 	pure put (arguments: ()) do
 		while argument in arguments do
 			if argument is
@@ -1080,11 +1093,11 @@ unit StandardIO alias io
 			end
 		end
 	end // put
-	pure put (anInteger: Integer) foreign
-	pure put (aCharacter: Character) foreign
-	pure put (aString: String) foreign
-	pure put (aReal: Real) foreign
-	pure put (aBoolean: Boolean) foreign
+	pure put (anInteger: Integer) none
+	pure put (aCharacter: Character) none
+	pure put (aString: String) none
+	pure put (aReal: Real) none
+	pure put (aBoolean: Boolean) none
 end // StandardIO
 
 // How to deal with dynamic objects .... WIP !!!
@@ -1126,24 +1139,24 @@ unit DynamicObject
 		end
 	end
 	// Access members by object (address) 
-	final routines() : Array [RoutineDecsriptor] foreign
-	final attributes (): Array [AttributeDescriptor] foreign
-	final call (rtnDsc: ProcedureDescriptor; args: ()) foreign
-	final call (rtnDsc: FunctionDecsriptor; args: ()): Any foreign
+	final routines() : Array [RoutineDecsriptor] none
+	final attributes (): Array [AttributeDescriptor] none
+	final call (rtnDsc: ProcedureDescriptor; args: ()) none
+	final call (rtnDsc: FunctionDecsriptor; args: ()): Any none
 	final get_value (attr: AttributeDescriptor): Any => attr.value
-	final set_value (attr: VariableDescriptor; value: Any) foreign
-	{ this } final findRoutine (rtn_name: String): ?RoutineDescriptor foreign
-	{ this } final findAttribute (attr_name: String): ?AttributeDescriptor foreign
-	DynamicObject do
+	final set_value (attr: VariableDescriptor; value: Any) none
+	{ this } final findRoutine (rtn_name: String): ?RoutineDescriptor none
+	{ this } final findAttribute (attr_name: String): ?AttributeDescriptor none
+	DynamicObject 
 		/// Create empty dynamic object
-	end
+	none
 	DynamicObject (fileName: String) do
 		/// Load dynamic object from file
 		raise "Not implemented yet!!!"
 	end
-	DynamicObject (bytes: Array [Byte]) foreign
+	DynamicObject (bytes: Array [Byte]) none
 		/// Create dynamic object from binary data sequence
-	DynamicObject (other: Any) foreign
+	DynamicObject (other: Any) none
 		/// Create dynamic object from any other object
 	
 end // DynamicObject
@@ -1164,7 +1177,7 @@ end // Procedure [Arguments -> ()]
 
 final unit FunctionDescriptor extend RoutineDescriptor
 	type: TypeDescriptor
-	() alias apply (args: Arguments): Any foreign
+	() alias apply (args: Arguments): Any none
 		// That is a function call
 	FunctionDescriptor (:= name; := arguments; := type) none
 end // Function [Arguments -> (), Result]
@@ -1175,9 +1188,7 @@ virtual unit AttributeDescriptor extend MemberDescriptor
 end // AttributeDescriptor
 
 final unit VariableDescriptor extend AttributeDescriptor 
-	override := alias set (v: as value) do 
-		value := v
-	end
+	override := alias set (:= value) none
 	VariableDescriptor (:= name; := type; := value) none
 end // VariableDescriptor
 

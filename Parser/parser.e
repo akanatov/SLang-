@@ -538,7 +538,7 @@ feature {None}
 						validity_error( "Duplicated local declaration '" + localDsc.name + "'") 
 					end -- if
 				end -- if
-			when scanner.require_token, scanner.foreign_token, scanner.use_token then
+			when scanner.require_token, scanner.foreign_token, scanner.none_token, scanner.use_token then
 				-- function
 trace (">>#4")
 				rtnDsc := parseStandAloneRoutine1 (False, False, name)
@@ -3686,14 +3686,14 @@ trace (">>#3")
 			scanner.require_token, scanner.one_line_function_token, scanner.use_token, scanner.foreign_token
 		then
 			-- Standalone routine start
-trace (">>#2")
+--trace (">>#2")
 			Result := parseStandAloneRoutine1 (is_pure, is_safe, name)
 		else
 			if scanner.Cmode and then ( scanner.token = scanner.less_token or else scanner.token = scanner.left_curly_bracket_token)
 				or else (scanner.token = scanner.left_square_bracket_token or else scanner.token = scanner.do_token)
 			then
 				-- Standalone routine start
-trace (">>#1")
+--trace (">>#1")
 				Result := parseStandAloneRoutine1 (is_pure, is_safe, name)
 			elseif scanner.Cmode then
 				syntax_error (<< scanner.final_token, scanner.alias_token, scanner.colon_token,
@@ -3917,6 +3917,7 @@ trace (">>#1")
 				scanner.nextToken
 				expr := parseExpressionWithSemicolon
 			when scanner.none_token then
+				-- no body - no action. InnerBlock is Void
 				scanner.nextToken
 			else
 				if scanner.blockStart then
@@ -6145,72 +6146,72 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		end -- inspect
 	end -- parseInheritedMemberOverridingOrMemberDeclaration
 
-	parseInitDeclaration (currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
-	--75 InitDeclaration: init [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
-	--                         ^
-	require
-		valid_token: validToken (<<scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.foreign_token,
-			scanner.do_token, scanner.left_curly_bracket_token>>)
-	local
-		parameters: Array [ParameterDescriptor]
-		preconditions: Array [PredicateDescriptor]
-		postconditions: Array [PredicateDescriptor]
-		innerBlock: InnerBlockDescriptor
-		ucb: UseConstBlock
-		checkForEnd: Boolean
-		isForeign: Boolean
-		wasError: Boolean
-	do
-		if scanner.token = scanner.left_paranthesis_token then
-			-- scanner.nextToken
-			parameters := parseParameters
-		end -- if
-		if scanner.token = scanner.use_token then
-			ucb := parseEnclosedUseDirective
-		end -- if
-		if scanner.token = scanner.require_token then
-			scanner.nextToken
-			preconditions := parsePredicates
-		end -- if
-		inspect
-			scanner.token
-		when scanner.foreign_token then
-			isForeign := True
-			scanner.nextToken
-		else
-			if scanner.blockStart then
-				innerBlock := parseInnerBlock (False)
-				checkForEnd := True
-			elseif scanner.Cmode then
-				syntax_error (<<scanner.left_curly_bracket_token, scanner.foreign_token>>)
-				wasError := True
-			else
-				syntax_error (<<scanner.do_token, scanner.foreign_token>>)
-				wasError := True
-			end -- if
-		end -- inspect
-		if not wasError then
-			if scanner.token = scanner.ensure_token then
-				checkForEnd := True
-				scanner.nextToken
-				postconditions := parsePredicates
-			end -- if
-			if checkForEnd then 
-				if scanner.blockEnd then
-					scanner.nextToken
-					if ucb = Void then
-						create Result.init (currentVisibilityZone, parameters, Void, Void, preconditions, isForeign, innerBlock, postconditions )
-					else
-						create Result.init (currentVisibilityZone, parameters, ucb.usage, ucb.constants, preconditions, isForeign, innerBlock, postconditions )
-					end -- if
-				elseif scanner.Cmode then
-					syntax_error (<<scanner.right_curly_bracket_token>>)
-				else
-					syntax_error (<<scanner.end_routine_expected>>)
-				end -- if
-			end -- if
-		end -- if	
-	end -- parseInitDeclaration
+--	parseInitDeclaration (currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
+--	--75 InitDeclaration: init [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
+--	--                         ^
+--	require
+--		valid_token: validToken (<<scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.foreign_token,
+--			scanner.do_token, scanner.left_curly_bracket_token>>)
+--	local
+--		parameters: Array [ParameterDescriptor]
+--		preconditions: Array [PredicateDescriptor]
+--		postconditions: Array [PredicateDescriptor]
+--		innerBlock: InnerBlockDescriptor
+--		ucb: UseConstBlock
+--		checkForEnd: Boolean
+--		isForeign: Boolean
+--		wasError: Boolean
+--	do
+--		if scanner.token = scanner.left_paranthesis_token then
+--			-- scanner.nextToken
+--			parameters := parseParameters
+--		end -- if
+--		if scanner.token = scanner.use_token then
+--			ucb := parseEnclosedUseDirective
+--		end -- if
+--		if scanner.token = scanner.require_token then
+--			scanner.nextToken
+--			preconditions := parsePredicates
+--		end -- if
+--		inspect
+--			scanner.token
+--		when scanner.foreign_token then
+--			isForeign := True
+--			scanner.nextToken
+--		else
+--			if scanner.blockStart then
+--				innerBlock := parseInnerBlock (False)
+--				checkForEnd := True
+--			elseif scanner.Cmode then
+--				syntax_error (<<scanner.left_curly_bracket_token, scanner.foreign_token>>)
+--				wasError := True
+--			else
+--				syntax_error (<<scanner.do_token, scanner.foreign_token>>)
+--				wasError := True
+--			end -- if
+--		end -- inspect
+--		if not wasError then
+--			if scanner.token = scanner.ensure_token then
+--				checkForEnd := True
+--				scanner.nextToken
+--				postconditions := parsePredicates
+--			end -- if
+--			if checkForEnd then 
+--				if scanner.blockEnd then
+--					scanner.nextToken
+--					if ucb = Void then
+--						create Result.init (currentVisibilityZone, parameters, Void, Void, preconditions, isForeign, innerBlock, postconditions )
+--					else
+--						create Result.init (currentVisibilityZone, parameters, ucb.usage, ucb.constants, preconditions, isForeign, innerBlock, postconditions )
+--					end -- if
+--				elseif scanner.Cmode then
+--					syntax_error (<<scanner.right_curly_bracket_token>>)
+--				else
+--					syntax_error (<<scanner.end_routine_expected>>)
+--				end -- if
+--			end -- if
+--		end -- if	
+--	end -- parseInitDeclaration
 	
 	parseInitProcedureInheritanceOrMemberDeclaration
 		(currentVisibilityZone: MemberVisibilityDescriptor; unitDsc: UnitDeclarationDescriptor): Boolean is 
@@ -6222,9 +6223,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		-- InitFromParentDescriptor => UnitTypeName [Signature]
 		-- identifier
 
-		-- or
-		-- "MemberDeclaration (goToMembers := True)"
-		-- new ( require do foreign use
+--		-- or
+--		-- "MemberDeclaration (goToMembers := True)"
+--		-- new ( require do foreign use
 	require
 		valid_token: validToken (<<scanner.new_token>>)
 		unit_descriptor_not_void: unitDsc /= Void
@@ -6232,7 +6233,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		utnDsc: UnitTypeNameDescriptor
 		utnDsc1: UnitTypeNameDescriptor
 		ifpDsc: InitFromParentDescriptor
-		initDcl: InitDeclarationDescriptor
+--		initDcl: InitDeclarationDescriptor
 		commaFound: Boolean
 		toLeave: Boolean
 	do
@@ -6291,39 +6292,42 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					toLeave:= True
 				end -- inspect	
 			end -- loop
-		when scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.use_token then
-			-- parse init declaration
-			initDcl := parseInitDeclaration (currentVisibilityZone)
-			if initDcl /= Void then
-				--initDcl.setVisibility (currentVisibilityZone)
-				if not unitDsc.unitMembers.added (initDcl) then
-					validity_error( "Duplicated init declaration in unit '" + unitDsc.name + "'")
-				end -- if
-			end -- if
-			Result := True
 		else
-			if scanner.blockStart then
-				-- parse init declaration
-				initDcl := parseInitDeclaration (currentVisibilityZone)
-				if initDcl /= Void then
-					--initDcl.setVisibility (currentVisibilityZone)
-					if not unitDsc.unitMembers.added (initDcl) then
-						validity_error( "Duplicated init declaration in unit '" + unitDsc.name + "'")
-					end -- if
-				end -- if
-				Result := True
-			elseif scanner.Cmode then
-				syntax_error (<<
-					scanner.identifier_token, scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token,
-					scanner.left_curly_bracket_token,
-					scanner.use_token
-				>>)
-			else
-				syntax_error (<<
-					scanner.identifier_token, scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.do_token, scanner.use_token
-				>>)
-			end -- if
+			syntax_error (<<scanner.identifier_token>>)
 		end -- inspect
+--		when scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.use_token then
+--			-- parse init declaration
+--			initDcl := parseInitDeclaration (currentVisibilityZone)
+--			if initDcl /= Void then
+--				--initDcl.setVisibility (currentVisibilityZone)
+--				if not unitDsc.unitMembers.added (initDcl) then
+--					validity_error( "Duplicated init declaration in unit '" + unitDsc.name + "'")
+--				end -- if
+--			end -- if
+--			Result := True
+--		else
+--			if scanner.blockStart then
+--				-- parse init declaration
+--				initDcl := parseInitDeclaration (currentVisibilityZone)
+--				if initDcl /= Void then
+--					--initDcl.setVisibility (currentVisibilityZone)
+--					if not unitDsc.unitMembers.added (initDcl) then
+--						validity_error( "Duplicated init declaration in unit '" + unitDsc.name + "'")
+--					end -- if
+--				end -- if
+--				Result := True
+--			elseif scanner.Cmode then
+--				syntax_error (<<
+--					scanner.identifier_token, scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token,
+--					scanner.left_curly_bracket_token,
+--					scanner.use_token
+--				>>)
+--			else
+--				syntax_error (<<
+--					scanner.identifier_token, scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.do_token, scanner.use_token
+--				>>)
+--			end -- if
+--		end -- inspect
 	end -- parseInitProcedureInheritanceOrMemberDeclaration
 	
 	parseConstObjectsDeclaration(unitDsc: UnitDeclarationDescriptor) is 
@@ -6574,7 +6578,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	parseUnitRoutineOrAttribute (unitDsc: UnitDeclarationDescriptor; isOverriding, isFinal: Boolean): Sorted_Array [MemberDeclarationDescriptor] is
 	--78
 	-- UnitRoutineDeclaration: Identifier [final Identifier] [Parameters] [“:” Type] [EnclosedUseDirective] 
-	-- 		[RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign| (“=>”Expression ) [EnsureBlock end] )
+	-- 		[RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign|none (“=>”Expression ) [EnsureBlock end] )
 	-- or
 	-- UnitAttributeDeclaration: UnitAttributeNamesList “:” Type [ (rtn “:=” [[ Parameters] HyperBlock ])|( is ConstantExpression) ]
 	require
@@ -6715,7 +6719,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				if typeDsc /= Void then
 					-- UnitRoutineDeclaration: Identifier “:” Type [EnclosedUseDirective] 
 					--                                             ^
-					-- 		[RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign| (“=>”Expression ) [EnsureBlock end] )
+					-- 		[RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign|none (“=>”Expression ) [EnsureBlock end] )
 					-- or
 					-- UnitAttributeDeclaration: Identifier “:” Type [ (rtn “:=” [[ Parameters] HyperBlock ])|( is ConstantExpression) ]
 					--                                               ^
@@ -6747,7 +6751,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						if memDsc /= Void then
 							create Result.fill (<<memDsc>>)
 						end -- if
-					when scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token then 
+					when scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.none_token, scanner.one_line_function_token then 
 						-- function
 						rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
 						if rtnDsc /= Void then
@@ -6779,7 +6783,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				create Result.fill (<<attrDsc>>)
 				parseMultiAttributesDeclaration (isOverriding, isFinal, Result)
 			when scanner.final_token, scanner.left_paranthesis_token, scanner.use_token, scanner.require_token,
-				scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token
+				scanner.virtual_token, scanner.foreign_token, scanner.none_token, scanner.one_line_function_token
 			then
 				-- That is a routine start!
 				rtnDsc := parseUnitRoutine (isOverriding, isFinal, False, False, name, Void, scanner.token = scanner.one_line_function_token)
@@ -6798,7 +6802,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						scanner.final_token, scanner.left_paranthesis_token, scanner.use_token,
 						scanner.require_token,
 						scanner.left_curly_bracket_token,
-						scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token,
+						scanner.virtual_token, scanner.foreign_token, scanner.none_token, scanner.one_line_function_token,
 						scanner.colon_token, scanner.comma_token, scanner.is_token
 					>>)
 				else
@@ -6806,7 +6810,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						scanner.final_token, scanner.left_paranthesis_token, scanner.use_token,
 						scanner.require_token,
 						scanner.do_token,
-						scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token,
+						scanner.virtual_token, scanner.foreign_token, scanner.none_token, scanner.one_line_function_token,
 						scanner.colon_token, scanner.comma_token, scanner.is_token
 					>>)
 				end -- if
@@ -7010,6 +7014,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	local
 		isConst: Boolean
 		isRigid: Boolean
+		constBlock: Sorted_Array [UnitAttrDescriptor]
 		name: String
 		attTypeDsc: AttachedTypeDescriptor
 		tmpDsc: TemporaryUnitAttributeDescriptor
@@ -7020,6 +7025,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		noTailList: Boolean
 		commaFound: Boolean
 		wasError: Boolean
+		isContinuedList: Boolean
+		identExpected: Boolean
+		toExit: Boolean
 	do
 		inspect
 			scanner.token
@@ -7028,162 +7036,211 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		when scanner.rigid_token then 
 			isRigid:= True
 		end -- inspect
-		scanner.nextToken
-		if scanner.token = scanner.identifier_token then
-			name := scanner.tokenString
-			create tmpDsc.init (isConst, isRigid, name)
+		from
+			create Result.make			
+			identExpected := True
 			scanner.nextToken
-			inspect
-				scanner.token
-			when scanner.comma_token then 
-				noTailList := True
-				-- const|rigid Identifier {", " [const|rigid] Identifier} “:” Type
-				--                          ^
-				from
-					create Result.fill (<<tmpDsc>>)
-				until
-					toLeave
-				loop
-					inspect
-						scanner.token
-					when scanner.comma_token then
-						if commaFound then
-							syntax_error (<<scanner.const_token, scanner.rigid_token, scanner.identifier_token, scanner.colon_token>>)
-							wasError := True
-							toLeave := True
-						else
-							commaFound := True
-							scanner.nextToken
-						end -- if				
-					when scanner.colon_token then
-						toLeave := True
-						if commaFound then
-							syntax_error (<<scanner.const_token, scanner.rigid_token, scanner.identifier_token>>)
-							wasError := True
-						else
-							scanner.nextToken
-						end -- if
-					when scanner.const_token, scanner.rigid_token, scanner.identifier_token then
-						if commaFound then
-							commaFound := False
+		until
+			toExit
+		loop
+			if scanner.token = scanner.identifier_token then
+				identExpected := False			
+				name := scanner.tokenString
+				create tmpDsc.init (isConst, isRigid, name)
+				scanner.nextToken
+				inspect
+					scanner.token
+				when scanner.comma_token then					
+					if isContinuedList then
+						-- No const clause list in case of multi-name constants
+						toExit := True
+					else
+						noTailList := True
+						-- const|rigid Identifier {", " [const|rigid] Identifier} “:” Type
+						--                          ^
+						from
+							--create Result.fill (<<tmpDsc>>)
+							create constBlock.fill (<<tmpDsc>>)
+							toLeave := False
+						until
+							toLeave
+						loop
 							inspect
 								scanner.token
-							when scanner.const_token then 
-								isConst := True
-								isRigid := False
-								scanner.nextToken
-							when scanner.rigid_token then 
-								isRigid := True
-								isConst := False
-								scanner.nextToken
-							else
-								isConst := False
-								isRigid := False
-							end -- inspect
-							if scanner.token = scanner.identifier_token then
-								name := scanner.tokenString
-								create tmpDsc.init (isConst, isRigid, name)
-								if Result.added (tmpDsc) then
-									scanner.nextToken
-								else
-									validity_error( "Duplicated constant declaration '" + tmpDsc.name + "'") 
+							when scanner.comma_token then
+								if commaFound then
+									if isContinuedList then
+										syntax_error (<<scanner.identifier_token, scanner.colon_token>>)
+									else
+										syntax_error (<<scanner.const_token, scanner.rigid_token, scanner.identifier_token, scanner.colon_token>>)
+									end -- if
 									wasError := True
+									toLeave := True
+								else
+									commaFound := True
+									scanner.nextToken
+								end -- if				
+							when scanner.colon_token then
+								toLeave := True
+								if commaFound then
+									if isContinuedList then
+										syntax_error (<<scanner.identifier_token>>)
+									else
+										syntax_error (<<scanner.const_token, scanner.rigid_token, scanner.identifier_token>>)
+									end -- if
+									wasError := True
+								else
+									scanner.nextToken
 								end -- if
+							when scanner.const_token, scanner.rigid_token, scanner.identifier_token then
+								if commaFound then
+									commaFound := False
+									inspect
+										scanner.token
+									when scanner.const_token then 
+										isConst := True
+										isRigid := False
+										scanner.nextToken
+									when scanner.rigid_token then 
+										isRigid := True
+										isConst := False
+										scanner.nextToken
+									else
+										isConst := False
+										isRigid := False
+									end -- inspect
+									if scanner.token = scanner.identifier_token then
+										name := scanner.tokenString
+										create tmpDsc.init (isConst, isRigid, name)
+	--									if Result.added (tmpDsc) then
+										if constBlock.added (tmpDsc) then
+											scanner.nextToken
+										else
+											validity_error( "Duplicated constant declaration '" + tmpDsc.name + "'") 
+											wasError := True
+										end -- if
+									else
+										syntax_error (<<scanner.identifier_token>>)
+										wasError := True
+										toLeave := True
+									end -- if							
+								else
+									syntax_error (<<scanner.comma_token, scanner.colon_token>>)
+									wasError := True
+									toLeave := True
+								end -- if				
 							else
-								syntax_error (<<scanner.identifier_token>>)
+								if isContinuedList then
+								else
+								end -- if
+
+								if commaFound then
+									if isContinuedList then
+										syntax_error (<<scanner.identifier_token>>)
+									else
+										syntax_error (<<scanner.const_token, scanner.rigid_token, scanner.identifier_token>>)
+									end -- if
+								else
+									syntax_error (<<scanner.comma_token, scanner.colon_token>>)
+								end -- if
 								wasError := True
 								toLeave := True
-							end -- if							
-						else
-							syntax_error (<<scanner.comma_token, scanner.colon_token>>)
-							wasError := True
-							toLeave := True
-						end -- if				
-					else
-						if commaFound then
-							syntax_error (<<scanner.const_token, scanner.rigid_token, scanner.identifier_token>>)
-						else
-							syntax_error (<<scanner.comma_token, scanner.colon_token>>)
+							end -- inspect					
+						end -- loop
+--						if wasError then
+--							Result := Void
+--						else
+						if not wasError then
+							attTypeDsc := parseAttachedType (False)
+							if attTypeDsc /= Void then
+								from
+									i := 1
+	--								n := Result.count
+									n := constBlock.count
+								until
+									i > n
+								loop						
+	--								tmpDsc ?= Result.item (i)
+									tmpDsc ?= constBlock.item (i)
+									check
+										valid_type: tmpdsc /= Void
+									end -- check
+									create unitAttrDsc.init (isOverriding, isFinal, tmpDsc.markedConst, tmpDsc.markedRigid, tmpDsc.name, attTypeDsc, Void, Void)
+	--								Result.put (unitAttrDsc, i)
+									if not Result.added (unitAttrDsc) then
+										validity_error( "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+										wasError := True
+									end -- if
+									i := i + 1
+								end -- loop
+							end -- if
 						end -- if
-						wasError := True
-						toLeave := True
-					end -- inspect					
-				end -- loop
-				if wasError then
-					Result := Void
-				else
+					end -- if
+				when scanner.colon_token then 
+					scanner.nextToken
 					attTypeDsc := parseAttachedType (False)
 					if attTypeDsc /= Void then
-						from
-							i := 1
-							n := Result.count
-						until
-							i > n
-						loop						
-							tmpDsc ?= Result.item (i)
-							check
-								valid_type: tmpdsc /= Void
-							end -- check
-							create unitAttrDsc.init (isOverriding, isFinal, tmpDsc.markedConst, tmpDsc.markedRigid, tmpDsc.name, attTypeDsc, Void, Void)
-							Result.put (unitAttrDsc, i)
-							i := i + 1
-						end -- loop
-					end -- if
-				end -- if
-			when scanner.colon_token then 
-				scanner.nextToken
-				attTypeDsc := parseAttachedType (False)
-				if attTypeDsc /= Void then
-					if scanner.token = scanner.is_token then
-						scanner.nextToken
-						exprDsc := parseExpressionWithSemicolon
-						if exprDsc /= Void then -- const|rigid Identifier “:” AttachedType is ConstantExpression
+						if scanner.token = scanner.is_token then
+							scanner.nextToken
+							exprDsc := parseExpressionWithSemicolon
+							if exprDsc /= Void then -- const|rigid Identifier “:” AttachedType is ConstantExpression
+								create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
+									-- init (isO, isF, mc, mr: Boolean; aName: String; aType: like type; a: like assigner; ie: like expr)
+--								create Result.fill (<<unitAttrDsc>>)
+								if not Result.added (unitAttrDsc) then
+									validity_error( "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+									wasError := True
+								end -- if
+							end -- if
+						else -- const|rigid Identifier “:” Type
 							create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
-								-- init (isO, isF, mc, mr: Boolean; aName: String; aType: like type; a: like assigner; ie: like expr)
-							create Result.fill (<<unitAttrDsc>>)
+--							create Result.fill (<<unitAttrDsc>>)
+							if not Result.added (unitAttrDsc) then
+								validity_error( "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+								wasError := True
+							end -- if
 						end -- if
-					else -- const|rigid Identifier “:” Type
-						create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
-						create Result.fill (<<unitAttrDsc>>)
 					end -- if
-				end -- if
-			when scanner.is_token then
-				scanner.nextToken
-				exprDsc := parseExpressionWithSemicolon
-				if exprDsc /= Void then -- const|rigid Identifier is ConstantExpression
-					create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
-					create Result.fill (<<unitAttrDsc>>)
+				when scanner.is_token then
+					scanner.nextToken
+					exprDsc := parseExpressionWithSemicolon
+					if exprDsc /= Void then -- const|rigid Identifier is ConstantExpression
+						create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
+--						create Result.fill (<<unitAttrDsc>>)
+						if not Result.added (unitAttrDsc) then
+							validity_error( "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+							wasError := True
+						end -- if
+					end -- if
+				else
+					syntax_error (<<scanner.comma_token, scanner.colon_token, scanner.is_token>>)
+					wasError := True
+				end -- inspect
+				if not wasError and then not noTailList and then scanner.token = scanner.comma_token then 
+--				if not wasError and then scanner.token = scanner.comma_token then 
+					-- const|rigid continuation
+					check
+						consistent_constant: isConst or else isRigid
+						--only_one_constant_found: Result.count = 1
+					end -- check
+					identExpected := True
+					isContinuedList := True
+					scanner.nextToken
+-- trace ("Parse next const clause")
+				else
+					toExit := True
 				end -- if
 			else
-				syntax_error (<<scanner.comma_token, scanner.colon_token>>)
-				wasError := True
-			end -- inspect
-			if not wasError and then not noTailList and then scanner.token = scanner.comma_token then 
-				-- const|rigid continuation
-				check
-					consistent_constant: isConst or else isRigid
-					only_one_constant_found: Result.count = 1
-				end -- check
-				from
-					scanner.nextToken
-					toLeave := False
-toLeave := True
-				until
-					toLeave
-				loop
-					inspect
-						scanner.token
-					when scanner.identifier_token then 
--- TBD					
-					else
-						syntax_error (<<scanner.identifier_token>>)
-						wasError := True
-						toLeave := True
-					end -- inspect
-				end -- loop
+-- trace ("Exit from const clause")
+				toExit := True
+				if identExpected then -- not isContinuedList then
+					wasError := True
+					syntax_error (<<scanner.identifier_token>>)
+				end -- if
 			end -- if
-		else
-			syntax_error (<<scanner.identifier_token>>)
+		end -- loop		
+		if Result.count = 0 then
+			Result := Void
 		end -- if
 	end -- parseConstUnitAttributes
 	
