@@ -1,33 +1,3 @@
-expanded class LinePosition
-feature {Any}
-	row: Integer
-	set_row (r: Integer) is
-	require
-		valid_row: r > 0
-	do
-		row := r
-	end -- set_row
-invariant
-	valid_row: row > 0
-end -- class LinePosition
-expanded class SourcePosition
-inherit
-	LinePosition
-	end
-feature {Any}
-	col: Integer
-	set_rc (r, c: Integer) is
-	require
-		valid_row: r > 0
-		valid_column: c > 0
-	do
-		row := r
-		col := c
-	end -- set_rc
-invariant
-	valid_column: col > 0
-end -- class SourcePosition
-
 class SystemDescriptor
 -- Context: system (Identifier| StringConstant) 
 -- [init Identifier]
@@ -36,6 +6,10 @@ class SystemDescriptor
 -- end
 inherit
 	Comparable
+		redefine
+			out, is_equal
+	end
+	SourcePosition
 		redefine
 			out, is_equal
 	end
@@ -650,6 +624,39 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- out
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]
+		notValid: Boolean
+		i, n: Integer
+	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+
+--	identifier: String   -- should be valid
+		if identifier /= Void then
+-- not_implemented_yet
+		end -- if
+--	unitType: UnitTypeCommonDescriptor -- should be valid
+-- not_implemented_yet
+
+--	statements: Array [StatementDescriptor] -- should be valid
+		from
+			i := 1
+			n := statements.count
+		until
+			i > n
+		loop
+			notValid := statements.item (i).isInvalid (context)
+			if not notValid then
+				Result := True
+			end
+			i := i + 1
+		end -- loop
+	end -- isInvalid
 invariant
 	non_void_unitType: unitType /= Void
 	non_void_statements: statements /= Void
@@ -668,10 +675,68 @@ feature {Any}
 	whenClauses: Array [WhenClauseDescriptor]
 	whenElseClause: Array [StatementDescriptor]
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]
+		notValid: Boolean
+		i, n: Integer
 	do
-		-- do nothing so far
-	end -- isNotValid
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+		-- Check that all names in 'invariantOffList' are valid entities within the block
+		from
+			i := 1
+			n := invariantOffList.count
+		until
+			i > n
+		loop
+			i := i + 1
+		end -- loop
+		-- Check that all 'statements' are valid 
+		from
+			i := 1
+			n := statements.count
+		until
+			i > n
+		loop
+			notValid := statements.item(i).isInvalid (context)
+			if not notValid then
+				Result := True
+			end
+			i := i + 1
+		end -- loop
+		-- Check that all 'whenClauses' are valid
+			-- Check that all statements in whenElseClause are valid 		
+		n := whenClauses.count
+		if n > 0 then
+			from
+				i := 1
+			until
+				i > n
+			loop
+				notValid := whenClauses.item(i).isInvalid (context)
+				if not notValid then
+					Result := True
+				end
+				i := i + 1
+			end -- loop
+			from
+				i := 1
+				n := whenElseClause.count
+			until
+				i > n
+			loop
+				notValid := whenElseClause.item(i).isInvalid (context)
+				if not notValid then
+					Result := True
+				end
+				i := i + 1
+			end -- loop
+		end -- if
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -2137,6 +2202,10 @@ inherit
 		redefine
 			out, is_equal
 	end
+	SourcePosition
+		redefine
+			out, is_equal
+	end 
 feature {Any}
 	visibility: MemberVisibilityDescriptor
 	isOverriding: Boolean is
@@ -2145,7 +2214,6 @@ feature {Any}
 	isFinal: Boolean is
 	deferred
 	end -- isFinal
-
 	out: String is
 	do
 		if visibility = Void then
@@ -2210,6 +2278,9 @@ invariant
 end -- class MemberDeclarationDescriptor
 
 class RoutineDescriptor
+inherit
+	SourcePosition
+	end
 feature {Any}
 	isPure: Boolean
 	isSafe: Boolean
@@ -2962,7 +3033,7 @@ inherit
 			out
 	end
 feature {Any}
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
 	require
 		non_void_contex: context /= Void
 	deferred
@@ -3028,10 +3099,17 @@ create
 feature {Any}
 	id: String
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -3062,10 +3140,17 @@ create
 feature {Any}
 	expr: ExpressionDescriptor
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -3098,10 +3183,17 @@ create
 feature {Any}
 	expr: ExpressionDescriptor
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -3214,10 +3306,17 @@ feature {Any}
 	writable: ExpressionDescriptor
 	expr: ExpressionDescriptor
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -3255,6 +3354,10 @@ inherit
 		redefine
 			out, is_equal
 	end
+--	SourcePosition
+--		redefine
+--			out, is_equal
+--	end
 feature {Any}		
 	markedVar: Boolean is
 	deferred
@@ -3407,10 +3510,17 @@ feature {Any}
 	--type: AttachedTypeDescriptor
 	type: DetachableTypeDescriptor
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -3448,10 +3558,17 @@ feature {Any}
 	type: AttachedTypeDescriptor
 	expr: ExpressionDescriptor
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -3505,10 +3622,17 @@ inherit
 create
 	init
 feature {Any}
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -3877,10 +4001,10 @@ end -- class ParenthedExpressionDescriptor
 --feature {Any}
 --	out: String is do Result := "init" end
 --
---	isNotValid (context: CompilationUnitCommon): Boolean is
+--	isInvalid (context: CompilationUnitCommon): Boolean is
 --	do
 --		-- do nothing so far
---	end -- isNotValid
+--	end -- isInvalid
 --	generate (cg: CodeGenerator) is
 --	do
 --		-- do nothing so far
@@ -3906,10 +4030,17 @@ inherit
 feature
 	out: String is do Result :=  "old" end
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -4931,10 +5062,17 @@ feature {Any}
 --	tuple: Array [MemberCallDescriptor]
 	tuple: Array [ExpressionDescriptor]
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -5033,10 +5171,17 @@ create
 feature{Any}
 	expression: ExpressionDescriptor
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -5125,10 +5270,17 @@ feature{Any}
 	target: ExpressionDescriptor
 	arguments: Array [ExpressionDescriptor]
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -5256,10 +5408,17 @@ feature{Any}
 	name: String
 	arguments: Array [ExpressionDescriptor]
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -5542,10 +5701,17 @@ inherit
 create
 	init
 feature{Any}
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -5569,10 +5735,17 @@ inherit
 create
 	init
 feature{Any}
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -5706,10 +5879,17 @@ feature{Any}
 	--	callChain:= <<ccElement>>
 	--end -- if
 	
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -5752,10 +5932,17 @@ create
 feature{Any}
 	unitType: UnitTypeCommonDescriptor
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -5820,10 +6007,17 @@ feature {Any}
 	unitType: UnitTypeCommonDescriptor
 	identifier: String
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -5924,10 +6118,17 @@ feature {Any}
 	ifParts: Array [IfLineDecsriptor]
 	elsePart: Array [StatementDescriptor]
 	
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -7726,10 +7927,17 @@ feature {Any}
 	ifExprLines: Array [IfExprLineDescriptor]
 	elseExpr: ExpressionDescriptor
 
-	isNotValid (context: CompilationUnitCommon): Boolean is
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
 	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
 		-- do nothing so far
-	end -- isNotValid
+	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far

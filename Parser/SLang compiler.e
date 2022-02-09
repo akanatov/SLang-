@@ -50,7 +50,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.05 (Build <AVK Feb 6th 2022>)")
+		o.putNL ("SLang compiler v0.99.05 (Build <AVK Feb 9th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -190,8 +190,8 @@ feature {None}
 						loop
 							fName := scripts.item (i)
 							--o.putNL ("Building a program from file `" + fName + "`")
-							create builder --.init (o)
-							builder.build_from_file (fName, fs, o)
+							create builder.init (o)
+							builder.build_from_file (fName, fs)
 							i := i + 1
 						end -- loop
 					end -- if
@@ -208,8 +208,8 @@ feature {None}
 							debug
 								dumpOutput.putNL (sysDsc.out)			
 							end
-							create builder
-							builder.build (sysDsc, fs, o)
+							create builder.init (o)
+							builder.build (sysDsc, fs)
 							j := j + 1
 						end -- loop
 						debug

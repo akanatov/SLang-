@@ -1,3 +1,42 @@
+class LinePosition
+feature {Any}
+	row: Integer
+	set_row (r: Integer) is
+	require
+		valid_row: r > 0
+	do
+		row := r
+	end -- set_row
+invariant
+	valid_row: row >= 0
+end -- class LinePosition
+class SourcePosition
+inherit
+	LinePosition
+	end
+feature {Any}
+	col: Integer
+	set_rc (r, c: Integer) is
+	require
+		valid_row: r > 0
+		valid_column: c > 0
+	do
+		row := r
+		col := c
+	end -- set_rc
+	setSourcePosition (srcp: expanded SourcePosition) is
+	do
+		row := srcp.row
+		col := srcp.col
+	end -- setSourcePosition
+	toSourcePosition: expanded SourcePosition is
+	do
+		Result.set_rc (row, col)
+	end -- toSourcePosition
+invariant
+	valid_column: col >= 0
+end -- class SourcePosition
+
 class TokenDescriptor
 create
 	init
@@ -22,6 +61,12 @@ feature {Any}
 	token: Integer -- current token
 	tokenRow: Integer -- current token row
 	tokenCol: Integer -- current token column
+
+	source_position: expanded SourcePosition is
+	do
+		Result.set_rc (tokenRow, tokenCol)
+	end -- source_position
+
 	tokenString: String is -- current token string representation
 	require
 		not_void_pool: pool /= Void
@@ -29,7 +74,7 @@ feature {Any}
 		Result := pool.add_it (buffer)
 		-- Result := buffer
 	end -- tokenString
-	
+
 	tokenValue: Any is -- current token value, Void if not manifest constant
 	do
 		inspect

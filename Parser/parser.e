@@ -7,13 +7,13 @@ do
 	o.putNL ("At: " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - "+ scanner.token.out + "`" + scanner.tokenName (scanner.token) + "`: " + message)
 end -- trace
 	
-	not_implemented_yet (featureName: String) is
-	require
-		feature_name_not_void : featureName /= Void
-	do
-		errorsCount := errorsCount + 1
-		o.putNL ("NOT IMPLEMENTED YET @" + scanner.tokenRow.out + ":" + scanner.tokenCol.out + ":`" + scanner.tokenName (scanner.token) + "`<" + featureName + ">")
-	end -- not_implemented_yet
+not_implemented_yet (featureName: String) is
+require
+	feature_name_not_void : featureName /= Void
+do
+	errorsCount := errorsCount + 1
+	o.putNL ("NOT IMPLEMENTED YET @" + scanner.tokenRow.out + ":" + scanner.tokenCol.out + ":`" + scanner.tokenName (scanner.token) + "`<" + featureName + ">")
+end -- not_implemented_yet
 
 	o: Output
 
@@ -37,6 +37,12 @@ feature {None}
 			end -- if
 		end -- loop
 	end -- validToken
+
+	setSourcePosition (node: SourcePosition) is
+	do
+		node.set_rc (scanner.tokenRow, scanner.tokenCol)
+	end -- setSourcePosition
+	
 feature {Any}
 
 	errorsCount: Integer
@@ -396,6 +402,7 @@ feature {None}
 		clusters: Sorted_Array [String] -- temporary!!! String - in fact ClusterDescriptor
 		libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 		wasError: Boolean
+		src_pos: expanded SourcePosition		
 	do
 -- trace (">>parseSystemDescription")
 		scanner.nextToken
@@ -403,6 +410,7 @@ feature {None}
 			scanner.token
 		when scanner.identifier_token, scanner.string_const_token then
 			name := scanner.tokenString
+			src_pos := scanner.source_position
 			scanner.nextToken
 		else
 			syntax_error (<<scanner.identifier_token, scanner.string_const_token>>)
@@ -446,6 +454,7 @@ feature {None}
 					else
 						create Result.init_program (name, entry, clusters, libraries)
 					end -- if
+					Result.setSourcePosition (src_pos)
 				else
 					syntax_error (<<scanner.end_token>>)
 				end -- if
@@ -6589,22 +6598,22 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 --trace ("Init found for unit " + unitDsc.name)
 			if rtnDsc.type /= Void then
 				-- init must be a procedure !!!
-				validity_error ("Init must be a procedure for unit `" + unitDsc.name + "`")
+				validity_error ("Init should not return a value in unit `" + unitDsc.name + "`")
 				wasError := True
 			end -- if
 			if rtnDsc.isVirtual then
 				-- init must be effective !!!
-				validity_error ("Init must be non-virtual for unit `" + unitDsc.name + "`")
+				validity_error ("Init must be non-virtual in unit `" + unitDsc.name + "`")
 				wasError := True
 			end -- if
 			if rtnDsc.isOverriding then
 				-- there is no overrding for init !!!
-				validity_error ("Init must not be a overiding in unit `" + unitDsc.name + "`")
+				validity_error ("Init must not be an overiding in unit `" + unitDsc.name + "`")
 				wasError := True
 			end -- if
 			if rtnDsc.isFinal then
 				-- there is no overrding control for init !!!
-				validity_error ("Init must not final in unit `" + unitDsc.name + "`")
+				validity_error ("Init must not be final in unit `" + unitDsc.name + "`")
 				wasError := True
 			end -- if			
 			if not wasError then
@@ -7096,6 +7105,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		isContinuedList: Boolean
 		identExpected: Boolean
 		toExit: Boolean
+		srcp: expanded SourcePosition
 	do
 		inspect
 			scanner.token
@@ -7113,8 +7123,10 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		loop
 			if scanner.token = scanner.identifier_token then
 				identExpected := False			
+				srcp := scanner.source_position		
 				name := scanner.tokenString
 				create tmpDsc.init (isConst, isRigid, name)
+				tmpdsc.set_rc (scanner.tokenRow, scanner.tokenCol)
 				scanner.nextToken
 				inspect
 					scanner.token
@@ -7180,11 +7192,11 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 									if scanner.token = scanner.identifier_token then
 										name := scanner.tokenString
 										create tmpDsc.init (isConst, isRigid, name)
-	--									if Result.added (tmpDsc) then
+										tmpdsc.set_rc (scanner.tokenRow, scanner.tokenCol)
 										if constBlock.added (tmpDsc) then
 											scanner.nextToken
 										else
-											validity_error( "Duplicated constant declaration '" + tmpDsc.name + "'") 
+											validityError (tmpDsc.toSourcePosition, "Duplicated constant declaration '" + tmpDsc.name + "'") 
 											wasError := True
 										end -- if
 									else
@@ -7198,10 +7210,6 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 									toLeave := True
 								end -- if				
 							else
-								if isContinuedList then
-								else
-								end -- if
-
 								if commaFound then
 									if isContinuedList then
 										syntax_error (<<scanner.identifier_token>>)
@@ -7223,20 +7231,18 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 							if attTypeDsc /= Void then
 								from
 									i := 1
-	--								n := Result.count
 									n := constBlock.count
 								until
 									i > n
 								loop						
-	--								tmpDsc ?= Result.item (i)
 									tmpDsc ?= constBlock.item (i)
 									check
 										valid_type: tmpdsc /= Void
 									end -- check
 									create unitAttrDsc.init (isOverriding, isFinal, tmpDsc.markedConst, tmpDsc.markedRigid, tmpDsc.name, attTypeDsc, Void, Void)
-	--								Result.put (unitAttrDsc, i)
+									unitAttrDsc.set_rc (tmpDsc.row, tmpDsc.col)
 									if not Result.added (unitAttrDsc) then
-										validity_error( "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+										validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
 										wasError := True
 									end -- if
 									i := i + 1
@@ -7253,18 +7259,18 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 							exprDsc := parseExpressionWithSemicolon
 							if exprDsc /= Void then -- const|rigid Identifier “:” AttachedType is ConstantExpression
 								create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
+								unitAttrDsc.setSourcePosition (srcp)
 									-- init (isO, isF, mc, mr: Boolean; aName: String; aType: like type; a: like assigner; ie: like expr)
---								create Result.fill (<<unitAttrDsc>>)
 								if not Result.added (unitAttrDsc) then
-									validity_error( "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+									validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
 									wasError := True
 								end -- if
 							end -- if
 						else -- const|rigid Identifier “:” Type
 							create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
---							create Result.fill (<<unitAttrDsc>>)
+							unitAttrDsc.setSourcePosition (srcp)
 							if not Result.added (unitAttrDsc) then
-								validity_error( "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+								validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration '" + unitAttrDsc.name + "'")
 								wasError := True
 							end -- if
 						end -- if
@@ -7274,9 +7280,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					exprDsc := parseExpressionWithSemicolon
 					if exprDsc /= Void then -- const|rigid Identifier is ConstantExpression
 						create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
---						create Result.fill (<<unitAttrDsc>>)
+						unitAttrDsc.setSourcePosition (srcp)
 						if not Result.added (unitAttrDsc) then
-							validity_error( "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+							validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration '" + unitAttrDsc.name + "'")
 							wasError := True
 						end -- if
 					end -- if
@@ -7518,7 +7524,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					scanner.token 
 				when scanner.const_token, scanner.rigid_token then
 					Result := parseConstUnitAttributes (isOverriding, isFinal)
-					--if isFinal then
+-- ???					--if isFinal then
 					--else
 					--	syntax_error (<<scanner.identifier_token, scanner.pure_token, scanner.safe_token>>)
 					--end -- if
@@ -7732,7 +7738,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				--	mdDsc.setVisibility (currentVisibilityZone)
 				--end -- if
 				if not unitDsc.unitMembers.added (mdDsc) then
-					validity_error( "Duplicated declaration of member '" + mdDsc.name + "' in unit '" + unitDsc.name + "'") 
+					--validity_error( "Duplicated declaration of member '" + mdDsc.name + "' in unit '" + unitDsc.name + "'") 
+					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member '" + mdDsc.name + "' in unit '" + unitDsc.name + "'") 
 				end -- if
 				i := i + 1
 			end -- loop
@@ -8171,6 +8178,21 @@ syntax_error (<<scanner.comma_token>>)
 	
 feature {None}
 	
+	validityError (srcp: expanded SourcePosition; message: String) is
+	require
+		message_not_void: message /= Void		
+	do
+		if errorsCount = 0 then
+			o.newLine
+		end -- if
+		errorsCount := errorsCount + 1
+		if srcp.col = 0 then
+			o.putNL ("+Error at line " + srcp.row.out + " - " + message)
+		else
+			o.putNL ("+Error at " + srcp.row.out + ":" + srcp.col.out + " - " + message)
+		end -- if
+	end -- validityError
+	
 	validity_error (message: String) is
 	require
 		message_not_void: message /= Void		
@@ -8179,7 +8201,8 @@ feature {None}
 			o.newLine
 		end -- if
 		errorsCount := errorsCount + 1
-		o.putNL ("Error at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - " + message)
+		--o.putNL ("Error at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - " + message)
+		o.putNL ("-Error at line " + scanner.tokenRow.out + " - " + message)
 	end -- validity_error
 	validity_warning (message: String) is
 	require
@@ -8189,7 +8212,8 @@ feature {None}
 			o.newLine
 		end -- if
 		warningsCount := warningsCount + 1
-		o.putNL ("Warning at " + scanner.tokenRow.out.out + ":" + scanner.tokenCol.out + " - " + message)
+		-- o.putNL ("Warning at " + scanner.tokenRow.out.out + ":" + scanner.tokenCol.out + " - " + message)
+		o.putNL ("Warning at line " + scanner.tokenRow.out.out + " - " + message)
 	end -- validity_warning
 	
 	syntax_error (tokens_expected: Array [Integer]) is
