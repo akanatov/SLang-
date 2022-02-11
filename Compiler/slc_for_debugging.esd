@@ -9,9 +9,7 @@ creation
 cluster
 
    -- Project cluster
-   [SL_parser "."                                     ] end
-   [SL_scanner "..\scanner"                           ] end
-   [SL_semanal "..\SemAnal"] end
+   "."  end
 
 
    -- Library clusters

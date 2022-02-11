@@ -1,4 +1,4 @@
-system "slng_scanner"
+system "slng_scan"
 
 root
    SL_SCANNER
@@ -9,7 +9,7 @@ creation
 cluster
 
    -- Project cluster
-   [SL_scanner "."                                     ] end
+   "."  end
 	[pool] end
 
    -- Library clusters

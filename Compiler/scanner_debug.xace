@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<system name="Scanner">
+<system name="sln_scan_d">
 	<root class="SL_SCANNER" creation="init"/>
 	<option name="assertion" value="require"/>
 	<option name="assertion" value="check"/>
