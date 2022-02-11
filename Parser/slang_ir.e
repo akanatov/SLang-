@@ -651,7 +651,7 @@ feature {Any}
 			i > n
 		loop
 			notValid := statements.item (i).isInvalid (context)
-			if not notValid then
+			if notValid then
 				Result := True
 			end
 			i := i + 1
@@ -703,7 +703,7 @@ feature {Any}
 			i > n
 		loop
 			notValid := statements.item(i).isInvalid (context)
-			if not notValid then
+			if notValid then
 				Result := True
 			end
 			i := i + 1
@@ -718,7 +718,7 @@ feature {Any}
 				i > n
 			loop
 				notValid := whenClauses.item(i).isInvalid (context)
-				if not notValid then
+				if notValid then
 					Result := True
 				end
 				i := i + 1
@@ -730,7 +730,7 @@ feature {Any}
 				i > n
 			loop
 				notValid := whenElseClause.item(i).isInvalid (context)
-				if not notValid then
+				if notValid then
 					Result := True
 				end
 				i := i + 1
@@ -3840,8 +3840,10 @@ feature{Any}
 		-- Result := 10
 	end -- getOrder
 	isInvalid (context: CompilationUnitCommon): Boolean is
+	require	
+		non_void_context: context /= Void
 	deferred
-	end -- isInvalid
+	end -- isInvalid	
 end -- class ExpressionDescriptor
 deferred class TypeOfExpressionDescriptor
 inherit
@@ -3877,6 +3879,19 @@ feature {Any}
 	do
 		Result := expDsc < other.expDsc
 	end -- theSame
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
+		-- notValid: Boolean
+	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+		-- do nothing so far
+	end -- isInvalid
+	
 feature {ExpressionDescriptor}
 	weight: Integer is 
 	do
@@ -3961,7 +3976,7 @@ feature
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4006,7 +4021,7 @@ feature
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4104,7 +4119,7 @@ feature
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4135,7 +4150,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4178,6 +4193,19 @@ feature {Any}
 	do
 		Result := "" + aString
 	end 
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
+		-- notValid: Boolean
+	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+		-- do nothing so far
+	end -- isInvalid
+
 feature {ExpressionDescriptor}
 	weight: Integer is -4
 end -- class IdentifierDescriptor
@@ -4265,7 +4293,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4354,7 +4382,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4420,6 +4448,19 @@ feature {Any}
 			end -- if
 		end -- if
 	end -- theSame
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
+		-- notValid: Boolean
+	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+		-- do nothing so far
+	end -- isInvalid
+	
 feature {ExpressionDescriptor}
 	weight: Integer is -8
 invariant
@@ -4453,6 +4494,19 @@ print ("InlineLambdaExpression.sameAs not_implemented_yet%N")
 	once
 print ("InlineLambdaExpression.lessThan not_implemented_yet%N")
 	end -- theSame
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
+		-- notValid: Boolean
+	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+		-- do nothing so far
+	end -- isInvalid
+
 feature {ExpressionDescriptor}
 	weight: Integer is -9
 invariant
@@ -4497,7 +4551,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4574,7 +4628,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4661,7 +4715,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4750,7 +4804,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4838,7 +4892,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4931,6 +4985,19 @@ feature	{Any}
 			end -- if
 		end -- if
 	end -- lessThan	
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
+		-- notValid: Boolean
+	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+		-- do nothing so far
+	end -- isInvalid
+
 	out: String is
 	local
 		aString: String
@@ -6234,7 +6301,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -6637,7 +6704,25 @@ feature {AlternativeDescriptor}
 			i := i + 1
 		end -- loop		
 	end -- out_alternatives
-	
+	alternativeTagsValid (context: CompilationUnitCommon): Boolean is
+	local
+		i, n: Integer
+		notValid: Boolean		
+	do
+		from
+			i := 1
+			n := alternativeTags.count
+		until
+			i > n
+		loop
+			notValid := alternativeTags.item (i).isInvalid (context)
+			if notValid then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop		
+	end -- alternativeTagsValid
+
 invariant
 	alternativeTags_not_void: alternativeTags /= Void
 end -- class AlternativeDescriptor
@@ -6717,6 +6802,27 @@ feature {Any}
 		Result.append_character (' ')
 		Result.append_string (expr.out)
 	end -- out
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
+		-- i, n: Integer
+		notValid: Boolean
+	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+		-- do nothing so far
+		notValid := expr.isInvalid (context)
+		if notValid then
+			Result := True
+		end -- if
+		notValid := alternativeTagsValid (context)
+		if notValid then
+			Result := True
+		end -- if
+	end -- isInvalid
 invariant
 	expression_not_void: expr /= Void
 end -- class IfExpressionAlternative
@@ -8059,7 +8165,7 @@ feature
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -8106,14 +8212,14 @@ feature {Any}
 			i > n
 		loop
 			notValid := ifExprLines.item (i).isInvalid (context)
-			if not notValid then
+			if notValid then
 				Result := True
 			end -- if
 			i := i + 1
 		end -- loop
 		if elseExpr /= Void then
 			notValid := elseExpr.isInvalid (context)
-			if not notValid then
+			if notValid then
 				Result := True
 			end -- if
 		end -- if
@@ -8220,6 +8326,8 @@ inherit
 	end
 feature
 	isInvalid (context: CompilationUnitCommon): Boolean is
+	require	
+		non_void_context: context /= Void
 	deferred
 	end -- isInvalid
 end -- class IfExprLineDescriptor
@@ -8272,6 +8380,26 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+		notValid := expr.isInvalid (context)
+		if notValid then
+			Result := True
+		end -- if
+		from
+			i := 1
+			n := alternatives.count
+		until
+			i > n
+		loop
+			notValid := alternatives.item (i).isInvalid (context)
+			if notValid then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+		if not Result then
+			-- expr and all alternatives are valid then check types accordance
+			-- not_implemented_yet
+		end -- if
 	end -- isInvalid
 invariant
 	consistent_is_body: alternatives /= Void
@@ -8309,20 +8437,19 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 		-- 'expr' is valid and of Boolean type
-		notValid := expr.isValid (context)
-		if not notValid then
+		notValid := expr.isInvalid (context)
+		if notValid then
 			Result := True
 		end -- if
 		-- 'doExpr' is valid
-		notValid := doExpr.isValid (context)
-		if not notValid then
+		notValid := doExpr.isInvalid (context)
+		if notValid then
 			Result := True
 		end -- if
 	end -- isInvalid
 invariant
 	do_expr_not_void: doExpr /= Void
 end -- class IfDoExprLineDescriptor
-
 	
 class AlternativeTagDescriptor
 -- Expression [[GroupStart OperatorName ConstantExpression GroupEnd] “..”Expression ]
@@ -8354,6 +8481,26 @@ feature {Any}
 	do
 		Result := expr < other.expr
 	end -- lessThan
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
+		-- i, n: Integer
+		notValid: Boolean
+	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+		-- do nothing so far
+		notValid := expr.isInvalid (context)
+		if notValid then
+			Result := True
+		else
+			-- expr should be either Type or value ....
+			-- not_implemented_yet
+		end -- if
+	end -- isInvalid
 invariant
 	expression_not_void: expr /= Void
 end -- class AlternativeTagDescriptor
