@@ -144,15 +144,15 @@ feature {None}
 								end -- if
 								debug
 									dumpAST (parser, dumpOutput)
-								end
+								end -- debug
 
 								inspect 
 									parser.errorsCount
 								when 0 then
 									if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
-										saveErrCount := parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".ast", o)
+										saveErrCount := parser.ast.saveInternalRepresentation (fName, IRfolderName + "\", sName, ".ast", o)
 										parser.ast.cutImplementation
-										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".int", o)
+										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, IRfolderName + "\", sName, ".int", o)
 										if saveErrCount = 0 then
 											o.putLine ("File `" + fName + "` parsed with no errors!")
 										else

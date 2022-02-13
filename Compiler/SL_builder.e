@@ -11,7 +11,7 @@ feature {Any}
 		non_void_file_name: fName /= Void
 		non_void_file_system: fs /= Void
 	local 
-		cuDsc : CompilationUnitFile
+		cuDsc : CompilationUnitAnonymousRoutine
 		folderName: String
 		fileName: String
 		codeGenerator: CodeGenerator

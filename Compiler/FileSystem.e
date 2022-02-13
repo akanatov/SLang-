@@ -162,7 +162,13 @@ feature {Any}
 		end -- loop
 		if Result = Void then
 			if start = 0 then
-				Result := name
+				if stop > 0 then
+					Result := name.substring (1, stop)
+				else
+					Result := name
+				end -- if
+			elseif stop = 0 then	
+				Result := name.substring (start, name.count)
 			elseif start <= stop then	
 				Result := name.substring (start, stop)
 			else
