@@ -265,7 +265,8 @@ feature {Any}
 						scanner.nextToken
 						exprDsc := parseExpression
 						if exprDsc /= Void then
-							create {AssignmentStatementDescriptor} stmtDsc.init (identDsc, exprDsc)
+--							create {AssignmentStatementDescriptor} stmtDsc.init (identDsc, exprDsc)
+							create {EntityDeclarationStatementDescriptor} stmtDsc.init (False, False, False, name, exprDsc)
 							if stmtDsc /= Void then
 								ast.addStatement (stmtDsc)
 							end -- if				
@@ -346,7 +347,8 @@ feature {Any}
 					if stmtDsc /= Void then
 						ast.addStatement (stmtDsc)
 					end -- if
-				when scanner.var_token then -- Anonymous rotuine - local attribute declaration
+				when scanner.var_token, scanner.rigid_token then -- Anonymous routine - local attribute declaration
+					-- scanner.const_token - all locals are const by default
 					parseLocalsDeclaration (ast.statements, True, Void)
 				when scanner.require_token then -- Anonymous routine: block/loop statement
 					stmtDsc := parseBlock (scanner.token)
@@ -378,7 +380,7 @@ feature {None}
 			 scanner.build_token, scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
 			 scanner.virtual_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
 			 scanner.if_token, scanner.while_token, scanner.new_token, scanner.detach_token, scanner.raise_token, scanner.return_token,
-			 scanner.left_paranthesis_token, scanner.var_token, scanner.require_token
+			 scanner.left_paranthesis_token, scanner.var_token, scanner.require_token, scanner.rigid_token
 		>>
 		if scanner.Cmode then			
 			Result.force (scanner.left_curly_bracket_token, Result.count + 1)
@@ -600,14 +602,14 @@ feature {None}
 	end -- parseUnqalifiedCallWithFirstArgument
 
 
-	parseLocalsDeclaration(statements: Array [StatementDescriptor]; isVar: Boolean; name: String) is
+	parseLocalsDeclaration(statements: Array [StatementDescriptor]; isVarOrRigid: Boolean; name: String) is
 	require
 		statements_not_void: statements /= Void
 	local
 		locals: Sorted_Array [LocalAttrDescriptor]
 	do
 --trace ("parseLocalsDeclaration")
-		locals := parseLocalAttributesDeclaration (isVar, name)
+		locals := parseLocalAttributesDeclaration (isVarOrRigid, name)
 		if locals /= Void then
 			statements.append (locals)
 		end -- if
@@ -988,15 +990,15 @@ feature {None}
 		end -- if
 	end -- parseAssignmentOrQualifiedCall
 	
-	parseLocalAttributesDeclaration (isVar: Boolean; name: String): Sorted_Array [LocalAttrDescriptor] is
+	parseLocalAttributesDeclaration (isVarOrRigid: Boolean; name: String): Sorted_Array [LocalAttrDescriptor] is
 	-- Anonymous rotuine - local attribute declaration
 	-- 1: var ...
 	-- 2: ident, ....
 	-- 3: ident: ....
 	-- 4: is Expr 
 	require
-		valid_token_1: isVar implies validToken (<<scanner.var_token>>)
-		valid_token_2: not isVar implies name /= Void and then (validToken (<<scanner.comma_token, scanner.colon_token, scanner.is_token>>))	
+		valid_token_1: isVarOrRigid implies validToken (<<scanner.var_token, scanner.rigid_token>>)
+		valid_token_2: not isVarOrRigid implies name /= Void and then (validToken (<<scanner.comma_token, scanner.colon_token, scanner.is_token>>))	
 	local
 		type: TypeDescriptor
 		detDsc: DetachableTypeDescriptor
@@ -1004,17 +1006,20 @@ feature {None}
 		expr: ExpressionDescriptor
 		localDsc: LocalAttrDescriptor
 		tmpDsc: TemporaryLocalAttributeDescriptor
+		isVar, isRigid: Boolean
 		localAttrs: Sorted_Array [TemporaryLocalAttributeDescriptor]
 		i, n: Integer
 		commaFound: Boolean
 		toLeave: Boolean
 	do
-		if isVar then
-			-- var ...
+		if isVarOrRigid then
+			-- var|rigid ...
+			isVar := scanner.token = scanner.var_token
+			isRigid := scanner.token = scanner.rigid_token			
 			scanner.nextToken
 			if scanner.token = scanner.identifier_token then
---trace ("var processed")
-				create tmpDsc.init (True, False, scanner.tokenString)
+--trace ("var|rigid processed")
+				create tmpDsc.init (isVar, isRigid, scanner.tokenString)
 				scanner.nextToken
 			else
 				syntax_error (<<scanner.identifier_token>>)
@@ -1074,12 +1079,14 @@ feature {None}
 			loop
 				inspect
 					scanner.token
-				when scanner.var_token then
+				when scanner.var_token, scanner.rigid_token then
+					isVar := scanner.token = scanner.var_token
+					isRigid := scanner.token = scanner.rigid_token							
 					if commaFound or else localAttrs.count = 1 then
 						commaFound := False
 						scanner.nextToken
 						if scanner.token = scanner.identifier_token then
-							create tmpDsc.init (True, False, scanner.tokenString)
+							create tmpDsc.init (isVar, isRigid, scanner.tokenString)
 							if not localAttrs.added (tmpDsc) then
 								validity_error( "Duplicated local declaration '" + tmpDsc.name + "'") 
 							end -- if
@@ -1095,7 +1102,7 @@ feature {None}
 				when scanner.identifier_token then
 					if commaFound or else localAttrs.count = 1 then
 						commaFound := False
-						create tmpDsc.init (True, False, scanner.tokenString)
+						create tmpDsc.init (False, False, scanner.tokenString)
 						if not localAttrs.added (tmpDsc) then
 							validity_error( "Duplicated local declaration '" + tmpDsc.name + "'") 
 						end -- if
@@ -1134,9 +1141,7 @@ feature {None}
 								Result.add (localDsc)
 								i := i + 1
 							end -- if
-						end -- if
-
-						
+						end -- if						
 					end -- if
 				when scanner.colon_token then
 					toLeave := True
@@ -1180,7 +1185,7 @@ feature {None}
 					end -- if					
 				else
 					if commaFound then
-						syntax_error (<<scanner.identifier_token, scanner.var_token>>)
+						syntax_error (<<scanner.identifier_token, scanner.var_token, scanner.rigid_token>>)
 					else
 						syntax_error (<<scanner.comma_token, scanner.colon_token, scanner.is_token>>)
 					end -- if
@@ -1683,7 +1688,7 @@ feature {None}
 		--		create {UnqualifiedCallDescriptor} stmtDsc.init (initDsc, Void, Void)
 		--		Result := <<stmtDsc>>
 		--	end
-		when scanner.var_token then
+		when scanner.var_token, scanner.rigid_token then
 			create Result.make (1, 0)
 			parseLocalsDeclaration(Result, True, Void)
 			if Result.count = 0 then
