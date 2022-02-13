@@ -13,7 +13,11 @@ feature {Any}
 	local 
 		cuDsc : CompilationUnitFile
 		folderName: String
+		fileName: String
 		codeGenerator: CodeGenerator
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		-- stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
 		generators: Array [CodeGenerator]
@@ -25,10 +29,36 @@ feature {Any}
 		if fs.folderExists (folderName) then
 			-- Build the system
 			create cuDsc.init
-			if cuDsc.FileLoaded (folderName + "\_" + fs.getFileName(fName) + ".Slang#ast", o) then
+			fileName := folderName + "\_" + fs.getFileName(fName) + ".ast"
+			if cuDsc.FileLoaded (fileName) then
 				o.putNL ("Building a program from file `" + fName + "`")
+				-- 0. Process pools - ensure that all units' ionterafc used are loaded
+				from
+					useConst  := cuDsc.useConst
+					n := useConst.count
+					i := 1
+				until
+					i > n
+				loop
+					if useConst.item(i).isNotLoaded (cuDsc) then
+						skipCodeGen := True
+					end -- if
+					i := i + 1
+				end -- loop
+				from
+					typePool := cuDsc.typePool
+					n := typePool.count
+					i := 1
+				until
+					i > n					
+				loop
+					if typePool.item(i).isNotLoaded (cuDsc) then
+						skipCodeGen := True
+					end -- if
+					i := i + 1
+				end -- loop
+
 				-- 1. Check validity of cuDsc.statements
-				-- 2. Generate code for cudsc.statements
 				from
 					statements := cuDsc.statements
 					n := statements.count
@@ -42,6 +72,7 @@ feature {Any}
 					i := i + 1
 				end -- loop
 				if not skipCodeGen then
+					-- 2. Generate code for cudsc.statements
 
 					create generators.make (1, 0)
 					
@@ -93,6 +124,9 @@ feature {Any}
 						-- No generators
 					end -- if
 				end -- if
+			else
+				-- AST not loaded !!!
+				o.putNL ("Error: unable to load compiled module from file `" + fileName + "`")
 			end -- if
 		else
 			o.putNL ("Error: SLang folder with artefacts '" + folderName + "' not found")

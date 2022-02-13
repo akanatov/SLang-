@@ -201,11 +201,11 @@ feature {Any}
 		end -- if
 	end -- addStatement
 
-	FileLoaded (fileName: String; o: Output): Boolean is
+	FileLoaded (fileName: String): Boolean is
 	local
 		fImage: FileImage 
 	do
-		fImage := loadFileIR (fileName, o)
+		fImage := loadFileIR (fileName)
 		if fImage /= Void then
 			useConst	:= fImage.useConst	
 			routines	:= fImage.routines	
@@ -215,16 +215,14 @@ feature {Any}
 			Result := True
 		end -- if
 	end -- FileLoaded
-	loadFileIR (fileName: String; o: Output): FileImage is
+	loadFileIR (fileName: String): FileImage is
 	require
 		non_void_file_name: fileName /= Void
-		non_void_console: o /= Void
 	local
 		aFile: File
 		wasError: Boolean
 	do
 		if wasError then
-			o.putNL ("Failure: unable to load compiled module from file `" + fileName + "`")
 			Result := Void
 		else
 			create Result.init_empty
@@ -368,7 +366,7 @@ feature {Any}
 		end -- loop
 	end -- cutImplementation
 	
-	saveInternalRepresentation (path, sObjFileName: String; sObjExtension: String; o: Output) is
+	saveInternalRepresentation (path, sObjFileName: String; sObjExtension: String; o: Output): Integer is
 	require	
 		file_path_not_void: path /= Void
 		file_name_not_void: sObjFileName /= Void
@@ -381,7 +379,9 @@ feature {Any}
 		-- sObjFileName: useConst + statements + routines
 		if routines.count > 0 or else statements.count > 0 then
 			create fu.init (useConst, routines, statements, stringPool, typePool)
-			storeIR (path + sObjFileName + sObjExtension, fu, o)
+			if not IRstored (path + sObjFileName + sObjExtension, fu, o) then
+				Result := Result + 1
+			end -- if
 		end -- if
 		-- per unit: useConst + unit
 		from
@@ -391,14 +391,16 @@ feature {Any}
 			i > n
 		loop
 			create uf.init (useConst, units.item(i), stringPool, typePool)
-			storeIR (path + sObjFileName + "_" + units.item(i).name + sObjExtension, uf, o)
+			if not IRstored (path + units.item(i).getExternalName + sObjExtension, uf, o) then
+				Result := Result + 1
+			end -- if
 			i := i + 1
 		end -- loop
-	end
+	end -- saveInternalRepresentation
 
 feature {None}
 
-	storeIR (fileName: String; image: Storable; o: Output) is
+	IRstored (fileName: String; image: Storable; o: Output): Boolean is
 	require
 		non_void_file_name: fileName /= Void
 		non_void_image: image /= Void
@@ -413,13 +415,14 @@ feature {None}
 			create aFile.make_create_read_write (fileName) 
 			image.independent_store (aFile)
 			aFile.close
+			Result := True
 		end -- if
 	rescue
 		if not wasError then
 			wasError := True
 			retry
 		end -- if
-	end -- storeIR
+	end -- IRstored
 
 	init is
 	do
@@ -1361,8 +1364,32 @@ feature {Any}
 	aliasName: String
 	
 	formalGenerics: Array [FormalGenericDescriptor]
-		--  “[” FormalGenericDescriptor {“,” FormalGenericDescriptor}“]” 
-	
+		--  "["" FormalGenericDescriptor {"," FormalGenericDescriptor}"]" 
+
+	getExternalName: String is
+	local
+		i, n: Integer
+	do
+		Result := ""
+		Result.append_string (name)
+		n := formalGenerics.count
+		if n > 0 then
+			from
+				Result.append_string ("$")
+				i := 1
+			until
+				i > n
+			loop
+				Result.append_string (formalGenerics.item (i).getExternalName)
+				if i < n then
+					Result.append_character ('_')
+				end
+				i := i + 1
+			end -- loop
+			Result.append_character ('$')
+		end -- if
+	end -- getExternalName
+		
 	parents: Sorted_Array [ParentDescriptor]
 		-- extend ParentDescriptor {“,” ParentDescriptor}
 	
@@ -1819,7 +1846,7 @@ end -- class ParentDescriptor
 
 
 deferred class FormalGenericDescriptor
---13 Identifier ([“extend” Type ] [“init” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
+--13 Identifier (["extend" Type ] ["new" [Signature]])| [":" (UnitTypeDescriptor | RoutineType)]
 inherit
 	Comparable
 		undefine
@@ -1843,6 +1870,12 @@ feature {Any}
 			Result := name < other.name
 		end -- if
 	end -- is_equal
+	getExternalName: String is
+	deferred
+	ensure
+		external_name_not_void: Result /= Void
+	end -- getExternalName
+	
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
 	deferred
@@ -1853,8 +1886,9 @@ feature {FormalGenericDescriptor}
 invariant
 	name_not_void: name /= Void
 end -- class FormalGenericDescriptor
+
 class FormalGenericTypeDescriptor
--- Identifier [“extend” Type ] [“init” [Signature]]
+-- Identifier ["extend" Type ] ["new" [Signature]]
 inherit
 	FormalGenericDescriptor
 	end
@@ -1875,6 +1909,19 @@ feature {Any}
 			Result.append_string (initConstraint.out)
 		end -- if
 	end -- out
+	getExternalName: String is
+	do
+		Result := "" + name
+		if typeConstraint /= Void then
+			Result.append_string("_extend_")
+			Result.append_string (typeConstraint.getExternalName)
+		end -- if
+		if initConstraint /= Void then
+			Result.append_string("_new_")
+			Result.append_string (initConstraint.getExternalName)
+		end -- if
+	end -- getExternalName
+	
 	init (n: like name; tc: like typeConstraint; ic: like initConstraint) is
 	require
 		formal_generic_name_not_void: n /= Void
@@ -1895,7 +1942,7 @@ feature {FormalGenericDescriptor}
 	end -- lessThan
 end -- class FormalGenericTypeDescriptor
 class FormalGenericConstantDescriptor
--- Identifier  “:” TypeDescriptor
+-- Identifier ":" TypeDescriptor
 inherit
 	FormalGenericDescriptor
 	end
@@ -1907,6 +1954,11 @@ feature {Any}
 	do
 		Result := name + ": " + type.out
 	end -- out
+	getExternalName: String is
+	do
+		Result := name + "_" + type.getExternalName
+	end -- getExternalName
+	
 	init (aName: String; ut: TypeDescriptor) is
 	require
 		name_not_void: aName /= Void
@@ -1929,7 +1981,7 @@ invariant
 	type_not_void: type /= Void
 end
 class FormalGenericRoutineDescriptor
--- Identifier “:” RoutineType
+-- Identifier ":" RoutineType
 inherit
 	FormalGenericDescriptor
 	end
@@ -1941,6 +1993,11 @@ feature {Any}
 	do
 		Result := name + ": " + routineType.out
 	end -- out
+	getExternalName: String is
+	do
+		Result := name + "_" + routineType.getExternalName
+	end -- getExternalName
+	
 	init (aName: String; rt: RoutineTypeDescriptor) is
 	require
 		name_not_void: aName /= Void
@@ -2230,7 +2287,7 @@ feature {Any}
 	end -- out
 	
 	cutImplementation is
-	do
+	deferred
 		-- redefine in a proper descendant
 	end  -- cutImplementation
 	
@@ -2496,7 +2553,11 @@ feature {Any}
 			Result.append_string ("foreign%N")
 		elseif isOneLine then
 			Result.append_string (" => ")
-			Result.append_string (expr.out)
+			if expr = Void then
+				Result.append_string ("none")
+			else
+				Result.append_string (expr.out)
+			end -- if
 			Result.append_character('%N')
 		elseif innerBlock /= Void then
 			Result.append_string (innerBlock.out)
@@ -2533,6 +2594,11 @@ feature {Any}
 			Result.append_string ("end // " + name + "%N")	
 		end -- if
 	end -- out
+	cutImplementation is
+	do
+		innerBlock := Void
+		expr := Void
+	end -- cutImplementation
 feature {None}
 	outConstants (aResult: String; aTitle: String) is
 	require
@@ -3574,6 +3640,12 @@ feature {Any}
 			Result.append_string (assigner.out)
 		end -- if
 	end -- out
+	cutImplementation is
+	do
+		if assigner /= Void then
+			assigner.cutImplementation
+		end -- if
+	end -- cutImplementation
 --feature {MemberDeclarationDescriptor}
 -- 	weight: Integer is 2
 invariant
@@ -3782,14 +3854,15 @@ feature {Any}
 		markedRigid := isR
 		name := aName
 	end -- init
+	cutImplementation is do end
 end -- class TemporaryUnitAttributeDescriptor
 class AttachedUnitAttributeDescriptor
 	-- UnitAttributeDeclaration:
 	-- ( [const|rigid] Identifier {"," [const|rigid] Identifier} “:” Type)
 	-- |
-	-- ( [const|rigid] Identifier [“:” AttachedType] is ConstantExpression) 
+	-- ( [const|rigid] Identifier [":" AttachedType] is ConstantExpression) 
 	-- |
-	-- (Identifier “:” Type rtn “:=” [[ Parameters] HyperBlock ] )
+	-- (Identifier ":" Type rtn ":=" [[ Parameters] HyperBlock ] )
 inherit
 	UnitAttrDescriptor
 		redefine
@@ -3802,6 +3875,14 @@ feature {Any}
 	markedRigid: Boolean
 	type: TypeDescriptor
 	expr: ExpressionDescriptor
+
+	cutImplementation is
+	do
+		expr := Void
+		if assigner /= Void then
+			assigner.cutImplementation
+		end -- if
+	end -- cutImplementation
 	
 	init (isO, isF, mc, mr: Boolean; aName: String; aType: like type; a: like assigner; ie: like expr) is
 	require
@@ -3840,17 +3921,21 @@ feature {Any}
 --feature {MemberDeclarationDescriptor}
 -- 	weight: Integer is 5
 invariant
-	consistent_expr_and_type: expr = Void implies type /= Void
+	-- consistent_expr_and_type: expr = Void implies type /= Void -- cutImplementation may violate it
 end -- class AttachedUnitAttributeDescriptor
 
 -------------- Assigners --------------------
 deferred class AttributeAssignerDescriptor
--- rtn “:=”[ [Parameters] HyperBlockDescriptor ]
+-- rtn ":="[ [Parameters] HyperBlockDescriptor ]
 inherit
 	Any
 		undefine
 			out
 	end
+feature
+	cutImplementation is
+	deferred
+	end 
 end -- class AttributeAssignerDescriptor
 class DefaultAttributeAssignerDescriptor
 inherit
@@ -3861,6 +3946,10 @@ feature {Any}
 	do
 		Result := "rtn :="
 	end -- out
+	cutImplementation is
+	do
+		-- do nothing
+	end -- cutImplemenattion
 end -- class DefaultAttributeAssignerDescriptor
 class CustomAttributeAssignerDescriptor
 inherit
@@ -3869,7 +3958,7 @@ inherit
 create	
 	init
 feature {Any}
-	-- “(”ParameterDescriptor {”;” ParameterDescriptor}“)”	
+	-- "("ParameterDescriptor {";" ParameterDescriptor}")"
 	parameters: Array [ParameterDescriptor]
 	body: HyperBlockDescriptor
 	init (p: like parameters; b: like body) is 
@@ -3901,11 +3990,19 @@ feature {Any}
 			end -- loop
 			Result.append_character (')')
 		end -- if
-		Result.append_string (body.out)		
+		if body = Void then
+			Result.append_string (" none")
+		else
+			Result.append_string (body.out)
+		end -- if
 	end -- out
+	cutImplementation is
+	do
+		body := Void
+	end -- cutImplemenattion
 invariant
 	parameters_not_void: parameters /= Void
-	body_not_void: body /= Void
+	--body_not_void: body /= Void
 end -- class CustomAttributeAssignerDescriptor
 ---------------- Entities end   -----------------
 
@@ -3925,6 +4022,11 @@ feature{Any}
 	do
 		-- Result := 10
 	end -- getOrder
+	getExternalName: String is
+	do
+		Result := "<expression>"
+	end -- getExternalName
+
 	isInvalid (context: CompilationUnitCommon): Boolean is
 	require	
 		non_void_context: context /= Void
@@ -4202,14 +4304,14 @@ feature
 	end -- theSame
 	isInvalid (context: CompilationUnitCommon): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
 		-- notValid: Boolean
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 feature {ExpressionDescriptor}
@@ -4281,15 +4383,20 @@ feature {Any}
 	end 
 	isInvalid (context: CompilationUnitCommon): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
+		--typePool: Sorted_Array[TypeDescriptor]	
 		-- notValid: Boolean
+		pos: Integer
 	do
-	useConst := context.useConst
+	--useConst := context.useConst
 	stringPool := context.stringPool
-	typePool := context.typePool
+	--typePool := context.typePool
 		-- do nothing so far
+		pos := stringPool.seek (aString)
+		check
+			not_registered_in_the_pool: pos <= 0
+		end -- check
 	end -- isInvalid
 
 feature {ExpressionDescriptor}
@@ -4376,15 +4483,28 @@ feature {Any}
 	end -- theSame
 	isInvalid (context: CompilationUnitCommon): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		notValid: Boolean
+		i, n: Integer
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
-		-- do nothing so far
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- Every tuple element should be a vlaid expression
+		from
+			i := 1
+			n := tuple.count
+		until
+			i > n
+		loop
+			notValid := tuple.item (i).isInvalid (context)
+			if not notValid then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
 	end -- isInvalid
 feature {ExpressionDescriptor}
 	weight: Integer is -5
@@ -4465,15 +4585,24 @@ feature {Any}
 	end -- theSame
 	isInvalid (context: CompilationUnitCommon): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		notValid: Boolean
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
 		-- do nothing so far
+		notValid := expr.isInvalid (context)
+		if not notValid then
+			Result := True
+		end -- if
+		if not Result then
+			-- ref expr
+			-- type of expr should be of the value type !!!
+			-- not_implemented_yet
+		end -- if
 	end -- isInvalid
 feature {ExpressionDescriptor}
 	weight: Integer is -7
@@ -4536,15 +4665,24 @@ feature {Any}
 	end -- theSame
 	isInvalid (context: CompilationUnitCommon): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		notValid: Boolean
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
 		-- do nothing so far
+		-- name: String
+		-- it should be a valid routine name
+		-- signature: SignatureDescriptor
+		if signature /= Void then
+			notValid := signature.isInvalid (context)
+			if not notValid then
+				Result := True
+			end -- if
+		end -- if
 	end -- isInvalid
 	
 feature {ExpressionDescriptor}
@@ -6925,6 +7063,10 @@ inherit
 	end 
 feature {Any}
 	name: String
+	getExternalName: String is
+	do
+		Result := clone (name)
+	end -- getExternalName
 	is_equal (other: like Current): Boolean is
 	do
 		if weight = other.weight and then name.is_equal (other.name) then
@@ -7147,6 +7289,13 @@ inherit
 		undefine
 			out
 	end
+feature
+	getExternalName: String is
+	deferred
+	ensure
+		non_void_external_name: Result /= Void
+	end -- getExternalName
+
 feature {TypeOrExpressionDescriptor}
 	weight: Integer is
 	deferred
@@ -7154,7 +7303,7 @@ feature {TypeOrExpressionDescriptor}
 end -- class TypeOrExpressionDescriptor
 
 deferred class TypeDescriptor
---39 Type: [”?”] AttachedTypeDescriptor
+--39 Type: ["?"] AttachedTypeDescriptor
 --  AttachedTypeDescriptor: UnitType|AnchorType|MultiType|TupleType|RangeType|RoutineType
 
 -- UnitTypeDescriptor|AnchorTypeDescriptor|MultiTypeDescriptor|DetachableTypeDescriptor |TupleType|RangeTypeDescriptor|RoutineTypeDescriptor
@@ -7165,7 +7314,20 @@ inherit
 			{SLang_Compiler} weight -- temporary for debuggging purposes !!!!
 	end
 feature {Any}
-end
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	require
+		non_void_context: context /= Void
+	deferred
+	end -- isInvalid
+	
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	require
+		non_void_context: context /= Void
+	deferred
+	end -- isNotLoaded
+	
+end -- class TypeDescriptor
+
 deferred class AttachedTypeDescriptor
 -- AttachedType: UnitType|AnchorType|MultiType|TupleType|RangeType|RoutineType|AnonymousUnitType
 inherit
@@ -7197,6 +7359,24 @@ feature {Any}
 			members := m
 		end -- if
 	end -- init
+	
+	getExternalName: String is
+	local
+		i, n: Integer
+	do
+		Result := "unit"
+		from
+			i := 1
+			n := members.count
+		until
+			i > n
+		loop
+			Result.append_character('_')
+			Result.append_string (members.item (i).getExternalName)
+			i := i + 1
+		end -- loop
+	end -- getExternalName
+
 	out: String is 
 	local
 		i, n: Integer
@@ -7219,6 +7399,33 @@ feature {Any}
 		end -- loop
 		Result.append_string ("end")
 	end -- out
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isInvalid
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+	
 	sameAs (other: like Current): Boolean is
 	local
 		i, n: Integer
@@ -7291,6 +7498,43 @@ feature {Any}
 			Result.append_string (aliasName)
 		end -- if
 	end -- out
+	getExternalName: String is
+	do
+		Result := "rtn " + signature.getExternalName
+	end -- getExternalName
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+		notValid := signature.isInvalid (context)
+		if not notValid then
+			Result := True
+		end -- if
+	end -- isInvalid
+	
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+	
+	
 	sameAs (other: like Current): Boolean is
 	do
 		Result := signature.is_equal (other.signature)
@@ -7306,8 +7550,8 @@ invariant
 end -- class RoutineTypeDescriptor
 
 class SignatureDescriptor
---41 “(”[TypeDescriptor {“,” TypeDescriptor}]“)”[“:” TypeDescriptor]
--- (“(”[Type {“,” Type}]“)”[“:” Type])| (“:” Type)
+--41 "("[TypeDescriptor {"," TypeDescriptor}]")"[":" TypeDescriptor]
+-- ("("[Type {"," Type}]")"[":" Type])| (":" Type)
 inherit
 	Comparable
 		redefine
@@ -7356,6 +7600,35 @@ feature {Any}
 			Result.append_string (returnType.out)
 		end -- if
 	end -- out
+
+	getExternalName: String is
+	local	
+		i, n: Integer
+	do
+		n := parameters.count
+		if n > 0 then
+			from
+				Result := "$"
+				i := 1
+			until	
+				i > n
+			loop
+				Result.append_string (parameters.item (i).getExternalName)
+				if i < n then
+					Result.append_character ('_')
+				end -- if
+				i := i + 1
+			end -- loop
+			Result.append_character ('$')
+		else
+			Result := ""
+		end -- if
+		if returnType /= Void then
+			Result.append_string ("$$")
+			Result.append_string (returnType.getExternalName)
+		end -- if
+	end -- getExternalName
+
 	is_equal (other: like Current): Boolean is
 	local	
 		i, n: Integer
@@ -7415,9 +7688,41 @@ feature {Any}
 			end -- if
 		end -- if
 	end -- infix <
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		i, n: Integer
+		notValid: Boolean		
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		from
+			-- All parameters are to be valid
+			n := parameters.count
+			i := 1
+		until	
+			i > n
+		loop
+			notValid := parameters.item (i).isInvalid (context)
+			if not notValid then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+		if returnType /= Void then
+			-- Return type is to be be valid
+			notValid := returnType.isInvalid (context)
+			if not notValid then
+				Result := True
+			end -- if
+		end -- if
+	end -- isInvalid
 invariant
 	non_void_parameters: parameters /= Void
-end
+end -- class SignatureDescriptor
 
 -- ConstantExpression : Expression
 
@@ -7492,6 +7797,47 @@ feature {Any}
 			Result.append_string (aliasName)
 		end -- if
 	end -- out
+	getExternalName: String is
+	do
+		Result := left.out
+		if operator /= Void then
+			Result.append_string ("$")
+			Result.append_string (operator)
+			Result.append_character ('_')
+			Result.append_string (expr.out)
+			Result.append_character ('$')
+		end -- if
+		Result.append_string ("$$")
+		Result.append_string (right.out)
+	end -- getExternalName
+	
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isInvalid
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+	
 feature {TypeDescriptor}
 	weight: Integer is 1
 invariant
@@ -7499,6 +7845,7 @@ invariant
 	non_void_right: right /= Void
 	consistent_reg_expr: operator /= Void implies expr /= Void
 end -- class FixedRangeTypeDescriptor
+
 class EnumeratedRangeTypeDescriptor
 -- 	(ConstantExpression {“|” ConstantExpression})
 inherit
@@ -7514,6 +7861,26 @@ feature {Any}
 	do
 		values := v
 	end -- init
+
+	getExternalName: String is
+	local
+		i, n: Integer
+	do
+		from
+			i := 1
+			n := values.count
+			Result := ""
+		until
+			i > n
+		loop
+			Result.append_string (values.item (i).out)
+			if i < n then
+				Result.append_character ('_')
+			end -- if
+			i := i + 1
+		end -- loop
+	end -- getExternalName
+
 	out: String is
 	local
 		i, n: Integer
@@ -7532,6 +7899,34 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- if
+
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isInvalid
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+
 	sameAs (other: like Current): Boolean is
 	local
 		i, n: Integer
@@ -7594,6 +7989,22 @@ feature {Any}
 	lessThan (other: like Current): Boolean is
 	do
 	end -- lessThan
+	getExternalName: String is
+	do
+		Result := "as_this"
+	end -- getExternalName
+
+	isInvalid, isNotLoaded (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		--notValid: Boolean		
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+	end -- isInvalid, isNotLoaded
 feature {TypeDescriptor}
 	weight: Integer is 10
 end -- class AsThisTypeDescriptor
@@ -7634,6 +8045,36 @@ feature {Any}
 			Result.append_string (anchorSignature.out)
 		end -- if
 	end -- out
+	getExternalName: String is
+	do
+		Result := "as_" + anchorId
+		if anchorSignature /= Void then
+			Result.append_string (anchorSignature.getExternalName)
+		end -- if
+	end -- getExternalName
+
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		notValid: Boolean		
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		if anchorSignature /= Void then
+			notValid := anchorSignature.isInvalid (context)
+			if not notValid then
+				Result := True
+			end -- if
+		end -- if
+	end -- isInvalid
+
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	do
+	end -- isNotLoaded
+
 	sameAs (other: like Current): Boolean is
 	do
 		Result := anchorId.is_equal (other.anchorID)
@@ -7662,7 +8103,7 @@ invariant
 end -- class AnchorTypeDescriptor
 
 class MultiTypeDescriptor
---44 UnitTypeDescriptor {“|” UnitTypeDescriptor} 
+--44 UnitTypeDescriptor {"|" UnitTypeDescriptor} 
 inherit
 	AttachedTypeDescriptor
 	end
@@ -7677,6 +8118,25 @@ feature {Any}
 	do
 		types := t
 	end -- init
+	getExternalName: String is
+	local
+		i, n: Integer
+	do
+		from
+			Result := ""
+			i := 1
+			n := types.count
+		until
+			i > n
+		loop
+			Result.append_string(types.item(i).getExternalName)
+			if i < n then
+				Result.append_character('$')
+			end -- if
+			i := i + 1
+		end -- loop
+	end -- getExternalName
+
 	out: String is
 	local
 		i, n: Integer
@@ -7699,6 +8159,33 @@ feature {Any}
 			Result.append_string (aliasName)
 		end -- if
 	end -- out
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isInvalid
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+	
 	sameAs (other: like Current): Boolean is
 	local
 		i, n: Integer
@@ -7752,7 +8239,7 @@ invariant
 end -- class MultiTypeDescriptor
 
 class DetachableTypeDescriptor
--- ”?” AttachedTypeDescriptor
+-- "?" AttachedTypeDescriptor
 inherit
 	TypeDescriptor
 	end
@@ -7770,6 +8257,11 @@ feature {Any}
 	do
 		result := "?" + type.out
 	end -- out
+	getExternalName: String is
+	do
+		Result := "$" + type.getExternalName
+	end -- getExternalName
+	
 	sameAs (other: like Current): Boolean is
 	do
 		Result := type.is_equal (other.type)
@@ -7778,6 +8270,31 @@ feature {Any}
 	do
 		Result := type < other.type
 	end -- lessThan
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		notValid := type.isInvalid (context)
+		if not notValid then
+			Result := True
+		end -- if
+		-- Check
+		-- type should be attached !!!
+		-- not_implemened_yet
+	end -- isInvalid
+
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	do
+		Result := type.isNotLoaded (context)
+	end -- isNotLoaded
+
 feature {TypeDescriptor}
 	weight: Integer is 5
 invariant
@@ -7785,7 +8302,7 @@ invariant
 end -- class DetachableTypeDescriptor
 
 class TupleTypeDescriptor
--- “(”[TupleFieldDescriptor {“,”|”;” TupleFieldDescriptor}]“)”
+-- "("[TupleFieldDescriptor {","|";" TupleFieldDescriptor}]")"
 inherit
 	AttachedTypeDescriptor
 	end
@@ -7869,19 +8386,77 @@ feature {Any}
 			Result.append_string (aliasName)
 		end -- if
 	end -- out
+	getExternalName: String is
+	local
+		i, n : Integer
+	do
+		from
+			Result := "$"
+			i := 1
+			n := fields.count
+		until
+			i > n
+		loop
+			Result.append_string (fields.item (i).getExternalName)
+			if i < n then
+				Result.append_character('_')
+			end -- if
+			i := i + 1
+		end -- loop
+		Result.append_character ('$')
+	end -- getExternalName
+
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isInvalid
+
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+	
+	
 feature {TypeDescriptor}
 	weight: Integer is 8
 invariant
 	non_void_fields: fields /= Void
 end -- class TupleTypeDescriptor
+
 deferred class TupleFieldDescriptor
--- [Identifier {“,” Identifier}“:”] UnitTypeDescriptor
+-- [Identifier {"," Identifier}":"] UnitTypeDescriptor
 inherit
 	Comparable
 		undefine
 			out, is_equal
 	end
+feature
+	getExternalName: String is
+	deferred
+	ensure
+		non_void_external_name: Result /= Void
+	end -- getExternalName
+
 end -- class TupleFieldDescriptor
+
 class ListOfTypesDescriptor
 inherit
 	TupleFieldDescriptor
@@ -7914,7 +8489,53 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- out
+	getExternalName: String is
+	local
+		i, n : Integer
+	do
+		from
+			Result := ""
+			i := 1
+			n := types.count
+		until
+			i > n
+		loop
+			Result.append_string (types.item (i).getExternalName)
+			if i < n then
+				Result.append_character('_')
+			end -- if
+			i := i + 1
+		end -- loop
+	end -- getExternalName
 
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isInvalid
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+	
+	
 	is_equal (other: like Current): Boolean is
 	local
 		i, n : Integer
@@ -7963,6 +8584,7 @@ feature {Any}
 invariant
 	non_void_types: types /= Void
 end -- class ListOfTypesDescriptor
+
 class NamedTupleFieldDescriptor
 inherit
 	TupleFieldDescriptor
@@ -7992,6 +8614,26 @@ feature {Any}
 		Result.append_string (": ")
 		Result.append_string (type.out)
 	end -- out
+	getExternalName: String is
+	local
+		i, n : Integer
+	do
+		from
+			Result := ""
+			i := 1
+			n := names.count
+		until
+			i > n
+		loop
+			Result.append_string (names.item (i))
+			if i < n then
+				Result.append_character('_')
+			end -- if
+			i := i + 1
+		end -- loop
+		Result.append_string ("$")
+		Result.append_string (type.getExternalName)
+	end -- getExternalName
 
 	is_equal (other: like Current): Boolean is
 	local
@@ -8084,7 +8726,7 @@ feature {Any}
 		end	-- if
 		Result.append_string (Precursor)
 	end -- out
-
+	
 	sameAs (other: like Current): Boolean is
 	do
 		Result := isRef = other.isRef and then isVal = other.isVal and then isConcurrent = other.isConcurrent and then sameNameAndGenerics (other)
@@ -8171,11 +8813,60 @@ feature {Any}
 			Result.append_string (aliasName)
 		end -- if
 	end -- out
+	getExternalName: String is
+	local
+		i,n : Integer
+	do
+		Result := "" + name
+		n := generics.count
+		if n > 0 then
+			from
+				Result.append_character ('$')
+				i := 1
+			until
+				i > n
+			loop
+				Result.append_string (generics.item (i).getExternalName)
+				if i < n then
+					Result.append_character ('_')
+				end -- if
+				i := i + 1
+			end -- loop
+			Result.append_character ('$')
+		end -- if
+	end -- getExternalName
+	
+	isInvalid (context: CompilationUnitCommon): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
+		-- notValid: Boolean
+		pos: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+		typePool := context.typePool
+		-- do nothing so far
+		pos := typePool.seek (Current)
+		check
+			unit_registered : pos > 0
+		end -- check
+	end -- isInvalid
+	isNotLoaded (context: CompilationUnitCommon): Boolean is
+	do
+		-- not_implemened_yet
+		if interface = Void then
+			-- 	name: String
+			-- ask system desciption to load the name
+		end -- if
+	end -- isNotLoaded
+	interface: Any -- TBD !!!
+	
 	sameNameAndGenerics (other: like Current): Boolean is
 	local
 		i, n: Integer
 	do
-
 		Result := name.is_equal (other.name)
 		if Result then
 			n := generics.count
@@ -8241,34 +8932,12 @@ inherit
 	end
 	ExpressionDescriptor
 		undefine
-			is_equal, infix "<"
+			is_equal, infix "<", getExternalName
 	end
 create
 	init
 feature
-	isInvalid (context: CompilationUnitCommon): Boolean is
-	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
-		pos: Integer
-	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
-		-- do nothing so far
-		pos := typePool.seek (Current)
-		if pos > 0 then
-print ("Unit type '")
-print (out)
-print ("' is properly registered!%N")
-		else
-print ("Unit type '")
-print (out)
-print ("' is NOT registered!%N")
-		end -- if
-	end -- isInvalid
+
 feature {TypeDescriptor}
 	weight: Integer is 7
 end -- class UnitTypeNameDescriptor

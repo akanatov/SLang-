@@ -108,37 +108,71 @@ feature {Any}
 		extension_not_void: Result /= Void
 		valid_length: Result.count <= name.count
 	end -- getFileExtension
-	getFileName(name: String): String is
+
+	getFilePath (name: String): String is
 	require	
 		file_name_not_void: name /= Void
 	local 
 		i: Integer
-		found: Boolean
 	do
 		from
 			i := name.count
-			Result := ""
 		until
 			i = 0
 		loop
 			inspect
 				name.item (i)
 			when '\', '/', ':' then
+				Result := name.substring(1, i)
 				i := 0
-			when '.' then
-				Result := name.substring(1, i - 1)
-				i := 0
-				found := True
 			else	
 				i := i - 1
 			end
-		end
-		if not found then
-			Result := name
+		end -- loop
+		if Result = Void then
+			Result := "."
 		end -- if
 	ensure
-		extenstion_not_void: Result /= Void
+		file_path_not_void: Result /= Void
+	end -- getFilePath
+	
+	getFileName(name: String): String is
+	require	
+		file_name_not_void: name /= Void
+	local 
+		pos: Integer
+		start, stop: Integer
+	do
+		from
+			pos := name.count
+		until
+			pos = 0
+		loop
+			inspect
+				name.item (pos)
+			when '\', '/', ':' then
+				start := pos + 1
+				pos := 0
+			when '.' then
+				stop := pos - 1
+				pos := 0
+			else	
+				pos := pos - 1
+			end
+		end -- loop
+		if Result = Void then
+			if start = 0 then
+				Result := name
+			elseif start <= stop then	
+				Result := name.substring (start, stop)
+			else
+				Result := name
+			end -- if
+		end -- if
+	ensure
+		file_name_not_void: Result /= Void
 	end -- getFileName
+	
 	loadObjectFromFile (aFile: File): Storable is
 	require
 		file_not_void: aFile /= Void

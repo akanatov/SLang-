@@ -34,13 +34,14 @@ feature {None}
 		parser: SLang_parser
 		sysDsc: SystemDescriptor
 		builder: SLang_builder
-		scripts: Sorted_Array [String]
+		scriptsToBuild: Sorted_Array [String]
 		files: Array [FSys_Dat]
 		fName: String
 		sName: String
 		ext: String
 		slangFileCount: Integer
-		actualFiles: Integer
+--		actualFiles: Integer
+		saveErrCount: Integer
 		skipBuild: Boolean
 		skipSourceFile: Boolean
 		Cmode: Boolean
@@ -50,7 +51,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.05 (Build <AVK Feb 9th 2022>)")
+		o.putNL ("SLang compiler v0.99.05 (Build <AVK Feb 13th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -95,7 +96,7 @@ feature {None}
 					end -- if
 					create {ScreenAndFileOutput}o.init ("_Slang.out")
 					create systems.make
-					create scripts.make
+					create scriptsToBuild.make
 					i := 1
 				until
 					i > n
@@ -116,13 +117,13 @@ feature {None}
 						skipSourceFile := False
 					else
 						sName := "_" + fs.getFileName(fName)
-	--dumpOutput.putNL ("// " + fName + ":" + fs.file_time (fName).out + " vs. " + 
-	--	IRfolderName + "\" + sName + ".Slang#int" + ":" + fs.file_time (IRfolderName + "\" + sName + ".Slang#int").out )
-						if fs.younger (fName, IRfolderName + "\" + sName + ".Slang#int") then
-							-- No need to parse - interface was created later then last change of the source file
-							o.putLine ("File `" + fName + "` was not changed. Parsing skipped.")
-							actualFiles := actualFiles + 1
-						else
+--	--dumpOutput.putNL ("// " + fName + ":" + fs.file_time (fName).out + " vs. " + 
+--	--	IRfolderName + "\" + sName + ".int" + ":" + fs.file_time (IRfolderName + "\" + sName + ".int").out )
+--						if fs.younger (fName, IRfolderName + "\" + sName + ".int") then
+--							-- No need to parse - interface was created later then last change of the source file
+--							o.putLine ("File `" + fName + "` was not changed. Parsing skipped.")
+--							actualFiles := actualFiles + 1
+--						else
 							create scanner.init (fName)
 							if scanner.isReady then
 								if Cmode then
@@ -135,7 +136,8 @@ feature {None}
 								parser.parseSourceFile
 								scanner.close
 								if parser.ast.statements.count > 0 then
-									scripts.add (fName)
+									-- File has anonimous rotuine - it is a script !
+									scriptsToBuild.add (fName)
 								end -- if
 								if parser.systems /= Void and then parser.systems.count > 0 then
 									systems.append (parser.systems)
@@ -148,10 +150,14 @@ feature {None}
 									parser.errorsCount
 								when 0 then
 									if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
-										parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".Slang#ast", o)
+										saveErrCount := parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".ast", o)
 										parser.ast.cutImplementation
-										parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".Slang#int", o)
-										o.putLine ("File `" + fName + "` parsed with no errors!")
+										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (IRfolderName + "\", sName, ".int", o)
+										if saveErrCount = 0 then
+											o.putLine ("File `" + fName + "` parsed with no errors!")
+										else
+											o.putLine ("File `" + fName + "` parsed with no errors! But some parsign results were stored due to file errors!")
+										end -- if
 									else
 										o.putLine ("Failed to create folder `" + IRfolderName + "` to store internal files. Parsing results of file `" + fName + "` are not saved!")
 										skipBuild := True
@@ -165,17 +171,19 @@ feature {None}
 								end -- inspect
 							else
 								o.putLine ("File `" + fName + "` not found or cannot be opened")
+								skipBuild := True
 							end -- if
-						end -- if
+--						end -- if
 					end -- if
 					i := i + 1
 				end -- loop
-				if actualFiles = 1 then
-					o.putLine ("1 file actual, parsing skipped ...")
-				elseif actualFiles > 1 then
-					o.putLine (actualFiles.out + " files are actual, parsing skipped ...")
-				end -- if
-				n := scripts.count
+				--if actualFiles = 1 then
+				--	o.putLine ("1 file actual, parsing skipped ...")
+				--else
+--				if actualFiles > 1 then
+--					o.putLine ("Parsing skipped for " + actualFiles.out + " actual files.")
+--				end -- if
+				n := scriptsToBuild.count
 				m := systems.count
 				if skipBuild then
 					if n > 0 or else m > 0 then
@@ -188,7 +196,7 @@ feature {None}
 						until
 							i > n
 						loop
-							fName := scripts.item (i)
+							fName := scriptsToBuild.item (i)
 							--o.putNL ("Building a program from file `" + fName + "`")
 							create builder.init (o)
 							builder.build_from_file (fName, fs)
