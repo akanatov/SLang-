@@ -1,4 +1,4 @@
 # SLang
-  This is Slang design files. Documents, source code of core units. Language specification.
-  The programming language initiative by Eugene Zouev and Alexey Kanatov  
+  This is a Slang project. Documents, source code of core units, compiler. Language specification.
+  The programming language initiative driven by Alexey Kanatov initiated with Eugene Zouev great help
 # SLang
