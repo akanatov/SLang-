@@ -1,4 +1,6 @@
 class SLang_builder
+inherit
+	SLangConstants
 create
 	init
 feature {Any}
@@ -12,7 +14,7 @@ feature {Any}
 		non_void_file_system: fs /= Void
 	local 
 		cuDsc : CompilationUnitAnonymousRoutine
-		folderName: String
+		--folderName: String
 		fileName: String
 		codeGenerator: CodeGenerator
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -25,14 +27,13 @@ feature {Any}
 		i, n: Integer
 		j, m: Integer
 	do
-		folderName := "_$_IR"
-		if fs.folderExists (folderName) then
-			-- Build the system
+		if fs.folderExists (IRfolderName) then
+			-- Build the system			
 			create cuDsc.init
-			fileName := folderName + "\_" + fs.getFileName(fName) + ".ast"
+			fileName := IRfolderName + "\_" + fs.getFileName(fName) + PgmSuffix + ASText
 			if cuDsc.FileLoaded (fileName) then
 				o.putNL ("Building a program from file `" + fName + "`")
-				-- 0. Process pools - ensure that all units' ionterafc used are loaded
+				-- 0. Process pools - ensure that all units' interfaces used are loaded
 				from
 					useConst  := cuDsc.useConst
 					n := useConst.count
@@ -77,19 +78,19 @@ feature {Any}
 					create generators.make (1, 0)
 					
 					-- LLVM Windows generation activation
-					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc", true)
+					create {LLVM_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc", true)
 					registerCodeGenerator (codeGenerator, generators, "Generation 'LLVM - x86_64-pc-windows-msvc' failed to start")
 					-- LLVM Linux generation activation
-					create {LLVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu", true)
+					create {LLVM_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu", true)
 					registerCodeGenerator (codeGenerator, generators, "Generation 'LLVM - x86_64-pc-linux-gnu' failed to start")
 					-- MSIL generation activation
-					create {MSIL_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), true)
+					create {MSIL_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), true)
 					registerCodeGenerator (codeGenerator, generators, "Generation 'MSIL' failed to start")
 					-- JVM generation activation
-					create {JVM_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), true)
+					create {JVM_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), true)
 					registerCodeGenerator (codeGenerator, generators, "Generation 'JVM' failed to start")
 					-- ARK generation activation
-					create {ARK_CodeGenerator}codeGenerator.init (folderName + "\_" + fs.getFileName(fName), true)
+					create {ARK_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), true)
 					registerCodeGenerator (codeGenerator, generators, "Generation 'ARK' failed to start")
 					
 					m := generators.count
@@ -129,7 +130,7 @@ feature {Any}
 				o.putNL ("Error: unable to load compiled module from file `" + fileName + "`")
 			end -- if
 		else
-			o.putNL ("Error: SLang folder with artefacts '" + folderName + "' not found")
+			o.putNL ("Error: SLang folder with artefacts '" + IRfolderName + "' not found")
 		end -- if
 	end -- build_from_file
 	build (sysDsc: SystemDescriptor; fs: FileSystem) is
@@ -139,11 +140,11 @@ feature {Any}
 	local 
 		folderName: String -- name of the folder where object files be stored
 	do
-		folderName := "_$_"
+		folderName := "_$"
 		if sysDsc.name.is_equal ("*") then
 			folderName.append_string ("IR")
 		else
-			folderName.append_string (sysDsc.name)
+			folderName.append_string ("$" + sysDsc.name)
 		end -- if
 		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
 			-- Build the system

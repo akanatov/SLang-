@@ -326,7 +326,7 @@ feature {Any}
 
 end -- class CompilationUnitUnit
 
-class CompilationUnitStandaloneRoutine
+class CompilationUnitStandaloneRoutines
 inherit
 	CompilationUnitCommon
 		redefine
@@ -335,7 +335,7 @@ inherit
 create	
 	init
 feature {Any}
-	routine: StandaloneRoutineDescriptor
+	routines: Sorted_Array [StandaloneRoutineDescriptor]
 
 	init is
 	do
@@ -345,11 +345,11 @@ feature {Any}
 
 	RoutineLoaded (fileName: String; o: Output): Boolean is
 	local
-		rImage: RoutineImage 
+		rImage: RoutinesImage 
 	do
 		rImage := loadUnitIR (fileName, o)
 		if rImage /= Void then
-			routine 	:= uImage.routine
+			routines 	:= uImage.routines
 			useConst	:= uImage.useConst	
 			stringPool	:= uImage.stringPool	
 			typePool	:= uImage.typePool	
@@ -357,7 +357,7 @@ feature {Any}
 		end -- if
 	end -- RoutineLoaded
 	
-	loadRoutineIR (fileName: String; o: Output): RoutineImage is
+	loadRoutineIR (fileName: String; o: Output): RoutinesImage is
 	require
 		file_name_not_void: fileName /= Void
 	local
@@ -380,11 +380,11 @@ feature {Any}
 
 	UnitInterfaceLoaded (fileName: String; o: Output): Boolean is
 	local
-		uImage: RoutineImage 
+		uImage: RoutinesImage 
 	do
 		uImage := loadUnitInterfaceIR (fileName, o)
 		if uImage /= Void then
-			routine		:= uImage.routine
+			routines	:= uImage.routines
 			useConst	:= uImage.useConst	
 			stringPool	:= uImage.stringPool	
 			typePool	:= uImage.typePool	
@@ -392,7 +392,7 @@ feature {Any}
 		end -- if
 	end -- UnitInterfaceLoaded
 
-	loadUnitInterfaceIR (fileName: String; o: Output): RoutineImage is
+	loadUnitInterfaceIR (fileName: String; o: Output): RoutinesImage is
 	local
 		aFile: File
 		wasError: Boolean
@@ -411,15 +411,17 @@ feature {Any}
 		retry
 	end -- loadUnitInterfaceIR
 
-end -- class CompilationUnitStandaloneRoutine
+end -- class CompilationUnitStandaloneRoutines
 
 
 class CompilationUnitCompound
--- CompilationUnitCompound: { UseConstDirective }  StatementsList|StandaloneRoutine|UnitDeclaration)
+-- CompilationUnitCompound: { UseConstDirective }  {StatementsList|StandaloneRoutine|UnitDeclaration}
 inherit
 	CompilationUnitAnonymousRoutine
 		redefine
 			init
+	end
+	SLangConstants
 	end
 create	
 	init
@@ -454,38 +456,32 @@ feature {Any}
 		end -- loop
 	end -- cutImplementation
 	
-	saveInternalRepresentation (fName, IRpath, IR_FileName: String; ObjFileExtension: String; o: Output): Integer is
+	saveInternalRepresentation (fName, IR_FileName: String; irFileExtension: String; o: Output): Integer is
 	require	
 		src_file_name_not_void: fName /= Void
-		file_path_not_void: IRpath /= Void
+		--file_path_not_void: IRpath /= Void
 		IR_file_name_not_void: IR_FileName /= Void
-		ir_file_extenstion_not_void: ObjFileExtension /= Void
+		ir_file_extenstion_not_void: irFileExtension /= Void
 	local
 		sImg: ScriptImage
 		uImg: UnitImage
-		rImg: RoutineImage
+		rImg: RoutinesImage
 		i, n: Integer
 	do
 		-- sObjFileName: useConst + statements 
 		if statements.count > 0 then
 			create sImg.init (fName, useConst, statements, stringPool, typePool)
-			if not IRstored (IRpath + IR_FileName + ObjFileExtension, sImg, o) then
+			if not IRstored (IRfolderName  + "\_" + IR_FileName + PgmSuffix + irFileExtension, sImg, o) then
 				Result := Result + 1
 			end -- if
 		end -- if
+
 		-- per routine: useConst + routine
-		from
-			i := 1
-			n := routines.count
-		until
-			i > n
-		loop
-			create rImg.init (fName, useConst, routines.item(i), stringPool, typePool)
-			if not IRstored (IRpath + routines.item(i).getExternalName + ObjFileExtension, rImg, o) then
-				Result := Result + 1
-			end -- if
-			i := i + 1
-		end -- loop
+		create rImg.init (fName, useConst, routines, stringPool, typePool)
+		if not IRstored (IRfolderName  + "\_" + IR_FileName + LibSuffix + irFileExtension, rImg, o) then
+			Result := Result + 1
+		end -- if
+
 		-- per unit: useConst + unit
 		from
 			i := 1
@@ -494,11 +490,26 @@ feature {Any}
 			i > n
 		loop
 			create uImg.init (fName, useConst, units.item(i), stringPool, typePool)
-			if not IRstored (IRpath + units.item(i).getExternalName + ObjFileExtension, uImg, o) then
+			if not IRstored (IRfolderName  + "\" + units.item(i).getExternalName + irFileExtension, uImg, o) then
 				Result := Result + 1
 			end -- if
 			i := i + 1
 		end -- loop
+
+		
+		--from
+		--	i := 1
+		--	n := routines.count
+		--until
+		--	i > n
+		--loop
+		--	create rImg.init (fName, useConst, routines.item(i), stringPool, typePool)
+		--	if not IRstored (IRpath + routines.item(i).getExternalName + irFileExtension, rImg, o) then
+		--		Result := Result + 1
+		--	end -- if
+		--	i := i + 1
+		--end -- loop
+		
 	end -- saveInternalRepresentation
 
 feature {None}
@@ -579,20 +590,21 @@ feature {CompilationUnitCommon}
 	end -- init
 end -- class ScriptImage
 
-class RoutineImage --/ local class to store IR
+class RoutinesImage --/ local class to store IR
 inherit
 	IR_Storage
 	end
 create	
 	init, init_empty
 feature {CompilationUnitCommon}
-	routine: StandaloneRoutineDescriptor
-	init (fn: like srcFileName; uc: like useConst; r: like routine; sp: like stringPool; tp: like typePool) is
+	--routine: StandaloneRoutineDescriptor
+	routines: Sorted_Array [StandaloneRoutineDescriptor]
+	init (fn: like srcFileName; uc: like useConst; r: like routines; sp: like stringPool; tp: like typePool) is
 	do
-		routine	:= r
+		routines	:= r
 		init_storage (fn, uc, sp, tp)
 	end -- init
-end -- class RoutineImage
+end -- class RoutinesImage
 
 
 class UnitImage --/ local class to store IR
@@ -996,9 +1008,10 @@ invariant
 end -- class InnerBlockDescriptor
 
 class StandaloneRoutineDescriptor
---7 [pure|safe] Identifier [FormalGenerics] [Parameters] [“:” Type] [EnclosedUseDirective]        
---       ([RequireBlock] InnerBlockDescriptor|foreign [EnsureBlock] [end] ) | (“=>”Expression )
--- Parameters    : “(”ParameterDescriptor {”;” ParameterDescriptor}“)” 
+--7 [pure|safe] 
+-- Identifier [FormalGenerics] [Parameters] [":" Type] [EnclosedUseDirective]        
+--       ([RequireBlock] InnerBlockDescriptor|foreign [EnsureBlock] [end] ) | ("=>"Expression )
+-- Parameters    : "("ParameterDescriptor {";" ParameterDescriptor}")"
 inherit
 	Comparable
 		redefine	
@@ -1064,6 +1077,7 @@ feature {Any}
 		end -- if
 		Result.append_string (name)
 		Result.append_character(' ')
+		
 		n := parameters.count
 		if n > 0 then
 			Result.append_character('(')

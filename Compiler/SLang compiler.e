@@ -1,4 +1,15 @@
+class SLangConstants
+feature
+	IRfolderName: String is "_$IR"
+	ASText: String is ".ast"
+	INText: String is ".int"
+	PgmSuffix: String is "_pgm"
+	LibSuffix: String is "_lib"
+end -- class SLangConstants
+
 class SLang_compiler
+inherit
+	SLangConstants
 creation
 	init
 feature {None}
@@ -12,7 +23,6 @@ feature {None}
 	once
 		create Result
 	end
-	IRfolderName: String is "_$_IR"
 
 	--delay is 
 	--local
@@ -116,10 +126,10 @@ feature {None}
 					if skipSourceFile then
 						skipSourceFile := False
 					else
-						sName := "_" + fs.getFileName(fName)
+						sName := fs.getFileName(fName)
 --	--dumpOutput.putNL ("// " + fName + ":" + fs.file_time (fName).out + " vs. " + 
---	--	IRfolderName + "\" + sName + ".int" + ":" + fs.file_time (IRfolderName + "\" + sName + ".int").out )
---						if fs.younger (fName, IRfolderName + "\" + sName + ".int") then
+--	--	IRfolderName + "\_" + sName + INText + ":" + fs.file_time (IRfolderName + "\" + sName + INText).out )
+--						if fs.younger (fName, IRfolderName + "\_" + sName + INText) then
 --							-- No need to parse - interface was created later then last change of the source file
 --							o.putLine ("File `" + fName + "` was not changed. Parsing skipped.")
 --							actualFiles := actualFiles + 1
@@ -150,16 +160,24 @@ feature {None}
 									parser.errorsCount
 								when 0 then
 									if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
-										saveErrCount := parser.ast.saveInternalRepresentation (fName, IRfolderName + "\", sName, ".ast", o)
+										saveErrCount := parser.ast.saveInternalRepresentation (fName, sName, ASText, o)
 										parser.ast.cutImplementation
-										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, IRfolderName + "\", sName, ".int", o)
+										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, sName, INText, o)
 										if saveErrCount = 0 then
 											o.putLine ("File `" + fName + "` parsed with no errors!")
 										else
-											o.putLine ("File `" + fName + "` parsed with no errors! But some parsign results were stored due to file errors!")
+											o.putLine (
+												"File `" + fName + 
+												"` parsed with no errors! But some parsing results were not stored due to " + 
+												saveErrCount.out + " I/O errors!"
+											)
+											skipBuild := True
 										end -- if
 									else
-										o.putLine ("Failed to create folder `" + IRfolderName + "` to store internal files. Parsing results of file `" + fName + "` are not saved!")
+										o.putLine (
+											"Failed to create folder `" + IRfolderName + 
+											"` to store internal files. Parsing results of file `" + fName + "` are not saved!"
+										)
 										skipBuild := True
 									end -- if
 								when 1 then

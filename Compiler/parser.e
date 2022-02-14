@@ -60,6 +60,7 @@ feature {Any}
 		identDsc: IdentifierDescriptor
 		exprDsc: ExpressionDescriptor
 		callDsc: MemberCallDescriptor
+		uCallDsc: UnqualifiedCallDescriptor
 		sysDsc: SystemDescriptor
 	do
 		from 
@@ -271,9 +272,9 @@ feature {Any}
 								ast.addStatement (stmtDsc)
 							end -- if				
 						end -- if
-					when scanner.final_token, scanner.alias_token, 
+					when -- scanner.final_token, scanner.alias_token, 
 						scanner.require_token, scanner.one_line_function_token,
-						scanner.use_token, scanner.foreign_token, scanner.implies_token
+						scanner.use_token, scanner.foreign_token -- , scanner.implies_token
 					then
 						-- Standalone routine start
 --trace (">>#6")
@@ -294,19 +295,25 @@ feature {Any}
 							end -- if					
 						elseif scanner.Cmode then
 							syntax_error (<<
-								scanner.final_token, scanner.alias_token, scanner.left_paranthesis_token, scanner.colon_token,
+								-- scanner.final_token, scanner.alias_token,
+								scanner.left_paranthesis_token, scanner.colon_token,
 								scanner.left_curly_bracket_token,
 								scanner.require_token, scanner.one_line_function_token, scanner.less_token, scanner.dot_token, 
 								scanner.assignment_token, scanner.use_token, scanner.foreign_token, scanner.is_token
 							>>)
 							toExit := True
 						else
-							syntax_error (<<
-								scanner.final_token, scanner.alias_token, scanner.left_paranthesis_token, scanner.colon_token, scanner.do_token,
-								scanner.require_token, scanner.one_line_function_token, scanner.left_square_bracket_token, scanner.dot_token, 
-								scanner.assignment_token, scanner.use_token, scanner.foreign_token, scanner.is_token
-							>>)
-							toExit := True
+							-- Let's assume that was a procedure call in the anonymous routine and continue parsing !!!
+							create uCallDsc.init (identDsc, Void, Void)
+							ast.addStatement (uCallDsc)
+
+							--syntax_error (<<
+							--	-- scanner.final_token, scanner.alias_token, 
+							--	scanner.left_paranthesis_token, scanner.colon_token, scanner.do_token,
+							--	scanner.require_token, scanner.one_line_function_token, scanner.left_square_bracket_token, scanner.dot_token, 
+							--	scanner.assignment_token, scanner.use_token, scanner.foreign_token, scanner.is_token
+							-->>)
+							--toExit := True
 						end -- if
 					end -- inspect
 				-- Statement: Assignment | LocalAttributeCreation | +IfCase | ? Identifier | Return | +HyperBlock | Raise |MemberCallOrCreation 		|  +Loop
@@ -549,7 +556,7 @@ feature {None}
 						validity_error( "Duplicated local declaration '" + localDsc.name + "'") 
 					end -- if
 				end -- if
-			when scanner.require_token, scanner.foreign_token, scanner.none_token, scanner.use_token then
+			when scanner.require_token, scanner.foreign_token, scanner.use_token then -- , scanner.none_token
 				-- function
 --trace (">>#4")
 				rtnDsc := parseStandAloneRoutine1 (False, False, name)
@@ -3681,8 +3688,9 @@ feature {None}
 
 	parseStandAloneRoutine (is_pure, is_safe: Boolean): StandaloneRoutineDescriptor is
 	--58
-	-- [pure|safe] Identifier [FormalGenerics] [Parameters] [“:” Type] [EnclosedUseDirective]
-	--             ^
+	-- [pure|safe] - all standalone rotuinmes are pure !!!! There is no global data !!!
+	-- Identifier [FormalGenerics] [Parameters] [“:” Type] [EnclosedUseDirective]
+	-- ^
 	-- [RequireBlock]  ( ( InnerBlock [EnsureBlock] end ) | ( foreign| (“=>”Expression ) [EnsureBlock end] )
 
 	require
@@ -3696,7 +3704,8 @@ feature {None}
 		scanner.nextToken
 		inspect	
 			scanner.token
-		when scanner.final_token, scanner.alias_token, scanner.colon_token, 
+		when --scanner.final_token, scanner.alias_token, 
+			scanner.colon_token, scanner.left_paranthesis_token,
 			scanner.require_token, scanner.one_line_function_token, scanner.use_token, scanner.foreign_token
 		then
 			-- Standalone routine start
@@ -3710,12 +3719,15 @@ feature {None}
 --trace (">>#1")
 				Result := parseStandAloneRoutine1 (is_pure, is_safe, name)
 			elseif scanner.Cmode then
-				syntax_error (<< scanner.final_token, scanner.alias_token, scanner.colon_token,
+				syntax_error (<< --scanner.final_token, scanner.alias_token, 
+					scanner.colon_token, scanner.left_paranthesis_token,
 					scanner.left_curly_bracket_token,
 					scanner.require_token, scanner.one_line_function_token, scanner.less_token, scanner.use_token, scanner.foreign_token
 				>>)
 			else
-				syntax_error (<< scanner.final_token, scanner.alias_token, scanner.colon_token, scanner.do_token,
+				syntax_error (<< -- scanner.final_token, scanner.alias_token, 
+					scanner.colon_token, scanner.left_paranthesis_token,
+					scanner.do_token,
 					scanner.require_token, scanner.one_line_function_token, scanner.left_square_bracket_token, scanner.use_token, scanner.foreign_token
 				>>)
 			end -- if
