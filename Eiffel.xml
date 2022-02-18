@@ -1,5 +1,5 @@
 <NotepadPlus>
-    <UserLang name="Eiffel" ext="e" udlVersion="2.1">
+    <UserLang name="Eiffel" ext=".e" udlVersion="2.1">
         <Settings>
             <Global caseIgnored="no" allowFoldOfComments="no" foldCompact="no" forcePureLC="0" decimalSeparator="0" />
             <Prefix Keywords1="no" Keywords2="no" Keywords3="no" Keywords4="no" Keywords5="no" Keywords6="no" Keywords7="no" Keywords8="no" />
@@ -25,6 +25,7 @@
             <Keywords name="Folders in comment, middle"></Keywords>
             <Keywords name="Folders in comment, close"></Keywords>
             <Keywords name="Keywords1">as class assign expanded end loop from if then  require else ensure invariant deferred create creation feature inherit is do external redefine undefine export select rename elseif local until&#x000D;&#x000A;invariant select retry rescue once inspect when</Keywords>
+            <Keywords name="Keywords1">as class assign debug expanded end loop from if then require else ensure invariant deferred create creation feature inherit is do external redefine undefine export select rename elseif local until&#x000D;&#x000A;invariant select retry rescue once inspect when</Keywords>
             <Keywords name="Keywords2"></Keywords>
             <Keywords name="Keywords3"></Keywords>
             <Keywords name="Keywords4"></Keywords>
