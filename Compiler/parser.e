@@ -47,8 +47,14 @@ feature {Any}
 
 	errorsCount: Integer
 	warningsCount: Integer
-	ast: CompilationUnitCompound
+	
 	systems: Sorted_Array [SystemDescriptor]
+
+	--ast: CompilationUnitCommon -- CompilationUnitCompound
+	
+	unitAST: CompilationUnitUnit
+	scriptAST: CompilationUnitAnonymousRoutine
+	routinesAST: CompilationUnitStandaloneRoutines
 
 	parseSourceFile is
 	-- parse Slang source file which can optionally start with the system description

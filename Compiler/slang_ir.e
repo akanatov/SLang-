@@ -135,9 +135,9 @@ end -- class SystemDescriptor
 
 --1 Compilation : {CompilationUnitCompound}
      
-class CompilationUnitCommon
-create {None}
-	init
+deferred class CompilationUnitCommon
+--create {None}
+--	init_pools
 feature {Any}
 	-- use const UnitTypeName {"," UnitTypeName}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -150,13 +150,20 @@ feature {Any}
 	do
 		useConst := uc
 	end -- setUseConst
+	IR_Loaded (fileName: String; o: Output): Boolean is
+	require
+		file_name_not_void:  fileName /= Void
+		output_not_void: o /= Void
+	deferred
+	end -- IR_Loaded
+
 feature {None}
-	init is
+	init_pools is
 	do
 		create useConst.make 
 		create stringPool.make
 		create typePool.make
-	end -- init
+	end -- init_pools
 invariant
 	non_void_const_usage: useConst /= Void
 	non_void_stringPool: stringPool /= Void
@@ -166,8 +173,10 @@ end -- class CompilationUnitCommon
 class CompilationUnitAnonymousRoutine
 inherit
 	CompilationUnitCommon
-		redefine
-			init
+		--redefine
+		--	init
+		rename
+			IR_Loaded as FileLoaded
 	end
 create	
 	init
@@ -177,7 +186,7 @@ feature {None}
 	locals: Sorted_Array [LocalAttrDescriptor]
 	init is
 	do
-		Precursor
+		init_pools
 		create statements.make (1, 0)
 		create locals.make
 	end -- init
@@ -199,11 +208,11 @@ feature {Any}
 		end -- if
 	end -- addStatement
 
-	FileLoaded (fileName: String): Boolean is
+	FileLoaded (fileName: String; o: Output): Boolean is
 	local
 		fImage: ScriptImage 
 	do
-		fImage := loadFileIR (fileName)
+		fImage := loadFileIR (fileName, o)
 		if fImage /= Void then
 			useConst	:= fImage.useConst	
 			statements	:= fImage.statements	
@@ -213,7 +222,7 @@ feature {Any}
 		end -- if
 	end -- FileLoaded
 
-	loadFileIR (fileName: String): ScriptImage is
+	loadFileIR (fileName: String; o: Output): ScriptImage is
 	require
 		non_void_file_name: fileName /= Void
 	local
@@ -221,6 +230,7 @@ feature {Any}
 		wasError: Boolean
 	do
 		if wasError then
+			o.putNL ("Failure: unable to load program code from file `" + fileName + "`")
 			Result := Void
 		else
 			create Result.init_empty
@@ -242,8 +252,10 @@ end -- class CompilationUnitAnonymousRoutine
 class CompilationUnitUnit
 inherit
 	CompilationUnitCommon
-		redefine
-			init
+		--redefine
+		--	init
+		rename
+			IR_Loaded as UnitLoaded
 	end
 create	
 	init
@@ -252,7 +264,7 @@ feature {Any}
 
 	init is
 	do
-		Precursor
+		init_pools
 		unit := Void -- ????
 	end -- init
 
@@ -329,8 +341,10 @@ end -- class CompilationUnitUnit
 class CompilationUnitStandaloneRoutines
 inherit
 	CompilationUnitCommon
-		redefine
-			init
+		--redefine
+		--	init
+		rename
+			IR_Loaded as RoutinesLoaded
 	end
 create	
 	init
@@ -339,11 +353,11 @@ feature {Any}
 
 	init is
 	do
-		Precursor
-		routine := Void -- ????
+		init_pools
+		routines := Void
 	end -- init
 
-	RoutineLoaded (fileName: String; o: Output): Boolean is
+	RoutinesLoaded (fileName: String; o: Output): Boolean is
 	local
 		rImage: RoutinesImage 
 	do
@@ -355,7 +369,7 @@ feature {Any}
 			typePool	:= uImage.typePool	
 			Result := True
 		end -- if
-	end -- RoutineLoaded
+	end -- RoutinesLoaded
 	
 	loadRoutineIR (fileName: String; o: Output): RoutinesImage is
 	require

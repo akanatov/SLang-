@@ -31,7 +31,7 @@ feature {Any}
 			-- Build the system			
 			create cuDsc.init
 			fileName := IRfolderName + "\_" + fs.getFileName(fName) + PgmSuffix + ASText
-			if cuDsc.FileLoaded (fileName) then
+			if cuDsc.FileLoaded (fileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
 				-- 0. Process pools - ensure that all units' interfaces used are loaded
 				from

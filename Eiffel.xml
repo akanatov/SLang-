@@ -24,8 +24,7 @@
             <Keywords name="Folders in comment, open"></Keywords>
             <Keywords name="Folders in comment, middle"></Keywords>
             <Keywords name="Folders in comment, close"></Keywords>
-            <Keywords name="Keywords1">as class assign expanded end loop from if then  require else ensure invariant deferred create creation feature inherit is do external redefine undefine export select rename elseif local until&#x000D;&#x000A;invariant select retry rescue once inspect when</Keywords>
-            <Keywords name="Keywords1">as class assign debug expanded end loop from if then require else ensure invariant deferred create creation feature inherit is do external redefine undefine export select rename elseif local until&#x000D;&#x000A;invariant select retry rescue once inspect when</Keywords>
+            <Keywords name="Keywords1">as class check assign debug expanded end loop from if then require else ensure invariant deferred create creation feature inherit is do external redefine undefine export select rename elseif local until&#x000D;&#x000A;invariant select retry rescue once inspect when</Keywords>
             <Keywords name="Keywords2"></Keywords>
             <Keywords name="Keywords3"></Keywords>
             <Keywords name="Keywords4"></Keywords>

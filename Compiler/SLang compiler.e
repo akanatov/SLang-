@@ -146,7 +146,7 @@ feature {None}
 								parser.parseSourceFile
 								scanner.close
 								if parser.ast.statements.count > 0 then
-									-- File has anonimous rotuine - it is a script !
+									-- File has anonymous routine - it is a script !
 									scriptsToBuild.add (fName)
 								end -- if
 								if parser.systems /= Void and then parser.systems.count > 0 then
