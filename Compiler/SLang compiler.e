@@ -5,6 +5,8 @@ feature
 	INText: String is ".int"
 	PgmSuffix: String is "_pgm"
 	LibSuffix: String is "_lib"
+	SLangExt: String is "slang"
+	CLangExt: String is "clang"
 end -- class SLangConstants
 
 class SLang_compiler
@@ -80,7 +82,7 @@ feature {None}
 					loop
 						fName := files.item (j).name
 						ext := fs.getFileExtension (fName)
-						if ext.is_equal ("slang") or else ext.is_equal ("clang") then
+						if ext.is_equal (SLangExt) or else ext.is_equal (CLangExt) then
 							if slangFileCount = 0 then
 								args.put (fName, 1)
 							else	
@@ -89,7 +91,7 @@ feature {None}
 							slangFileCount := slangFileCount + 1
 						end -- if
 						j := j + 1
-					end					
+					end	-- loop
 					n := slangFileCount
 					files := Void
 				end -- if
@@ -113,9 +115,9 @@ feature {None}
 				loop
 					fName := args.item (i)
 					ext := fs.getFileExtension (fName)
-					if ext.is_equal ("clang") then
+					if ext.is_equal (CLangExt) then
 						Cmode := True
-					elseif ext.is_equal ("slang") then
+					elseif ext.is_equal (SLangExt) then
 						Cmode := False
 					else
 						-- Do not parse such file!!!
@@ -145,7 +147,7 @@ feature {None}
 								o.putLine ("Parsing file `" + fName + "`")
 								parser.parseSourceFile
 								scanner.close
-								parser.ast.attach_usage_pool_to_units
+								parser.ast.attach_usage_pool_to_units_and_standalone_routines 
 								if parser.ast.statements.count > 0 then
 									-- File has anonymous routine - it is a script !
 									scriptsToBuild.add (fName)
@@ -189,7 +191,7 @@ feature {None}
 									skipBuild := True
 								end -- inspect
 							else
-								o.putLine ("File `" + fName + "` not found or cannot be opened")
+								o.putLine ("File `" + fName + "` not found or cannot be opened for parsing")
 								skipBuild := True
 							end -- if
 --						end -- if
@@ -258,6 +260,7 @@ feature {None}
 		parser_not_void: parser /= Void
 	local
 		str: String
+		i, n: Integer
 		j, m: Integer
 	do
 		if parser.ast.units.count > 0 or else 
@@ -326,57 +329,13 @@ feature {None}
 					end -- loop
 				end -- if
 			end -- if
-			if parser.ast.routines /= Void then
-				m := parser.ast.routines.count
-				if m > 0 then
-					from
-						if m = 1 then
-							dumpOutput.putNL ("// Standalone routine")
-						else
-							dumpOutput.putNL ("// " + m.out + " standalone routines")
-						end -- if
-						j := 1
-					until
-						j > m
-					loop
-						str := parser.ast.routines.item (j).out
-						dumpOutput.put (str)
-						if str.item(str.count) /= '%N' then
-							dumpOutput.newLine
-						end -- if
-						j := j + 1
-					end -- loop
-				end -- if
-			end -- if
-			if parser.ast.units /= Void then
-				m := parser.ast.units.count
-				if m > 0 then
-					from
-						if m = 1 then
-							dumpOutput.putNL ("// Unit")
-						else
-							dumpOutput.putNL ("// " + m.out + " units")
-						end -- if
-						j := 1
-					until
-						j > m
-					loop
-						str := parser.ast.units.item (j).out
-						dumpOutput.put (str)
-						if str.item(str.count) /= '%N' then
-							dumpOutput.newLine
-						end -- if
-						j := j + 1
-					end -- loop
-				end -- if
-			end -- if
 			m := parser.ast.typePool.count
 			if m > 0 then
 				from
 					if m = 1 then
-						dumpOutput.put ("/* Depends on 1 type: ")
+						dumpOutput.put ("/* Anonymous routine depends on 1 type: ")
 					else
-						dumpOutput.put ("/* Depends on " + m.out + " types: ")
+						dumpOutput.put ("/* Anonymous routine depends on " + m.out + " types: ")
 					end -- if
 					j := 1
 				until
@@ -395,6 +354,98 @@ feature {None}
 				dumpOutput.put ("*/")
 				dumpOutput.newLine
 			end -- if			
+			m := parser.ast.routines.count
+			if m > 0 then
+				from
+					if m = 1 then
+						dumpOutput.putNL ("// Standalone routine")
+					else
+						dumpOutput.putNL ("// " + m.out + " standalone routines")
+					end -- if
+					j := 1
+				until
+					j > m
+				loop
+					str := parser.ast.routines.item (j).out
+					dumpOutput.put (str)
+					if str.item(str.count) /= '%N' then
+						dumpOutput.newLine
+					end -- if
+					j := j + 1
+				end -- loop
+			end -- if
+			m := parser.ast.rtn_typePool.count
+			if m > 0 then
+				from
+					if m = 1 then
+						dumpOutput.put ("/* Standalone routine(s) depends on 1 type: ")
+					else
+						dumpOutput.put ("/* Standalone routine(s) depends on " + m.out + " types: ")
+					end -- if
+					j := 1
+				until
+					j > m
+				loop
+					dumpOutput.putArray (<<"(", parser.ast.rtn_typePool.item (j).weight, ")">>)
+					dumpOutput.put (parser.ast.rtn_typePool.item (j).out)
+					if j < m then
+						dumpOutput.put(", ")
+					end -- if
+					if j \\ 7 = 0 then
+						dumpOutput.newLine						
+					end -- if
+					j := j + 1
+				end -- loop
+				dumpOutput.put ("*/")
+				dumpOutput.newLine
+			end -- if			
+
+			m := parser.ast.units.count
+			if m > 0 then
+				from
+					if m = 1 then
+						dumpOutput.putNL ("// Unit")
+					else
+						dumpOutput.putNL ("// " + m.out + " units")
+					end -- if
+					j := 1
+				until
+					j > m
+				loop
+					str := parser.ast.units.item (j).out
+					dumpOutput.put (str)
+					if str.item(str.count) /= '%N' then
+						dumpOutput.newLine
+					end -- if
+
+					n := parser.ast.units.item(j).typePool.count
+					if n > 0 then
+						from
+							if n = 1 then
+								dumpOutput.put ("/* Unit '" + parser.ast.units.item(j).fullUnitName + "' depends on 1 type: ")
+							else
+								dumpOutput.put ("/* Unit '" + parser.ast.units.item(j).fullUnitName + "' depends on " + n.out + " types: ")
+							end -- if
+							i := 1
+						until
+							i > n
+						loop
+							dumpOutput.putArray (<<"(", parser.ast.units.item(j).typePool.item (i).weight, ")">>)
+							dumpOutput.put (parser.ast.units.item(j).typePool.item (i).out)
+							if i < n then
+								dumpOutput.put(", ")
+							end -- if
+							if i \\ 7 = 0 then
+								dumpOutput.newLine						
+							end -- if
+							i := i + 1
+						end -- loop
+						dumpOutput.put ("*/")
+						dumpOutput.newLine
+					end -- if
+					j := j + 1
+				end -- loop
+			end -- if
 			dumpOutput.putNL ("//-------------- IR dump per file end ---------------------")
 		end -- if
 	end -- dumpAST

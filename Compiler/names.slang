@@ -22,4 +22,6 @@ rtn10 (parameter: Type1) : Type2 do end
 rtn11 (parameter: Type1) : Type2 do end
 rtn12 (parameter: Type1) : Type2 do end
 use const UnitA, UnitB, UnitC
-
+unit U
+	foo: Type do end
+end

@@ -535,25 +535,31 @@ feature {Any}
 
 	units: Sorted_Array [UnitDeclarationDescriptor]
 	
-	attach_usage_pool_to_units is
+	attach_usage_pool_to_units_and_standalone_routines is
 	local
 		i, n, m: Integer
 	do
-		n := units.count
-		if n > 0 then
-			m := useConst.count
-			if m > 0 then
-				from
-					i := 1
-				until
-					i > n
-				loop
-					units.item (i).attach_use_pool (useConst)
-					i := i + 1
-				end -- loop
-			end -- if
+		m := useConst.count
+		if m > 0 then
+			n := units.count
+			from
+				i := 1
+			until
+				i > n
+			loop
+				units.item (i).attach_use_pool (useConst)
+				i := i + 1
+			end -- loop
+			from
+				i := 1
+			until
+				i > m
+			loop
+				rtn_typePool.add (useConst.item (i))
+				i := i + 1
+			end -- loop			
 		end -- if
-	end -- if
+	end -- attach_usage_pool_to_units_and_standalone_routines
 
 	cutImplementation is
 	local
@@ -581,30 +587,35 @@ feature {Any}
 		end -- loop
 	end -- cutImplementation
 	
-	saveInternalRepresentation (fName, IR_FileName: String; irFileExtension: String; o: Output): Integer is
+	saveInternalRepresentation (FullSourceFileName, SourceFileName: String; irFileExtension: String; o: Output): Integer is
 	require	
-		src_file_name_not_void: fName /= Void
-		IR_file_name_not_void: IR_FileName /= Void
+		src_file_name_not_void: FullSourceFileName /= Void
+		IR_file_name_not_void: SourceFileName /= Void
 		ir_file_extenstion_not_void: irFileExtension /= Void
 	local
 		sImg: AnonymousRoutineImage
 		uImg: UnitImage
 		rImg: RoutinesImage
 		i, n: Integer
+		fName: String
 	do
 		if statements.count > 0 then
 			-- Anonymous Routine IR: useConst + statements 
-			create sImg.init (fName, useConst, statements, stringPool, typePool)
-			if not IRstored (IRfolderName  + "\_" + IR_FileName + PgmSuffix + irFileExtension, sImg, o) then
+			create sImg.init (FullSourceFileName, useConst, statements, stringPool, typePool)
+			fName := IRfolderName  + "\_" + SourceFileName + PgmSuffix + irFileExtension
+			if not IRstored (fName, sImg) then
+				o.putNL ("File open/create read/write error: unable to store anonymous routine IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
 		end -- if
 
 		if routines.count > 0 then
 			-- Standalone routines: useConst + routines
---			create rImg.init (fName, useConst, routines, stringPool, typePool)
-			create rImg.init (fName, useConst, routines, rtn_stringPool, rtn_typePool)
-			if not IRstored (IRfolderName  + "\_" + IR_FileName + LibSuffix + irFileExtension, rImg, o) then
+--			create rImg.init (FullSourceFileName, useConst, routines, stringPool, typePool)
+			create rImg.init (FullSourceFileName, useConst, routines, rtn_stringPool, rtn_typePool)
+			fName := IRfolderName  + "\_" + SourceFileName + LibSuffix + irFileExtension
+			if not IRstored (fName, rImg) then
+				o.putNL ("File open/create read/write error: unable to store standalone routines IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
 		end -- if
@@ -616,54 +627,37 @@ feature {Any}
 			i > n
 		loop
 			-- per unit: useConst + unit
---			create uImg.init (fName, useConst, units.item(i), stringPool, typePool)
-			create uImg.init (fName, useConst, units.item(i), units.item(i).stringPool, units.item(i).typePool)
-			if not IRstored (IRfolderName  + "\" + units.item(i).getExternalName + irFileExtension, uImg, o) then
+--			create uImg.init (FullSourceFileName, useConst, units.item(i), stringPool, typePool)
+			create uImg.init (FullSourceFileName, useConst, units.item(i), units.item(i).stringPool, units.item(i).typePool)
+			fName := IRfolderName  + "\" + units.item(i).getExternalName + irFileExtension
+			if not IRstored (fName, uImg) then
+				o.putNL ("File open/create read/write error: unable to store unit IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
 			i := i + 1
 		end -- loop
 
-		
-		--from
-		--	i := 1
-		--	n := routines.count
-		--until
-		--	i > n
-		--loop
-		--	create rImg.init (fName, useConst, routines.item(i), stringPool, typePool)
-		--	if not IRstored (IRpath + routines.item(i).getExternalName + irFileExtension, rImg, o) then
-		--		Result := Result + 1
-		--	end -- if
-		--	i := i + 1
-		--end -- loop
-		
 	end -- saveInternalRepresentation
 
 feature {None}
 
-	IRstored (fileName: String; image: Storable; o: Output): Boolean is
+	IRstored (fileName: String; image: Storable): Boolean is
 	require
 		non_void_file_name: fileName /= Void
 		non_void_image: image /= Void
-		non_void_console: o /= Void
 	local
 		aFile: File
 		wasError: Boolean
 	do	
-		if wasError then
-			o.putNL ("File error: unable to store compilation results into file `" + fileName + "`")
-		else
+		if not wasError then
 			create aFile.make_create_read_write (fileName) 
 			image.independent_store (aFile)
 			aFile.close
 			Result := True
 		end -- if
 	rescue
-		if not wasError then
-			wasError := True
-			retry
-		end -- if
+		wasError := True
+		retry
 	end -- IRstored
 
 	init (scn: like scanner) is
@@ -681,15 +675,16 @@ inherit
 	Storable
 	end
 create {None} 
+	init_empty
 feature
 	srcFileName: String
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
 	stringPool: Sorted_Array [String]
 	typePool: Sorted_Array[TypeDescriptor]
+feature {IR_Storage}
 	init_empty is
 	do
-	end
-feature {IR_Storage}
+	end -- init_empty
 	init_storage (fn: like srcFileName; uc: like useConst; sp: like stringPool; tp: like typePool) is
 	do
 		srcFileName := fn
@@ -699,32 +694,30 @@ feature {IR_Storage}
 	end -- init_storage
 end -- class IR_Storage
 
-class AnonymousRoutineImage --/ local class to store IR
+class AnonymousRoutineImage
+-- local class to store anonymous routine IR
 inherit
 	IR_Storage
 	end
 create	
 	init, init_empty
 feature {CompilationUnitCommon}
---	routines: Sorted_Array [StandaloneRoutineDescriptor]
 	statements: Array [StatementDescriptor]
---	init (fn: like srcFileName; uc: like useConst; rtns: like routines; stmts: like statements; sp: like stringPool; tp: like typePool) is
 	init (fn: like srcFileName; uc: like useConst; stmts: like statements; sp: like stringPool; tp: like typePool) is
 	do
---		routines	:= rtns
 		statements	:= stmts
 		init_storage (fn, uc, sp, tp)
 	end -- init
 end -- class AnonymousRoutineImage
 
-class RoutinesImage --/ local class to store IR
+class RoutinesImage
+-- local class to store standalone routines IR
 inherit
 	IR_Storage
 	end
 create	
 	init, init_empty
 feature {CompilationUnitCommon}
-	--routine: StandaloneRoutineDescriptor
 	routines: Sorted_Array [StandaloneRoutineDescriptor]
 	init (fn: like srcFileName; uc: like useConst; r: like routines; sp: like stringPool; tp: like typePool) is
 	do
@@ -733,8 +726,8 @@ feature {CompilationUnitCommon}
 	end -- init
 end -- class RoutinesImage
 
-
-class UnitImage --/ local class to store IR
+class UnitImage
+-- local class to store unit IR
 inherit
 	IR_Storage
 	end
@@ -2092,11 +2085,24 @@ feature {Any}
 		typePool := ast.typePool
 	end -- attach_pools
 	attach_use_pool (uc: like useConst) is
+	require
+		use_const_units_not_void: uc /= Void
+	local
+		i, n: Integer
 	do
 		useConst := uc
+		from
+			n := useConst.count
+			i := 1
+		until
+			i > n
+		loop
+			typePool.add (useConst.item (i))
+			i := i + 1
+		end -- loop
 	end -- attach_use_pool
 	
-feature {CompilationUnitCompound}
+feature {CompilationUnitCompound, SLang_Compiler}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
 	stringPool: Sorted_Array [String]
 	typePool: Sorted_Array[TypeDescriptor]

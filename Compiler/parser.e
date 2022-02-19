@@ -5414,7 +5414,7 @@ feature {None}
 				Result ?= ast.typePool.add_it (Result)
 				check
 					type_registred: Result /= Void
-				end
+				end -- check
 			else
 				Result := parseUnitTypeName1 (name, checkSemicolonAfter)
 			end -- if
@@ -5475,6 +5475,10 @@ feature {None}
 					Result := utd
 				else
 					create {UnitTypeDescriptor} Result.init (isRef, isVal, isConcurrent, utd.name, utd.generics)
+					Result ?= ast.typePool.add_it (Result)
+					check
+						type_registred: Result /= Void
+					end -- check
 				end -- if
 			end -- if
 		else
