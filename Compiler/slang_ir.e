@@ -316,16 +316,16 @@ feature {None}
 		wasError: Boolean
 	do
 		if wasError then
-			o.putNL ("Failure: unable to load program code from file `" + fileName + "`")
+			o.putNL ("Consistency error: unable to load anonymous routine code from file `" + fileName + "`")
 			Result := Void
 		else
 			create Result.init_empty
 			create aFile.make_open_read (fileName)
 			Result ?= Result.retrieved (aFile)
-			check
-				valid_object_retrieved: Result /= Void
-			end
 			aFile.close
+			if Result = Void then
+				o.putNL ("Consistency error: file `" + fileName + "` does not contain anonymous routine code")
+			end -- if
 		end -- if
 	rescue
 		wasError := True
@@ -374,13 +374,16 @@ feature {None}
 		wasError: Boolean
 	do
 		if wasError then
-			o.putNL ("Failure: unable to load unit code from file `" + fileName + "`")
+			o.putNL ("Consistency error: unable to load unit code from file `" + fileName + "`")
 			Result := Void
 		else
 			create aFile.make_open_read (fileName)
 			create Result.init_empty
 			Result ?= Result.retrieved (aFile)
 			aFile.close
+			if Result = Void then
+				o.putNL ("Consistency error: file `" + fileName + "` does not contain unit code")
+			end -- if
 		end -- if
 	rescue
 		wasError := True
@@ -463,13 +466,16 @@ feature {None}
 		wasError: Boolean
 	do
 		if wasError then
-			o.putNL ("Failure: unable to load routine code from file `" + fileName + "`")
+			o.putNL ("Consistency error: unable to load standalone routines code from file `" + fileName + "`")
 			Result := Void
 		else
 			create aFile.make_open_read (fileName)
 			create Result.init_empty
 			Result ?= Result.retrieved (aFile)
 			aFile.close
+			if Result = Void then
+				o.putNL ("Consistency error: file `" + fileName + "` does not contain standalone routines code")
+			end -- if
 		end -- if
 	rescue
 		wasError := True
@@ -604,18 +610,17 @@ feature {Any}
 			create sImg.init (FullSourceFileName, useConst, statements, stringPool, typePool)
 			fName := IRfolderName  + "\_" + SourceFileName + PgmSuffix + irFileExtension
 			if not IRstored (fName, sImg) then
-				o.putNL ("File open/create read/write error: unable to store anonymous routine IR into file `" + fName + "`")
+				o.putNL ("File open/create/write/close error: unable to store anonymous routine IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
 		end -- if
 
 		if routines.count > 0 then
 			-- Standalone routines: useConst + routines
---			create rImg.init (FullSourceFileName, useConst, routines, stringPool, typePool)
 			create rImg.init (FullSourceFileName, useConst, routines, rtn_stringPool, rtn_typePool)
 			fName := IRfolderName  + "\_" + SourceFileName + LibSuffix + irFileExtension
 			if not IRstored (fName, rImg) then
-				o.putNL ("File open/create read/write error: unable to store standalone routines IR into file `" + fName + "`")
+				o.putNL ("File open/create/write/close error: unable to store standalone routines IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
 		end -- if
@@ -627,11 +632,10 @@ feature {Any}
 			i > n
 		loop
 			-- per unit: useConst + unit
---			create uImg.init (FullSourceFileName, useConst, units.item(i), stringPool, typePool)
 			create uImg.init (FullSourceFileName, useConst, units.item(i), units.item(i).stringPool, units.item(i).typePool)
 			fName := IRfolderName  + "\" + units.item(i).getExternalName + irFileExtension
 			if not IRstored (fName, uImg) then
-				o.putNL ("File open/create read/write error: unable to store unit IR into file `" + fName + "`")
+				o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
 			i := i + 1
