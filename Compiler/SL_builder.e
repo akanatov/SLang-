@@ -29,9 +29,9 @@ feature {Any}
 	do
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
-			create cuDsc.init
+			create cuDsc.init (Void)
 			fileName := IRfolderName + "\_" + fs.getFileName(fName) + PgmSuffix + ASText
-			if cuDsc.FileLoaded (fileName, o) then
+			if cuDsc.AnonymousRoutineIR_Loaded (fileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
 				-- 0. Process pools - ensure that all units' interfaces used are loaded
 				from
@@ -125,9 +125,10 @@ feature {Any}
 						-- No generators
 					end -- if
 				end -- if
-			else
-				-- AST not loaded !!!
-				o.putNL ("Error: unable to load compiled module from file `" + fileName + "`")
+			-- Allready printed!
+			--else
+			--	-- AST not loaded !!!
+			--	o.putNL ("Error: unable to load compiled module from file `" + fileName + "`")
 			end -- if
 		else
 			o.putNL ("Error: SLang folder with artefacts '" + IRfolderName + "' not found")

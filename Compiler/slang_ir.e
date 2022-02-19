@@ -135,9 +135,10 @@ end -- class SystemDescriptor
 
 --1 Compilation : {CompilationUnitCompound}
      
-deferred class CompilationUnitCommon
---create {None}
---	init_pools
+--deferred
+class CompilationUnitCommon
+create {None}
+	init_pools
 feature {Any}
 	-- use const UnitTypeName {"," UnitTypeName}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -150,20 +151,91 @@ feature {Any}
 	do
 		useConst := uc
 	end -- setUseConst
-	IR_Loaded (fileName: String; o: Output): Boolean is
-	require
-		file_name_not_void:  fileName /= Void
-		output_not_void: o /= Void
-	deferred
-	end -- IR_Loaded
+	--IR_Loaded (fileName: String; o: Output): Boolean is
+	--require
+	--	file_name_not_void:  fileName /= Void
+	--	output_not_void: o /= Void
+	--deferred
+	--end -- IR_Loaded
 
+	start_unit_parsing is
+	do
+		backup_stringPool := stringPool
+		backup_typePool := typePool
+		create unit_stringPool.make 
+		create unit_typePool.make
+		stringPool := unit_stringPool
+		typePool := unit_typePool
+		check
+			parsing_mode: scanner /= Void
+		end -- check
+		scanner.setPool (stringPool)
+	end -- start_unit_parsing
+	stop_unit_parsing is
+	do
+		stringPool:= backup_stringPool
+		typePool:= backup_typePool
+		check
+			parsing_mode: scanner /= Void
+		end -- check
+		scanner.setPool (stringPool)
+	end -- stop_unit_parsing
+
+	start_standalone_rotuine_parsing is
+	do
+		backup_stringPool:= stringPool
+		backup_typePool:= typePool
+		stringPool:= rtn_stringPool
+		typePool:= rtn_typePool
+		check
+			parsing_mode: scanner /= Void
+		end -- check
+		scanner.setPool (stringPool)
+	end -- start_standalone_rotuine_parsing
+	stop_standalone_rotuine_parsing is
+	do
+		stringPool:= backup_stringPool
+		typePool:= backup_typePool
+		check
+			parsing_mode: scanner /= Void
+		end -- check
+		scanner.setPool (stringPool)
+	end -- stop_standalone_rotuine_parsing
+
+	add_name_to_standalone_rotuines_pool (name: String) is
+	require
+		non_void_name: name /= Void
+	do
+		rtn_stringPool.add (name)
+	end -- add_name_to_standalone_rotuines_pool
 feature {None}
-	init_pools is
+	scanner: SLang_Scanner
+	init_pools (scn: like scanner) is
 	do
 		create useConst.make 
 		create stringPool.make
 		create typePool.make
+		
+		create rtn_stringPool.make
+		create rtn_typePool.make
+		scanner := scn
 	end -- init_pools
+
+	-- Save script pools
+	backup_stringPool: Sorted_Array [String]
+	backup_typePool: Sorted_Array[TypeDescriptor]
+	
+feature {Any}	
+
+	-- Parsing unit
+	unit_stringPool: Sorted_Array [String]
+	unit_typePool: Sorted_Array[TypeDescriptor]
+
+	-- Parsing standalone routine
+	rtn_stringPool: Sorted_Array [String]
+	rtn_typePool: Sorted_Array[TypeDescriptor]
+
+	
 invariant
 	non_void_const_usage: useConst /= Void
 	non_void_stringPool: stringPool /= Void
@@ -173,10 +245,6 @@ end -- class CompilationUnitCommon
 class CompilationUnitAnonymousRoutine
 inherit
 	CompilationUnitCommon
-		--redefine
-		--	init
-		rename
-			IR_Loaded as FileLoaded
 	end
 create	
 	init
@@ -184,9 +252,9 @@ feature {Any}
 	statements: Array [StatementDescriptor]
 feature {None}
 	locals: Sorted_Array [LocalAttrDescriptor]
-	init is
+	init (scn: like scanner) is
 	do
-		init_pools
+		init_pools (scn)
 		create statements.make (1, 0)
 		create locals.make
 	end -- init
@@ -208,9 +276,11 @@ feature {Any}
 		end -- if
 	end -- addStatement
 
-	FileLoaded (fileName: String; o: Output): Boolean is
+	AnonymousRoutineIR_Loaded (fileName: String; o: Output): Boolean is
 	local
-		fImage: ScriptImage 
+		fImage: AnonymousRoutineImage 
+		localDsc: LocalAttrDescriptor
+		i, n: Integer
 	do
 		fImage := loadFileIR (fileName, o)
 		if fImage /= Void then
@@ -218,11 +288,27 @@ feature {Any}
 			statements	:= fImage.statements	
 			stringPool	:= fImage.stringPool	
 			typePool	:= fImage.typePool	
+			create locals.make
+			-- Fill locals from statements			
+			from
+				i := 1
+				n := statements.count
+			until
+				i > n
+			loop
+				localDsc ?= statements.item (i)
+				if localDsc /= Void then
+					locals.add (localDsc)
+				end -- if
+				i := i + 1
+			end -- loop
 			Result := True
 		end -- if
-	end -- FileLoaded
+	end -- AnonymousRoutineIR_Loaded
 
-	loadFileIR (fileName: String; o: Output): ScriptImage is
+feature {None}
+
+	loadFileIR (fileName: String; o: Output): AnonymousRoutineImage is
 	require
 		non_void_file_name: fileName /= Void
 	local
@@ -252,23 +338,19 @@ end -- class CompilationUnitAnonymousRoutine
 class CompilationUnitUnit
 inherit
 	CompilationUnitCommon
-		--redefine
-		--	init
-		rename
-			IR_Loaded as UnitLoaded
 	end
 create	
 	init
 feature {Any}
 	unit: UnitDeclarationDescriptor
 
-	init is
+	init (scn: like scanner) is
 	do
-		init_pools
+		init_pools (scn)
 		unit := Void -- ????
 	end -- init
 
-	UnitLoaded (fileName: String; o: Output): Boolean is
+	UnitIR_Loaded (fileName: String; o: Output): Boolean is
 	local
 		uImage: UnitImage 
 	do
@@ -280,7 +362,9 @@ feature {Any}
 			typePool	:= uImage.typePool	
 			Result := True
 		end -- if
-	end -- UnitLoaded
+	end -- UnitIR_Loaded
+
+feature {None}
 
 	loadUnitIR (fileName: String; o: Output): UnitImage is
 	require
@@ -303,75 +387,75 @@ feature {Any}
 		retry
 	end -- loadUnitIR
 
-	UnitInterfaceLoaded (fileName: String; o: Output): Boolean is
-	local
-		uImage: UnitImage 
-	do
-		uImage := loadUnitInterfaceIR (fileName, o)
-		if uImage /= Void then
-			unit		:= uImage.unit
-			useConst	:= uImage.useConst	
-			stringPool	:= uImage.stringPool	
-			typePool	:= uImage.typePool	
-			Result := True
-		end -- if
-	end -- UnitInterfaceLoaded
-
-	loadUnitInterfaceIR (fileName: String; o: Output): UnitImage is
-	local
-		aFile: File
-		wasError: Boolean
-	do
-		if wasError then
-			o.putNL ("Failure: unable to load unit interface from file `" + fileName + "`")
-			Result := Void
-		else
-			create aFile.make_open_read (fileName)
-			create Result.init_empty
-			Result ?= Result.retrieved (aFile)
-			aFile.close
-		end -- if
-	rescue
-		wasError := True
-		retry
-	end -- loadUnitInterfaceIR
+--	UnitInterfaceLoaded (fileName: String; o: Output): Boolean is
+--	local
+--		uImage: UnitImage 
+--	do
+--		uImage := loadUnitInterfaceIR (fileName, o)
+--		if uImage /= Void then
+--			unit		:= uImage.unit
+--			useConst	:= uImage.useConst	
+--			stringPool	:= uImage.stringPool	
+--			typePool	:= uImage.typePool	
+--			Result := True
+--		end -- if
+--	end -- UnitInterfaceLoaded
+--
+--feature {None}
+--
+--	loadUnitInterfaceIR (fileName: String; o: Output): UnitImage is
+--	local
+--		aFile: File
+--		wasError: Boolean
+--	do
+--		if wasError then
+--			o.putNL ("Failure: unable to load unit interface from file `" + fileName + "`")
+--			Result := Void
+--		else
+--			create aFile.make_open_read (fileName)
+--			create Result.init_empty
+--			Result ?= Result.retrieved (aFile)
+--			aFile.close
+--		end -- if
+--	rescue
+--		wasError := True
+--		retry
+--	end -- loadUnitInterfaceIR
 
 end -- class CompilationUnitUnit
 
 class CompilationUnitStandaloneRoutines
 inherit
 	CompilationUnitCommon
-		--redefine
-		--	init
-		rename
-			IR_Loaded as RoutinesLoaded
 	end
 create	
 	init
 feature {Any}
 	routines: Sorted_Array [StandaloneRoutineDescriptor]
 
-	init is
+	init(scn: like scanner) is
 	do
-		init_pools
-		routines := Void
+		init_pools (scn)
+		create routines.make
 	end -- init
 
-	RoutinesLoaded (fileName: String; o: Output): Boolean is
+	RoutinesIR_Loaded (fileName: String; o: Output): Boolean is
 	local
 		rImage: RoutinesImage 
 	do
-		rImage := loadUnitIR (fileName, o)
+		rImage := loadRoutinesIR (fileName, o)
 		if rImage /= Void then
-			routines 	:= uImage.routines
-			useConst	:= uImage.useConst	
-			stringPool	:= uImage.stringPool	
-			typePool	:= uImage.typePool	
+			routines 	:= rImage.routines
+			useConst	:= rImage.useConst	
+			stringPool	:= rImage.stringPool	
+			typePool	:= rImage.typePool	
 			Result := True
 		end -- if
-	end -- RoutinesLoaded
+	end -- RoutinesIR_Loaded
+
+feature {None}	
 	
-	loadRoutineIR (fileName: String; o: Output): RoutinesImage is
+	loadRoutinesIR (fileName: String; o: Output): RoutinesImage is
 	require
 		file_name_not_void: fileName /= Void
 	local
@@ -392,39 +476,43 @@ feature {Any}
 		retry
 	end -- loadUnitIR
 
-	UnitInterfaceLoaded (fileName: String; o: Output): Boolean is
-	local
-		uImage: RoutinesImage 
-	do
-		uImage := loadUnitInterfaceIR (fileName, o)
-		if uImage /= Void then
-			routines	:= uImage.routines
-			useConst	:= uImage.useConst	
-			stringPool	:= uImage.stringPool	
-			typePool	:= uImage.typePool	
-			Result := True
-		end -- if
-	end -- UnitInterfaceLoaded
+--	UnitInterfaceLoaded (fileName: String; o: Output): Boolean is
+--	local
+--		uImage: RoutinesImage 
+--	do
+--		uImage := loadUnitInterfaceIR (fileName, o)
+--		if uImage /= Void then
+--			routines	:= uImage.routines
+--			useConst	:= uImage.useConst	
+--			stringPool	:= uImage.stringPool	
+--			typePool	:= uImage.typePool	
+--			Result := True
+--		end -- if
+--	end -- UnitInterfaceLoaded
+--
+--feature {None}
+--	
+--	loadUnitInterfaceIR (fileName: String; o: Output): RoutinesImage is
+--	local
+--		aFile: File
+--		wasError: Boolean
+--	do
+--		if wasError then
+--			o.putNL ("Failure: unable to load routine interface from file `" + fileName + "`")
+--			Result := Void
+--		else
+--			create aFile.make_open_read (fileName)
+--			create Result.init_empty
+--			Result ?= Result.retrieved (aFile)
+--			aFile.close
+--		end -- if
+--	rescue
+--		wasError := True
+--		retry
+--	end -- loadUnitInterfaceIR
 
-	loadUnitInterfaceIR (fileName: String; o: Output): RoutinesImage is
-	local
-		aFile: File
-		wasError: Boolean
-	do
-		if wasError then
-			o.putNL ("Failure: unable to load routine interface from file `" + fileName + "`")
-			Result := Void
-		else
-			create aFile.make_open_read (fileName)
-			create Result.init_empty
-			Result ?= Result.retrieved (aFile)
-			aFile.close
-		end -- if
-	rescue
-		wasError := True
-		retry
-	end -- loadUnitInterfaceIR
-
+invariant
+	non_void_routines: routines /= Void
 end -- class CompilationUnitStandaloneRoutines
 
 
@@ -432,8 +520,12 @@ class CompilationUnitCompound
 -- CompilationUnitCompound: { UseConstDirective }  {StatementsList|StandaloneRoutine|UnitDeclaration}
 inherit
 	CompilationUnitAnonymousRoutine
-		redefine
-			init
+		rename 
+			init as anonymous_routine_init
+	end
+	CompilationUnitStandaloneRoutines
+		rename
+			init as standalone_routines_init
 	end
 	SLangConstants
 	end
@@ -442,7 +534,26 @@ create
 feature {Any}
 
 	units: Sorted_Array [UnitDeclarationDescriptor]
-	routines: Sorted_Array [StandaloneRoutineDescriptor]
+	
+	attach_usage_pool_to_units is
+	local
+		i, n, m: Integer
+	do
+		n := units.count
+		if n > 0 then
+			m := useConst.count
+			if m > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					units.item (i).attach_use_pool (useConst)
+					i := i + 1
+				end -- loop
+			end -- if
+		end -- if
+	end -- if
 
 	cutImplementation is
 	local
@@ -473,37 +584,40 @@ feature {Any}
 	saveInternalRepresentation (fName, IR_FileName: String; irFileExtension: String; o: Output): Integer is
 	require	
 		src_file_name_not_void: fName /= Void
-		--file_path_not_void: IRpath /= Void
 		IR_file_name_not_void: IR_FileName /= Void
 		ir_file_extenstion_not_void: irFileExtension /= Void
 	local
-		sImg: ScriptImage
+		sImg: AnonymousRoutineImage
 		uImg: UnitImage
 		rImg: RoutinesImage
 		i, n: Integer
 	do
-		-- sObjFileName: useConst + statements 
 		if statements.count > 0 then
+			-- Anonymous Routine IR: useConst + statements 
 			create sImg.init (fName, useConst, statements, stringPool, typePool)
 			if not IRstored (IRfolderName  + "\_" + IR_FileName + PgmSuffix + irFileExtension, sImg, o) then
 				Result := Result + 1
 			end -- if
 		end -- if
 
-		-- per routine: useConst + routine
-		create rImg.init (fName, useConst, routines, stringPool, typePool)
-		if not IRstored (IRfolderName  + "\_" + IR_FileName + LibSuffix + irFileExtension, rImg, o) then
-			Result := Result + 1
+		if routines.count > 0 then
+			-- Standalone routines: useConst + routines
+--			create rImg.init (fName, useConst, routines, stringPool, typePool)
+			create rImg.init (fName, useConst, routines, rtn_stringPool, rtn_typePool)
+			if not IRstored (IRfolderName  + "\_" + IR_FileName + LibSuffix + irFileExtension, rImg, o) then
+				Result := Result + 1
+			end -- if
 		end -- if
 
-		-- per unit: useConst + unit
 		from
 			i := 1
 			n := units.count
 		until
 			i > n
 		loop
-			create uImg.init (fName, useConst, units.item(i), stringPool, typePool)
+			-- per unit: useConst + unit
+--			create uImg.init (fName, useConst, units.item(i), stringPool, typePool)
+			create uImg.init (fName, useConst, units.item(i), units.item(i).stringPool, units.item(i).typePool)
 			if not IRstored (IRfolderName  + "\" + units.item(i).getExternalName + irFileExtension, uImg, o) then
 				Result := Result + 1
 			end -- if
@@ -552,15 +666,14 @@ feature {None}
 		end -- if
 	end -- IRstored
 
-	init is
+	init (scn: like scanner) is
 	do
-		Precursor
+		anonymous_routine_init (scn)
+		standalone_routines_init (scn)
 		create units.make 
-		create routines.make 
 	end -- init
 invariant
 	non_void_units: units /= Void
-	non_void_routines: routines /= Void
 end -- class CompilationUnitCompound
 
 class IR_Storage
@@ -586,7 +699,7 @@ feature {IR_Storage}
 	end -- init_storage
 end -- class IR_Storage
 
-class ScriptImage --/ local class to store IR
+class AnonymousRoutineImage --/ local class to store IR
 inherit
 	IR_Storage
 	end
@@ -602,7 +715,7 @@ feature {CompilationUnitCommon}
 		statements	:= stmts
 		init_storage (fn, uc, sp, tp)
 	end -- init
-end -- class ScriptImage
+end -- class AnonymousRoutineImage
 
 class RoutinesImage --/ local class to store IR
 inherit
@@ -1465,11 +1578,11 @@ feature {Any}
 	infix "<" (other: like Current): Boolean is
 	do
 		Result := unitType < other.unitType
-	end
+	end -- infix "<"
 	is_equal (other: like Current): Boolean is
 	do
 		Result := unitType.is_equal (other.unitType) -- or else overloading - check types of parameters
-	end
+	end -- is_equal
 	init (ut: like unitType; name: like newName) is
 	require
 		non_void_unit_type: ut /= Void
@@ -1973,7 +2086,23 @@ feature {Any}
 			end -- if
 		end -- if		
 	end	-- is_equal
+	attach_pools (ast:CompilationUnitCompound) is
+	do
+		stringPool := ast.stringPool
+		typePool := ast.typePool
+	end -- attach_pools
+	attach_use_pool (uc: like useConst) is
+	do
+		useConst := uc
+	end -- attach_use_pool
+	
+feature {CompilationUnitCompound}
+	useConst: Sorted_Array [UnitTypeNameDescriptor]
+	stringPool: Sorted_Array [String]
+	typePool: Sorted_Array[TypeDescriptor]
+
 feature {None}
+	
 	init (aName: like name; is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend: Boolean) is
 	do
 		name := aName
@@ -2014,7 +2143,7 @@ invariant
 end 
 
 class ParentDescriptor
---12 [“~”] UnitTypeNameDescriptor 
+--12 ["~"] UnitTypeNameDescriptor 
 inherit 
 	Comparable
 		redefine

@@ -61,7 +61,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.05 (Build <AVK Feb 13th 2022>)")
+		o.putNL ("SLang compiler v0.99.05 (Build <AVK Feb 19th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -145,6 +145,7 @@ feature {None}
 								o.putLine ("Parsing file `" + fName + "`")
 								parser.parseSourceFile
 								scanner.close
+								parser.ast.attach_usage_pool_to_units
 								if parser.ast.statements.count > 0 then
 									-- File has anonymous routine - it is a script !
 									scriptsToBuild.add (fName)
@@ -307,61 +308,67 @@ feature {None}
 				end -- loop
 				o.newLine
 			end -- if
-			m := parser.ast.statements.count
-			if m > 0 then
-				from
-					dumpOutput.putNL ("// Anonymous routine")
-					j := 1
-				until
-					j > m
-				loop
-					str := parser.ast.statements.item (j).out
-					dumpOutput.put (str)
-					if str.item(str.count) /= '%N' then
-						dumpOutput.newLine
-					end -- if
-					j := j + 1
-				end -- loop
+			if parser.ast.statements /= Void then
+				m := parser.ast.statements.count
+				if m > 0 then
+					from
+						dumpOutput.putNL ("// Anonymous routine")
+						j := 1
+					until
+						j > m
+					loop
+						str := parser.ast.statements.item (j).out
+						dumpOutput.put (str)
+						if str.item(str.count) /= '%N' then
+							dumpOutput.newLine
+						end -- if
+						j := j + 1
+					end -- loop
+				end -- if
 			end -- if
-			m := parser.ast.routines.count
-			if m > 0 then
-				from
-					if m = 1 then
-						dumpOutput.putNL ("// Standalone routine")
-					else
-						dumpOutput.putNL ("// " + m.out + " standalone routines")
-					end -- if
-					j := 1
-				until
-					j > m
-				loop
-					str := parser.ast.routines.item (j).out
-					dumpOutput.put (str)
-					if str.item(str.count) /= '%N' then
-						dumpOutput.newLine
-					end -- if
-					j := j + 1
-				end -- loop
+			if parser.ast.routines /= Void then
+				m := parser.ast.routines.count
+				if m > 0 then
+					from
+						if m = 1 then
+							dumpOutput.putNL ("// Standalone routine")
+						else
+							dumpOutput.putNL ("// " + m.out + " standalone routines")
+						end -- if
+						j := 1
+					until
+						j > m
+					loop
+						str := parser.ast.routines.item (j).out
+						dumpOutput.put (str)
+						if str.item(str.count) /= '%N' then
+							dumpOutput.newLine
+						end -- if
+						j := j + 1
+					end -- loop
+				end -- if
 			end -- if
-			m := parser.ast.units.count
-			if m > 0 then
-				from
-					if m = 1 then
-						dumpOutput.putNL ("// Unit")
-					else
-						dumpOutput.putNL ("// " + m.out + " units")
-					end -- if
-					j := 1
-				until
-					j > m
-				loop
-					str := parser.ast.units.item (j).out
-					dumpOutput.put (str)
-					if str.item(str.count) /= '%N' then
-						dumpOutput.newLine
-					end -- if
-					j := j + 1
-				end -- loop
+			if parser.ast.units /= Void then
+				m := parser.ast.units.count
+				if m > 0 then
+					from
+						if m = 1 then
+							dumpOutput.putNL ("// Unit")
+						else
+							dumpOutput.putNL ("// " + m.out + " units")
+						end -- if
+						j := 1
+					until
+						j > m
+					loop
+						str := parser.ast.units.item (j).out
+						dumpOutput.put (str)
+						if str.item(str.count) /= '%N' then
+							dumpOutput.newLine
+						end -- if
+						j := j + 1
+					end -- loop
+				end -- if
 			end -- if
 			m := parser.ast.typePool.count
 			if m > 0 then

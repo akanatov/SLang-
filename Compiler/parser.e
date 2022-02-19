@@ -50,11 +50,12 @@ feature {Any}
 	
 	systems: Sorted_Array [SystemDescriptor]
 
-	--ast: CompilationUnitCommon -- CompilationUnitCompound
+	--ast: CompilationUnitCommon
+	ast: CompilationUnitCompound
 	
-	unitAST: CompilationUnitUnit
-	scriptAST: CompilationUnitAnonymousRoutine
-	routinesAST: CompilationUnitStandaloneRoutines
+	--unitAST: CompilationUnitUnit
+	--scriptAST: CompilationUnitAnonymousRoutine
+	--routinesAST: CompilationUnitStandaloneRoutines
 
 	parseSourceFile is
 	-- parse Slang source file which can optionally start with the system description
@@ -96,6 +97,7 @@ feature {Any}
 					parseUseClause
 				-- Unit start: ([final] [ref|val|concurrent])|[virtual]|[extend]
 				when scanner.final_token then -- parse final unit
+					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -142,8 +144,10 @@ feature {Any}
 						end
 					else
 						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.unit_token>>, unit_folowers)
-					end
+					end -- inspect
+					ast.stop_unit_parsing
 				when scanner.ref_token then -- parse ref unit
+					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -153,7 +157,9 @@ feature {Any}
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
+					ast.stop_unit_parsing
 				when scanner.val_token then -- parse val unit
+					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -163,7 +169,9 @@ feature {Any}
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
+					ast.stop_unit_parsing
 				when scanner.concurrent_token then -- parse concurrent unit
+					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -173,7 +181,9 @@ feature {Any}
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
+					ast.stop_unit_parsing
 				when scanner.virtual_token then -- parse virtual unit
+					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -183,7 +193,9 @@ feature {Any}
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
+					ast.stop_unit_parsing
 				when scanner.extend_token then -- parse extend unit
+					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -193,7 +205,9 @@ feature {Any}
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
+					ast.stop_unit_parsing
 				when scanner.unit_token then -- parse unit
+					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -204,7 +218,9 @@ feature {Any}
 						syntax_error (<<scanner.identifier_token>>)
 						toExit := True
 					end
+					ast.stop_unit_parsing
 				when scanner.pure_token then -- start of standalone pure routine
+					ast.start_standalone_rotuine_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -217,7 +233,9 @@ feature {Any}
 						syntax_error (<<scanner.identifier_token>>)
 						toExit := True
 					end
+					ast.stop_standalone_rotuine_parsing
 				when scanner.safe_token then -- start of standalone safe routine
+					ast.start_standalone_rotuine_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -230,9 +248,12 @@ feature {Any}
 						syntax_error (<<scanner.identifier_token>>)
 						toExit := True
 					end
+					ast.stop_standalone_rotuine_parsing
 				when scanner.identifier_token then -- start of standalone routine or statement of the anonymous one
+-- Not sure what to do with pools !!!!
 					name := scanner.tokenString
-					create identDsc.init (scanner.tokenString)
+					create identDsc.init (name) -- scanner.tokenString)
+					ast.add_name_to_standalone_rotuines_pool (name)
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -268,7 +289,7 @@ feature {Any}
 							ast.addStatement (stmtDsc)
 						end -- if				
 					when scanner.is_token then 
-						-- ident is <Expression>
+						-- Anonymous routine: ident is <Expression>
 						scanner.nextToken
 						exprDsc := parseExpression
 						if exprDsc /= Void then
@@ -284,10 +305,12 @@ feature {Any}
 					then
 						-- Standalone routine start
 --trace (">>#6")
+						ast.start_standalone_rotuine_parsing
 						rtnDsc := parseStandAloneRoutine1 (False, False, name)
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 							validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
 						end -- if					
+						ast.stop_standalone_rotuine_parsing
 					else
 						--if scanner.Cmode and then (scanner.token = scanner.less_token or else scanner.token = scanner.left_curly_bracket_token)
 						--	or else (scanner.token = scanner.left_square_bracket_token or else scanner.token = scanner.do_token)
@@ -295,10 +318,12 @@ feature {Any}
 						if scanner.blockStart or else scanner.genericsStart then
 							-- Standalone routine start
 --trace (">>#5")
+							ast.start_standalone_rotuine_parsing
 							rtnDsc := parseStandAloneRoutine1 (False, False, name)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 								validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
 							end -- if					
+							ast.stop_standalone_rotuine_parsing
 						elseif scanner.Cmode then
 							syntax_error (<<
 								-- scanner.final_token, scanner.alias_token,
@@ -565,18 +590,22 @@ feature {None}
 			when scanner.require_token, scanner.foreign_token, scanner.use_token then -- , scanner.none_token
 				-- function
 --trace (">>#4")
+				ast.start_standalone_rotuine_parsing
 				rtnDsc := parseStandAloneRoutine1 (False, False, name)
 				if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 					validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
 				end -- if					
+				ast.stop_standalone_rotuine_parsing
 			else
 				if scanner.blockStart then
 					-- function
 --trace (">>#3")
+					ast.start_standalone_rotuine_parsing
 					rtnDsc := parseStandAloneRoutine1 (False, False, name)
 					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 						validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
 					end -- if					
+					ast.stop_standalone_rotuine_parsing
 				else
 					-- ident: ?type
 					detDsc ?= type
@@ -849,6 +878,7 @@ feature {None}
 			if isRtnDecl then
 				-- >> routine declaration
 -- trace ("Parsing analysis done OK: >> routine declaration")
+				ast.start_standalone_rotuine_parsing
 				parameters := parseParameters1 -- (False)
 				if parameters /= Void then
 					rtnDsc ?= parseAnyRoutine (False, False, False, False, name, Void, Void, True, False, parameters, False)			
@@ -856,6 +886,7 @@ feature {None}
 						validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
 					end -- if					
 				end -- if
+				ast.stop_standalone_rotuine_parsing
 			else
 				-- >> unqualified call or assignment
 -- trace ("Parsing analysis done OK: >> >> unqualified call or assignment")
@@ -7924,7 +7955,8 @@ syntax_error (<<scanner.comma_token>>)
 		end -- if
 		if unitName /= Void then
 			create unitDsc.init (unitName, is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend)
-						
+			unitDsc.attach_pools (ast)
+			
 			if scanner.token = scanner.alias_token then
 				-- parse alias unit name
 				scanner.nextToken
@@ -8363,7 +8395,7 @@ feature {None}
 	do
 		o := output
 		scanner := aScanner
-		create ast.init
+		create ast.init (scanner)
 		scanner.setPool (ast.stringPool)
 		systems := sys
 	end -- init
