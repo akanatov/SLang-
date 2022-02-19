@@ -3,6 +3,13 @@ inherit
 	SLangConstants
 create
 	init
+feature {None}
+	getAnonymousRoutineClusters: Sorted_Array [String] is
+	do
+		create Result.make
+		Result.add (".") -- current folder is used to look for units
+		-- Add what should be added from the environemnt or registry ...
+	end -- getAnonymousRoutineClusters
 feature {Any}
 	--scanner: SLang_scanner
 	--parser: SLang_parser
@@ -14,10 +21,11 @@ feature {Any}
 		non_void_file_system: fs /= Void
 	local 
 		cuDsc : CompilationUnitAnonymousRoutine
+		sysDsc: SystemDescriptor
 		--folderName: String
 		fileName: String
 		codeGenerator: CodeGenerator
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		-- stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]
 		statements: Array [StatementDescriptor]
@@ -33,19 +41,25 @@ feature {Any}
 			fileName := IRfolderName + "\_" + fs.getFileName(fName) + PgmSuffix + ASText
 			if cuDsc.AnonymousRoutineIR_Loaded (fileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
-				-- 0. Process pools - ensure that all units' interfaces used are loaded
-				from
-					useConst  := cuDsc.useConst
-					n := useConst.count
-					i := 1
-				until
-					i > n
-				loop
-					if useConst.item(i).isNotLoaded (cuDsc) then
-						skipCodeGen := True
-					end -- if
-					i := i + 1
-				end -- loop
+				-- 1. How to get system description - where to look for units !!! 
+				--create sysDsc.init_program (n,e : String; c: like clusters; l: like libraries) is
+				create sysDsc.init_program (fs.getFileName(fName), "*", getAnonymousRoutineClusters, Void)
+				cuDsc.attachSystemDescription (sysDsc)
+				
+				-- 2. Process pools - ensure that all units' interfaces used are loaded
+				-- All use const types are registred in the type pool
+				--from
+				--	useConst  := cuDsc.useConst
+				--	n := useConst.count
+				--	i := 1
+				--until
+				--	i > n
+				--loop
+				--	if useConst.item(i).isNotLoaded (cuDsc) then
+				--		skipCodeGen := True
+				--	end -- if
+				--	i := i + 1
+				--end -- loop
 				from
 					typePool := cuDsc.typePool
 					n := typePool.count
@@ -59,7 +73,7 @@ feature {Any}
 					i := i + 1
 				end -- loop
 
-				-- 1. Check validity of cuDsc.statements
+				-- 3. Check validity of cuDsc.statements
 				from
 					statements := cuDsc.statements
 					n := statements.count
@@ -73,7 +87,7 @@ feature {Any}
 					i := i + 1
 				end -- loop
 				if not skipCodeGen then
-					-- 2. Generate code for cudsc.statements
+					-- 4. Generate code for cudsc.statements
 
 					create generators.make (1, 0)
 					
@@ -121,8 +135,10 @@ feature {Any}
 							generators.item (j).dispose
 							j := j + 1
 						end -- loop
+						-- 5. Link !!!! How ????
 					else
 						-- No generators
+						o.putNL ("Consistency error: No code generators available")
 					end -- if
 				end -- if
 			-- Allready printed!
@@ -158,7 +174,7 @@ not_implemented_yet ("Building library `" + sysDsc.name + "`")
 				o.putNL ("Building all files")
 not_implemented_yet ("Building all files")
 			else
-				-- Executable with the entry point which is standalone routine
+				-- Executable with the entry point which is a standalone routine
 				o.putNL ("Building executable `" + sysDsc.name + "`")
 not_implemented_yet ("Building executable `" + sysDsc.name + "`")
 			end -- if

@@ -1,7 +1,7 @@
 class SystemDescriptor
 -- Context: system (Identifier| StringConstant) 
 -- [init Identifier]
--- [use {(Identifier| StringConstant) [“:” Options end]} end]
+-- [use {(Identifier| StringConstant) [":" Options end]} end]
 -- [foreign {(Identifier| StringConstant)} end]
 -- end
 inherit
@@ -16,7 +16,7 @@ inherit
 create
 	init_program, init_library
 feature {Any}
-	name: String
+	name: String -- Name of the output target
 	from_paths: Sorted_Array [String] -- List of paths to build the library from
 	entry: String -- Name of class or routine to start execution of the program
 	clusters: Sorted_Array [String] -- Clusters to search for usage of units and routines. temporary!!! String - in fact ClusterDescriptor
@@ -124,6 +124,41 @@ feature {Any}
 		end -- if		
 		Result.append_string ("end%N")
 	end -- out
+
+	clusterHasUnit (path, unitName: String): Boolean is
+	require
+		non_void_unit_name: unitName /= Void
+		non_void_body_path: path /= Void
+	do
+		-- not_implemened_yet
+	end -- clusterHasUnit
+	
+	hasUnit(unitName: String): Array [String] is
+		-- returns list of clusters where such unit exists
+	require
+		non_void_unit_name: unitName /= Void
+	local
+		path: String
+		i, n: Integer
+	do
+		-- not_implemened_yet
+		if clusters /= Void then
+			from
+				n := clusters.count
+				i := 1
+				create Result.make (1, 0)
+			until
+				i > n
+			loop
+				path := clusters.item (i)
+				if clusterHasUnit (path, unitName) then
+					Result.force (path, Result.count + 1)
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
+	end -- hasUnit
+	
 invariant
 	name_not_void: name /= Void
 	is_program: entry /= Void implies from_paths = Void
@@ -208,6 +243,42 @@ feature {Any}
 	do
 		rtn_stringPool.add (name)
 	end -- add_name_to_standalone_rotuines_pool
+
+	attachSystemDescription (sDsc: like sysDsc) is
+	do
+		sysDsc := sDsc
+	end -- attachSystemDescription
+
+	sysDsc: SystemDescriptor
+
+	loadUnitInterafceFrom (clusterPath, unitExternalName: String): CompilationUnitUnit is
+	require
+		non_void_unit_name: unitExternalName /= Void
+		non_void_path: clusterPath /= Void
+	do
+		-- not_implemented_yet 
+	end -- loadUnitInterafceFrom
+
+	loadUnitInterface (unitExternalName: String): CompilationUnitUnit is
+	require
+		non_void_unit_name: unitExternalName /= Void
+	local
+		paths: Array [String]
+	do
+		paths := sysDsc.hasUnit(unitExternalName)
+		if paths = Void or else paths.count = 0 then
+			-- Such unit is not found in the search zone !!!
+		elseif paths.count > 1 then
+			-- More than one unit is found in the serach zone !!!
+		else
+			-- Load it
+			Result := loadUnitInterafceFrom (paths.item (1), unitExternalName)
+			if Result = Void then
+				-- There was a problem to load unti interface 
+			end -- if
+		end -- if
+	end -- loadUnitInterface
+	
 feature {None}
 	scanner: SLang_Scanner
 	init_pools (scn: like scanner) is
@@ -9206,6 +9277,7 @@ feature {Any}
 		if interface = Void then
 			-- 	name: String
 			-- ask system desciption to load the name
+			interface := context.loadUnitInterface (getExternalName)
 		end -- if
 	end -- isNotLoaded
 	interface: Any -- TBD !!!
