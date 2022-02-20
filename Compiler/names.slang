@@ -25,3 +25,10 @@ use const UnitA, UnitB, UnitC
 unit U
 	foo: Type do end
 end
+unit UnitA
+end
+unit UnitB
+end
+unit UnitC
+end
+

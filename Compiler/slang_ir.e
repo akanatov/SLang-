@@ -145,7 +145,7 @@ feature {Any}
 		Result := fs.file_exists (fileName)
 debug
 	if Result then
-		print ("Unit '" + unitName + "' found,  file '" + fileName + "' is in place%N")
+		--print ("Unit '" + unitName + "' found,  file '" + fileName + "' is in place%N")
 	else
 		print ("Unit '" + unitName + "' not found,  file '" + fileName + "' is missed%N")
 	end -- if
@@ -195,6 +195,9 @@ end -- class SystemDescriptor
      
 --deferred
 class CompilationUnitCommon
+inherit
+	SLangConstants
+	end
 create {None}
 	init_pools
 feature {Any}
@@ -274,14 +277,25 @@ feature {Any}
 
 	sysDsc: SystemDescriptor
 
-	loadUnitInterafceFrom (clusterPath, unitExternalName: String): CompilationUnitUnit is
+	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): CompilationUnitUnit is
 	require
 		non_void_unit_name: unitExternalName /= Void
-		non_void_path: clusterPath /= Void
+		non_void_path: path /= Void
+	local	
+		fileName: String
 	do
-		-- not_implemented_yet 
+		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
+			fileName := path + ""
+		else
+			fileName := path + "\"
+		end -- if
+		fileName.append_string (IRfolderName  + "\" + unitExternalName + INText)
+		create Result.make
+		if not Result.UnitIR_Loaded (fileName, o) then
+			Result := Void
+		end -- if
 	end -- loadUnitInterafceFrom
-
+	
 	loadUnitInterface (unitExternalName, unitPrintableName: String; o: Output): CompilationUnitUnit is
 	require
 		non_void_unit_name: unitExternalName /= Void
@@ -297,9 +311,10 @@ feature {Any}
 			o.putNL ("Error: more than one unit '" + unitPrintableName + "' found in the provided universe. Select one to be used")
 		else
 			-- Load it
-			Result := loadUnitInterafceFrom (paths.item (1), unitExternalName)
-			if Result = Void then -- ???
+			Result := loadUnitInterafceFrom (paths.item (1), unitExternalName, o)
+			if Result = Void then
 				-- There was a problem to load unit interface 
+				o.putNL ("Error: unit '" + unitPrintableName + "' was not loaded correctly")
 			end -- if
 		end -- if
 	end -- loadUnitInterface
@@ -436,7 +451,7 @@ inherit
 	CompilationUnitCommon
 	end
 create	
-	init
+	init, make
 feature {Any}
 	unit: UnitDeclarationDescriptor
 
@@ -445,6 +460,12 @@ feature {Any}
 		init_pools (scn)
 		unit := Void -- ????
 	end -- init
+	
+	make is
+	do
+		init_pools (Void)
+		--unit := Void -- ????
+	end -- make
 
 	UnitIR_Loaded (fileName: String; o: Output): Boolean is
 	local
@@ -4816,12 +4837,6 @@ create
 feature {Any}	
 	name: String
 
-	getExternalName: String is
-	do
-		Result := clone (name)
-		Result.append_string ("_" + Result.hash_code.out)
-	end -- getExternalName
-
 	init (s: String) is
 	require
 		identifier_name_not_void: s /= Void
@@ -4838,8 +4853,14 @@ feature {Any}
 	end -- theSame
 	out: String is
 	do
-		Result := "" + name
+		create Result.make_from_string (name)
 	end 
+	getExternalName: String is
+	do
+		Result := out
+		Result.append_string ("_" + Result.hash_code.out)
+	end -- getExternalName
+
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]

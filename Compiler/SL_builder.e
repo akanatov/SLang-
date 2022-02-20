@@ -90,10 +90,10 @@ feature {Any}
 				until
 					i > n					
 				loop
---					debug
---						print ("Load interface of '" + typePool.item(i).getExternalName + "'%N")
---					end -- debug
 					if typePool.item(i).isNotLoaded (cuDsc, o) then
+						debug
+							o.putNL ("Load interface of '" + typePool.item(i).out + "' failed!")
+						end -- debug
 						skipCodeGen := True
 					end -- if
 					i := i + 1
@@ -108,11 +108,16 @@ feature {Any}
 					i > n
 				loop
 					if statements.item(i).isInvalid (cuDsc, o) then
+						debug
+							o.putNL ("Statement '" + statements.item(i).out + "' invalid!")
+						end -- debug
 						skipCodeGen := True
 					end -- if
 					i := i + 1
 				end -- loop
-				if not skipCodeGen then
+				if skipCodeGen then
+					o.putNL ("Info: code generation skipped due to errors found")
+				else
 					-- 4. Generate code for cudsc.statements
 
 					create generators.make (1, 0)
