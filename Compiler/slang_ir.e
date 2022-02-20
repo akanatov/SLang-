@@ -13,6 +13,10 @@ inherit
 		redefine
 			out, is_equal
 	end
+	SLangConstants
+		redefine
+			out, is_equal
+	end
 create
 	init_program, init_library
 feature {Any}
@@ -129,11 +133,26 @@ feature {Any}
 	require
 		non_void_unit_name: unitName /= Void
 		non_void_body_path: path /= Void
+	local	
+		fileName: String
 	do
 		-- not_implemened_yet
-print ("Path = '" + path + "'%N")
-print ("UnitName = '" + unitName + "'%N")
+		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
+			fileName := path + ""
+		else
+			fileName := path + "\"
+		end -- if
+		fileName.append_string (IRfolderName  + "\" + UnitName + INText)
+debug
+	print ("File '" + fileName + "' is checked%N")
+end -- debug
+		Result := fs.file_exists (fileName)
 	end -- clusterHasUnit
+	
+	fs: FileSystem is
+	once
+		create Result
+	end -- fs
 	
 	hasUnit(unitName: String): Array [String] is
 		-- returns list of clusters where such unit exists
