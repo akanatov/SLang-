@@ -5368,7 +5368,7 @@ feature {None}
 			else
 				Result := identDsc
 				if scanner.genericsStart then -- Hmmm ... a < b 
-					utnDsc := parseUnitTypeName1 (identDsc.aString, False)
+					utnDsc := parseUnitTypeName1 (identDsc.name, False)
 					if utnDsc /= Void then
 						Result := utnDsc
 					end -- if

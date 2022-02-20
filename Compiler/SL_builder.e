@@ -93,7 +93,7 @@ feature {Any}
 --					debug
 --						print ("Load interface of '" + typePool.item(i).getExternalName + "'%N")
 --					end -- debug
-					if typePool.item(i).isNotLoaded (cuDsc) then
+					if typePool.item(i).isNotLoaded (cuDsc, o) then
 						skipCodeGen := True
 					end -- if
 					i := i + 1
@@ -107,7 +107,7 @@ feature {Any}
 				until
 					i > n
 				loop
-					if statements.item(i).isInvalid (cuDsc) then
+					if statements.item(i).isInvalid (cuDsc, o) then
 						skipCodeGen := True
 					end -- if
 					i := i + 1
