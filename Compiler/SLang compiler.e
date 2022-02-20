@@ -7,6 +7,8 @@ feature
 	LibSuffix: String is "_lib"
 	SLangExt: String is "slang"
 	CLangExt: String is "clang"
+	SLNG_LIB: String is "SLNG_LIB"
+	SLNG_BIN: String is "SLNG_BIN"
 end -- class SLangConstants
 
 class SLang_compiler
@@ -63,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.05 (Build <AVK Feb 19th 2022>)")
+		o.putNL ("SLang compiler v0.99.05 (Build <AVK Feb 20th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -229,21 +231,21 @@ feature {None}
 							j := 1
 							debug
 								dumpOutput.putNL ("//----------- System description dump start ------------")
-							end
+							end -- debug
 						until
 							j > m
 						loop
 							sysDsc := systems.item (j)
 							debug
 								dumpOutput.putNL (sysDsc.out)			
-							end
+							end -- debug
 							create builder.init (o)
 							builder.build (sysDsc, fs)
 							j := j + 1
 						end -- loop
 						debug
 							dumpOutput.putNL ("//----------- System description dump end  ------------")
-						end
+						end -- debug
 					end -- if
 				end -- if
 			end -- if

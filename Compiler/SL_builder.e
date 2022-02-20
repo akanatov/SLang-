@@ -4,11 +4,34 @@ inherit
 create
 	init
 feature {None}
+	env: Environment is
+	once
+		create Result
+	end -- env
 	getAnonymousRoutineClusters: Sorted_Array [String] is
+	local	
+		libPath: String
+		start, stop: Integer
 	do
 		create Result.make
-		Result.add (".") -- current folder is used to look for units
-		-- Add what should be added from the environemnt or registry ...
+		Result.add (".") -- current folder is always used to look for units
+		-- Add what should be added from the environemnt ...
+		libPath := env.env_item (SLNG_LIB)
+		if libpath /= Void then
+			from
+				start := 1
+				stop := libPath.index_of (';', start) 
+			until
+				stop = 0
+			loop
+				Result.add (libPath.substring (start, stop - 1))
+				start := stop + 1
+				stop := libPath.index_of (';', start) 
+			end -- loop
+			if start = 1 then
+				Result.add (libPath)
+			end -- if
+		end -- if
 	end -- getAnonymousRoutineClusters
 feature {Any}
 	--scanner: SLang_scanner
@@ -67,6 +90,9 @@ feature {Any}
 				until
 					i > n					
 				loop
+--					debug
+--						print ("Load interface of '" + typePool.item(i).getExternalName + "'%N")
+--					end -- debug
 					if typePool.item(i).isNotLoaded (cuDsc) then
 						skipCodeGen := True
 					end -- if

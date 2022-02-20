@@ -131,6 +131,8 @@ feature {Any}
 		non_void_body_path: path /= Void
 	do
 		-- not_implemened_yet
+print ("Path = '" + path + "'%N")
+print ("UnitName = '" + unitName + "'%N")
 	end -- clusterHasUnit
 	
 	hasUnit(unitName: String): Array [String] is
@@ -141,7 +143,6 @@ feature {Any}
 		path: String
 		i, n: Integer
 	do
-		-- not_implemened_yet
 		if clusters /= Void then
 			from
 				n := clusters.count
@@ -1254,9 +1255,10 @@ feature {Any}
 			Result.append_character ('$')
 		end -- if		
 		if type /= Void then
-			Result.append_string ("$")
+			Result.append_character ('$')
 			Result.append_string (type.getExternalName)
 		end -- if
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
 	out: String is
@@ -1555,7 +1557,8 @@ feature {Any}
 	end
 	getExternalName: String	is
 	do
-		Result := clone(name) + "$is"
+		Result := clone(name)  + "$is"
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	sameAs (other: like Current): Boolean is
@@ -1602,7 +1605,8 @@ feature {Any}
 	end -- out
 	getExternalName: String	is
 	do
-		Result := clone (name)
+		Result := out
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	sameAs (other: like Current): Boolean is
@@ -1764,7 +1768,7 @@ feature {Any}
 		n := formalGenerics.count
 		if n > 0 then
 			from
-				Result.append_string ("$")
+				Result.append_character ('$')
 				i := 1
 			until
 				i > n
@@ -1777,6 +1781,7 @@ feature {Any}
 			end -- loop
 			Result.append_character ('$')
 		end -- if
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 		
 	parents: Sorted_Array [ParentDescriptor]
@@ -2338,6 +2343,7 @@ feature {Any}
 			Result.append_string("_new_")
 			Result.append_string (initConstraint.getExternalName)
 		end -- if
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
 	init (n: like name; tc: like typeConstraint; ic: like initConstraint) is
@@ -2375,6 +2381,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := name + "_" + type.getExternalName
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
 	init (aName: String; ut: TypeDescriptor) is
@@ -2414,6 +2421,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := name + "_" + routineType.getExternalName
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
 	init (aName: String; rt: RoutineTypeDescriptor) is
@@ -4443,6 +4451,7 @@ feature{Any}
 	getExternalName: String is
 	do
 		Result := "<expression>"
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	isInvalid (context: CompilationUnitCommon): Boolean is
@@ -7484,6 +7493,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := clone (name)
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	is_equal (other: like Current): Boolean is
 	do
@@ -7793,6 +7803,7 @@ feature {Any}
 			Result.append_string (members.item (i).getExternalName)
 			i := i + 1
 		end -- loop
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	out: String is 
@@ -7919,6 +7930,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := "rtn " + signature.getExternalName
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	isInvalid (context: CompilationUnitCommon): Boolean is
 	local
@@ -8045,6 +8057,7 @@ feature {Any}
 			Result.append_string ("$$")
 			Result.append_string (returnType.getExternalName)
 		end -- if
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	is_equal (other: like Current): Boolean is
@@ -8219,7 +8232,7 @@ feature {Any}
 	do
 		Result := left.out
 		if operator /= Void then
-			Result.append_string ("$")
+			Result.append_character ('$')
 			Result.append_string (operator)
 			Result.append_character ('_')
 			Result.append_string (expr.out)
@@ -8227,6 +8240,7 @@ feature {Any}
 		end -- if
 		Result.append_string ("$$")
 		Result.append_string (right.out)
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
 	isInvalid (context: CompilationUnitCommon): Boolean is
@@ -8297,6 +8311,7 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	out: String is
@@ -8410,6 +8425,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := "as_this"
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	isInvalid, isNotLoaded (context: CompilationUnitCommon): Boolean is
@@ -8469,6 +8485,7 @@ feature {Any}
 		if anchorSignature /= Void then
 			Result.append_string (anchorSignature.getExternalName)
 		end -- if
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	isInvalid (context: CompilationUnitCommon): Boolean is
@@ -8553,6 +8570,7 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	out: String is
@@ -8822,6 +8840,7 @@ feature {Any}
 			i := i + 1
 		end -- loop
 		Result.append_character ('$')
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	isInvalid (context: CompilationUnitCommon): Boolean is
@@ -8924,6 +8943,7 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	isInvalid (context: CompilationUnitCommon): Boolean is
@@ -9049,8 +9069,9 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
-		Result.append_string ("$")
+		Result.append_character ('$')
 		Result.append_string (type.getExternalName)
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	is_equal (other: like Current): Boolean is
@@ -9252,6 +9273,7 @@ feature {Any}
 			end -- loop
 			Result.append_character ('$')
 		end -- if
+		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
 	isInvalid (context: CompilationUnitCommon): Boolean is
