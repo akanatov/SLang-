@@ -3859,7 +3859,7 @@ feature {Any}
 		-- check entity !!!
 		
 		notValid := expr.isInvalid (context, o)
-		if not notValid then 
+		if notValid then 
 			Result := True
 		end -- if
 		if not Result then
@@ -3929,11 +3929,11 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 		notValid := writable.isInvalid (context, o)
-		if not notValid then 
+		if notValid then 
 			Result := True
 		end -- if
 		notValid := expr.isInvalid (context, o)
-		if not notValid then 
+		if notValid then 
 			Result := True
 		end -- if
 		if not Result then
@@ -4980,7 +4980,7 @@ feature {Any}
 			i > n
 		loop
 			notValid := tuple.item (i).isInvalid (context, o)
-			if not notValid then
+			if notValid then
 				Result := True
 			end -- if
 			i := i + 1
@@ -5075,7 +5075,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- do nothing so far
 		notValid := expr.isInvalid (context, o)
-		if not notValid then
+		if notValid then
 			Result := True
 		end -- if
 		if not Result then
@@ -5159,7 +5159,7 @@ feature {Any}
 		-- signature: SignatureDescriptor
 		if signature /= Void then
 			notValid := signature.isInvalid (context, o)
-			if not notValid then
+			if notValid then
 				Result := True
 			end -- if
 		end -- if
@@ -7998,7 +7998,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- not_implemened_yet
 		notValid := signature.isInvalid (context, o)
-		if not notValid then
+		if notValid then
 			Result := True
 		end -- if
 	end -- isInvalid
@@ -8191,7 +8191,7 @@ feature {Any}
 			i > n
 		loop
 			notValid := parameters.item (i).isInvalid (context, o)
-			if not notValid then
+			if notValid then
 				Result := True
 			end -- if
 			i := i + 1
@@ -8199,7 +8199,7 @@ feature {Any}
 		if returnType /= Void then
 			-- Return type is to be be valid
 			notValid := returnType.isInvalid (context, o)
-			if not notValid then
+			if notValid then
 				Result := True
 			end -- if
 		end -- if
@@ -8554,7 +8554,7 @@ feature {Any}
 	--typePool := context.typePool
 		if anchorSignature /= Void then
 			notValid := anchorSignature.isInvalid (context, o)
-			if not notValid then
+			if notValid then
 				Result := True
 			end -- if
 		end -- if
@@ -8772,7 +8772,7 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		notValid := type.isInvalid (context, o)
-		if not notValid then
+		if notValid then
 			Result := True
 		end -- if
 		-- Check
