@@ -5363,7 +5363,16 @@ feature {None}
 			scanner.nextToken
 			inspect 
 				scanner.token 
-			when scanner.dot_token, scanner.left_paranthesis_token then
+			when scanner.dot_token then
+				-- ident.
+				--      ^
+				-- it could be module call (if ident is registered in the type pool) or feature call
+				--entDsc := checkIfIdentIsType (identDsc)
+				Result := parseWritableCall (identDsc)
+			when scanner.left_paranthesis_token then
+				-- ident ( 
+				--       ^
+				-- It could be object creation call (if ident is registered in the type pool) or featurte call
 				Result := parseWritableCall (identDsc)
 			else
 				Result := identDsc
