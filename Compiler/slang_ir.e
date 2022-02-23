@@ -362,7 +362,7 @@ create
 feature {Any}
 	statements: Array [StatementDescriptor]
 feature {None}
-	locals: Sorted_Array [LocalAttrDescriptor]
+	locals: Sorted_Array [LocalAttrDeclarationDescriptor]
 	init (scn: like scanner) is
 	do
 		init_pools (scn)
@@ -377,7 +377,7 @@ feature {Any}
 		statements.force (stmtDsc, statements.count + 1)
 	end -- addStatement
 
-	addedLocalDeclarationStatement (stmtDsc: LocalAttrDescriptor): Boolean is
+	addedLocalDeclarationStatement (stmtDsc: LocalAttrDeclarationDescriptor): Boolean is
 	require
 		non_void_statement: stmtDsc /= Void
 	do
@@ -390,7 +390,7 @@ feature {Any}
 	AnonymousRoutineIR_Loaded (fileName: String; o: Output): Boolean is
 	local
 		fImage: AnonymousRoutineImage 
-		localDsc: LocalAttrDescriptor
+		localDsc: LocalAttrDeclarationDescriptor
 		i, n: Integer
 	do
 		fImage := loadFileIR (fileName, o)
@@ -3967,11 +3967,11 @@ end -- class AssignmentStatementDescriptor
 
 ---------------- Entities start -----------------
 -- UnitAttributeNamesList:
---  [const | rigid] Identifier {ì,î[const | rigid] Identifier}
+--  [const | rigid] Identifier {","[const | rigid] Identifier}
 -- LocalAttributeNamesList:
---  [var | rigid] Identifier {ì,î[var | rigid] Identifier}
+--  [var | rigid] Identifier {","[var | rigid] Identifier}
 
-deferred class EntityDescriptor
+deferred class EntityDeclarationDescriptor
 inherit
 	Comparable
 		redefine
@@ -4006,6 +4006,7 @@ feature {Any}
 		else
 			Result := ""
 		end -- if
+		Result.append_string (name)
 	end -- out
 	is_equal (other: like Current): Boolean is
 	do
@@ -4036,10 +4037,11 @@ invariant
 	consistent_marked_var	: markedVar	  implies (not markedRigid and then not markedConst)
 	consistent_marked_rigid	: markedRigid implies (not markedVar   and then not markedConst)
 	consistent_marked_const	: markedConst implies (not markedVar   and then not markedRigid)
-end -- class EntityDescriptor
+end -- class EntityDeclarationDescriptor
+
 deferred class UnitAttrDescriptor
 inherit
-	EntityDescriptor
+	EntityDeclarationDescriptor
 		undefine
 			is_equal, infix "<"
 		select
@@ -4067,9 +4069,10 @@ feature {Any}
 	end -- lessThan
 
 end -- class UnitAttrDescriptor
-deferred class LocalAttrDescriptor
+
+deferred class LocalAttrDeclarationDescriptor
 inherit
-	EntityDescriptor
+	EntityDeclarationDescriptor
 	end
 	StatementDescriptor
 		undefine
@@ -4077,8 +4080,9 @@ inherit
 	end
 feature {Any}
 	markedConst : Boolean is False
-end -- class LocalAttrDescriptor
-class DetachedUnitAttributeDescriptor
+end -- class LocalAttrDeclarationDescriptor
+
+class DetachedUnitAttributeDeclarationDescriptor
 inherit
 	UnitAttrDescriptor
 		redefine
@@ -4105,7 +4109,8 @@ feature {Any}
 	do
 		Result := memberOut
 		Result.append_string (Precursor)
-		Result.append_string (name + ": ?" + type.out)
+		--Result.append_string (name + ": ?" + type.out)
+		Result.append_string (": ?" + type.out)
 		if assigner /= Void then
 			Result.append_character (' ')
 			Result.append_string (assigner.out)
@@ -4121,13 +4126,13 @@ feature {Any}
 -- 	weight: Integer is 2
 invariant
 	type_not_void: type /= Void
-end -- class DetachedUnitAttributeDescriptor
+end -- class DetachedUnitAttributeDeclarationDescriptor
 
-class DetachedLocalAttributeDescriptor
+class DetachedLocalAttributeDeclarationDescriptor
 	-- LocalAttributeCreation  => LocalAttributeNamesList ì:î ì?î UnitTypeDescriptor
 	-- LocalAttributeNamesList => [var | rigid] Identifier {ì,î[var | rigid] Identifier}
 inherit
-	LocalAttrDescriptor
+	LocalAttrDeclarationDescriptor
 		redefine
 			out
 	end
@@ -4155,7 +4160,6 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 
-
 	init (aName: like name; aType: like type) is
 	require
 	do
@@ -4165,17 +4169,24 @@ feature {Any}
 	out: String is
 	do
 		Result := Precursor
-		--Result.append_string (name + ": ?" + type.out)
-		Result.append_string (name + ": " + type.out)
+		-- Result.append_string (name + ": " + type.out)
+		Result.append_string (": " + type.out)
 	end -- out
 --feature {MemberDeclarationDescriptor}
 -- 	weight: Integer is 3
-end -- class DetachedLocalAttributeDescriptor
-class AttachedLocalAttributeDescriptor
--- LocalAttributeCreation  => LocalAttributeNamesList [ì:î Type] is Expression
--- LocalAttributeNamesList => [var | rigid] Identifier {ì,î[var | rigid] Identifier}
+end -- class DetachedLocalAttributeDeclarationDescriptor
+
+class AttachedLocalAttributeDeclarationDescriptor
+-- LocalAttributeCreation:
+--(LocalAttributeNamesList ([‚Äú:‚Äù Type] is Expression [NewLine])|(‚Äú:‚Äù ‚Äú?‚Äù AttachedType))
+--|
+--(‚Äú(‚Äú LocalAttributeNamesList ‚Äú)‚Äù is Expression  [NewLine])
+--|
+--(LocalAttributeNamesList‚Äú:‚ÄùAttachedType)
+-- LocalAttributeNamesList: [var|rigid] Identifier {‚Äú,‚Äù[var|rigid] Identifier}
+
 inherit
-	LocalAttrDescriptor
+	LocalAttrDeclarationDescriptor
 		redefine
 			out, setFlags
 	end
@@ -4185,7 +4196,7 @@ feature {Any}
 	markedVar: Boolean
 	markedRigid: Boolean
 	type: AttachedTypeDescriptor
-	expr: ExpressionDescriptor
+	expr: ExpressionDescriptor -- if expr is Void then type should have no init or init with no parameters
 
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -4209,11 +4220,10 @@ feature {Any}
 		markedRigid:= tmpDsc.markedRigid
 	end -- setFlags
 
-
 	init (mv, mr: Boolean; aName: String; aType: like type; ie: like expr) is
 	require
 		non_void_name: aName /= Void
-		non_void_expression: ie /= Void
+		--non_void_expression: ie /= Void
 		consistent_expr_and_type : ie = Void implies aType /= Void
 		consistent_flags: mv implies not mr and then mr implies not mv
 	do
@@ -4224,27 +4234,29 @@ feature {Any}
 		expr:= ie
 	end -- init
 
-
 	out: String is
 	do
 		Result := Precursor
-		Result.append_string (name)
+		--Result.append_string (name)
 		if type /= Void then
 			Result.append_character (':')
 			Result.append_character (' ')
 			Result.append_string (type.out)
 		end -- if
-		Result.append_string (" is ")
-		Result.append_string (expr.out)
+		if expr /= Void then
+			Result.append_string (" is ")
+			Result.append_string (expr.out)
+		end -- if
 	end -- out
 --feature {MemberDeclarationDescriptor}
 -- 	weight: Integer is 4
 invariant
-	expr_not_void: expr /= Void
-end -- class AttachedLocalAttributeDescriptor
+	--expr_not_void: expr /= Void
+end -- class AttachedLocalAttributeDeclarationDescriptor
+
 class TemporaryLocalAttributeDescriptor
 inherit
-	LocalAttrDescriptor
+	LocalAttrDeclarationDescriptor
 		redefine
 			out
 	end
@@ -4269,13 +4281,14 @@ feature {Any}
 
 	out: String is
 	do
-		if markedVar then
-			Result := "var " + name
-		elseif markedRigid then
-			Result := "rigid " + name
-		else
-			Result := "" + name
-		end -- if
+		Result := Precursor
+		--if markedVar then
+		--	Result := "var " + name
+		--elseif markedRigid then
+		--	Result := "rigid " + name
+		--else
+		--	Result := "" + name
+		--end -- if
 		Result.append_string (": <Type>")
 	end -- out
 	type: TypeDescriptor is do end
@@ -4304,13 +4317,14 @@ create
 feature {Any}
 	out: String is
 	do
-		if markedConst then
-			Result := "const " + name
-		elseif markedRigid then
-			Result := "rigid " + name
-		else
-			Result := "" + name
-		end -- if
+		Result := Precursor
+		--if markedConst then
+		--	Result := "const " + name
+		--elseif markedRigid then
+		--	Result := "rigid " + name
+		--else
+		--	Result := "" + name
+		--end -- if
 		Result.append_string (": <Type>")
 	end -- out
 	type: TypeDescriptor is do end
@@ -4327,7 +4341,7 @@ feature {Any}
 	end -- init
 	cutImplementation is do end
 end -- class TemporaryUnitAttributeDescriptor
-class AttachedUnitAttributeDescriptor
+class AttachedUnitAttributeDeclarationDescriptor
 	-- UnitAttributeDeclaration:
 	-- ( [const|rigid] Identifier {"," [const|rigid] Identifier} ì:î Type)
 	-- |
@@ -4374,7 +4388,7 @@ feature {Any}
 	do
 		Result := memberOut
 		Result.append_string (Precursor)
-		Result.append_string (name)
+		-- Result.append_string (name)
 		if type /= Void then
 			Result.append_character (':')
 			Result.append_character (' ')
@@ -4393,7 +4407,7 @@ feature {Any}
 -- 	weight: Integer is 5
 invariant
 	-- consistent_expr_and_type: expr = Void implies type /= Void -- cutImplementation may violate it
-end -- class AttachedUnitAttributeDescriptor
+end -- class AttachedUnitAttributeDeclarationDescriptor
 
 -------------- Assigners --------------------
 deferred class AttributeAssignerDescriptor
@@ -4765,6 +4779,10 @@ inherit
 	--		sameAs, lessThan
 	ExpressionDescriptor
 	end
+	EntityDescriptor
+		undefine
+			is_equal
+	end
 feature
 	out: String is do Result :=  "this" end
 	sameAs (other: like Current): Boolean is
@@ -4820,6 +4838,13 @@ feature {Any}
 feature {ExpressionDescriptor}
 	weight: Integer is -3
 end -- class ReturnDescriptor
+deferred class EntityDescriptor
+inherit
+--	Comparable
+--	end
+	ExpressionDescriptor
+	end
+end -- class EntityDescriptor
 class IdentifierDescriptor
 inherit
 	--MemberCallDescriptor
@@ -4831,6 +4856,10 @@ inherit
 	ConstObjectDescriptor
 		undefine
 			is_equal, infix "<"
+	end
+	EntityDescriptor
+		undefine
+			is_equal, getExternalName
 	end
 create
 	init
@@ -4861,6 +4890,9 @@ feature {Any}
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
+	markedConst, markedRigid, MarkedVar: Boolean is False
+	type: TypeDescriptor is once end
+	
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -5870,7 +5902,7 @@ end -- class CallChainElement
 
 deferred class MemberCallDescriptor
 -- MemberCall: WritableCall |  (this {CallChain})
--- WritableCall: (  (Identifier [ì.îIdentifier])| (old [ì{îUnitTypeNameî}î]) [Arguments] )| return {CallChain}
+-- WritableCall: (  (Identifier ["."Identifier])| (old ["{"UnitTypeName"}"]) [Arguments] )| return {CallChain}
 inherit
 	StatementDescriptor
 		undefine
@@ -9430,6 +9462,12 @@ inherit
 		undefine
 			is_equal, infix "<", getExternalName
 	end
+	EntityDescriptor
+		undefine
+			is_equal, infix "<", getExternalName
+--		undefine
+--			is_equal, out
+	end 
 create
 	init
 feature

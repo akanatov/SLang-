@@ -553,7 +553,7 @@ feature {None}
 		type: TypeDescriptor
 		detDsc: DetachableTypeDescriptor
 		attDsc: AttachedTypeDescriptor
-		localDsc: LocalAttrDescriptor
+		localDsc: LocalAttrDeclarationDescriptor
 		expr: ExpressionDescriptor
 		rtnDsc: StandaloneRoutineDescriptor
 	do
@@ -579,9 +579,9 @@ feature {None}
 						check
 							valid_attached_type: attDsc /= Void
 						end -- check
-						create {AttachedLocalAttributeDescriptor} localDsc.init (False, False, name, attDsc, expr)
+						create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, name, attDsc, expr)
 					else
-						create {DetachedLocalAttributeDescriptor} localDsc.init (name, detDsc) --.type)
+						create {DetachedLocalAttributeDeclarationDescriptor} localDsc.init (name, detDsc) --.type)
 					end -- if
 					if not ast.addedLocalDeclarationStatement (localDsc) then
 						validity_error( "Duplicated local declaration '" + localDsc.name + "'") 
@@ -610,10 +610,19 @@ feature {None}
 					-- ident: ?type
 					detDsc ?= type
 					if detDsc = Void then
-						-- attribute initialization is missed
-						validity_error( "For attribute '" + name + ": " + type.out + "' initialization is missed") 
+						attDsc ?= type
+						check
+							valid_attached_type: attDsc /= Void
+						end -- check
+						create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, name, attDsc, Void)
+						if not ast.addedLocalDeclarationStatement (localDsc) then
+							validity_error( "Duplicated local declaration '" + localDsc.name + "'") 
+						end -- if
+					
+						---- attribute initialization is missed
+						--validity_error( "For attribute '" + name + ": " + type.out + "' initialization is missed") 
 					else
-						create {DetachedLocalAttributeDescriptor} localDsc.init (name, detDsc) --.type)
+						create {DetachedLocalAttributeDeclarationDescriptor} localDsc.init (name, detDsc) --.type)
 						if not ast.addedLocalDeclarationStatement (localDsc) then
 							validity_error( "Duplicated local declaration '" + localDsc.name + "'") 
 						end -- if
@@ -648,7 +657,7 @@ feature {None}
 	require
 		statements_not_void: statements /= Void
 	local
-		locals: Sorted_Array [LocalAttrDescriptor]
+		locals: Sorted_Array [LocalAttrDeclarationDescriptor]
 	do
 --trace ("parseLocalsDeclaration")
 		locals := parseLocalAttributesDeclaration (isVarOrRigid, name)
@@ -1034,7 +1043,7 @@ feature {None}
 		end -- if
 	end -- parseAssignmentOrQualifiedCall
 	
-	parseLocalAttributesDeclaration (isVarOrRigid: Boolean; name: String): Sorted_Array [LocalAttrDescriptor] is
+	parseLocalAttributesDeclaration (isVarOrRigid: Boolean; name: String): Sorted_Array [LocalAttrDeclarationDescriptor] is
 	-- Anonymous rotuine - local attribute declaration
 	-- 1: var ...
 	-- 2: ident, ....
@@ -1048,7 +1057,7 @@ feature {None}
 		detDsc: DetachableTypeDescriptor
 		attDsc: AttachedTypeDescriptor
 		expr: ExpressionDescriptor
-		localDsc: LocalAttrDescriptor
+		localDsc: LocalAttrDeclarationDescriptor
 		tmpDsc: TemporaryLocalAttributeDescriptor
 		isVar, isRigid: Boolean
 		localAttrs: Sorted_Array [TemporaryLocalAttributeDescriptor]
@@ -1089,14 +1098,20 @@ feature {None}
 								check
 									valid_attached_type: attDsc /= Void
 								end -- check
-								create {AttachedLocalAttributeDescriptor} localDsc.init (False, False, name, attDsc, expr)
+								create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, name, attDsc, expr)
 								create Result.fill (<<localDsc>>)
 							end -- if
 						else
-							syntax_error (<<scanner.is_token>>)
+							attDsc ?= type
+							check
+								valid_attached_type: attDsc /= Void
+							end -- check
+							create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, name, attDsc, Void)
+							create Result.fill (<<localDsc>>)
+							--syntax_error (<<scanner.is_token>>)
 						end -- if
 					else
-						create {DetachedLocalAttributeDescriptor} localDsc.init (name, detDsc) --.type)
+						create {DetachedLocalAttributeDeclarationDescriptor} localDsc.init (name, detDsc) --.type)
 						create Result.fill (<<localDsc>>)
 					end -- if
 				end -- if
@@ -1105,7 +1120,7 @@ feature {None}
 				scanner.nextToken
 				expr := parseExpressionWithSemicolon -- parseExpression
 				if expr /= Void then
-					create {AttachedLocalAttributeDescriptor} localDsc.init (False, False, name, Void, expr)
+					create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, name, Void, expr)
 					create Result.fill (<<localDsc>>)
 				end -- if
 			else
@@ -1169,7 +1184,7 @@ feature {None}
 --trace ("is expression")
 					expr := parseExpressionWithSemicolon -- parseExpression
 					if expr /= Void then
-						create {AttachedLocalAttributeDescriptor} localDsc.init (False, False, "", Void, expr)
+						create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, "", Void, expr)
 						-- 	init (mVar, mRigid: Boolean; aName: String; aType: like type; ie: like expr)
 						if localAttrs /= Void then
 							from
@@ -1203,13 +1218,13 @@ feature {None}
 									check
 										valid_attached_type: attDsc /= Void
 									end -- check
-									create {AttachedLocalAttributeDescriptor} localDsc.init (False, False, "", attDsc, expr)
+									create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, "", attDsc, expr)
 								end -- if
 							else
 								syntax_error (<<scanner.is_token>>)
 							end -- if
 						else
-							create {DetachedLocalAttributeDescriptor} localDsc.init ("", detDsc) --.type)
+							create {DetachedLocalAttributeDeclarationDescriptor} localDsc.init ("", detDsc) --.type)
 						end -- if
 						if localDsc /= Void and then localAttrs /= Void then
 							from
@@ -3788,9 +3803,9 @@ feature {None}
 				unitDsc.setInvariant (preconditions)
 				dtDsc ?= returnType
 				if dtDsc = Void then
-					create {AttachedUnitAttributeDescriptor} Result.init (isOverriding, isFinal, False, False, name, returnType, Void, Void)
+					create {AttachedUnitAttributeDeclarationDescriptor} Result.init (isOverriding, isFinal, False, False, name, returnType, Void, Void)
 				else
-					create {DetachedUnitAttributeDescriptor} Result.init (isOverriding, isFinal, name, dtDsc.type, Void)
+					create {DetachedUnitAttributeDeclarationDescriptor} Result.init (isOverriding, isFinal, name, dtDsc.type, Void)
 				end -- if
 			else -- parse function!!!
 				Result ?= parseAnyRoutineWithPreconditions (isOverriding, isFinal, is_pure, is_safe, name, Void, returnType, False, False, Void, False, preconditions, False, Void, Void, Void)
@@ -5277,13 +5292,42 @@ feature {None}
 						commaFound := True
 						scanner.nextToken
 					end -- if
-				when scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token,
-					scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
-				then 
---trace ("%T%TparseUnitTypeName1 " + name + "[ " + scanner.tokenString)
+				when scanner.identifier_token then
+					-- Type or ConstExpr
 					if commaFound or else generics.count = 0 then
 						commaFound := False
 						td := parseTypeOrConstExprDescriptor
+						if td = Void then
+							toLeave := True
+						else
+							generics.force (td, generics.count + 1)
+						end -- if
+					else
+						syntax_error (<<scanner.comma_token>>)
+						toLeave := True
+					end -- if
+				when scanner.as_token, scanner.detach_token, scanner.rtn_token then
+					-- Type!
+					if commaFound or else generics.count = 0 then
+						commaFound := False
+						-- td := parseTypeOrConstExprDescriptor
+						td := parseTypeDescriptor
+						if td = Void then
+							toLeave := True
+						else
+							generics.force (td, generics.count + 1)
+						end -- if
+					else
+						syntax_error (<<scanner.comma_token>>)
+						toLeave := True
+					end -- if
+				when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+					-- Expr started with constant!
+--trace ("%T%TparseUnitTypeName1 " + name + "[ " + scanner.tokenString)
+					if commaFound or else generics.count = 0 then
+						commaFound := False
+						--td := parseTypeOrConstExprDescriptor
+						td := parseExpression
 						if td = Void then
 							toLeave := True
 						else
@@ -5343,53 +5387,95 @@ feature {None}
 		end -- if
 --trace ("<<< parseUnitTypeName1")
 	end -- parseUnitTypeName1
+	
+--	checkIfIdentIsType (identDsc: IdentifierDescriptor): EntityDescriptor is
+--	require
+--		identifier_not_void: identDsc /= Void
+--	local
+--		unitTypeDsc: UnitTypeNameDescriptor
+--	do
+--		create unitTypeDsc.init (identDsc.name, Void)
+--		unitTypeDsc := ast.typePool.search (unitTypeDsc)
+--		if unitTypeDsc = Void then
+--trace ("+++ Identifier: " + identDsc.out)
+--			Result := identDsc
+--		else
+--trace ("+++ Registered type: " + unitTypeDsc.out)
+--			Result := unitTypeDsc
+--		end -- if
+--	end -- checkIfIdentIsType
 
 	parseTypeOrConstExprDescriptor: TypeOrExpressionDescriptor is
 	-- Type|ConstantExpression
 	-- ConstantExpression: (Identifier {“.” Identifier}) | Constant [Operator ConstantExpression]
 	--                     ^ 
 	require
-		valid_token: validToken (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token, 
-			scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token>>)
+		valid_token: validToken (<<scanner.identifier_token>>)
+		--valid_token: validToken (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token, 
+		--	scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token>>)
 	local
 		identDsc: IdentifierDescriptor
-		utnDsc: UnitTypeNameDescriptor
+		--entDsc: EntityDescriptor
+		--unitTypeDsc: UnitTypeNameDescriptor	
 	do
 --trace ("%T%T%TparseTypeOrConstExprDescriptor")
-		inspect 
-			scanner.token 
-		when scanner.identifier_token then
+		--inspect 
+		--	scanner.token 
+		--when scanner.identifier_token then
 			create identDsc.init (scanner.tokenString)
 			scanner.nextToken
 			inspect 
 				scanner.token 
 			when scanner.dot_token then
+				-- Expression !!! in the form of the call
 				-- ident.
 				--      ^
-				-- it could be module call (if ident is registered in the type pool) or feature call
+				---- it could be module call (if ident is registered in the type pool) or feature call 
 				--entDsc := checkIfIdentIsType (identDsc)
+				--Result := parseWritableCall (entDsc)
 				Result := parseWritableCall (identDsc)
 			when scanner.left_paranthesis_token then
+				-- Expression or Init procedure call !!!
 				-- ident ( 
 				--       ^
-				-- It could be object creation call (if ident is registered in the type pool) or featurte call
+				---- It could be object creation call (if ident is registered in the type pool) or featurte call or init procedure call !!!
+				--entDsc := checkIfIdentIsType (identDsc)
+				--Result := parseWritableCall (entDsc) -- identDsc)
 				Result := parseWritableCall (identDsc)
 			else
-				Result := identDsc
-				if scanner.genericsStart then -- Hmmm ... a < b 
-					utnDsc := parseUnitTypeName1 (identDsc.name, False)
-					if utnDsc /= Void then
-						Result := utnDsc
-					end -- if
---				else
---trace ("It is just an identifier: " + Result.out)
+--				Result := identDsc
+				if scanner.genericsStart then -- Hmmm ... a < b -- not supported so far
+					-- Expression in the form of type
+					Result := parseUnitTypeName1 (identDsc.name, False)
+					--utnDsc := parseUnitTypeName1 (identDsc.name, False)
+					--if utnDsc /= Void then
+					--	Result := utnDsc
+					--end -- if
+				else -- it could be init procedure call !!!
+-- trace ("It is just an identifier or init call: " + identDsc.out)
+					Result := identDsc
+					--Result := checkIfIdentIsType (identDsc)
+					--check 
+					--	identifier_or_type_not_void: Result /= Void
+					--end -- check
+					--if currentUnitDsc /= Void then
+					--	unitTypeDsc ?= Result
+					--	if unitTypeDsc /= Void and then unitTypeDsc.name.is_equal (currentUnitDsc.name) then
+					--	-- Init procedure with no arguments call !!!
+					--	trace ("It is init call: " + Result.out)
+					--	else
+					--	trace ("It is just an identifier: " + Result.out)
+					--	end -- if
+					--end -- if
 				end -- if
 			end -- inspect
-		when scanner.as_token, scanner.detach_token, scanner.rtn_token then
-			Result := parseTypeDescriptor
-		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
-			Result := parseExpression
-		end -- inspect
+		--when scanner.as_token, scanner.detach_token, scanner.rtn_token then
+		--	-- Type !!!
+		--	Result := parseTypeDescriptor
+		--when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+		--	-- Expression !!!
+		--	Result := parseExpression
+		--end -- inspect
 --trace ("%T%T%TparseTypeOrConstExprDescriptor: " + Result.out)
 	end -- parseTypeOrConstExprDescriptor
 
@@ -6742,7 +6828,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				scanner.nextToken
 				exprDsc := parseExpressionWithSemicolon
 				if exprDsc /= Void then -- Identifier is ConstantExpression
-					create {AttachedUnitAttributeDescriptor} attrDsc.init (isOverriding, isFinal, True, False, name, Void, Void, exprDsc)
+					create {AttachedUnitAttributeDeclarationDescriptor} attrDsc.init (isOverriding, isFinal, True, False, name, Void, Void, exprDsc)
 					create Result.fill (<<attrDsc>>)
 				end -- if
 --			when scanner.minus_token then
@@ -6881,7 +6967,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						scanner.nextToken
 						exprDsc := parseExpressionWithSemicolon
 						if exprDsc /= Void then
-							create {AttachedUnitAttributeDescriptor} attrDsc.init (isOverriding, isFinal, True, False, name, Void, Void, exprDsc)
+							create {AttachedUnitAttributeDeclarationDescriptor} attrDsc.init (isOverriding, isFinal, True, False, name, Void, Void, exprDsc)
 							create Result.fill (<<attrDsc>>)
 						end -- if
 					when scanner.require_token then 
@@ -6912,9 +6998,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 							-- attribute without assigner
 							dtDsc ?= typeDsc
 							if dtDsc = Void then
-								create {AttachedUnitAttributeDescriptor} attrDsc.init (isOverriding, isFinal, False, False, name, typeDsc, Void, Void)
+								create {AttachedUnitAttributeDeclarationDescriptor} attrDsc.init (isOverriding, isFinal, False, False, name, typeDsc, Void, Void)
 							else
-								create {DetachedUnitAttributeDescriptor} attrDsc.init (isOverriding, isFinal, name, dtDsc.type, Void)
+								create {DetachedUnitAttributeDeclarationDescriptor} attrDsc.init (isOverriding, isFinal, name, dtDsc.type, Void)
 							end -- if
 							create Result.fill (<<attrDsc>>)
 						end -- if
@@ -7005,9 +7091,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		end -- inspect
 		dtDsc ?= typeDsc
 		if dtDsc = Void then
-			create {AttachedUnitAttributeDescriptor} Result.init (isO, isF, False, False, name, typeDsc, assigner, Void)
+			create {AttachedUnitAttributeDeclarationDescriptor} Result.init (isO, isF, False, False, name, typeDsc, assigner, Void)
 		else
-			create {DetachedUnitAttributeDescriptor} Result.init (isO, isF, name, dtDsc.type, assigner)
+			create {DetachedUnitAttributeDeclarationDescriptor} Result.init (isO, isF, name, dtDsc.type, assigner)
 		end -- if
 	end -- parseUnitAttributAssigner
 
@@ -7130,9 +7216,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						valid_temporary_attribute: tmpDsc /= Void
 					end
 					if dtDsc = Void then
-						create {AttachedUnitAttributeDescriptor} attrDsc.init (isO, isF, False, False, tmpDsc.name, typeDsc, Void, Void)
+						create {AttachedUnitAttributeDeclarationDescriptor} attrDsc.init (isO, isF, False, False, tmpDsc.name, typeDsc, Void, Void)
 					else
-						create {DetachedUnitAttributeDescriptor} attrDsc.init (isO, isF, tmpDsc.name, dtDsc.type, Void)
+						create {DetachedUnitAttributeDeclarationDescriptor} attrDsc.init (isO, isF, tmpDsc.name, dtDsc.type, Void)
 					end -- if
 					aResult.put (attrDsc, i)
 					i := i + 1
@@ -7163,7 +7249,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		attTypeDsc: AttachedTypeDescriptor
 		tmpDsc: TemporaryUnitAttributeDescriptor
 		exprDsc: ExpressionDescriptor
-		unitAttrDsc : AttachedUnitAttributeDescriptor
+		unitAttrDsc : AttachedUnitAttributeDeclarationDescriptor
 		toLeave: Boolean
 		i, n: Integer
 		noTailList: Boolean
@@ -7465,7 +7551,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				scanner.nextToken
 				exprDsc := parseExpressionWithSemicolon
 				if exprDsc /= Void then
-					create {AttachedUnitAttributeDescriptor} Result.init (isO, isF, False, False, name, Void, Void, exprDsc)
+					create {AttachedUnitAttributeDeclarationDescriptor} Result.init (isO, isF, False, False, name, Void, Void, exprDsc)
 				end -- if
 			when scanner.rtn_token then
 				-- name: Type rtn := Assigner // Attribute!
@@ -7495,9 +7581,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					-- name: Type // Attribute!
 					detachedType ?= type
 					if detachedType = Void then
-						create {AttachedUnitAttributeDescriptor} Result.init (isO, isF,False, False, name, type, Void, Void)
+						create {AttachedUnitAttributeDeclarationDescriptor} Result.init (isO, isF,False, False, name, type, Void, Void)
 					else
-						create {DetachedUnitAttributeDescriptor} Result.init (isO, isF, name, detachedType.type, Void)
+						create {DetachedUnitAttributeDeclarationDescriptor} Result.init (isO, isF, name, detachedType.type, Void)
 					end -- if
 				end -- if
 			end -- inspect
@@ -7933,7 +8019,6 @@ syntax_error (<<scanner.comma_token>>)
 	require
 		valid_token: validToken (<<scanner.identifier_token, scanner.unit_token>>)
 	local	
-		unitDsc: UnitDeclarationDescriptor
 		goToMembers: Boolean
 		mvDsc, currentVisibilityZone: MemberVisibilityDescriptor
 		invPredicates: Array [PredicateDescriptor]
@@ -7967,8 +8052,8 @@ syntax_error (<<scanner.comma_token>>)
 			scanner.nextToken
 		end -- if
 		if unitName /= Void then
-			create unitDsc.init (unitName, is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend)
-			unitDsc.attach_pools (ast)
+			create currentUnitDsc.init (unitName, is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend)
+			currentUnitDsc.attach_pools (ast)
 			
 			if scanner.token = scanner.alias_token then
 				-- parse alias unit name
@@ -7976,7 +8061,7 @@ syntax_error (<<scanner.comma_token>>)
 				inspect	
 					scanner.token
 				when scanner.identifier_token then -- parse alias name
-					unitDsc.setAliasName (scanner.tokenString)
+					currentUnitDsc.setAliasName (scanner.tokenString)
 					scanner.nextToken
 				else
 					syntax_error (<<scanner.identifier_token>>)
@@ -7987,39 +8072,39 @@ syntax_error (<<scanner.comma_token>>)
 				-- parse formal generics
 				formalGenerics := parseFormalGenerics
 				if formalGenerics /= Void then
-					unitDsc.setFormalGenercis (formalGenerics)
+					currentUnitDsc.setFormalGenercis (formalGenerics)
 				end -- if
 			end -- if
-			o.putLine ("Parsing unit `" + unitDsc.fullUnitName + "`")
+			o.putLine ("Parsing unit `" + currentUnitDsc.fullUnitName + "`")
 
 			if scanner.token = scanner.extend_token then
 				-- parse inheritance clause
-				parseInheritanceClause (unitDsc)
+				parseInheritanceClause (currentUnitDsc)
 			end -- if
 
 			if scanner.token = scanner.use_token then
 				-- parse EnclosedUseDirective
 				unitUsageAndConst := parseEnclosedUseDirective
 				if unitUsageAndConst /= Void then
-					unitDsc.setUseConstBlock (unitUsageAndConst)
+					currentUnitDsc.setUseConstBlock (unitUsageAndConst)
 				end -- if				
 			end -- if
 
 			if scanner.token = scanner.select_token then
 				-- parse "select MemberSelection"
-				parseMemberSelection (unitDsc)
+				parseMemberSelection (currentUnitDsc)
 			end -- if
 
 			currentVisibilityZone := anyDsc
 
 			if scanner.token = scanner.override_token then
 				-- parse "override InheritedMemberOverriding" or "override MemberDeclaration (goToMembers := True)"
-				goToMembers:= parseInheritedMemberOverridingOrMemberDeclaration (currentVisibilityZone, unitDsc)
+				goToMembers:= parseInheritedMemberOverridingOrMemberDeclaration (currentVisibilityZone, currentUnitDsc)
 			end -- if
 
 			if scanner.token = scanner.new_token and then not goToMembers then
 				-- parse "new	InitProcedureInheritance" or "MemberDeclaration (goToMembers := True)"
-				goToMembers:= parseInitProcedureInheritanceOrMemberDeclaration (currentVisibilityZone, unitDsc)
+				goToMembers:= parseInitProcedureInheritanceOrMemberDeclaration (currentVisibilityZone, currentUnitDsc)
 			end -- if
 
 			if scanner.token = scanner.const_token and then not goToMembers then
@@ -8029,7 +8114,7 @@ syntax_error (<<scanner.comma_token>>)
 					-- parse "const :	ConstObjectsDeclaration"
 					scanner.flush
 --trace ("Parse const objects")
-					parseConstObjectsDeclaration (unitDsc)
+					parseConstObjectsDeclaration (currentUnitDsc)
 				else
 					-- It is ordinary const start ...
 --trace ("Parse const attribute #1")
@@ -8053,7 +8138,7 @@ syntax_error (<<scanner.comma_token>>)
 					scanner.bar_token,
 					scanner.const_token, scanner.rigid_token, scanner.assignment_token
 				then
-					parseMember (currentVisibilityZone, unitDsc, False, Void)
+					parseMember (currentVisibilityZone, currentUnitDsc, False, Void)
 				when scanner.override_token then
 					-- parse MemberDeclaration
 					scanner.nextToken
@@ -8065,13 +8150,13 @@ syntax_error (<<scanner.comma_token>>)
 						scanner.bar_token,
 						scanner.const_token, scanner.rigid_token, scanner.assignment_token
 					then
-						parseMember (currentVisibilityZone, unitDsc, True, Void)
+						parseMember (currentVisibilityZone, currentUnitDsc, True, Void)
 					when scanner.left_paranthesis_token then
 						scanner.nextToken
 						if scanner.token = scanner.right_paranthesis_token then
 							scanner.nextToken
 							-- parse MemberDeclaration
-							parseMember (currentVisibilityZone, unitDsc, False, "()")
+							parseMember (currentVisibilityZone, currentUnitDsc, False, "()")
 						else
 							syntax_error (<<scanner.right_paranthesis_token>>)
 							toLeave := True
@@ -8104,7 +8189,7 @@ syntax_error (<<scanner.comma_token>>)
 					if scanner.token = scanner.right_paranthesis_token then
 						scanner.nextToken
 						-- parse MemberDeclaration
-						parseMember (currentVisibilityZone, unitDsc, False, "()")
+						parseMember (currentVisibilityZone, currentUnitDsc, False, "()")
 					else
 						syntax_error (<<scanner.right_paranthesis_token>>)
 						toLeave := True
@@ -8132,7 +8217,7 @@ syntax_error (<<scanner.comma_token>>)
 							then
 								-- parse MemberDeclaration
 --trace ("member with visibility " + mvDsc.out)
-								parseMember (mvDsc, unitDsc, False, Void)
+								parseMember (mvDsc, currentUnitDsc, False, Void)
 							when scanner.override_token	then
 								-- parse MemberDeclaration
 								scanner.nextToken
@@ -8144,13 +8229,13 @@ syntax_error (<<scanner.comma_token>>)
 									scanner.bar_token,
 									scanner.const_token, scanner.rigid_token, scanner.assignment_token
 								then
-									parseMember (mvDsc, unitDsc, True, Void)
+									parseMember (mvDsc, currentUnitDsc, True, Void)
 								when scanner.left_paranthesis_token then
 									scanner.nextToken
 									if scanner.token = scanner.right_paranthesis_token then
 										scanner.nextToken
 										-- parse MemberDeclaration
-										parseMember (currentVisibilityZone, unitDsc, False, "()")
+										parseMember (currentVisibilityZone, currentUnitDsc, False, "()")
 									else
 										syntax_error (<<scanner.right_paranthesis_token>>)
 										toLeave := True
@@ -8183,7 +8268,7 @@ syntax_error (<<scanner.comma_token>>)
 								if scanner.token = scanner.right_paranthesis_token then
 									scanner.nextToken
 									-- parse MemberDeclaration
-									parseMember (mvDsc, unitDsc, False, "()")
+									parseMember (mvDsc, currentUnitDsc, False, "()")
 								else
 									syntax_error (<<scanner.right_paranthesis_token>>)
 									toLeave := True
@@ -8228,23 +8313,26 @@ syntax_error (<<scanner.comma_token>>)
 				scanner.nextToken
 				invPredicates := parsePredicates
 				if invPredicates /= Void then
-					unitDsc.setInvariant (invPredicates)
+					currentUnitDsc.setInvariant (invPredicates)
 				end -- if
 			end -- if
 
 			if scanner.blockEnd then
 				-- end of the unit
-				if initialErrorsCount = errorsCount and then not ast.units.added (unitDsc) then
-					validity_error( "More than one unit with name '" + unitDsc.name + "' in the same source/compilation")
+				if initialErrorsCount = errorsCount and then not ast.units.added (currentUnitDsc) then
+					validity_error( "More than one unit with name '" + currentUnitDsc.name + "' in the same source/compilation")
 				end -- if
 				scanner.nextToken
 			else
 				syntax_error (<<scanner.end_unit_expected>>)
 			end -- if
 		end -- if
+		currentUnitDsc := Void
 	end -- parseUnit
 	
 feature {None}
+
+	currentUnitDsc: UnitDeclarationDescriptor -- may be Void whiel parsing standalone routines or anonymous one
 	
 	validityError (srcp: expanded SourcePosition; message: String) is
 	require
