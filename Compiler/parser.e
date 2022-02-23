@@ -7961,7 +7961,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						Result.force(fgt, Result.count + 1)
 					end -- if
 				else
-syntax_error (<<scanner.comma_token>>)
+					syntax_error (<<scanner.comma_token>>)
 					toLeave := True
 				end -- if
 			when scanner.comma_token then
@@ -7978,7 +7978,7 @@ syntax_error (<<scanner.comma_token>>)
 				end -- if
 			else
 				if scanner.genericsEnd then
-					if commaFound then
+					if commaFound or else Result.count = 0 then
 						syntax_error (<<scanner.identifier_token>>)
 					end -- if
 					scanner.nextToken

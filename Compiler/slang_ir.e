@@ -1781,7 +1781,7 @@ class UnitDeclarationDescriptor
 -- [InheritedMemberOverriding]
 -- [InitProcedureInheritance]
 -- [ConstObjectsDeclaration]
--- { ( MemberVisibility “:” {MemberDeclaration}) |  MemberDeclaration }
+-- { ( MemberVisibility ":" {MemberDeclaration}) |  MemberDeclaration }
 -- [InvariantBlock]
 -- end
 inherit
@@ -1818,7 +1818,10 @@ feature {Any}
 			until
 				i > n
 			loop
-				Result.append_string (formalGenerics.item (i).getExternalName)
+				-- Result.append_string (formalGenerics.item (i).getExternalName)
+				Result.append_string (i.out)
+				--Result.append_character ('_')
+				--Result.append_string (formalGenerics.item (i).getExternalName)
 				if i < n then
 					Result.append_character ('_')
 				end
@@ -2379,16 +2382,17 @@ feature {Any}
 	end -- out
 	getExternalName: String is
 	do
-		Result := "" + name
-		if typeConstraint /= Void then
-			Result.append_string("_extend_")
-			Result.append_string (typeConstraint.getExternalName)
-		end -- if
-		if initConstraint /= Void then
-			Result.append_string("_new_")
-			Result.append_string (initConstraint.getExternalName)
-		end -- if
-		Result.append_string ("_" + Result.hash_code.out)
+		Result := "1"
+		--Result := "" + name
+		--if typeConstraint /= Void then
+		--	Result.append_string("_extend_")
+		--	Result.append_string (typeConstraint.getExternalName)
+		--end -- if
+		--if initConstraint /= Void then
+		--	Result.append_string("_new_")
+		--	Result.append_string (initConstraint.getExternalName)
+		--end -- if
+		--Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
 	init (n: like name; tc: like typeConstraint; ic: like initConstraint) is
@@ -2425,8 +2429,9 @@ feature {Any}
 	end -- out
 	getExternalName: String is
 	do
-		Result := name + "_" + type.getExternalName
-		Result.append_string ("_" + Result.hash_code.out)
+		Result := "2"
+		--Result := name + "_" + type.getExternalName
+		--Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
 	init (aName: String; ut: TypeDescriptor) is
@@ -2465,8 +2470,9 @@ feature {Any}
 	end -- out
 	getExternalName: String is
 	do
-		Result := name + "_" + routineType.getExternalName
-		Result.append_string ("_" + Result.hash_code.out)
+		Result := "3"
+		--Result := name + "_" + routineType.getExternalName
+		--Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
 	init (aName: String; rt: RoutineTypeDescriptor) is
@@ -3569,6 +3575,10 @@ inherit
 		undefine
 			out
 	end
+	SourcePosition
+		undefine
+			out, is_equal
+	end
 feature {Any}
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	require
@@ -3977,10 +3987,10 @@ inherit
 		redefine
 			out, is_equal
 	end
---	SourcePosition
---		redefine
---			out, is_equal
---	end
+	SourcePosition
+		redefine
+			out, is_equal
+	end
 feature {Any}		
 	markedVar: Boolean is
 	deferred
@@ -4498,6 +4508,10 @@ deferred class ExpressionDescriptor
 inherit	
 	TypeOrExpressionDescriptor
 	end
+	SourcePosition
+		undefine	
+			is_equal, out
+	end
 feature{Any}
 	getOrder: Integer is
 -- 0. All other
@@ -4518,7 +4532,11 @@ feature{Any}
 		non_void_context: context /= Void
 	deferred
 	end -- isInvalid	
+	
+	semType: UnitTypeCommonDescriptor
+	
 end -- class ExpressionDescriptor
+
 deferred class TypeOfExpressionDescriptor
 inherit
 	ExpressionDescriptor
@@ -4891,7 +4909,7 @@ feature {Any}
 	end -- getExternalName
 
 	markedConst, markedRigid, MarkedVar: Boolean is False
-	type: TypeDescriptor is once end
+	--type: TypeDescriptor is once end
 	
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -9351,7 +9369,8 @@ feature {Any}
 			until
 				i > n
 			loop
-				Result.append_string (generics.item (i).getExternalName)
+				--Result.append_string (generics.item (i).getExternalName)
+				Result.append_string (i.out)
 				if i < n then
 					Result.append_character ('_')
 				end -- if

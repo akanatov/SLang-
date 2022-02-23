@@ -422,12 +422,24 @@ end // Cardinal
 val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	// WIP!!!!
 	// the caveat how to distingush Integer.1 from Cardinal.1 - now Cardinal constants are not imported into Any due to name clash!!! .... 
+	// Cardinal must have := (that: Integer) toi ensure we may assign Integer to Cardinal with proper precondition!!! 
 	// Need to think more ...
 	// No need for cardinal so far ... But count should return Cardinal not Integer ...
 	// x is y.count
 	// if x = 1 it means that both Cardinal & Integer should have function '=' with another integral type !!!!
-/*	Cardinal (other: Integer [???]) do
-	end */
+	// If one like to assign Cardinal constant which is greater than Integer.max then prefix Cardinal. must be used ! 
+	Cardinal (other: Integer [BitsNumber])
+	require
+		other > - 1 /// Integer must be not less than 0 to be converted iunto Cardinal
+	do
+		data is other.data
+	end // Cardinal
+	:= (other: Integer [BitsNumber])
+	require
+		other > - 1 /// Integer must be not less than 0 to be converted iunto Cardinal
+	do
+		data := other.data
+	end // :=
 end // Cardinal
 
 val unit Integer extend Integer [Platform.IntegerBitsCount]
