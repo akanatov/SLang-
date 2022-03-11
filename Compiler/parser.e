@@ -7957,11 +7957,13 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					fgt := parseFormalGenericType
 					if fgt = Void then
 						toLeave := True
+						Result := Void
 					else
 						Result.force(fgt, Result.count + 1)
 					end -- if
 				else
 					syntax_error (<<scanner.comma_token>>)
+					Result := Void
 					toLeave := True
 				end -- if
 			when scanner.comma_token then
@@ -7971,6 +7973,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					else
 						syntax_error (<<scanner.identifier_token, scanner.right_square_bracket_token>>)
 					end -- if
+					Result := Void
 					toLeave := True
 				else
 					scanner.nextToken
@@ -7979,16 +7982,20 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			else
 				if scanner.genericsEnd then
 					if commaFound or else Result.count = 0 then
+						Result := Void
 						syntax_error (<<scanner.identifier_token>>)
 					end -- if
 					scanner.nextToken
 					toLeave := True				
 --trace ("%TparseFormalGenerics: ]")
 				elseif commaFound then
+					Result := Void
 					syntax_error (<<scanner.identifier_token>>)
 				elseif scanner.Cmode then
+					Result := Void
 					syntax_error (<<scanner.comma_token, scanner.greater_token>>)
 				else
+					Result := Void
 					syntax_error (<<scanner.comma_token, scanner.right_square_bracket_token>>)
 				end -- if
 				toLeave := True
