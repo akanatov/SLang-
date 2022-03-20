@@ -8,13 +8,14 @@ feature {None}
 	once
 		create Result
 	end -- env
-	getAnonymousRoutineClusters: Sorted_Array [String] is
+	getAnonymousRoutineClusters: Sorted_Array [ClusterDescriptor] is
 	local	
 		libPath: String
+		clusterDsc: ClusterDescriptor
 		start, stop: Integer
 	do
-		create Result.make
-		Result.add (".") -- current folder is always used to look for units
+		create clusterDsc.init (".", Void, Void, Void)
+		create Result.fill (<<clusterDsc>>) -- current folder is always used to look for units
 		-- Add what should be added from the environemnt ...
 		libPath := env.env_item (SLNG_LIB)
 		if libpath /= Void then
@@ -24,12 +25,14 @@ feature {None}
 			until
 				stop = 0
 			loop
-				Result.add (libPath.substring (start, stop - 1))
+				create clusterDsc.init (libPath.substring (start, stop - 1), Void, Void, Void)
+				Result.add (clusterDsc)
 				start := stop + 1
 				stop := libPath.index_of (';', start) 
 			end -- loop
 			if start = 1 then
-				Result.add (libPath)
+				create clusterDsc.init (libPath, Void, Void, Void)
+				Result.add (clusterDsc)
 			end -- if
 		end -- if
 	end -- getAnonymousRoutineClusters
@@ -181,7 +184,7 @@ feature {Any}
 			o.putNL ("Error: SLang folder with artefacts '" + IRfolderName + "' not found")
 		end -- if
 	end -- build_from_file
-	build (sysDsc: SystemDescriptor; fs: FileSystem) is
+	build_from_system_description (sysDsc: SystemDescriptor; fs: FileSystem) is
 	require
 		non_void_sd: sysDsc /= Void
 		non_void_file_system: fs /= Void
@@ -197,22 +200,22 @@ feature {Any}
 		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
 			-- Build the system
 			if sysDsc.entry = Void then
-				-- Library - all units and routines of the current folder are to be put into the libary
+				-- Library
 				o.putNL ("Building library `" + sysDsc.name + "`")
 not_implemented_yet ("Building library `" + sysDsc.name + "`")
-			elseif sysDsc.name.is_equal ("*") then
-				-- Set of object files from all units and routines of the current folder
-				o.putNL ("Building all files")
-not_implemented_yet ("Building all files")
+--			elseif sysDsc.name.is_equal ("*") then
+--				-- Set of object files from all units and routines of the current folder
+--				o.putNL ("Building all files")
+--not_implemented_yet ("Building all files")
 			else
-				-- Executable with the entry point which is a standalone routine
+				-- Executable with the entry point
 				o.putNL ("Building executable `" + sysDsc.name + "`")
 not_implemented_yet ("Building executable `" + sysDsc.name + "`")
 			end -- if
 		else
 			o.putNL ("Error: Not able to create SLang folder with artefacts  '" + folderName + "'")
 		end -- if
-	end -- build
+	end -- build_from_system_description
 feature {None}
 trace (message: String ) is
 do

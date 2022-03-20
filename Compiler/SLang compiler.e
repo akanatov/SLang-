@@ -65,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.05 (Build <AVK Feb 20th 2022>)")
+		o.putNL ("SLang compiler v0.99.06 (Build <AVK Mar 20th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -214,6 +214,7 @@ feature {None}
 					end -- if
 				else
 					if n > 0 then
+						-- N files with anonymous routines to be built
 						from 
 							i := 1
 						until
@@ -227,6 +228,7 @@ feature {None}
 						end -- loop
 					end -- if
 					if m > 0 then
+						-- M system descritions to be built
 						from 
 							j := 1
 							debug
@@ -240,7 +242,7 @@ feature {None}
 								dumpOutput.putNL (sysDsc.out)			
 							end -- debug
 							create builder.init (o)
-							builder.build (sysDsc, fs)
+							builder.build_from_system_description (sysDsc, fs)
 							j := j + 1
 						end -- loop
 						debug

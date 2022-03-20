@@ -23,7 +23,8 @@ feature {Any}
 	name: String -- Name of the output target
 	from_paths: Sorted_Array [String] -- List of paths to build the library from
 	entry: String -- Name of class or routine to start execution of the program
-	clusters: Sorted_Array [String] -- Clusters to search for usage of units and routines. temporary!!! String - in fact ClusterDescriptor
+
+	clusters: Sorted_Array [ClusterDescriptor] -- Clusters to search for usage of units and routines
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 
 	init_program (n,e : String; c: like clusters; l: like libraries) is
@@ -105,11 +106,10 @@ feature {Any}
 				i > n
 			loop
 				Result.append_character (' ')
-				Result.append_character ('"')
-				Result.append_string (clusters.item(i))
-				Result.append_character ('"')
+				Result.append_string (clusters.item(i).out)
 				i := i + 1
 			end -- loop
+			Result.append_character ('%N')
 		end -- if
 		n := libraries.count
 		if n > 0 then
@@ -120,29 +120,32 @@ feature {Any}
 				i > n
 			loop
 				Result.append_character (' ')
-				Result.append_character ('"')
 				Result.append_string (libraries.item(i))
-				Result.append_character ('"')
 				i := i + 1
 			end -- loop
+			Result.append_character ('%N')
 		end -- if		
 		Result.append_string ("end%N")
 	end -- out
 
-	clusterHasUnit (path, unitName: String): Boolean is
+	clusterHasUnit (clusterDsc: ClusterDescriptor; unitName: String): Boolean is
 	require
 		non_void_unit_name: unitName /= Void
-		non_void_body_path: path /= Void
+		non_void_cluster_dsc: clusterDsc /= Void
 	local	
+		path: String
 		fileName: String
 	do
-		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
-			fileName := path + ""
-		else
-			fileName := path + "\"
+		if not clusterDsc.unitExcluded (unitName) then
+			path := clusterDsc.name
+			if path.item (path.count) = '\' or else path.item (path.count) = '/' then
+				fileName := path + ""
+			else
+				fileName := path + "\"
+			end -- if
+			fileName.append_string (IRfolderName  + "\" + clusterDsc.getRealName (unitName) + INText)
+			Result := fs.file_exists (fileName)
 		end -- if
-		fileName.append_string (IRfolderName  + "\" + UnitName + INText)
-		Result := fs.file_exists (fileName)
 debug
 	if Result then
 		--print ("Unit '" + unitName + "' found,  file '" + fileName + "' is in place%N")
@@ -157,28 +160,55 @@ end -- debug
 		create Result
 	end -- fs
 	
-	hasUnit(unitName: String): Array [String] is
+	hasUnit(unitName: String): Array [ClusterDescriptor] is
 		-- returns list of clusters where such unit exists
 	require
 		non_void_unit_name: unitName /= Void
 	local
-		path: String
 		i, n: Integer
+		clusterDsc: ClusterDescriptor
+		selected: Array [Integer]
+		temp: Array [ClusterDescriptor]
 	do
 		if clusters /= Void then
 			from
 				n := clusters.count
 				i := 1
 				create Result.make (1, 0)
+				create selected.make (1, 0)
 			until
 				i > n
 			loop
-				path := clusters.item (i)
-				if clusterHasUnit (path, unitName) then
-					Result.force (path, Result.count + 1)
+				clusterDsc := clusters.item (i)
+				if clusterHasUnit (clusterDsc, unitName) then
+					Result.force (clusterDsc, Result.count + 1)
+					if clusterDsc.unitSelected(unitName) then
+						selected.force (Result.count, selected.count + 1)
+					end -- if
 				end -- if
 				i := i + 1
 			end -- loop
+			n := selected.count 
+			inspect
+				n
+			when 0 then
+				-- no selected - just return Result
+			when 1 then
+				-- Oh! There is only one cluster !!!
+				Result := <<Result.item (selected.item (1))>>
+			else 
+				-- we have several (n) clusters having unitName selected - error situation
+				create temp.make (1, n)
+				from
+					i := 1
+				until
+					i > n
+				loop
+					temp.put (Result.item (selected.item (i)), i)
+					i := i + 1
+				end -- loop
+				Result := temp
+			end -- inspect
 		end -- if
 	end -- hasUnit
 	
@@ -190,6 +220,156 @@ invariant
 	libraries_not_void: libraries /= Void	
 end -- class SystemDescriptor
 
+class ClusterDescriptor
+inherit	
+	Comparable
+		redefine
+			out
+	end
+create
+	init
+feature 
+	name: String
+	excluded_list: Sorted_Array [String]
+	rename_list: Sorted_Array[RenamePair]
+	selected_list: Sorted_Array [String]
+
+	unitExcluded (unitName: String): Boolean is
+	require
+		unitName_not_void: unitName /= Void
+	do
+		Result := excluded_list.seek (unitName) > 0
+	end -- unitExcluded
+
+	unitSelected (unitName: String): Boolean is
+	require
+		unitName_not_void: unitName /= Void
+	do
+		Result := selected_list.seek (getRealName(unitName)) > 0
+	end -- unitSelected
+	
+	getRealName (unitName: String): String is
+	require
+		unitName_not_void: unitName /= Void
+	local
+		rnmPair: RenamePair
+	do
+		create rnmPair.init (unitName, "")
+		rnmPair := rename_list.search (rnmPair)
+		if rnmPair = Void then
+			Result := unitName
+		else
+			Result := rnmPair.newName
+		end -- if
+	end -- getRealName
+
+
+	out: String is
+	local
+		i, n, m, k: Integer
+	do
+		Result := clone (name)
+		n := excluded_list.count
+		m := rename_list.count
+		k := selected_list.count
+		if n > 0 or else m > 0 or else k > 0 then
+			Result.append_character(':')
+			if n > 0 then
+				from
+					Result.append_character('%N')
+					Result.append_character('-')
+					i := 1
+				until
+					i > n
+				loop
+					Result.append_character(' ')
+					Result.append_string (excluded_list.item (i))
+					i := i + 1
+				end -- loop
+				Result.append_character('%N')
+			end -- if
+			if m > 0 then
+				from
+					Result.append_character('%N')
+					Result.append_character('-')
+					Result.append_character('>')
+					i := 1
+				until
+					i > m
+				loop
+					Result.append_character(' ')
+					Result.append_string (rename_list.item (i).oldName)
+					Result.append_string (" as ")
+					Result.append_string (rename_list.item (i).newName)
+					i := i + 1
+				end -- loop
+				Result.append_character('%N')
+			end -- if
+			if k > 0 then
+				from
+					Result.append_character('%N')
+					Result.append_string("select ")
+					i := 1
+				until
+					i > k
+				loop
+					Result.append_character(' ')
+					Result.append_string (selected_list.item (i))
+					i := i + 1
+				end -- loop
+				Result.append_character('%N')
+			end -- if
+		end -- if		
+	end -- out
+
+	init (aName: like name; el: like excluded_list; rl: like rename_list; sl: like selected_list) is
+	do
+		name := aName
+		if el = Void then
+			create excluded_list.make
+		else
+			excluded_list := el
+		end -- if
+		if rl = Void then
+			create rename_list.make
+		else
+			rename_list := rl
+		end -- if
+		if sl = Void then
+			create selected_list.make
+		else
+			selected_list := sl
+		end -- if
+	end -- init
+	infix "<" (other: like Current): Boolean is
+	do
+		Result := name < other.name
+	end -- infix "<"
+end -- class ClusterDescriptor
+class RenamePair
+inherit	
+	Comparable
+	end
+create
+	init
+feature 
+	oldName, newName: String
+	init (on, nn: String) is
+	require
+		oldName_not_void: on /= Void
+		newName_not_void: nn /= Void
+	do
+		oldName := on
+		newName := nn
+	end -- init
+	infix "<" (other: like Current): Boolean is
+	do
+		Result := oldName < other.oldName
+	end -- infix "<"
+invariant
+	oldName_not_void: oldName /= Void
+	newName_not_void: newName /= Void
+end -- class RenamePair
 
 --1 Compilation : {CompilationUnitCompound}
      
@@ -300,18 +480,18 @@ feature {Any}
 	require
 		non_void_unit_name: unitExternalName /= Void
 	local
-		paths: Array [String]
+		clusters: Array [ClusterDescriptor]
 	do
-		paths := sysDsc.hasUnit(unitExternalName)
-		if paths = Void or else paths.count = 0 then
-			-- Such unit is not found in the search zone !!!
+		clusters := sysDsc.hasUnit(unitExternalName)
+		if clusters = Void or else clusters.count = 0 then
+			-- Such unit is not found in the search universe !!!
 			o.putNL ("Error: unit '" + unitPrintableName + "' is not found in the provided universe")
-		elseif paths.count > 1 then
-			-- More than one unit is found in the serach zone !!!
-			o.putNL ("Error: more than one unit '" + unitPrintableName + "' found in the provided universe. Select one to be used")
+		elseif clusters.count > 1 then
+			-- More than one unit is found in the search universe !!!
+			o.putNL ("Error: more than one unit '" + unitPrintableName + "' found in the provided universe. Select only one to be used")
 		else
 			-- Load it
-			Result := loadUnitInterafceFrom (paths.item (1), unitExternalName, o)
+			Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
 			if Result = Void then
 				-- There was a problem to load unit interface 
 				o.putNL ("Error: unit '" + unitPrintableName + "' was not loaded correctly")

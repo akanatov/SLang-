@@ -439,7 +439,7 @@ feature {None}
 		name: String
 		entry: String
 		paths: Sorted_Array [String]
-		clusters: Sorted_Array [String] -- temporary!!! String - in fact ClusterDescriptor
+		clusters: Sorted_Array [ClusterDescriptor] -- clusters with adaptations
 		libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 		wasError: Boolean
 		src_pos: expanded SourcePosition		
@@ -508,10 +508,36 @@ feature {None}
 		Result := parseStrings
 	end -- parse_paths
 	
-	parseClusters: Sorted_Array [String] is
+	parseClusters: Sorted_Array [ClusterDescriptor] is
+	local
+		name: String
+		clusterDsc: ClusterDescriptor
+		toLeave: Boolean
+		wasError: Boolean
 	do
-		Result := parseStrings
+		from
+			create Result.make
+		until
+			toLeave
+		loop
+			inspect
+				scanner.token
+			when scanner.identifier_token, scanner.string_const_token then
+				name := scanner.tokenString
+				create clusterDsc.init (name, Void, Void, Void) -- Temporary exclude, rename, and select clauses are not processed
+				if not Result.added (clusterDsc) then
+					validity_error ( "Duplicated cluster '" + name + "' identified")
+				end -- if
+				scanner.nextToken
+			else
+				toLeave := True
+			end -- inspect
+		end -- loop
+		if Result.count = 0 or else wasError then
+			Result := Void
+		end -- if
 	end -- parseClusters
+	
 	parseLibraries: Sorted_Array [String] is
 	do
 		Result := parseStrings
