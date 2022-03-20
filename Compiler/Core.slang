@@ -1,5 +1,5 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.05 Feb 3rd 2022
+// Version 0.99.06 Mar 20th 2022
 build Kernel:"." // Kernel librray is to be built from all SLang files from the current folder
 end
 
@@ -76,8 +76,8 @@ virtual unit () // That is a tuple unit
 		return in 0 .. count /// If no such field then 0 otherwise valid position
 	end // fieldIndex
   
-require
-	count >= 0 /// Tuple has 0 or more elements
+/*require
+	count >= 0 /// Tuple has 0 or more elements */
 end
 
 val unit Bit [N: Cardinal]
@@ -152,7 +152,7 @@ val unit Bit [N: Cardinal]
 	do
 		return this (pos) = 0b1
 	end // ()
-	pure () (pos: Integer): Integer
+	pure () (pos: Cardinal): 0 .. 1
 	/// Get bit value at position 'pos'
 	require
 		pos in 0 .. N - 1 /// Valid position	 
@@ -162,8 +162,8 @@ val unit Bit [N: Cardinal]
 		else
 			return 1
 		end
-	ensure
-		return in 0 .. 1 /// Valid Integer from Bit 
+	/*ensure
+		return in 0 .. 1 /// Valid Integer from Bit */
 	end // ()
 	pure toInteger: Integer do
 		/// Build Integer from Bit
@@ -217,7 +217,7 @@ require
 	N > 0 /// Number of Bits is greater than zero
 end // Bit [N]
 
-virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Integer.MaxInteger]
+virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.MaxCardinal]
 	// Adding all constant objects from basic units allows to use these constants without respective unit name prefix.
 
 
@@ -365,11 +365,11 @@ virtual unit Enumeration extend Comparable
 		count > 0
 	virtual
 	
-	pure count: Integer 
+	pure count: Cardinal
 	/// number of elements in the enumeration
 	virtual
 	
-	pure ord: Integer 
+	pure ord: Cardinal
 	/// order number of the current object in the enumeration
 	require
 		count > 0
@@ -397,9 +397,9 @@ val unit Pointer
 	read: Byte none
 	read: Array [Byte] none
 	{} data : Bit [Platform.PointerBitsCount]
-	Pointer (address: Integer) 
+	Pointer (address: Cardinal) 
 	require
-		address >= 0 /// Pointer should be greater than zero
+		//address >= 0 /// Pointer should be greater than zero
 		validPointer (address) /// Pointer should be valid from the OS point of view
 	do
 		data is address.data
@@ -738,18 +738,18 @@ val unit Character alias Char extend Enumeration
 	override const first is minCharacter
 	override const last is maxCharacter
 	const count is 2 ^ Platform.CharacterBitsCount
-	ord: Integer => toInteger
+	ord: Cardinal => toCardinal
 	override < (other: as this): Boolean do
 		// Bit-level implementation
 		raise "Not implemented!!!"
 	end
 	override const sizeof: Integer is Platform.CharacterBitsCount / Platform.BitsInByteCount
-	pure toInteger: Integer do
-		return new Integer (data.ToInteger)
-	ensure
-		return in return.minInteger .. return.maxInteger
+	pure toCardinal: Cardinal do
+		return new Cardinal (data.ToCardinal)
+	/*ensure
+		return in return.minInteger .. return.maxInteger*/
 	end
-	:= (other: Integer)
+	:= (other: Cardinal)
 	require
 		other in 0 .. 2 ^ Platform.CharacterBitsCount - 1 /// Invalid character code		
 	do
@@ -857,23 +857,23 @@ unit String extend AString
 		//return true
 	end
 	
-	pure count: Integer => data.count
+	pure count: Cardinal => data.count
 	
-	pure () (pos: Integer): Character
+	pure () (pos: Cardinal): Character
 		/// Get character at position pos
 	require 
 		1 <= pos and then pos <= count /// Valid element index
 	do
 		return data (pos)
 	end
-	() (pos: Integer; value: G) 
+	() (pos: Cardinal; value: G) 
 		/// Set array element at position pos with value
 	require 
 		1 <= pos and then pos <= count /// Valid element index 
 	do	
 		data (pos) := value
 	end
-	() (from, to: Integer): as this
+	() (from, to: Cardinal): as this
 	// substring
 	require	
 		from <= to /// Valid charters' indices range
@@ -914,7 +914,7 @@ virtual unit AnArray [G]
 			count > 0 /// Array is not empty
 			lower <= pos and then pos <= upper /// Valid element index 
 		virtual
-	final count: Integer => upper - lower + 1
+	final count: Cardinal => upper - lower + 1
 		/// Number of elelments in the array
 		
 	lower: Integer virtual
@@ -958,7 +958,7 @@ virtual unit OneDimentionalArray [G new ()] extend AnArray [G]
 	end
 end
 
-unit Array [G new (), N: Integer] extend OneDimentionalArray [G]
+unit Array [G new (), N: Cardinal] extend OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a0 is Array [Integer, 5]
@@ -1092,6 +1092,8 @@ unit StandardIO alias io
 			if argument is
 				:Integer
 					putInteger (argument)
+				:Cardinal
+					putCardinal (argument)
 				:Character
 					putCharacter (argument)
 				:String
@@ -1106,6 +1108,7 @@ unit StandardIO alias io
 		end
 	end // put
 	pure put (anInteger: Integer) none
+	pure put (aCardinal: Cardinal) none
 	pure put (aCharacter: Character) none
 	pure put (aString: String) none
 	pure put (aReal: Real) none

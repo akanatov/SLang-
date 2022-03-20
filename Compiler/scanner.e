@@ -475,6 +475,10 @@ feature {Any}
 						tokenCol := col
 						setCharBuff (ch)
 						token := identifier_token
+						check
+							pool_set: pool /= Void
+						end -- check
+						buffer := pool.add_it (buffer)
 					end -- if
 				when '0' .. '9' then 
 					if toRead then
