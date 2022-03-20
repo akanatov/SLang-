@@ -461,9 +461,11 @@ feature {None}
 			inspect
 				scanner.token
 			when scanner.colon_token then
+				-- Library
 				scanner.nextToken
-				paths := parse_paths				
-			when scanner.one_line_function_token then -- =>
+				paths := parseStrings
+			when scanner.one_line_function_token then
+				-- Program
 				scanner.nextToken
 				inspect
 					scanner.token
@@ -503,11 +505,6 @@ feature {None}
 -- trace ("<<parseSystemDescription")
 	end -- parseSystemDescription
 
-	parse_paths: Sorted_Array [String] is
-	do
-		Result := parseStrings
-	end -- parse_paths
-	
 	parseClusters: Sorted_Array [ClusterDescriptor] is
 	local
 		name: String
