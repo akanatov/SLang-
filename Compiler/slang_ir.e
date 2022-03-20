@@ -277,7 +277,7 @@ feature
 			if n > 0 then
 				from
 					Result.append_character('%N')
-					Result.append_character('-')
+					Result.append_character('~')
 					i := 1
 				until
 					i > n

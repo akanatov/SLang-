@@ -485,7 +485,7 @@ feature {None}
 				end -- if
 				if scanner.token = scanner.foreign_token then
 					scanner.nextToken
-					libraries:= parseLibraries
+					libraries:= parseStrings
 				end -- if
 				if scanner.token = scanner.end_token then
 					scanner.nextToken
@@ -512,6 +512,9 @@ feature {None}
 	local
 		name: String
 		clusterDsc: ClusterDescriptor
+		exclude_clause: Sorted_Array [String]
+		rename_clause: Sorted_Array [RenamePair]
+		select_clause: Sorted_Array [String]
 		toLeave: Boolean
 		wasError: Boolean
 	do
@@ -524,11 +527,27 @@ feature {None}
 				scanner.token
 			when scanner.identifier_token, scanner.string_const_token then
 				name := scanner.tokenString
-				create clusterDsc.init (name, Void, Void, Void) -- Temporary exclude, rename, and select clauses are not processed
+				scanner.nextToken
+				if scanner.token = scanner.tilda_token then
+					-- parse exclude clause
+					scanner.nextToken
+					exclude_clause := parseStrings
+				end -- if
+				if scanner.token = scanner.implies_token then
+					-- parse rename clause
+					scanner.nextToken
+					rename_clause := parse_rename_clause
+				end -- if
+				if scanner.token = scanner.select_token then
+					-- parse select clause
+					scanner.nextToken
+					select_clause := parseStrings
+				end -- if
+				create clusterDsc.init (name, exclude_clause, rename_clause, select_clause)
 				if not Result.added (clusterDsc) then
 					validity_error ( "Duplicated cluster '" + name + "' identified")
+					wasError := True
 				end -- if
-				scanner.nextToken
 			else
 				toLeave := True
 			end -- inspect
@@ -538,11 +557,54 @@ feature {None}
 		end -- if
 	end -- parseClusters
 	
-	parseLibraries: Sorted_Array [String] is
+	
+	parse_rename_clause: Sorted_Array [RenamePair] is
+	local
+		oldName, newName: String
+		rnmPair: RenamePair
+		toLeave: Boolean
+		wasError: Boolean
 	do
-		Result := parseStrings
-	end -- parseLibraries
-
+		from
+			create Result.make
+		until
+			toLeave
+		loop
+			inspect
+				scanner.token
+			when scanner.identifier_token, scanner.string_const_token then
+				oldName := scanner.tokenString
+				scanner.nextToken
+				if scanner.token = scanner.as_token then
+					scanner.nextToken
+					inspect
+						scanner.token
+					when scanner.identifier_token, scanner.string_const_token then
+						newName := scanner.tokenString
+						scanner.nextToken
+						create rnmPair.init (oldName, newName)
+						if not Result.added (rnmPair) then
+							validity_warning ( "Duplicated rename '" + rnmPair.out + "', ignored")
+						end -- if
+					else
+						syntax_error (<<scanner.identifier_token, scanner.string_const_token>>)
+						wasError := True
+						toLeave := True
+					end -- if
+				else
+					syntax_error (<<scanner.as_token>>)
+					wasError := True
+					toLeave := True
+				end -- if
+			else
+				toLeave := True
+			end -- inspect
+		end -- loop
+		if Result.count = 0 or else wasError then
+			Result := Void
+		end -- if
+	end -- parse_rename_clause
+	
 	parseStrings: Sorted_Array [String] is
 	local
 		name: String
