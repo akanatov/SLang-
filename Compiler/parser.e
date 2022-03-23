@@ -430,11 +430,6 @@ feature {None}
 	parseSystemDescription: SystemDescriptor is
 	require
 		valid_token: validToken (<<scanner.build_token>>)
-		-- Context: system (Identifier| StringConstant) 
-		-- [init Identifier]
-		-- [use {(Identifier| StringConstant) [“:” Options end]} end]
-		-- [foreign {(Identifier| StringConstant)} end]
-		-- end
 	local 
 		name: String
 		entry: String
