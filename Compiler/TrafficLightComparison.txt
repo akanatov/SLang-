@@ -1,0 +1,87 @@
+// SLang Pascal-style 436/29 lines
+unit Color
+	const:
+		Red, Yellow, Green, Off
+	end
+end
+unit TrafficLight use const Color
+	light: Color := Off
+	switchOn do
+		light := Red
+	end
+	switchNext
+	require
+		light /= Off /// Traffic light malfunction
+	do
+		if light is
+			:Red
+				light := Yellow
+			:Yellow
+				light := Green
+			:Green
+				light := Red
+		end
+	end
+end
+tLight: TrafficLight
+tLight.switchOn
+while tLight /= Off do
+	tLight.switchNext
+end
+
+// SLang C-style 420/29 lines
+unit Color
+	const:
+		Red, Yellow, Green, Off
+	}
+}
+unit TrafficLight use const Color
+	light: Color := Off
+	switchOn {}
+		light := Red
+	}
+	switchNext
+	require
+		light /= Off /// Traffic light malfunction
+	{
+		if light is
+			:Red
+				light := Yellow
+			:Yellow
+				light := Green
+			:Green
+				light := Red
+		}
+	}
+}
+tLight: TrafficLight
+tLight.switchOn
+while tLight /= Off {
+	tLight.switchNext
+}
+
+// Accord 490/24 lines
+type TrafficLight = (Red|Yellow|Green|Off)
+default TrafficLight .(Off)
+fn TrafficLight.switchOn() {
+	this = .(Red)
+}
+fn TrafficLight.switchNext () {
+	ensure this != .(Off) else {panic ("Traffic light malfunction")}
+	when {
+		case this == .(Red):
+			this = .(Yellow)
+		case this == .(Yellow):
+			this = .(Green)			
+		case this == .(Green):
+			this = .(Red)
+	}
+}
+
+entry {
+	let tLight: trafficLight
+	tLight.siwtchOn()
+	while tlight != .(Off) {
+		tLight.switchNext()
+	}
+}
