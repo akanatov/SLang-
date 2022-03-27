@@ -37,7 +37,7 @@ val unit Bit
 	end // -
 end // Bit
 
-virtual unit () // That is a tuple unit
+virtual unit () extend Enumeration // That is a tuple unit
 	
 	() (pos: Cardinal; value: Any)
 	/// It puts element into tuple at position, put by position
@@ -66,19 +66,30 @@ virtual unit () // That is a tuple unit
 	pure count: Cardinal
 	/// Return the number of elelments in the tuple
 	none
-//	ensure
-//		return >= 0
-//	end // count
   
 	{ this } pure fieldIndex (fieldName: String): Cardinal
 	none
 	ensure
 		return in 0 .. count /// If no such field then 0 otherwise valid position
 	end // fieldIndex
-  
-/*require
-	count >= 0 /// Tuple has 0 or more elements */
-end
+
+	override pure succ: as this => this(this.ord + 1)
+	
+	override pure pred: as this => this(this.ord - 1)
+	
+	override pure first: as this => this(1)
+	
+	override pure last: as this  => this(count)
+	
+	pure ord: Cardinal do
+		while pos in 1 .. count do
+			if this = this(pos) do
+				return pos
+			end // if
+		end // while
+	end // ord
+
+end /// unit tuple
 
 val unit Bit [N: Cardinal]
 	const : // All Bit constants not longer than B bits in it
@@ -256,15 +267,6 @@ final unit System
 end // System
 
 final unit Platform
-/*	const BitsInByteCount is 8
-	const IntegerBitsCount is 32
-	const CardinalBitsCount is IntegerBitsCount
-	const CharacterBitsCount is 8
-	const BooleanBitsCount is 8
-	const PointerBitsCount is 32
-	const RealBitsCount is 64
-	const RealMantissaBitsCount is 55
-	const RealOrderBitsCount is 8*/
 
 	const
 		BitsInByteCount is 8,
@@ -332,14 +334,13 @@ require
 	not ( this < this ) /// Irreflexive comparison
 end // Comparable
 
-virtual unit Enumeration extend Comparable
+virtual unit Enumeration
 	pure succ: as this 
 	/// successor of the current object
 	require
 		not (this = last)
 	virtual
 	ensure
-		return > this /// Successor of the current element is greater than current one
 		this.ord = return.ord - 1 /// Order number of this is order number of its successor minus one
 	end
 	
@@ -349,8 +350,7 @@ virtual unit Enumeration extend Comparable
 		not (this = first)
 	virtual
 	ensure
-		return < this /// Predecessor of the current element is less than current one
-		this.ord = return.ord + 1 /// /// Order number of this is order number of its predecessor plus one
+		this.ord = return.ord + 1 /// Order number of this is order number of its predecessor plus one
 	end
 	
 	pure first: as this 
@@ -374,19 +374,13 @@ virtual unit Enumeration extend Comparable
 	require
 		count > 0
 	virtual
-	ensure
-		return > 0	// Order number of any element is greater than 0
-		count > 0 implies return <= count // Order number of any element not greater than numbe rof elements
-		count > 0 implies return in 1 .. count		
-	end // ord
+
 require 
-	count >= 0 /// Number of elements is not negative
-//	count > 0 implies pred < this and then this < succ
-	count > 0 implies first <= last
+	count > 0 implies first.ord <= last.ord
 	count > 0 implies first.ord = 1
 	count > 0 implies last.ord = count
-end
-
+	count > 0 implies this.ord in 1 .. count
+end // Enumeration
 
 val unit Pointer
 	/// Unit Pointer allows to introduce address arithmetics in a safe way :-)
@@ -395,18 +389,20 @@ val unit Pointer
 	write (b: Byte) none
 	write (ab: Array [Byte]) none
 	read: Byte none
-	read: Array [Byte] none
+	read (numberOfBytes: Cardinal): Array [Byte]
+	require
+		numberOfBytes > 0 /// Number of bytes to read is greater than zero
+	none
 	{} data : Bit [Platform.PointerBitsCount]
 	Pointer (address: Cardinal) 
 	require
-		//address >= 0 /// Pointer should be greater than zero
 		validPointer (address) /// Pointer should be valid from the OS point of view
 	do
 		data is address.data
 	end
 	{} validPointer (p: Pointer): Boolean foreign
 require
-	validPointer (this)
+	validPointer (this) /// Any pointer must be valid in terms of underlying OS to prvide acess to data
 end // Pointer
 
 val unit Cardinal alias uInt extend Cardinal [Platform.CardinalBitsCount]
@@ -590,7 +586,6 @@ val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
 require
 	BitsNumber > 0 /// Number of bits in Integer must be greater than zero!
 end // Integer
-
 
 //val unit Byte extend Bit [Platform.BitsInByteCount] use const Bit [Platform.BitsInByteCount]
 //end
@@ -823,7 +818,8 @@ end // Boolean
 virtual unit AString extend Comparable
 	/// virtualization of String
 	{} data: Array [Bit [8]]
-end
+
+end // unit Astring
 
 unit String [N:Integer] extend AString, Array [Character, N]
 	/// String with fixed length
