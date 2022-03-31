@@ -1,6 +1,6 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
 // Version 0.99.06 Mar 20th 2022
-build Kernel:"." // Kernel librray is to be built from all SLang files from the current folder
+build Kernel:"." // Kernel library is to be built from all SLang files from the current folder
 end
 
 val unit Bit
@@ -385,7 +385,7 @@ end // Enumeration
 val unit Pointer
 	/// Unit Pointer allows to introduce address arithmetics in a safe way :-)
 	// WIP!!!
-	override const sizeof: Integer is Platform.PointerBitsCount / Platform.BitsInByteCount
+	override const sizeof: Cardinal is Platform.PointerBitsCount / Platform.BitsInByteCount
 	write (b: Byte) none
 	write (ab: Array [Byte]) none
 	read: Byte none
@@ -424,15 +424,31 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	// x is y.count
 	// if x = 1 it means that both Cardinal & Integer should have function '=' with another integral type !!!!
 	// If one like to assign Cardinal constant which is greater than Integer.max then prefix Cardinal. must be used ! 
+	const : // That is ordered set defined as range of all Cardinal constant values (objects)
+		Cardinal.0 .. maxCardinal   // Parser bug - to be fixed !!!
+	end
+	const maxCardinal is Cardinal.2 ^ (BitsNumber)
+	override const one is Cardinal.1
+	override const zero is Cardinal.0
+	override const sizeof: Cardinal is BitsNumber / Platform.BitsInByteCount
+
+	override pure succ: as this => this + one
+	override pure pred: as this => this - one
+	override const first is Cardinal.0
+	override const last is maxCardinal
+	override const count: Cardinal is maxCardinal
+	override pure ord: Cardinal => this
+
+
 	Cardinal (other: Integer [BitsNumber])
 	require
-		other > - 1 /// Integer must be not less than 0 to be converted iunto Cardinal
+		other > - 1 /// Integer must be not less than 0 to be converted into Cardinal
 	do
 		data is other.data
 	end // Cardinal
 	:= (other: Integer [BitsNumber])
 	require
-		other > - 1 /// Integer must be not less than 0 to be converted iunto Cardinal
+		other > - 1 /// Integer must be not less than 0 to be converted into Cardinal
 	do
 		data := other.data
 	end // :=
@@ -448,7 +464,7 @@ val unit Integer extend Integer [Platform.IntegerBitsCount]
 	end
 end // Integer
 
-val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
+val unit Integer [BitsNumber: Cardinal] extend Numeric, Enumeration
 	const : // That is ordered set defined as range of all Integer constant values (objects)
 		minInteger .. maxInteger
 	end
@@ -456,13 +472,15 @@ val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
 	const maxInteger is 2 ^ (BitsNumber - 1) - 1
 	override const one is 1
 	override const zero is 0
-	override const sizeof: Integer is BitsNumber / Platform.BitsInByteCount
+	override const sizeof: Cardinal is BitsNumber / Platform.BitsInByteCount
+
 	override pure succ: as this => this + one
 	override pure pred: as this => this - one
 	override const first is minInteger
 	override const last is maxInteger
-	pure count: Integer => last - first + 1
-	pure ord: Integer => this - minInteger + 1
+	override const count: Cardinal => last - first + one
+	override pure ord: Cardinal => this - minInteger + one
+
 	override + (other: as this): as this do
 		// Bit-level implementation of Integer addition
 		raise "Not implemented!!!"
@@ -470,9 +488,9 @@ val unit Integer [BitsNumber: Integer] extend Numeric, Enumeration
 	+ (other: Real): as this do
 		return this + other.toInteger
 	end
-	+ (other: Real): LongInteger do
+	/* + (other: Real): LongInteger do
 		return this + other.toInteger
-	end
+	end */ // Not quite sure we need Long types
 	+ do
 		// Unary plus
 	end
@@ -589,7 +607,6 @@ end // Integer
 
 //val unit Byte extend Bit [Platform.BitsInByteCount] use const Bit [Platform.BitsInByteCount]
 //end
-
 val unit Byte
 	// WIP - to be fully implemented
 	Byte (value: Byte) do
@@ -776,22 +793,22 @@ val unit Boolean alias Bool extend Enumeration
 	pure ord: Integer => if this do one else zero 
 	override const sizeof: Integer is Platform.BooleanBitsCount / Platform.BitsInByteCount
 	pure & alias and (other: as this): Boolean => if this do if other do true else false else false
-		// 00 -> 0
-		// 01 -> 0
-		// 10 -> 0
-		// 11 -> 1
+		/* 	00 -> 0
+			01 -> 0
+			10 -> 0
+			11 -> 1 */
 	pure | alias or (other: as this): Boolean => if this = false do if other do true else false else true
-		// 00 -> 0
-		// 01 -> 1
-		// 10 -> 1
-		// 11 -> 1
+		/*	00 -> 0
+			01 -> 1
+			10 -> 1
+			11 -> 1 */
 	pure && alias and then (other: as this): Boolean => if not this do false elsif not other do false else true
 	pure || alias or else (other: as this): Boolean => if this do true elsif other do true else false
 	pure ^ alias xor (other: as this): Boolean => if this do if other do false else true else if other do true else false
-		// 00 -> 0
-		// 01 -> 1
-		// 10 -> 1
-		// 11 -> 0
+		/*	00 -> 0
+			01 -> 1
+			10 -> 1
+			11 -> 0 */
 	pure -> alias implies (other: as this): Boolean => not this or other
 	pure ~ alias not : Boolean => if this do false else true
 	pure toInteger: Integer => if this do one else zero
@@ -803,7 +820,7 @@ val unit Boolean alias Bool extend Enumeration
 	end
 	{} Boolean (value: Integer) 
 	require	
-		value in zero..one /// Valid Integer value
+		value in zero..one /// Valid Integer value to be assigned into Boolean
 	do
 		data is value
 	end
@@ -815,10 +832,11 @@ require
 	this or not this = true /// complementation
 end // Boolean
 
+// UTF-8, Unicode etc - need to think more 
+
 virtual unit AString extend Comparable
 	/// virtualization of String
-	{} data: Array [Bit [8]]
-
+	{} data: Array [Bit [8]] // Byte array of data
 end // unit Astring
 
 unit String [N:Integer] extend AString, Array [Character, N]
