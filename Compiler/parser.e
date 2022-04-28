@@ -1679,6 +1679,7 @@ feature {None}
 		arguments: Array [ExpressionDescriptor]
 		unitType: UnitTypeCommonDescriptor
 		name1: String
+		constDsc: ConstantDescriptor
 		wasError: Boolean
 	do
 		if ceDsc = oldDsc then
@@ -1701,12 +1702,10 @@ feature {None}
 				create {PrecursorCallDescriptor}Result.init (unitType, arguments, callChain)				
 			end -- if
 		else
-			--#1 Identifier|this|return [“.”Identifier|OperatorName] [Arguments]  {CallChain}
-			--                            ^                           ^
 			inspect
 				scanner.token
 			when scanner.dot_token then
-				--#1 Identifier|this|return “.” Identifier|OperatorName [Arguments]  {CallChain}
+				--#1 Identifier|this|return “.” (Identifier|OperatorName [Arguments]  {CallChain}) | const
 				--                           ^
 				scanner.nextToken
 				inspect
@@ -1720,10 +1719,17 @@ feature {None}
 					arguments := parseArguments
 					callChain := parseCallChain
 					create {QualifiedCallDescriptor}Result.init (ceDsc, name1, arguments, callChain)
+				when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+					constDsc := parseConstant (False)
+					check
+						npon_void_const_dsc: constDsc /= Void
+					end					
+					create {QualifiedConstantDescriptor}Result.init (ceDsc, constDsc)
 				else
 					syntax_error (<<
 						scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
-						scanner.implies_token, scanner.less_token, scanner.greater_token
+						scanner.implies_token, scanner.less_token, scanner.greater_token,
+						scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
 					>>)
 				end -- if
 			when scanner.left_paranthesis_token then

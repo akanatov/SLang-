@@ -6098,6 +6098,39 @@ invariant
 	arguments_not_void: arguments /= Void
 end -- class CallChainElement
 
+class QualifiedConstantDescriptor
+inherit
+	ConstExpressionDescriptor
+	end
+create	
+	init
+feature
+	exprDsc: ExpressionDescriptor
+	constDsc: ConstantDescriptor
+	init (ceDsc: like exprDsc; cDsc: like constDsc) is
+	require
+		non_void_expr: ceDsc /= Void
+		non_void_const: cDsc /= Void
+	do
+		exprDsc	:= ceDsc
+		constDsc:= cdsc
+	end -- init
+	out: String is
+	do
+		Result := exprDsc.out + "." + constDsc.out
+	end -- out
+invariant
+	non_void_expr: exprDsc /= Void
+	non_void_const: constDsc /= Void
+end -- class QualifiedConstantDescriptor
+
+deferred class CallDescriptor
+inherit
+	Any
+		undefine out
+	end
+end -- class CallDescriptor
+
 deferred class MemberCallDescriptor
 -- MemberCall: WritableCall |  (this {CallChain})
 -- WritableCall: (  (Identifier ["."Identifier])| (old ["{"UnitTypeName"}"]) [Arguments] )| return {CallChain}
@@ -6187,7 +6220,7 @@ invariant
 end -- class MemberCallDescriptor
 
 class WritableTupleDescriptor
--- “(”WritableCall {“,” WritableCall } “)”
+-- "("WritableCall {"," WritableCall } ")"
 inherit
 	MemberCallDescriptor
 		redefine
