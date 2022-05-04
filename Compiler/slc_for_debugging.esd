@@ -1,7 +1,7 @@
 system "slcd"
 
 root
-   SLang_Compiler
+   SLangCompiler
 
 creation
    init

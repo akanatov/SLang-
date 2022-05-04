@@ -1,7 +1,7 @@
 system "slng_scan"
 
 root
-   SL_SCANNER
+   SLangScanner
 
 creation
    init

@@ -1930,9 +1930,8 @@ feature {None}
 					syntax_error (<<
 						scanner.identifier_token, scanner.var_token, scanner.left_paranthesis_token, scanner.old_token, scanner.this_token, scanner.new_token,
 						scanner.if_token, scanner.while_token, scanner.detach_token, scanner.return_token, scanner.raise_token, scanner.require_token, 
-						scanner.left_curly_bracket_token, scanner.operator_token, -- scanner.minus_token,
+						scanner.left_curly_bracket_token, scanner.operator_token,
 						scanner.implies_token, scanner.less_token, scanner.greater_token
-						--, scanner.init_token
 					>>)
 				end -- if
 			else
@@ -1940,9 +1939,8 @@ feature {None}
 					syntax_error (<<
 						scanner.identifier_token, scanner.var_token, scanner.left_paranthesis_token, scanner.old_token, scanner.this_token, scanner.new_token,
 						scanner.if_token, scanner.while_token, scanner.detach_token, scanner.return_token, scanner.raise_token, scanner.require_token, 
-						scanner.do_token, scanner.operator_token, -- scanner.minus_token,
+						scanner.do_token, scanner.operator_token,
 						scanner.implies_token, scanner.less_token, scanner.greater_token
-						--, scanner.init_token
 					>>)
 				end -- if
 			end --if
@@ -3033,23 +3031,11 @@ feature {None}
 		valid_start_token: validToken (<<scanner.new_token>>)
 	local
 		utDsc: UnitTypeCommonDescriptor
-		args: Array [ExpressionDescriptor]
 	do
 		scanner.nextToken
 		utDsc := parseUnitType
 		if utDsc /= Void then
-			--if scanner.token = scanner.dot_token then
-			--	scanner.nextToken
-			--	if scanner.token = scanner.init_token then
-			--		scanner.nextToken
-			--		args := parseArguments
-			--	else
-			--		syntax_error (<<scanner.init_token>>)
-			--	end -- if
-			--else
-				args := parseArguments
-			--end -- if
-			create Result.init (utDsc, args)
+			create Result.init (utDsc, parseArguments)
 		end -- if
 	end -- parseNewExpression
 
@@ -3061,7 +3047,7 @@ feature {None}
 		valid_start_token: validToken (<<scanner.new_token>>)
 	local
 		utDsc: UnitTypeCommonDescriptor
-		args: Array [ExpressionDescriptor]
+		--args: Array [ExpressionDescriptor]
 		name: String
 		wasError: Boolean
 	do
@@ -3097,18 +3083,7 @@ feature {None}
 				syntax_error (<<scanner.right_curly_bracket_token>>)
 			end -- if
 			if not wasError then
-				--if scanner.token = scanner.dot_token then
-				--	scanner.nextToken
-				--	if scanner.token = scanner.init_token then
-				--		scanner.nextToken
-				--		args := parseArguments
-				--	else
-				--		syntax_error (<<scanner.init_token>>)
-				--	end -- if
-				--else
-					args := parseArguments
-				--end -- if
-				create Result.init (utDsc, name, args)
+				create Result.init (utDsc, name, parseArguments)
 			end -- if
 		else
 			syntax_error (<<scanner.identifier_token, scanner.return_token, scanner.left_curly_bracket_token>>)
@@ -5700,7 +5675,7 @@ feature {None}
 			scanner.nextToken
 			typeDsc := parseUnitTypeName
 			if typeDsc /= Void then
-				if scanner.token = scanner.new_token then -- init_token then
+				if scanner.token = scanner.new_token then
 					scanner.nextToken
 					inspect
 						scanner.token
@@ -6643,18 +6618,8 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			scanner.nextToken
 			inspect
 				scanner.token
-			--when scanner.dot_token then
-			--	-- Init call
-			--	scanner.nextToken
-			--	if scanner.token = scanner.init_token then
-			--		scanner.nextToken					
-			--		create {ConstWithInitDescriptor} Result.init (name, parseArguments)
-			--	else
-			--		syntax_error (<<scanner.init_token>>)
-			--		wasError:= True 
-			--	end -- if
 			when scanner.left_paranthesis_token then
-				-- name ( expr) - init short form
+				-- name (expr) - init short form
 				create {ConstWithInitDescriptor} Result.init (name, parseArguments)
 			when scanner.left_curly_bracket_token then 
 				-- Iterator for range
@@ -6704,21 +6669,6 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							create {ConstWithInitDescriptor} cwiDsc.init (name, arguments)
 							create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
 						end -- if
-						--if scanner.token = scanner.dot_token then
-						--	scanner.nextToken
-						--	if scanner.token = scanner.init_token then
-						--		scanner.nextToken					
-						--		--create {ConstWithInitDescriptor} cwiDsc.init (identDsc, parseArguments)
-						--		create {ConstWithInitDescriptor} cwiDsc.init (name, parseArguments)
-						--		create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
-						--	else
-						--		syntax_error (<<scanner.init_token>>)
-						--		wasError:= True 
-						--		Result := Void
-						--	end -- if
-						--else
-						--	create {ConstRangeObjectDescriptor} Result.init (Result, identDsc)
-						--end -- if
 					when scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token then
 						constDsc := parseConstant (False)
 						if constDsc = Void then
@@ -6777,18 +6727,8 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							-- Init call
 							name := scanner.tokenString
 							scanner.nextToken
-							--if scanner.token = scanner.dot_token then
-							--	scanner.nextToken
-							--	if scanner.token = scanner.init_token then
-							--		scanner.nextToken					
-									create {ConstWithInitDescriptor} cwiDsc.init (name, parseArguments)
-									create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
-							--	else
-							--		syntax_error (<<scanner.init_token>>)
-							--		wasError:= True 
-							--		Result := Void
-							--	end -- if
-							--end -- if
+							create {ConstWithInitDescriptor} cwiDsc.init (name, parseArguments)
+							create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
 						when scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token then
 							constDsc := parseConstant (False)
 							if constDsc = Void then
@@ -7879,42 +7819,12 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				if rtnDsc /= Void then
 					create Result.fill (<<rtnDsc>>)
 				end -- if					
-			--when scanner.init_token then
-			--	-- init routine
-			--	scanner.nextToken
-			--	if scanner.Cmode and then scanner.token = scanner.left_square_bracket_token then
-			--		-- parse init declaration
-			--		initDcl := parseInitDeclaration (currentVisibilityZone)
-			--		if initDcl /= Void then
-			--			create Result.fill (<<initDcl>>)
-			--		end -- if					
-			--	else
-			--		inspect
-			--			scanner.token
-			--		when scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.do_token, scanner.use_token then
-			--			-- parse init declaration
-			--			initDcl := parseInitDeclaration (currentVisibilityZone)
-			--			if initDcl /= Void then
-			--				create Result.fill (<<initDcl>>)
-			--			end -- if					
-			--		else
-			--			if scanner.Cmode then
-			--				syntax_error (<<
-			--					scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.left_curly_bracket_token, scanner.use_token
-			--				>>)
-			--			else
-			--				syntax_error (<<
-			--					scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.do_token, scanner.use_token
-			--				>>)
-			--			end -- if
-			--		end -- inspect	
-			--	end -- if
 			else
 				syntax_error (<<
 					scanner.override_token, scanner.final_token, scanner.const_token, scanner.rigid_token,
-					scanner.identifier_token, scanner.operator_token, -- scanner.minus_token, 
+					scanner.identifier_token, scanner.operator_token,
 					scanner.implies_token,
-					scanner.less_token, scanner.greater_token, scanner.pure_token, scanner.safe_token, --scanner.init_token,
+					scanner.less_token, scanner.greater_token, scanner.pure_token, scanner.safe_token,
 					scanner.assignment_token
 				>>)
 			end -- inpsect
@@ -8225,8 +8135,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			loop
 				inspect
 					scanner.token
-				when scanner.final_token, scanner.pure_token, scanner.safe_token, -- scanner.init_token,
-					scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+				when scanner.final_token, scanner.pure_token, scanner.safe_token,
+					scanner.identifier_token, scanner.operator_token,
 					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
 					scanner.bar_token,
 					scanner.const_token, scanner.rigid_token, scanner.assignment_token
@@ -8237,8 +8147,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					scanner.nextToken
 					inspect
 						scanner.token
-					when scanner.final_token, scanner.pure_token, scanner.safe_token, -- scanner.init_token,
-						scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+					when scanner.final_token, scanner.pure_token, scanner.safe_token,
+						scanner.identifier_token, scanner.operator_token,
 						scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
 						scanner.bar_token,
 						scanner.const_token, scanner.rigid_token, scanner.assignment_token
@@ -8302,8 +8212,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 							when scanner.colon_token then
 								currentVisibilityZone := mvDsc
 								scanner.nextToken
-							when scanner.final_token, scanner.pure_token, scanner.safe_token, -- scanner.init_token,
-								scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+							when scanner.final_token, scanner.pure_token, scanner.safe_token,
+								scanner.identifier_token, scanner.operator_token,
 								scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
 								scanner.bar_token,
 								scanner.const_token, scanner.rigid_token, scanner.assignment_token
@@ -8316,8 +8226,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 								scanner.nextToken
 								inspect
 									scanner.token
-								when scanner.final_token, scanner.pure_token, scanner.safe_token, -- scanner.init_token,
-									scanner.identifier_token, scanner.operator_token, -- scanner.minus_token, 
+								when scanner.final_token, scanner.pure_token, scanner.safe_token, 
+									scanner.identifier_token, scanner.operator_token, 
 									scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
 									scanner.bar_token,
 									scanner.const_token, scanner.rigid_token, scanner.assignment_token
@@ -8379,7 +8289,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						end -- if
 					elseif scanner.Cmode then
 						syntax_error (<<
-							scanner.override_token, scanner.final_token, scanner.pure_token, scanner.safe_token, --scanner.init_token, 
+							scanner.override_token, scanner.final_token, scanner.pure_token, scanner.safe_token,
 							scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
 							scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token,
 							scanner.bar_token,
@@ -8389,7 +8299,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						toLeave := True
 					else
 						syntax_error (<<
-							scanner.override_token, scanner.final_token, scanner.pure_token, scanner.safe_token, --scanner.init_token, 
+							scanner.override_token, scanner.final_token, scanner.pure_token, scanner.safe_token,
 							scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
 							scanner.implies_token, scanner.tilda_token,
 							scanner.bar_token, 

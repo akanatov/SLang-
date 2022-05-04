@@ -890,7 +890,7 @@ feature {Any}
 		end -- loop
 	end -- cutImplementation
 	
-	saveInternalRepresentation (FullSourceFileName, SourceFileName: String; irFileExtension: String; o: Output): Integer is
+	saveInternalRepresentation (FullSourceFileName: String; timeStamp: Real; SourceFileName: String; irFileExtension: String; o: Output): Integer is
 	require	
 		src_file_name_not_void: FullSourceFileName /= Void
 		IR_file_name_not_void: SourceFileName /= Void
@@ -904,7 +904,7 @@ feature {Any}
 	do
 		if statements.count > 0 then
 			-- Anonymous Routine IR: useConst + statements 
-			create sImg.init (FullSourceFileName, useConst, statements, stringPool, typePool)
+			create sImg.init (FullSourceFileName, timeStamp, useConst, statements, stringPool, typePool)
 			fName := IRfolderName  + "\_" + SourceFileName + PgmSuffix + irFileExtension
 			if not IRstored (fName, sImg) then
 				o.putNL ("File open/create/write/close error: unable to store anonymous routine IR into file `" + fName + "`")
@@ -914,7 +914,7 @@ feature {Any}
 
 		if routines.count > 0 then
 			-- Standalone routines: useConst + routines
-			create rImg.init (FullSourceFileName, useConst, routines, rtn_stringPool, rtn_typePool)
+			create rImg.init (FullSourceFileName, timeStamp, useConst, routines, rtn_stringPool, rtn_typePool)
 			fName := IRfolderName  + "\_" + SourceFileName + LibSuffix + irFileExtension
 			if not IRstored (fName, rImg) then
 				o.putNL ("File open/create/write/close error: unable to store standalone routines IR into file `" + fName + "`")
@@ -929,7 +929,7 @@ feature {Any}
 			i > n
 		loop
 			-- per unit: useConst + unit
-			create uImg.init (FullSourceFileName, useConst, units.item(i), units.item(i).stringPool, units.item(i).typePool)
+			create uImg.init (FullSourceFileName, timeStamp, useConst, units.item(i), units.item(i).stringPool, units.item(i).typePool)
 			fName := IRfolderName  + "\" + units.item(i).getExternalName + irFileExtension
 			if not IRstored (fName, uImg) then
 				o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
@@ -979,6 +979,7 @@ create {None}
 	init_empty
 feature
 	srcFileName: String
+	timeStamp: Real -- time stamp of the source file 'srcFileName'
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
 	stringPool: Sorted_Array [String]
 	typePool: Sorted_Array[TypeDescriptor]
@@ -986,9 +987,10 @@ feature {IR_Storage}
 	init_empty is
 	do
 	end -- init_empty
-	init_storage (fn: like srcFileName; uc: like useConst; sp: like stringPool; tp: like typePool) is
+	init_storage (fn: like srcFileName; ts: Real; uc: like useConst; sp: like stringPool; tp: like typePool) is
 	do
 		srcFileName := fn
+		timeStamp   := ts
 		useConst	:= uc
 		stringPool  := sp
 		typePool	:= tp
@@ -1004,10 +1006,10 @@ create
 	init, init_empty
 feature {CompilationUnitCommon}
 	statements: Array [StatementDescriptor]
-	init (fn: like srcFileName; uc: like useConst; stmts: like statements; sp: like stringPool; tp: like typePool) is
+	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; stmts: like statements; sp: like stringPool; tp: like typePool) is
 	do
 		statements	:= stmts
-		init_storage (fn, uc, sp, tp)
+		init_storage (fn, ts, uc, sp, tp)
 	end -- init
 end -- class AnonymousRoutineImage
 
@@ -1020,10 +1022,10 @@ create
 	init, init_empty
 feature {CompilationUnitCommon}
 	routines: Sorted_Array [StandaloneRoutineDescriptor]
-	init (fn: like srcFileName; uc: like useConst; r: like routines; sp: like stringPool; tp: like typePool) is
+	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; r: like routines; sp: like stringPool; tp: like typePool) is
 	do
 		routines	:= r
-		init_storage (fn, uc, sp, tp)
+		init_storage (fn, ts, uc, sp, tp)
 	end -- init
 end -- class RoutinesImage
 
@@ -1036,10 +1038,10 @@ create
 	init, init_empty
 feature {CompilationUnitCommon}
 	unit: UnitDeclarationDescriptor
-	init (fn: like srcFileName; uc: like useConst; u: like unit; sp: like stringPool; tp: like typePool) is
+	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; u: like unit; sp: like stringPool; tp: like typePool) is
 	do
 		unit 	:= u
-		init_storage (fn, uc, sp, tp)
+		init_storage (fn, ts, uc, sp, tp)
 	end -- init
 end -- class UnitImage
 
@@ -2410,7 +2412,7 @@ feature {Any}
 		end -- loop
 	end -- attach_use_pool
 	
-feature {CompilationUnitCompound, SLang_Compiler}
+feature {CompilationUnitCompound, SLangCompiler}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
 	stringPool: Sorted_Array [String]
 	typePool: Sorted_Array[TypeDescriptor]
@@ -7969,7 +7971,7 @@ deferred class TypeDescriptor
 inherit	
 	TypeOrExpressionDescriptor
 		export
-			{SLang_Compiler} weight -- temporary for debuggging purposes !!!!
+			{SLangCompiler} weight -- temporary for debuggging purposes !!!!
 	end
 feature {Any}
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is

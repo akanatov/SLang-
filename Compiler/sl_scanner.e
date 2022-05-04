@@ -1,7 +1,11 @@
-class SL_Scanner
+class SLangScanner
 creation
 	init
 feature {None}
+	fs: FileSystem is
+	once
+		create Result
+	end -- fs
 	init (args: Array[String]) is 
 	local
 		scanner: SLang_scanner
@@ -10,9 +14,9 @@ feature {None}
 	do
 		create {ScreenOutput}o
 		if args = Void then
-			o.putNL ("Valid usage: scanner <file_name>")
+			o.putNL ("Valid usage: slng_scan <file_name>")
 		else
-			create scanner.init (args.item (1))
+			create scanner.init (args.item (1), fs)
 			if scanner.isReady then
 				from 
 					create {ScreenAndFileOutput}o.init ("_SLang_scanner.out")
@@ -48,5 +52,5 @@ feature {None}
 		end -- if
 		o.close
 	end -- init
-end -- class SL_Scanner
+end -- class SLangScanner
 

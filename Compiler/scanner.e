@@ -199,25 +199,26 @@ feature {Any}
 	do
 		systemMode := False
 	end -- disableSystemMode
-	init (fileName: String) is
+	init (fileName: String; fs: FileSystem) is
 	require	
 		non_void_file_name: fileName /= Void
+		non_void_file_system: fs /= Void
 	local	
 		wasError: Boolean
 	do
 		if wasError then
 			file := Void
 			size := -1
-			token := no_token_assigned
 		else
-			create file.make_open_read (fileName)
-			sourceFileName := fileName
-			size := file.count
 			token := no_token_assigned
 			theNextToken := no_token_assigned
 			row := 1
 			col := 0
 			pos := 1
+			create file.make_open_read (fileName)
+			timeStamp := fs.file_data(fileName).time
+			sourceFileName := fileName
+			size := file.count
 			create buffer.make (64) -- probably 64 bytes is the rigth run-time buffer size
 			toRead := True
 			keywords := <<
@@ -1422,6 +1423,9 @@ feature {None}
 	keywords: Array [String]
 	file: File
 	row, col, pos, size: Integer
+feature {SlangCompiler}
+	timeStamp: Real
+feature {None}
 	toRead: Boolean
 	buffer: String
 	ch: Character

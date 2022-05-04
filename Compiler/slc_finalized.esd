@@ -1,7 +1,7 @@
 system "slc"
 
 root
-   SLang_Compiler
+   SLangCompiler
 
 creation
    init

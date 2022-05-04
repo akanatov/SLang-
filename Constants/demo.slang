@@ -1,5 +1,5 @@
 unit A extend Enumeration
-  enum
+  const:
 	a, b, c, d, e , f
   end
   + (step: Integer): as this

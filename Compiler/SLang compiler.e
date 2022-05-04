@@ -11,7 +11,7 @@ feature
 	SLNG_BIN: String is "SLNG_BIN"
 end -- class SLangConstants
 
-class SLang_compiler
+class SLangCompiler
 inherit
 	SLangConstants
 creation
@@ -138,7 +138,7 @@ feature {None}
 --							o.putLine ("File `" + fName + "` was not changed. Parsing skipped.")
 --							actualFiles := actualFiles + 1
 --						else
-							create scanner.init (fName)
+							create scanner.init (fName, fs)
 							if scanner.isReady then
 								if Cmode then
 									scanner.setCmode
@@ -165,9 +165,9 @@ feature {None}
 									parser.errorsCount
 								when 0 then
 									if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
-										saveErrCount := parser.ast.saveInternalRepresentation (fName, sName, ASText, o)
+										saveErrCount := parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, ASText, o)
 										parser.ast.cutImplementation
-										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, sName, INText, o)
+										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o)
 										if saveErrCount = 0 then
 											o.putLine ("File `" + fName + "` parsed with no errors!")
 										else
@@ -454,4 +454,4 @@ feature {None}
 		end -- if
 	end -- dumpAST
 	
-end -- class SLang_compiler
+end -- class SLangCompiler
