@@ -4524,7 +4524,7 @@ feature {Any}
 end -- class TemporaryUnitAttributeDescriptor
 class AttachedUnitAttributeDeclarationDescriptor
 	-- UnitAttributeDeclaration:
-	-- ( [const|rigid] Identifier {"," [const|rigid] Identifier} “:” Type)
+	-- ( [const|rigid] Identifier {"," [const|rigid] Identifier} ":" Type)
 	-- |
 	-- ( [const|rigid] Identifier [":" AttachedType] is ConstantExpression) 
 	-- |

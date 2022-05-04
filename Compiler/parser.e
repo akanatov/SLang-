@@ -6836,6 +6836,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		attrDsc: UnitAttrDescriptor
 		dtDsc: DetachableTypeDescriptor
 		typeDsc: TypeDescriptor
+		constExprDsc: ConstExpressionDescriptor
 		exprDsc: ExpressionDescriptor
 	do
 		inspect
@@ -6850,65 +6851,14 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				scanner.token
 			when scanner.is_token then
 				-- ident is Expr
-				--       ^    const attribute with initialization
+				--       ^    attribute with initialization
 				scanner.nextToken
-				exprDsc := parseExpressionWithSemicolon
-				if exprDsc /= Void then -- Identifier is ConstantExpression
-					create {AttachedUnitAttributeDeclarationDescriptor} attrDsc.init (isOverriding, isFinal, True, False, name, Void, Void, exprDsc)
+				constExprDsc := parseConstExpression (False)
+--				exprDsc := parseExpressionWithSemicolon -- ConstantExpression !!!!
+				if constExprDsc /= Void then -- Identifier is ConstantExpression
+					create {AttachedUnitAttributeDeclarationDescriptor} attrDsc.init (isOverriding, isFinal, False, False, name, Void, Void, constExprDsc)
 					create Result.fill (<<attrDsc>>)
 				end -- if
---			when scanner.minus_token then
---				scanner.nextToken
---				if scanner.token = scanner.greater_token then
---					scanner.nextToken
---	-- trace ("parse function")
---					typeDsc := parseTypeDescriptor
---					if typeDsc /= Void then
---						-- UnitRoutineDeclaration: Identifier “->” Type [EnclosedUseDirective] 
---						--                                             ^
---						-- 		[RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign| (“=>”Expression ) [EnsureBlock end] )
---						-- or
---						-- UnitAttributeDeclaration: Identifier “:” Type [ (rtn “:=” [[ Parameters] HyperBlock ])|( is ConstantExpression) ]
---						--                                               ^
---						inspect
---							scanner.token
---						when scanner.require_token then 
---							-- Function or it is the last attribute with no assigner in the unit and require is invariant !!!!
---							memDsc := parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc, isOverriding, isFinal, False, False, name, typeDsc)
---							if memDsc /= Void then
---								create Result.fill (<<memDsc>>)
---							end -- if
---						when scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token then 
---							-- function
---							rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
---							if rtnDsc /= Void then
---								create Result.fill (<<rtnDsc>>)
---							end -- if
---						else
---							if scanner.blockStart then
---								-- function
---								rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
---								if rtnDsc /= Void then
---									create Result.fill (<<rtnDsc>>)
---								end -- if
---							elseif scanner.Cmode then
---								syntax_error (<<
---									scanner.require_token, 
---									scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token,
---									scanner.left_curly_bracket_token
---								>>)
---							else
---								syntax_error (<<
---									scanner.require_token, 
---									scanner.use_token, scanner.virtual_token, scanner.foreign_token, scanner.one_line_function_token,
---									scanner.do_token
---								>>)
---							end --if
---						end -- inspect
---					end -- if
---				else
---					syntax_error (<<scanner.greater_token>>)
---				end -- if
 			when scanner.implies_token then
 				-- ident ->
 				scanner.nextToken
