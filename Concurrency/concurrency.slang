@@ -6,7 +6,7 @@ concurrent unit Queue[G]
 		else
 			last := last + 1
 		end
-		buffer(last) := e // if last greater than biffer.count dynamic arrays grows to accomodate element e at position last
+		buffer(last) := e // if last greater than buffer.count then the dynamic array grows to accomodate an element at position last
 	end // put
 	get: G 
 	require

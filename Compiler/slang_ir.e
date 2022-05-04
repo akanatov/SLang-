@@ -3328,13 +3328,12 @@ feature {Any}
 		isSafe := isS
 		expr := e
 	end -- init
---feature {MemberDeclarationDescriptor}
---	weight: Integer is 1
 invariant
 	name_not_void: name /= Void
 	expr_consistency: expr /= Void implies innerBlock = Void
 	body_consistency: innerBlock /= Void implies expr = Void and then not isVirtual and then not isForeign
 end -- class UnitRoutineDeclarationDescriptor
+
 class InitDeclarationDescriptor
 -- init [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
 inherit
@@ -4218,10 +4217,6 @@ feature {Any}
 		non_void_tmpDsc: tmpDsc /= Void
 	do
 	end -- setFlags
--- feature {EntityDescriptor}
--- 	weight: Integer is
--- 	deferred
--- 	end -- weight
 invariant
 	non_void_name: name /= Void
 	consistent_marked_var	: markedVar	  implies (not markedRigid and then not markedConst)
@@ -4312,8 +4307,6 @@ feature {Any}
 			assigner.cutImplementation
 		end -- if
 	end -- cutImplementation
---feature {MemberDeclarationDescriptor}
--- 	weight: Integer is 2
 invariant
 	type_not_void: type /= Void
 end -- class DetachedUnitAttributeDeclarationDescriptor
@@ -4362,8 +4355,6 @@ feature {Any}
 		-- Result.append_string (name + ": " + type.out)
 		Result.append_string (": " + type.out)
 	end -- out
---feature {MemberDeclarationDescriptor}
--- 	weight: Integer is 3
 end -- class DetachedLocalAttributeDeclarationDescriptor
 
 class AttachedLocalAttributeDeclarationDescriptor
@@ -4438,8 +4429,6 @@ feature {Any}
 			Result.append_string (expr.out)
 		end -- if
 	end -- out
---feature {MemberDeclarationDescriptor}
--- 	weight: Integer is 4
 invariant
 	--expr_not_void: expr /= Void
 end -- class AttachedLocalAttributeDeclarationDescriptor
@@ -4593,8 +4582,6 @@ feature {Any}
 			Result.append_string (assigner.out)
 		end -- if
 	end -- out
---feature {MemberDeclarationDescriptor}
--- 	weight: Integer is 5
 invariant
 	-- consistent_expr_and_type: expr = Void implies type /= Void -- cutImplementation may violate it
 end -- class AttachedUnitAttributeDeclarationDescriptor
@@ -4906,35 +4893,6 @@ invariant
 	non_void_expression: expr /= Void
 end -- class ParenthedExpressionDescriptor
 
---class InitDescriptor
---inherit
---	MemberCallDescriptor
---		redefine
---			sameAs, lessThan
---	end
---feature {Any}
---	out: String is do Result := "init" end
---
---	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
---	do
---		-- do nothing so far
---	end -- isInvalid
---	generate (cg: CodeGenerator) is
---	do
---		-- do nothing so far
---	end -- generate
---
---	sameAs (other: like Current): Boolean is
---	do
---		Result := True
---	end -- sameAs
---	lessThan (other: like Current): Boolean is
---	do
---	end -- theSame
---feature {ExpressionDescriptor}
---	weight: Integer is -29
---end -- class InitDescriptor
-
 class OldDescriptor
 inherit
 	MemberCallDescriptor
@@ -5222,51 +5180,6 @@ invariant
 	tuple_not_void: tuple /= Void
 end -- class TupleDescriptor
 
---class ExprOperatorExprDescriptor
---inherit
---	ExpressionDescriptor
---	end
---create
---	init
---feature {Any}	
---	expr1,
---	expr2: ExpressionDescriptor 
---	operator: String
---	out: String is
---	do
---		Result := expr1.out + " " + operator + " " + expr2.out
---	end -- out
---	init (e1: like expr1; o: like operator; e2: like expr2) is
---	require
---		non_void_expression1: e1 /= Void
---		non_void_expression2: e2 /= Void
---		non_void_operator: o /= Void
---	do
---		expr1 := e1
---		operator:= o
---		expr2 := e2
---	end -- init
---	sameAs (other: like Current): Boolean is
---	do
---		Result := operator.is_equal (other.operator) and then expr1.is_equal (other.expr1) and then expr2.is_equal (other.expr2)
---	end -- sameAs
---	lessThan (other: like Current): Boolean is
---	do
---		Result := operator < other.operator
---		if not Result and then operator.is_equal (other.operator) then
---			Result := expr1 < other.expr1
---			if not Result and then expr1.is_equal (other.expr1) then
---				Result := expr2 < other.expr2				
---			end -- if			
---		end -- if
---	end -- theSame
---feature {ExpressionDescriptor}
---	weight: Integer is -6
---invariant
---	non_void_expression1: expr1 /= Void
---	non_void_expression2: expr2 /= Void
---	non_void_operator: operator /= Void
---end -- class ExprOperatorExprDescriptor
 
 class RefExpressionDescriptor
 --30 ref Expression
@@ -5576,46 +5489,6 @@ invariant
 	right_expr_not_void: right /= Void
 	consistent: operator /= Void implies expr /= Void
 end -- class RangeExpressionDescriptor
-
---class OperatorExpressionDescriptor
----- operator Expression 
---inherit
---	ExpressionDescriptor
---	end
---create
---	init
---feature {Any}	
---	operator: String
---	expr: ExpressionDescriptor
---	out: String is
---	do
---		Result := operator + " " + expr.out
---	end
---	init (o: like operator; e: like expr) is
---	require
---		operator_not_void: o /= Void
---		expr_not_void: e /= Void
---	do
---		operator := o
---		expr := e
---	end -- init
---	sameAs (other: like Current): Boolean is
---	do
---		Result := operator.is_equal (other.operator) and then expr.is_equal (other.expr)
---	end -- sameAs
---	lessThan (other: like Current): Boolean is
---	do
---		Result := operator < other.operator
---		if not Result and then operator.is_equal (other.operator) then
---			Result := expr < other.expr
---		end -- if
---	end -- theSame
---feature {ExpressionDescriptor}
---	weight: Integer is -12
---invariant
---	operator_not_void: operator /= Void
---	expr_not_void: expr /= Void
---end -- class OperatorExpressionDescriptor
 
 class OldExpressionDescriptor
 -- old Expression 
@@ -6102,11 +5975,16 @@ class QualifiedConstantDescriptor
 inherit
 	ConstExpressionDescriptor
 	end
+	MemberCallDescriptor
+		redefine
+			sameAs, lessThan
+	end
 create	
 	init
 feature
 	exprDsc: ExpressionDescriptor
 	constDsc: ConstantDescriptor
+
 	init (ceDsc: like exprDsc; cDsc: like constDsc) is
 	require
 		non_void_expr: ceDsc /= Void
@@ -6114,11 +5992,47 @@ feature
 	do
 		exprDsc	:= ceDsc
 		constDsc:= cdsc
+		create callChain.make (1, 0)
 	end -- init
+
 	out: String is
 	do
 		Result := exprDsc.out + "." + constDsc.out
 	end -- out
+
+	sameAs (other: like Current): Boolean is
+	do
+		Result := exprDsc.is_equal (other.exprDsc) and then constDsc.is_equal (other.constDsc)
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
+	do
+		Result := exprDsc < other.exprDsc
+		if not Result and then exprDsc.is_equal (other.exprDsc) then
+			Result := constDsc < other.constDsc
+		end -- if	
+	end -- lessThan
+	
+	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		-- notValid: Boolean
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- do nothing so far
+	end -- isInvalid
+
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
+feature {ExpressionDescriptor}
+	weight: Integer is -29
+	
 invariant
 	non_void_expr: exprDsc /= Void
 	non_void_const: constDsc /= Void
@@ -7161,7 +7075,7 @@ invariant
 end -- class PrecursorCallDescriptor
 
 class NewStatementDescriptor
--- new [“{” UnitType “}”] ( Identifier | return ) [“.”init] [ Arguments ]
+-- new ['{' UnitType '}'] ( Identifier | return ) [ Arguments ]
 inherit
 	StatementDescriptor
 	end

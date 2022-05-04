@@ -386,7 +386,7 @@ feature {Any}
 						ast.addStatement (stmtDsc)
 					end -- if
 				when scanner.var_token, scanner.rigid_token then -- Anonymous routine - local attribute declaration
-					-- scanner.const_token - all locals are const by default
+					-- all locals are const by default
 					parseLocalsDeclaration (ast.statements, True, Void)
 				when scanner.require_token then -- Anonymous routine: block/loop statement
 					stmtDsc := parseBlock (scanner.token)
@@ -6620,7 +6620,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 	end -- parseConstObjectsDeclaration
 
 	parseConstantObject: ConstObjectDescriptor is
-	-- ConstObject : ( Constant | (Idenitifer [“.”init] [ Arguments ]) [ “..”  Constant | (Idenitifer [“.”init] [ Arguments ]) ] ) | (“{” RegularExpression “}” IntegerConstant [“+”])
+	-- ConstObject : ( Constant | (Idenitifer [ Arguments ]) [ “..”  Constant | (Idenitifer [ Arguments ]) ] ) | (“{” RegularExpression “}” IntegerConstant [“+”])
 	-- RegularExpression: Constant ({“|”Constant}) | (“|” ”..” Constant)
 	local
 		constDsc: ConstantDescriptor

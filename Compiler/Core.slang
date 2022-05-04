@@ -425,8 +425,9 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	// if x = 1 it means that both Cardinal & Integer should have function '=' with another integral type !!!!
 	// If one like to assign Cardinal constant which is greater than Integer.max then prefix Cardinal. must be used ! 
 	const : // That is ordered set defined as range of all Cardinal constant values (objects)
-		Cardinal.0 .. maxCardinal   // Parser bug - to be fixed !!!
+		minCardinal .. maxCardinal   // Parser bug - to be fixed !!!
 	end
+	const minCardinal is Cardinal.0
 	const maxCardinal is Cardinal.2 ^ (BitsNumber)
 	override const one is Cardinal.1
 	override const zero is Cardinal.0
@@ -478,7 +479,7 @@ val unit Integer [BitsNumber: Cardinal] extend Numeric, Enumeration
 	override pure pred: as this => this - one
 	override const first is minInteger
 	override const last is maxInteger
-	override const count: Cardinal => last - first + one
+	override const count: Cardinal is last - first + one
 	override pure ord: Cardinal => this - minInteger + one
 
 	override + (other: as this): as this do
