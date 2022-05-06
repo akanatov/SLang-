@@ -1,6 +1,7 @@
 class SLang_builder
 inherit
 	SLangConstants
+	Server
 create
 	init
 feature {None}
@@ -43,10 +44,9 @@ feature {Any}
 	--cuDsc : CompilationUnitCommon
 	wasError: Boolean
 	
-	build_script_based_program (fName: String; fs: FileSystem) is
+	build_script_based_program (fName: String) is
 	require
 		non_void_file_name: fName /= Void
-		non_void_file_system: fs /= Void
 	local 
 		cuDsc : CompilationUnitAnonymousRoutine
 		sysDsc: SystemDescriptor
@@ -70,8 +70,7 @@ feature {Any}
 			if cuDsc.AnonymousRoutineIR_Loaded (fileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
 				-- 1. How to get system description - where to look for units !!! 
-				--create sysDsc.init_program (n,e : String; c: like clusters; l: like libraries) is
-				create sysDsc.init_program (fs.getFileName(fName), "*", getAnonymousRoutineClusters, Void)
+				create sysDsc.init_script (fs.getFileName(fName), getAnonymousRoutineClusters, Void)
 				cuDsc.attachSystemDescription (sysDsc)
 				
 				-- 2. Process pools - ensure that all units' interfaces used are loaded
@@ -191,10 +190,9 @@ feature {Any}
 		end -- if
 	end -- build_script_based_program
 	
-	build_from_system_description (sysDsc: SystemDescriptor; fs: FileSystem) is
+	build_from_system_description (sysDsc: SystemDescriptor) is
 	require
 		non_void_sd: sysDsc /= Void
-		non_void_file_system: fs /= Void
 	local 
 		folderName: String -- name of the folder where object files be stored
 	do

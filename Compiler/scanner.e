@@ -55,6 +55,8 @@ feature {Any}
 end -- class TokenDescriptor
 
 class SLang_Scanner
+inherit
+	Server
 creation
 	init
 feature {Any}
@@ -199,10 +201,9 @@ feature {Any}
 	do
 		systemMode := False
 	end -- disableSystemMode
-	init (fileName: String; fs: FileSystem) is
+	init (fileName: String) is
 	require	
 		non_void_file_name: fileName /= Void
-		non_void_file_system: fs /= Void
 	local	
 		wasError: Boolean
 	do

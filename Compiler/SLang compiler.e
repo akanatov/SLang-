@@ -14,15 +14,12 @@ end -- class SLangConstants
 class SLangCompiler
 inherit
 	SLangConstants
+	Server
 creation
 	init
 feature {None}
 	o: Output
 	systems: Sorted_Array [SystemDescriptor]
-	fs: FileSystem is
-	once
-		create Result
-	end -- fs
 	memory: Memory is
 	once
 		create Result
@@ -55,7 +52,7 @@ feature {None}
 		tsfName: String
 		ext: String
 		slangFileCount: Integer
---		actualFiles: Integer
+		actualFiles: Integer
 		saveErrCount: Integer
 		skipBuild: Boolean
 		skipSourceFile: Boolean
@@ -110,7 +107,7 @@ feature {None}
 					if n > 1 then
 						o.putLine (n.out + " files to parse ...")
 					end -- if
-					create {ScreenAndFileOutput}o.init ("_Slang.out")
+					create {ScreenAndFileOutput}o.init ("_SLang.out")
 					create systems.make
 					create scriptsToBuild.make
 					i := 1
@@ -133,14 +130,13 @@ feature {None}
 						skipSourceFile := False
 					else
 						sName := fs.getFileName(fName)
---	--dumpOutput.putNL ("// " + fName + ":" + fs.file_time (fName).out + " vs. " + 
---	--	IRfolderName + "\_" + sName + INText + ":" + fs.file_time (IRfolderName + "\" + sName + INText).out )
---						if fs.younger (fName, IRfolderName + "\_" + sName + INText) then
---							-- No need to parse - interface was created later then last change of the source file
---							o.putLine ("File `" + fName + "` was not changed. Parsing skipped.")
---							actualFiles := actualFiles + 1
---						else
-							create scanner.init (fName, fs)
+						if False then --fs.younger (fName, IRfolderName + "\_" + sName + INText) then
+							-- How to detect the case when exe or lib deleted ...
+							-- No need to process
+							o.putLine ("File `" + fName + "` was not changed. Procesing skipped")
+							actualFiles := actualFiles + 1
+						else
+							create scanner.init (fName)
 							if scanner.isReady then
 								if Cmode then
 									scanner.setCmode
@@ -204,16 +200,15 @@ feature {None}
 								o.putLine ("File `" + fName + "` not found or cannot be opened for parsing")
 								skipBuild := True
 							end -- if
---						end -- if
+						end -- if
 					end -- if
 					i := i + 1
 				end -- loop
-				--if actualFiles = 1 then
-				--	o.putLine ("1 file actual, parsing skipped ...")
-				--else
---				if actualFiles > 1 then
---					o.putLine ("Parsing skipped for " + actualFiles.out + " actual files.")
---				end -- if
+				if actualFiles = 1 then
+					o.putLine ("1 file is actual, processing skipped")
+				elseif actualFiles > 1 then
+					o.putLine (actualFiles.out + " files are actual, processing skipped")
+				end -- if
 				n := scriptsToBuild.count
 				m := systems.count
 				if skipBuild then
@@ -231,7 +226,7 @@ feature {None}
 							fName := scriptsToBuild.item (i)
 							--o.putNL ("Building a program from file `" + fName + "`")
 							create builder.init (o)
-							builder.build_script_based_program (fName, fs)
+							builder.build_script_based_program (fName)
 							if builder.wasError then
 								removeTimeStampFile := True
 							end -- if
@@ -253,7 +248,7 @@ feature {None}
 								dumpOutput.putNL (sysDsc.out)			
 							end -- debug
 							create builder.init (o)
-							builder.build_from_system_description (sysDsc, fs)
+							builder.build_from_system_description (sysDsc)
 							if builder.wasError then
 								removeTimeStampFile := True
 							end -- if
@@ -264,7 +259,7 @@ feature {None}
 						end -- debug
 					end -- if
 					if removeTimeStampFile then
-						fs.remove_file (tsfName)
+						safe_delete_file (tsfName)
 						removeTimeStampFile := False
 						tsfName := Void
 					end -- if
@@ -277,6 +272,20 @@ feature {None}
 		end
 		o.close
 	end -- init
+
+	safe_delete_file (fName: String) is
+	require
+		non_void_fName: fName /= Void
+	local
+		wasError: Boolean
+	do
+		if not wasError then
+			fs.remove_file (fName)
+		end -- if
+	rescue
+		wasError := True
+		retry
+	end -- safe_delete_file
 	
 	dumpAST (parser: SLang_parser; dumpOutput: Output) is
 	require

@@ -17,8 +17,12 @@ inherit
 		redefine
 			out, is_equal
 	end
+	Server
+		redefine
+			out, is_equal
+	end
 create
-	init_program, init_library
+	init_program, init_library, init_script
 feature {Any}
 	name: String -- Name of the output target
 	from_paths: Sorted_Array [String] -- List of paths to build the library from
@@ -27,6 +31,16 @@ feature {Any}
 	clusters: Sorted_Array [ClusterDescriptor] -- Clusters to search for usage of units and routines
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 
+	is_script: Boolean is
+	do
+		Result := name.is_equal ("*")
+	end 
+	
+	init_script (n : String; c: like clusters; l: like libraries) is 
+	do
+		init_program (n, "*", c, l)
+	end -- init_script
+	
 	init_program (n,e : String; c: like clusters; l: like libraries) is
 	require
 		name_not_void: n /= Void
@@ -154,11 +168,6 @@ debug
 	end -- if
 end -- debug
 	end -- clusterHasUnit
-	
-	fs: FileSystem is
-	once
-		create Result
-	end -- fs
 	
 	hasUnit(unitName: String): Array [ClusterDescriptor] is
 		-- returns list of clusters where such unit exists
@@ -378,6 +387,8 @@ class CompilationUnitCommon
 inherit
 	SLangConstants
 	end
+	Server
+	end
 create {None}
 	init_pools
 feature {Any}
@@ -478,12 +489,8 @@ feature {Any}
 		end -- if
 	end -- loadUnitInterafceFrom
 	
-	fs: FileSystem is
-	once
-		create Result
-	end -- fs
-	
-	loadUnitInterface (unitExternalName, unitPrintableName: String; o: Output): CompilationUnitUnit is
+
+	loadUnitInterface (unitExternalName, unitPrintableName: String; o: Output; unitDsc:UnitTypeCommonDescriptor): CompilationUnitUnit is
 	require
 		non_void_unit_name: unitExternalName /= Void
 	local
@@ -493,9 +500,10 @@ feature {Any}
 		if clusters = Void or else clusters.count = 0 then
 			-- Such unit is not found in the search universe !!!
 			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided universe")
+			-- Let's parse all sources across all clusters!
 		elseif clusters.count > 1 then
 			-- More than one unit is found in the search universe !!!
-			o.putNL ("Error: more than one unit `" + unitPrintableName + "` found in the provided universe. Select only one to be used")
+			o.putNL ("Error: " + clusters.count.out + " versions of unit `" + unitPrintableName + "` found in the provided universe. Select only one to be used")
 		else
 			-- Load it
 			o.putNL ("Loading interface of `" + unitPrintableName + "`")
@@ -527,7 +535,7 @@ feature {None}
 		tsfName: String
 		saveErrCount: Integer
 	do
-		create aScanner.init (fName, fs)
+		create aScanner.init (fName)
 		if aScanner.isReady then
 			if fs.getFileExtension (fName).is_equal (CLangExt) then
 				aScanner.setCmode
@@ -9575,7 +9583,7 @@ feature {Any}
 	do
 		if interface = Void then
 			-- ask system desciption to load unit interface 
-			interface := context.loadUnitInterface (getExternalName, out, o)
+			interface := context.loadUnitInterface (getExternalName, out, o, Current)
 			if interface = Void then
 				Result := True
 			end -- if
