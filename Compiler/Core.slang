@@ -1,5 +1,5 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.06 Mar 20th 2022
+// Version 0.99.07 May 6th 2022
 build Kernel:"." // Kernel library is to be built from all SLang files from the current folder
 end
 
@@ -97,7 +97,7 @@ val unit Bit [N: Cardinal]
 	end
 	{} data: val Array [0 .. N-1, Bit] // Bit field ...
 	:= (other: Cardinal) none
-	:= (other: Integer) do
+	:= (other: Integer) none /*do
 	/// Set N low bits from Integer other into this
 	// WIP!!!
 		raise "Not implemented!!!"
@@ -105,8 +105,8 @@ val unit Bit [N: Cardinal]
 		
 		/*while pos in 0 .. N - 1 do
 			this (pos) := other.data (pos)
-		end*/
-	end
+		end*/ 
+	end */
 	override pure sizeof: Cardinal do
 		// return sizeof in bytes !!!! N is a number of bits !!!
 		return N / Platform.BitsInByteCount + if N \ Platform.BitsInByteCount = 0 do 0 else 1
@@ -322,20 +322,20 @@ require
 end // Numeric
 
 virtual unit Comparable 
-	pure < (other: as this ): Boolean virtual
+	safe < (other: as this ): Boolean virtual
 	override pure = (other: as this ): Boolean => not (this < other) and not (other < this)
-	final pure > (other: as this ): Boolean => other < this
-	final pure <= (other: as this ): Boolean => not (other < this)
-	final pure >= (other: as this ): Boolean => not (this < other)
-	final pure max (other: as this ): as this => if this > other do this else other
-	final pure min (other: as this ): as this => if this < other do this else other
-	final pure compare (other: as this): -1 .. 1 => if this = other do 1 elsif this < other do -1 else 1;
+	final safe > (other: as this ): Boolean => other < this
+	final safe <= (other: as this ): Boolean => not (other < this)
+	final safe >= (other: as this ): Boolean => not (this < other)
+	final safe max (other: as this ): as this => if this > other do this else other
+	final safe min (other: as this ): as this => if this < other do this else other
+	final safe compare (other: as this): -1 .. 1 => if this = other do 1 elsif this < other do -1 else 1;
 require
 	not ( this < this ) /// Irreflexive comparison
 end // Comparable
 
 virtual unit Enumeration
-	pure succ: as this 
+	safe succ: as this 
 	/// successor of the current object
 	require
 		not (this = last)
@@ -344,7 +344,7 @@ virtual unit Enumeration
 		this.ord = return.ord - 1 /// Order number of this is order number of its successor minus one
 	end
 	
-	pure pred: as this 
+	safe pred: as this 
 	/// predecessor of the current object
 	require	
 		not (this = first)
@@ -353,23 +353,23 @@ virtual unit Enumeration
 		this.ord = return.ord + 1 /// Order number of this is order number of its predecessor plus one
 	end
 	
-	pure first: as this 
+	safe first: as this 
 	/// first element of enumeration
 	require
 		count > 0
 	virtual
 	
-	pure last: as this 
+	safe last: as this 
 	/// last element of enumeration
 	require
 		count > 0
 	virtual
 	
-	pure count: Cardinal
+	safe count: Cardinal
 	/// number of elements in the enumeration
 	virtual
 	
-	pure ord: Cardinal
+	safe ord: Cardinal
 	/// order number of the current object in the enumeration
 	require
 		count > 0
@@ -388,8 +388,8 @@ val unit Pointer
 	override const sizeof: Cardinal is Platform.PointerBitsCount / Platform.BitsInByteCount
 	write (b: Byte) none
 	write (ab: Array [Byte]) none
-	read: Byte none
-	read (numberOfBytes: Cardinal): Array [Byte]
+	safe read: Byte none
+	safe read (numberOfBytes: Cardinal): Array [Byte]
 	require
 		numberOfBytes > 0 /// Number of bytes to read is greater than zero
 	none
@@ -401,18 +401,13 @@ val unit Pointer
 		data is address.data
 	end
 	{} validPointer (p: Pointer): Boolean foreign
+		/// OS specific test for pointer validity
 require
-	validPointer (this) /// Any pointer must be valid in terms of underlying OS to prvide acess to data
+	validPointer (this) /// Any pointer must be valid in terms of underlying OS to provide acess to data
 end // Pointer
 
 val unit Cardinal alias uInt extend Cardinal [Platform.CardinalBitsCount]
-	Cardinal (value: as this) do
-		data is value.data
-	end
-	Cardinal do
-		/// Default with zero
-		data is Bit [Platform.CardinalBitsCount]
-	end
+	new Cardinal[Platform.CardinalBitsCount]( as this ), Cardinal[Platform.CardinalBitsCount]
 end // Cardinal
 
 val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
@@ -433,12 +428,12 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	override const zero is Cardinal.0
 	override const sizeof: Cardinal is BitsNumber / Platform.BitsInByteCount
 
-	override pure succ: as this => this + one
-	override pure pred: as this => this - one
+	override safe succ: as this => this + one
+	override safe pred: as this => this - one
 	override const first is Cardinal.0
 	override const last is maxCardinal
 	override const count: Cardinal is maxCardinal
-	override pure ord: Cardinal => this
+	override safe ord: Cardinal => this
 
 
 	Cardinal (other: Integer [BitsNumber])
@@ -456,13 +451,7 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 end // Cardinal
 
 val unit Integer extend Integer [Platform.IntegerBitsCount]
-	Integer (value: Integer) do
-		data is value.data
-	end
-	Integer do
-		/// Default with zero
-		data is Bit [Platform.IntegerBitsCount]
-	end
+	new Integer [Platform.IntegerBitsCount] (Integer), Integer [Platform.IntegerBitsCount]
 end // Integer
 
 val unit Integer [BitsNumber: Cardinal] extend Numeric, Enumeration
@@ -475,120 +464,120 @@ val unit Integer [BitsNumber: Cardinal] extend Numeric, Enumeration
 	override const zero is 0
 	override const sizeof: Cardinal is BitsNumber / Platform.BitsInByteCount
 
-	override pure succ: as this => this + one
-	override pure pred: as this => this - one
+	override safe succ: as this => this + one
+	override safe pred: as this => this - one
 	override const first is minInteger
 	override const last is maxInteger
 	override const count: Cardinal is last - first + one
-	override pure ord: Cardinal => this - minInteger + one
+	override safe ord: Cardinal => this - minInteger + one
 
-	override + (other: as this): as this do
+	override safe + (other: as this): as this none /*do
 		// Bit-level implementation of Integer addition
 		raise "Not implemented!!!"
-	end
-	+ (other: Real): as this do
+	end */
+	safe + (other: Real): as this do
 		return this + other.toInteger
 	end
-	/* + (other: Real): LongInteger do
+	/*pure + (other: Real): LongInteger do
 		return this + other.toInteger
 	end */ // Not quite sure we need Long types
-	+ do
+	pure + do
 		// Unary plus
 	end
 	++ do
 		this.+=(one)
 	end
-	+= (other: as this) do
+	+= (other: as this) none /*do
 		// Bit-level implementation of Integer increment
 		raise "Not implemented!!!"
-	end
+	end */
 	+= (other: Real) do
 		this.+=(other.toInteger)
 	end
 	-- do
 		this.-=(one)
 	end
-	-= (other: as this) do
+	-= (other: as this) none /*do
 		// Bit-level implementation of Integer decrement
 		raise "Not implemented!!!"
-	end
+	end */
 	-= (other: Real) do
 		this.-=(other.toInteger)
 	end
-	override - (other: as this): as this do
+	override safe - (other: as this): as this none /*do
 		// Bit-level implementation of Integer subtraction
 		raise "Not implemented!!!"
-	end
-	- (other: Real): as this do
+	end */
+	safe - (other: Real): as this do
 		return this - other.toInteger
 	end
 	- do
 		// Unary minus
 		return 0 - this
 	end
-	override / (other: as this): as this do
+	override safe / (other: as this): as this none /* do
 		// Bit-level implementation of Integer division
 		raise "Not implemented!!!"
-	end
-	\ (other: as this): as this do
+	end */
+	safe \ (other: as this): as this none /* do
 		// Bit-level implementation of Integer division reminder
 		raise "Not implemented!!!"
-	end
-	/ (other: as this): Real do
+	end */
+	safe / (other: as this): Real none /* do
 		// Bit-level implementation of precise division
 		raise "Not implemented!!!"
-	end
-	/ (other: Real): Real do
+	end */
+	safe / (other: Real): Real none /* do
 		// Bit-level implementation of precise division
 		raise "Not implemented!!!"
-	end
-	override * (other: as this): as this do
+	end */
+	override safe * (other: as this): as this do
 		// Bit-level implementation of Integer multiplication
 		raise "Not implemented!!!"
 	end
-	* (other: Real): Real do
+	safe * (other: Real): Real do
 		return other * this
 	end
-	override ^ (other: as this): as this do
+	override safe ^ (other: as this): as this none /* do
 		// Bit-level implementation of Integer rasing to power
 		raise "Not implemented!!!"
-	end
-	override < (other: as this): Boolean do
+	end */
+	override safe < (other: as this): Boolean none /* do
 		// Bit-level implementation of Integer less
 		raise "Not implemented!!!"
-	end
-	override = (other: as this): Boolean do
+	end */
+	override safe = (other: as this): Boolean do
 		// Bit-level implementation of Integer equal
 		return data = other.data
 	end
-	override = (other: Cardinal[BitsNumber]): Boolean do
+	override safe = (other: Cardinal[BitsNumber]): Boolean none /* do
 		// Bit-level implementation of Integer-Cardinal comparison
 		raise "Not implemented!!!"
 		//return data = other.data
-	end
+	end */
 	override := (other: val Integer) do
 		Integer (other)
 	end
 	override := (other: ref Integer) do
 		Integer (other)
 	end
-	:= (other: Real) do
+	:= (other: Real) none /* do
 		// Bit-level implementation of Real assignment
 		raise "Not implemented!!!"
-	end
-	:= (other: Character) do
+	end */
+	:= (other: Character) none /* do
 		// Bit-level implementation of Chracter assignment
 		raise "Not implemented!!!"
 		/*if data.sizeof = other.data.sizeof do
 			data := other.data // Size of data is different!!!
 		else
 		end*/
-	end
-	:= (other: Cardinal[BitsNumber]) do
+	end */
+	:= (other: Cardinal[BitsNumber]) none /* do
 		// Assign cardinal to integer
 		raise "Not implemented!!!"
-	end
-	pure toCharacter: Character
+	end */
+	safe := alias toCharacter: Character
 	require
 		this in 0 .. 2 ^ Platform.CharacterBitsCount /// containsChacraterCode: 
 	do
@@ -596,14 +585,13 @@ val unit Integer [BitsNumber: Cardinal] extend Numeric, Enumeration
 	end
 	{} data: Bit [BitsNumber]	
 	Integer (value: Integer) do
+		// Not that simple !!! Copy the bits we need and pad the gap with 0 bits!!!
 		data is value.data
 	end
 	Integer do
 		/// Default zero value
 		data is Bit [BitsNumber]
 	end
-require
-	BitsNumber > 0 /// Number of bits in Integer must be greater than zero!
 end // Integer
 
 //val unit Byte extend Bit [Platform.BitsInByteCount] use const Bit [Platform.BitsInByteCount]
@@ -655,79 +643,78 @@ val unit Real extend Float [Platform.RealBitsCount]
 	override const one is 1.0
 	override const zero is 0.0
 	override const sizeof: Integer is Platform.RealBitsCount / Platform.BitsInByteCount
-	override + (other: as this): as this do
+	override safe + (other: as this): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	+ alias plus(other: Integer): as this do
+	end */
+	safe + alias plus(other: Integer): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	+ alias plus do
+	end */
+	pure + alias plus do
 		// Unary plus
 	end
-	override - (other: as this): as this do
+	override safe - (other: as this): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	- alias minus (other: Integer): as this do
+	end */
+	safe - alias minus (other: Integer): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	- alias minus do
+	end */
+	- alias minus none /* do
 		// Unary minus 
 		// Bit-level implemenation
 		raise "Not implemented!!!"
-	end
-	override / (other: as this): as this do
+	end */
+	override safe / (other: as this): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	/ (other: Integer): as this do
+	end */
+	safe / (other: Integer): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	override * (other: as this): as this do
+	end */
+	override safe * (other: as this): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	* (other: Integer): as this do
+	end */
+	safe * (other: Integer): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	override ^ (other: as this): as this do
+	end */
+	override safe ^ (other: as this): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	override ^ (other: Integer): as this do
+	end */
+	override safe ^ (other: Integer): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	override < (other: as this): Boolean do
+	end */
+	override safe < (other: as this): Boolean none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	override < (other: Integer): Boolean do
+	end */
+	override safe < (other: Integer): Boolean none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	override = (other: as this): Boolean do
+	end */
+	override safe = (other: as this): Boolean none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	override = (other: Integer): Boolean do
+	end */
+	override safe = (other: Integer): Boolean none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
+	end */
 	override := (other: as this) do
-		// Bit-level implementation
 		data := other.data
 	end
-	:= (other: Integer) do
+	:= (other: Integer) none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
-	end
-	toInteger: Integer do
+	end */
+	safe toInteger: Integer do
 		// Bit-level implementation
 		raise "Not implemented!!!"
 	end
@@ -746,22 +733,15 @@ val unit Character alias Char extend Enumeration
 	end	
 	const minCharacter is 0.ToCharacter
 	const maxCharacter is (2 ^ Platform.CharacterBitsCount - 1).ToCharacter
-	override pure succ: as this => (this.toInteger + one).toCharacter
-	override pure pred: as this => (this.toInteger - one).ToCharacter
+	override safe succ: as this => (this.toInteger + one).toCharacter
+	override safe pred: as this => (this.toInteger - one).ToCharacter
 	override const first is minCharacter
 	override const last is maxCharacter
 	const count is 2 ^ Platform.CharacterBitsCount
 	ord: Cardinal => toCardinal
-	override < (other: as this): Boolean do
-		// Bit-level implementation
-		raise "Not implemented!!!"
-	end
+	override safe < (other: as this): Boolean => data < other.data
 	override const sizeof: Integer is Platform.CharacterBitsCount / Platform.BitsInByteCount
-	pure toCardinal: Cardinal do
-		return new Cardinal (data.ToCardinal)
-	/*ensure
-		return in return.minInteger .. return.maxInteger*/
-	end
+	safe toCardinal: Cardinal => new Cardinal (data.ToCardinal)
 	:= (other: Cardinal)
 	require
 		other in 0 .. 2 ^ Platform.CharacterBitsCount - 1 /// Invalid character code		
@@ -784,46 +764,51 @@ val unit Boolean alias Bool extend Enumeration
 	{ this } const one is 1
 	{ this } const zero is 0
 	
-	override pure < (other: as this): Boolean => this.data < other.data
-	override pure = (other: as this): Boolean => this.data = other.data
-	override pure succ: as this => if this do false else true
-	override pure pred: as this => if this do false else true
+	override safe < (other: as this): Boolean => this.data < other.data
+	override safe = (other: as this): Boolean => this.data = other.data
+	override safe succ: as this => if this do false else true
+	override safe pred: as this => if this do false else true
 	override const first is false
 	override const last is true
 	const count is 2
-	pure ord: Integer => if this do one else zero 
+	safe ord: Integer => if this do one else zero 
 	override const sizeof: Integer is Platform.BooleanBitsCount / Platform.BitsInByteCount
-	pure & alias and (other: as this): Boolean => if this do if other do true else false else false
+	safe & alias and (other: as this): Boolean => if this do if other do true else false else false
 		/* 	00 -> 0
 			01 -> 0
 			10 -> 0
 			11 -> 1 */
-	pure | alias or (other: as this): Boolean => if this = false do if other do true else false else true
+	safe | alias or (other: as this): Boolean => if this = false do if other do true else false else true
 		/*	00 -> 0
 			01 -> 1
 			10 -> 1
 			11 -> 1 */
-	pure && alias and then (other: as this): Boolean => if not this do false elsif not other do false else true
-	pure || alias or else (other: as this): Boolean => if this do true elsif other do true else false
-	pure ^ alias xor (other: as this): Boolean => if this do if other do false else true else if other do true else false
+	safe && alias and then (other: as this): Boolean => if not this do false elsif not other do false else true
+	safe || alias or else (other: as this): Boolean => if this do true elsif other do true else false
+	safe ^ alias xor (other: as this): Boolean => if this do if other do false else true else if other do true else false
 		/*	00 -> 0
 			01 -> 1
 			10 -> 1
 			11 -> 0 */
-	pure -> alias implies (other: as this): Boolean => not this or other
-	pure ~ alias not : Boolean => if this do false else true
-	pure toInteger: Integer => if this do one else zero
+	safe -> alias implies (other: as this): Boolean => not this or other
+	safe ~ alias not : Boolean => if this do false else true
+	safe := : Cardinal => if this do 1 else 0
 	Boolean (value: val Boolean) do
 		data is value.data
 	end
 	Boolean do
-		data is 0xb
+		data is 0b0
 	end
-	{} Boolean (value: Integer) 
+	{} Boolean (value: Cardinal) 
 	require	
-		value in zero..one /// Valid Integer value to be assigned into Boolean
+		value in zero .. one /// Valid Cardinal value to be assigned into Boolean
 	do
-		data is value
+		if value = zero do
+			data is 0b0
+		else
+			data is 0b1
+		end 
+		// data is value
 	end
 	{} data: Bit [Platform.BooleanBitsCount]	
 require
@@ -852,7 +837,7 @@ unit String extend AString
 	const : // "" .. "Character*" - all Strings are defined here
 		//{Character.minCharacter |.. Character.maxCharacter}0+		
 	end
-	override < (other: as this): Boolean do
+	override safe < (other: as this): Boolean do
 		if this = other do
 			return false
 		end
@@ -863,7 +848,7 @@ unit String extend AString
 		end
 		return false
 	end
-	override = (other: as this): Boolean do
+	override safe = (other: as this): Boolean do
 		if this.data = other.data do
 			return true
 		end
@@ -872,36 +857,37 @@ unit String extend AString
 		//return true
 	end
 	
-	pure count: Cardinal => data.count
+	safe count: Cardinal => data.count
 	
-	pure () (pos: Cardinal): Character
+	safe () (pos: Cardinal): Character
 		/// Get character at position pos
 	require 
 		1 <= pos and then pos <= count /// Valid element index
 	do
 		return data (pos)
 	end
-	() (pos: Cardinal; value: G) 
+	safe () (pos: Cardinal; value: G) 
 		/// Set array element at position pos with value
 	require 
 		1 <= pos and then pos <= count /// Valid element index 
 	do	
 		data (pos) := value
 	end
-	() (from, to: Cardinal): as this
+	safe () (from, to: Cardinal): as this
 	// substring
 	require	
 		from <= to /// Valid charters' indices range
 		1 <= from <= count ///
 		1 <= to <= count ///
-	do
+	none
+	/*do
 		// WIP to implement
 		raise "Not implemented!!!"
-	end
-	+ (other: as this): as this 
+	end*/
+	safe + (other: as this): as this none /*
 	do
 		// WIP to implement
-		raise "Not implemented!!!"
+		raise "Not implemented!!!" */
 	ensure
 		return.count = this.count + other.count /// Valid concatenated string length
 	end
@@ -929,14 +915,14 @@ virtual unit AnArray [G]
 			count > 0 /// Array is not empty
 			lower <= pos and then pos <= upper /// Valid element index 
 		virtual
-	final count: Cardinal => upper - lower + 1
+	final safe count: Cardinal => upper - lower + 1
 		/// Number of elelments in the array
 		
 	lower: Integer virtual
 		/// Lower index value
 	upper: Integer virtual
 		/// Upper index value
-	() (from, to: Integer): as this  // get subarray
+	safe () (from, to: Integer): as this  // get subarray
 	require
 		from <= to /// subarray not empty		
 		lower <= from /// from is greater or equal than lower
@@ -960,9 +946,9 @@ require
 end // AnArray [G]
 
 virtual unit OneDimentionalArray [G new ()] extend AnArray [G]
-	override () (pos: Integer): G none
+	override safe () (pos: Integer): G none
 	override () (pos: Integer; value: G) none
-	override pure () (from, to: Integer): Array [G]
+	override safe () (from, to: Integer): Array [G]
 	/// get subarray
 	do 
 		result is new Array [G](from, to)
@@ -1021,7 +1007,7 @@ end // Array
 unit Array [G new ()] extend OneDimentionalArray [G]
 ///   Dynamic array
 // We can put info Array only objects which has constructor with empty signature !!! We are always safe - no uninitilized data!!! 
-	override () (pos: Integer): G none
+	override safe () (pos: Integer): G none
 	override () (pos: Integer; value: G) none
 	override lower: Integer
 	override upper: Integer

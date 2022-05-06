@@ -6456,7 +6456,6 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		utnDsc: UnitTypeNameDescriptor
 		utnDsc1: UnitTypeNameDescriptor
 		ifpDsc: InitFromParentDescriptor
---		initDcl: InitDeclarationDescriptor
 		commaFound: Boolean
 		toLeave: Boolean
 	do
@@ -6480,7 +6479,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						else
 							utnDsc1 := unitDsc.findParent (utnDsc)
 							if utnDsc1 = Void then
-								validity_error( "Init procedure can not be inherited from the unit '" +  utnDsc.name + "' as it is not a parent of '" + unitDsc.name + "'")
+								validity_error( "Construction procedure can not be inherited from the unit '" +  utnDsc.name + "' as it is not a parent of '" + unitDsc.name + "'")
 							else
 								utnDsc := utnDsc1
 							end -- if
@@ -6492,9 +6491,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 								create ifpDsc.init (utnDsc, Void)
 							end -- if
 							if theSameUnit1 (unitDsc, utnDsc) then
-								validity_error( "Init procedure can not be inherited from the same unit '" + unitDsc.name + "'")
+								validity_error( "Construction procedure can not be inherited from the same unit '" + unitDsc.name + "'")
 							elseif not unitDsc.inhertitedInits.added (ifpDsc) then
-								validity_error( "Duplicated init inheritance of '" + ifpDsc.out + "' in unit '" + unitDsc.name + "'")
+								validity_error( "Duplicated Construction procedure inheritance of '" + ifpDsc.out + "' in unit '" + unitDsc.name + "'")
 							end -- if
 						end -- if
 					else
@@ -6518,39 +6517,6 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		else
 			syntax_error (<<scanner.identifier_token>>)
 		end -- inspect
---		when scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.use_token then
---			-- parse init declaration
---			initDcl := parseInitDeclaration (currentVisibilityZone)
---			if initDcl /= Void then
---				--initDcl.setVisibility (currentVisibilityZone)
---				if not unitDsc.unitMembers.added (initDcl) then
---					validity_error( "Duplicated init declaration in unit '" + unitDsc.name + "'")
---				end -- if
---			end -- if
---			Result := True
---		else
---			if scanner.blockStart then
---				-- parse init declaration
---				initDcl := parseInitDeclaration (currentVisibilityZone)
---				if initDcl /= Void then
---					--initDcl.setVisibility (currentVisibilityZone)
---					if not unitDsc.unitMembers.added (initDcl) then
---						validity_error( "Duplicated init declaration in unit '" + unitDsc.name + "'")
---					end -- if
---				end -- if
---				Result := True
---			elseif scanner.Cmode then
---				syntax_error (<<
---					scanner.identifier_token, scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token,
---					scanner.left_curly_bracket_token,
---					scanner.use_token
---				>>)
---			else
---				syntax_error (<<
---					scanner.identifier_token, scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.do_token, scanner.use_token
---				>>)
---			end -- if
---		end -- inspect
 	end -- parseInitProcedureInheritanceOrMemberDeclaration
 	
 	parseConstObjectsDeclaration(unitDsc: UnitDeclarationDescriptor) is 

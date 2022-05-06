@@ -2723,7 +2723,7 @@ invariant
 	name_not_void: memberName /= Void
 end
 
-class InitFromParentDescriptor 
+class InitFromParentDescriptor
 --15 UnitTypeName [Signature]
 inherit	
 	Comparable
@@ -2752,20 +2752,32 @@ feature {Any}
 	is_equal (other: like Current): Boolean is
 	do
 		Result := parent.is_equal (other.parent)
-		if initSignature /= Void and then other.initSignature /= Void and then Result then
-			Result := initSignature.is_equal (other.initSignature)
+		if Result then
+			if initSignature = Void then
+				Result := other.initSignature = Void
+			elseif other.initSignature /= Void then
+				Result := initSignature.is_equal (other.initSignature)
+			else
+				Result := False
+			end -- if
 		end -- if
 	end
 	infix "<"(other: like Current): Boolean is
 	do
 		Result := parent < other.parent
-		if initSignature /= Void and then other.initSignature /= Void and then Result then
-			Result := initSignature < other.initSignature
+		if not Result and then parent.is_equal (other.parent) then
+			if initSignature = Void then
+				Result := other.initSignature /= Void
+			elseif other.initSignature /= Void then
+				Result := initSignature < other.initSignature
+			else
+				Result := False
+			end -- if
 		end -- if
 	end
 invariant
 	non_void_parent: parent /= Void
-end
+end -- class InitFromParentDescriptor
 
 class InheritedMemberOverridingDescriptor
 --17 UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]
