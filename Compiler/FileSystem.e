@@ -154,30 +154,88 @@ feature {Any}
 				start := pos + 1
 				pos := 0
 			when '.' then
-				stop := pos - 1
-				pos := 0
+				pos := pos - 1
+				if stop = 0 then
+					stop := pos
+				end
 			else	
 				pos := pos - 1
 			end
 		end -- loop
-		if Result = Void then
-			if start = 0 then
-				if stop > 0 then
-					Result := name.substring (1, stop)
-				else
-					Result := name
-				end -- if
-			elseif stop = 0 then	
-				Result := name.substring (start, name.count)
-			elseif start <= stop then	
-				Result := name.substring (start, stop)
+		if start = 0 then
+			if stop > 0 then
+				Result := name.substring (1, stop)
 			else
 				Result := name
 			end -- if
+		elseif stop = 0 then	
+			Result := name.substring (start, name.count)
+		elseif start <= stop then	
+			Result := name.substring (start, stop)
+		else
+			Result := name
 		end -- if
 	ensure
 		file_name_not_void: Result /= Void
 	end -- getFileName
+	
+	remove_files_with_the_same_name (fileName: String) is
+	require
+		non_void_fileName: fileName /= Void
+	local	
+		files: Array [FSys_Dat]
+		aName: String
+		i, n: Integer
+	do
+		files := file_list (getFilePath (fileName))
+		if files /= Void then
+			from
+				aName := getFileName (fileName)
+				i := 1
+				n := files.count
+			until
+				i > n
+			loop
+				if getFileName (files.item (i).name).is_equal (aName) then
+					silent_remove_file(files.item (i).path)
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
+	end -- remove_files_with_the_same_name
+	
+	get_files_with_the_same_name (fileName: String): Array [FSys_Dat] is
+	require
+		non_void_fileName: fileName /= Void
+	local	
+		files: Array [FSys_Dat]
+		aName: String
+		i, n, m: Integer
+	do
+		files := file_list (getFilePath (fileName))
+		if files = Void then
+			create Result.make (1, 0)
+		else
+			from
+				aName := getFileName (fileName)
+				n := files.count
+				create Result.make (1, n)
+				i := 1
+			until
+				i > n
+			loop
+				if getFileName (files.item (i).name).is_equal (aName) then
+					m := m + 1
+					Result.put (files.item (i), m)
+				end -- if
+				i := i + 1
+			end -- loop
+			Result.resize (1, m)
+		end -- if
+	ensure	
+		non_void_list: Result /= Void
+	end -- get_files_with_the_same_name
+
 	
 	loadObjectFromFile (aFile: File): Storable is
 	require
@@ -206,6 +264,20 @@ feature {Any}
 	end -- objectStoredToFile
 	
 feature {None}
+	silent_remove_file(fileName: String) is
+	require
+		non_void_fileName: fileName /= Void
+	local	
+		wasError: Boolean
+	do
+		if not wasError then
+			remove_file(fileName)
+		end -- if
+	rescue -- we just ignore the error
+		wasError := True
+		retry
+	end -- silent_remove_file
+
    stread (handle: INTEGER): STORABLE is
       external "C"
          alias "ReadObj"

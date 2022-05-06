@@ -150,7 +150,7 @@ debug
 	if Result then
 		--print ("Unit '" + unitName + "' found,  file '" + fileName + "' is in place%N")
 	else
-		print ("Unit '" + unitName + "' not found,  file '" + fileName + "' is missed%N")
+		--print ("Unit '" + unitName + "' not found,  file '" + fileName + "' is missed%N")
 	end -- if
 end -- debug
 	end -- clusterHasUnit
@@ -385,6 +385,8 @@ feature {Any}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
 	stringPool: Sorted_Array [String]
 	typePool: Sorted_Array[TypeDescriptor]
+	srcFileName: String
+	timeStamp: Integer 
 
 	setUseConst (uc: like useConst) is
 	require
@@ -476,6 +478,11 @@ feature {Any}
 		end -- if
 	end -- loadUnitInterafceFrom
 	
+	fs: FileSystem is
+	once
+		create Result
+	end -- fs
+	
 	loadUnitInterface (unitExternalName, unitPrintableName: String; o: Output): CompilationUnitUnit is
 	require
 		non_void_unit_name: unitExternalName /= Void
@@ -485,21 +492,92 @@ feature {Any}
 		clusters := sysDsc.hasUnit(unitExternalName)
 		if clusters = Void or else clusters.count = 0 then
 			-- Such unit is not found in the search universe !!!
-			o.putNL ("Error: unit '" + unitPrintableName + "' is not found in the provided universe")
+			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided universe")
 		elseif clusters.count > 1 then
 			-- More than one unit is found in the search universe !!!
-			o.putNL ("Error: more than one unit '" + unitPrintableName + "' found in the provided universe. Select only one to be used")
+			o.putNL ("Error: more than one unit `" + unitPrintableName + "` found in the provided universe. Select only one to be used")
 		else
 			-- Load it
+			o.putNL ("Loading interface of `" + unitPrintableName + "`")
 			Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
 			if Result = Void then
 				-- There was a problem to load unit interface 
-				o.putNL ("Error: unit '" + unitPrintableName + "' was not loaded correctly")
+				o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
+			elseif fs.file_exists(Result.srcFileName) then
+				-- Check if the unit source file was changed after unit IR was created. If necessary run the parser. 
+				if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
+					-- Ensure source file parsed
+					Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
+				end -- if				
+			else
+				o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place")
 			end -- if
 		end -- if
 	end -- loadUnitInterface
 	
 feature {None}
+	fileParsedForUnit (fName: String; o: Output; unitExternalName: String; unitOfInterest: CompilationUnitUnit): CompilationUnitUnit is 
+	require
+		non_void_file_name: fName /= Void
+		non_void_unit_of_interest: unitOfInterest /= Void
+	local
+		aScanner: SLang_scanner
+		parser: SLang_parser
+		sName: String
+		tsfName: String
+		saveErrCount: Integer
+	do
+		create aScanner.init (fName, fs)
+		if aScanner.isReady then
+			if fs.getFileExtension (fName).is_equal (CLangExt) then
+				aScanner.setCmode
+			else
+				aScanner.setPmode
+			end -- if
+			create parser.init (aScanner, Void, o)
+			o.putLine ("Parsing changed file `" + fName + "`")
+			parser.parseSourceFile
+			aScanner.close
+			parser.ast.attach_usage_pool_to_units_and_standalone_routines 
+			inspect 
+				parser.errorsCount
+			when 0 then
+				if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
+					sName := fs.getFileName(fName)
+					saveErrCount := parser.ast.saveInternalRepresentation (fName, aScanner.timeStamp, sName, ASText, o, Void)
+					parser.ast.cutImplementation
+					saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, aScanner.timeStamp, sName, INText, o, unitOfInterest)
+					if saveErrCount = 0 then
+						-- Remove previous timestamp files and store the latest parsing timestamp !!!
+						tsfName := fs.getFilePath(fName) + "/" + IRfolderName + "/" + fs.getFileName(fName)
+						fs.remove_files_with_the_same_name (tsfName)
+						tsfName.append_string ("." + aScanner.timeStamp.out)
+						fs.add_file (tsfName, "r")
+						o.putLine ("Changed file `" + fName + "` parsed with no errors!")
+						Result := unitOfInterest -- True
+					else
+						o.putLine (
+							"Changed file `" + fName + 
+							"` parsed with no errors! But some parsing results were not stored due to " + 
+							saveErrCount.out + " I/O errors!"
+						)
+					end -- if
+				else
+					o.putLine (
+						"Failed to create folder `" + IRfolderName + 
+						"` to store internal files. Parsing results of changed file `" + fName + "` are not saved!"
+					)
+				end -- if
+			when 1 then
+				o.putLine ("Changed file `" + fName + "` parsed with 1 error!")
+			else
+				o.putLine ("Changed file `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
+			end -- inspect
+		else
+			o.putLine ("Changed file `" + fName + "` not found or cannot be opened for parsing")
+		end -- if
+	end -- fileParsedForUnit
+
 	scanner: SLang_Scanner
 	init_pools (scn: like scanner) is
 	do
@@ -579,6 +657,8 @@ feature {Any}
 			statements	:= fImage.statements	
 			stringPool	:= fImage.stringPool	
 			typePool	:= fImage.typePool	
+			srcFileName := fImage.srcFileName
+			timeStamp	:= fImage.timeStamp
 			create locals.make
 			-- Fill locals from statements			
 			from
@@ -647,6 +727,16 @@ feature {Any}
 		--unit := Void -- ????
 	end -- make
 
+	sameUnitFill (unitDsc: UnitDeclarationDescriptor) is
+	require
+		non_void_unitDsc: unitDsc /= Void
+	do
+		if unit.is_equal (unitDsc) then
+			unit := unitDsc
+		end -- if
+	end -- sameUnitFill
+
+	
 	UnitIR_Loaded (fileName: String; o: Output): Boolean is
 	local
 		uImage: UnitImage 
@@ -657,6 +747,8 @@ feature {Any}
 			useConst	:= uImage.useConst	
 			stringPool	:= uImage.stringPool	
 			typePool	:= uImage.typePool	
+			srcFileName := uImage.srcFileName
+			timeStamp	:= uImage.timeStamp
 			Result := True
 		end -- if
 	end -- UnitIR_Loaded
@@ -687,41 +779,6 @@ feature {None}
 		retry
 	end -- loadUnitIR
 
---	UnitInterfaceLoaded (fileName: String; o: Output): Boolean is
---	local
---		uImage: UnitImage 
---	do
---		uImage := loadUnitInterfaceIR (fileName, o)
---		if uImage /= Void then
---			unit		:= uImage.unit
---			useConst	:= uImage.useConst	
---			stringPool	:= uImage.stringPool	
---			typePool	:= uImage.typePool	
---			Result := True
---		end -- if
---	end -- UnitInterfaceLoaded
---
---feature {None}
---
---	loadUnitInterfaceIR (fileName: String; o: Output): UnitImage is
---	local
---		aFile: File
---		wasError: Boolean
---	do
---		if wasError then
---			o.putNL ("Failure: unable to load unit interface from file `" + fileName + "`")
---			Result := Void
---		else
---			create aFile.make_open_read (fileName)
---			create Result.init_empty
---			Result ?= Result.retrieved (aFile)
---			aFile.close
---		end -- if
---	rescue
---		wasError := True
---		retry
---	end -- loadUnitInterfaceIR
-
 end -- class CompilationUnitUnit
 
 class CompilationUnitStandaloneRoutines
@@ -749,6 +806,8 @@ feature {Any}
 			useConst	:= rImage.useConst	
 			stringPool	:= rImage.stringPool	
 			typePool	:= rImage.typePool	
+			srcFileName := rImage.srcFileName
+			timeStamp	:= rImage.timeStamp
 			Result := True
 		end -- if
 	end -- RoutinesIR_Loaded
@@ -778,41 +837,6 @@ feature {None}
 		wasError := True
 		retry
 	end -- loadUnitIR
-
---	UnitInterfaceLoaded (fileName: String; o: Output): Boolean is
---	local
---		uImage: RoutinesImage 
---	do
---		uImage := loadUnitInterfaceIR (fileName, o)
---		if uImage /= Void then
---			routines	:= uImage.routines
---			useConst	:= uImage.useConst	
---			stringPool	:= uImage.stringPool	
---			typePool	:= uImage.typePool	
---			Result := True
---		end -- if
---	end -- UnitInterfaceLoaded
---
---feature {None}
---	
---	loadUnitInterfaceIR (fileName: String; o: Output): RoutinesImage is
---	local
---		aFile: File
---		wasError: Boolean
---	do
---		if wasError then
---			o.putNL ("Failure: unable to load routine interface from file `" + fileName + "`")
---			Result := Void
---		else
---			create aFile.make_open_read (fileName)
---			create Result.init_empty
---			Result ?= Result.retrieved (aFile)
---			aFile.close
---		end -- if
---	rescue
---		wasError := True
---		retry
---	end -- loadUnitInterfaceIR
 
 invariant
 	non_void_routines: routines /= Void
@@ -890,7 +914,9 @@ feature {Any}
 		end -- loop
 	end -- cutImplementation
 	
-	saveInternalRepresentation (FullSourceFileName: String; timeStamp: Real; SourceFileName: String; irFileExtension: String; o: Output): Integer is
+	saveInternalRepresentation (
+		FullSourceFileName: String; tStamp: Integer; SourceFileName: String; irFileExtension: String; o: Output; unitOfInterest: CompilationUnitUnit
+	): Integer is
 	require	
 		src_file_name_not_void: FullSourceFileName /= Void
 		IR_file_name_not_void: SourceFileName /= Void
@@ -901,11 +927,13 @@ feature {Any}
 		rImg: RoutinesImage
 		i, n: Integer
 		fName: String
+		filePrefix: String
 	do
+		filePrefix := fs.getFilePath(FullSourceFileName) + "\" + IRfolderName  + "\"
 		if statements.count > 0 then
 			-- Anonymous Routine IR: useConst + statements 
-			create sImg.init (FullSourceFileName, timeStamp, useConst, statements, stringPool, typePool)
-			fName := IRfolderName  + "\_" + SourceFileName + PgmSuffix + irFileExtension
+			create sImg.init (FullSourceFileName, tStamp, useConst, statements, stringPool, typePool)
+			fName := filePrefix  + "_" + SourceFileName + PgmSuffix + irFileExtension
 			if not IRstored (fName, sImg) then
 				o.putNL ("File open/create/write/close error: unable to store anonymous routine IR into file `" + fName + "`")
 				Result := Result + 1
@@ -914,8 +942,8 @@ feature {Any}
 
 		if routines.count > 0 then
 			-- Standalone routines: useConst + routines
-			create rImg.init (FullSourceFileName, timeStamp, useConst, routines, rtn_stringPool, rtn_typePool)
-			fName := IRfolderName  + "\_" + SourceFileName + LibSuffix + irFileExtension
+			create rImg.init (FullSourceFileName, tStamp, useConst, routines, rtn_stringPool, rtn_typePool)
+			fName := filePrefix  + "_" + SourceFileName + LibSuffix + irFileExtension
 			if not IRstored (fName, rImg) then
 				o.putNL ("File open/create/write/close error: unable to store standalone routines IR into file `" + fName + "`")
 				Result := Result + 1
@@ -929,9 +957,13 @@ feature {Any}
 			i > n
 		loop
 			-- per unit: useConst + unit
-			create uImg.init (FullSourceFileName, timeStamp, useConst, units.item(i), units.item(i).stringPool, units.item(i).typePool)
-			fName := IRfolderName  + "\" + units.item(i).getExternalName + irFileExtension
-			if not IRstored (fName, uImg) then
+			create uImg.init (FullSourceFileName, tStamp, useConst, units.item(i), units.item(i).stringPool, units.item(i).typePool)
+			fName := filePrefix  + units.item(i).getExternalName + irFileExtension
+			if IRstored (fName, uImg) then
+				if unitOfInterest /= Void then
+					unitOfInterest.sameUnitFill (uImg.unit)
+				end -- if
+			else
 				o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
@@ -979,7 +1011,7 @@ create {None}
 	init_empty
 feature
 	srcFileName: String
-	timeStamp: Real -- time stamp of the source file 'srcFileName'
+	timeStamp: Integer -- time stamp of the source file 'srcFileName'
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
 	stringPool: Sorted_Array [String]
 	typePool: Sorted_Array[TypeDescriptor]
@@ -987,7 +1019,7 @@ feature {IR_Storage}
 	init_empty is
 	do
 	end -- init_empty
-	init_storage (fn: like srcFileName; ts: Real; uc: like useConst; sp: like stringPool; tp: like typePool) is
+	init_storage (fn: like srcFileName; ts: like timeStamp; uc: like useConst; sp: like stringPool; tp: like typePool) is
 	do
 		srcFileName := fn
 		timeStamp   := ts

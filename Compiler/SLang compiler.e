@@ -52,12 +52,14 @@ feature {None}
 		files: Array [FSys_Dat]
 		fName: String
 		sName: String
+		tsfName: String
 		ext: String
 		slangFileCount: Integer
 --		actualFiles: Integer
 		saveErrCount: Integer
 		skipBuild: Boolean
 		skipSourceFile: Boolean
+		removeTimeStampFile: Boolean
 		Cmode: Boolean
 		i, n: Integer
 		j, m: Integer
@@ -123,7 +125,7 @@ feature {None}
 						Cmode := False
 					else
 						-- Do not parse such file!!!
-						o.putLine ("File `" + fName + "` has extension different from SLang source files. Parsing skipped.")
+						o.putLine ("File `" + fName + "` has extension different from valid SLang source file and ignored")
 						skipSourceFile := True
 					end -- if
 		
@@ -151,10 +153,11 @@ feature {None}
 								scanner.close
 								parser.ast.attach_usage_pool_to_units_and_standalone_routines 
 								if parser.ast.statements.count > 0 then
-									-- File has anonymous routine - it is a script !
+									-- File has anonymous routine - it is a script ! Build mode is to be activated!
 									scriptsToBuild.add (fName)
-								end -- if
+								end -- if  
 								if parser.systems /= Void and then parser.systems.count > 0 then
+									-- File has description of systems to be built. Build mode is to be activated!
 									systems.append (parser.systems)
 								end -- if
 								debug
@@ -165,10 +168,15 @@ feature {None}
 									parser.errorsCount
 								when 0 then
 									if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
-										saveErrCount := parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, ASText, o)
+										saveErrCount := parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, ASText, o, Void)
 										parser.ast.cutImplementation
-										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o)
+										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o, Void)
 										if saveErrCount = 0 then
+											-- Remove previous timestamp files and store the latest parsing timestamp !!!
+											tsfName := IRfolderName + "/" + fs.getFileName(fName)
+											fs.remove_files_with_the_same_name (tsfName)
+											tsfName.append_string ("." + scanner.timeStamp.out)
+											fs.add_file (tsfName, "r")
 											o.putLine ("File `" + fName + "` parsed with no errors!")
 										else
 											o.putLine (
@@ -210,7 +218,7 @@ feature {None}
 				m := systems.count
 				if skipBuild then
 					if n > 0 or else m > 0 then
-						o.putLine ("Due to parsing errors, build is dropped")
+						o.putLine ("Due to parsing errors, build(s) dropped")
 					end -- if
 				else
 					if n > 0 then
@@ -223,7 +231,10 @@ feature {None}
 							fName := scriptsToBuild.item (i)
 							--o.putNL ("Building a program from file `" + fName + "`")
 							create builder.init (o)
-							builder.build_from_file (fName, fs)
+							builder.build_script_based_program (fName, fs)
+							if builder.wasError then
+								removeTimeStampFile := True
+							end -- if
 							i := i + 1
 						end -- loop
 					end -- if
@@ -243,11 +254,19 @@ feature {None}
 							end -- debug
 							create builder.init (o)
 							builder.build_from_system_description (sysDsc, fs)
+							if builder.wasError then
+								removeTimeStampFile := True
+							end -- if
 							j := j + 1
 						end -- loop
 						debug
 							dumpOutput.putNL ("//----------- System description dump end  ------------")
 						end -- debug
+					end -- if
+					if removeTimeStampFile then
+						fs.remove_file (tsfName)
+						removeTimeStampFile := False
+						tsfName := Void
 					end -- if
 				end -- if
 			end -- if

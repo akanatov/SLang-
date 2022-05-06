@@ -8410,7 +8410,7 @@ feature {None}
 	require
 		scanner_not_void: aScanner /= Void
 		scanner_ready_to_work: aScanner.isReady
-		systems_not_void: sys /= Void
+		--systems_not_void: sys /= Void
 		output_not_void: output /= Void
 	do
 		o := output
@@ -8418,6 +8418,9 @@ feature {None}
 		create ast.init (scanner)
 		scanner.setPool (ast.stringPool)
 		systems := sys
+		if systems = Void then
+			create systems.make
+		end
 	end -- init
 
 end -- class SLang_Parser

@@ -41,7 +41,9 @@ feature {Any}
 	--parser: SLang_parser
 	--semAnal: SLang_semAnal
 	--cuDsc : CompilationUnitCommon
-	build_from_file (fName: String; fs: FileSystem) is
+	wasError: Boolean
+	
+	build_script_based_program (fName: String; fs: FileSystem) is
 	require
 		non_void_file_name: fName /= Void
 		non_void_file_system: fs /= Void
@@ -95,8 +97,9 @@ feature {Any}
 				loop
 					if typePool.item(i).isNotLoaded (cuDsc, o) then
 						debug
-							o.putNL ("Load interface of '" + typePool.item(i).out + "' failed!")
+							--o.putNL ("Load interface of '" + typePool.item(i).out + "' failed!")
 						end -- debug
+						wasError := True
 						skipCodeGen := True
 					end -- if
 					i := i + 1
@@ -115,6 +118,7 @@ feature {Any}
 							o.putNL ("Statement '" + statements.item(i).out + "' invalid!")
 						end -- debug
 						skipCodeGen := True
+						wasError := True
 					end -- if
 					i := i + 1
 				end -- loop
@@ -175,15 +179,18 @@ feature {Any}
 						o.putNL ("Consistency error: No code generators available")
 					end -- if
 				end -- if
-			-- Allready printed!
-			--else
-			--	-- AST not loaded !!!
-			--	o.putNL ("Error: unable to load compiled module from file `" + fileName + "`")
+			else
+				wasError := True
+				-- Allready printed!
+				--	-- AST not loaded !!!
+				--	o.putNL ("Error: unable to load compiled module from file `" + fileName + "`")
 			end -- if
 		else
+			wasError := True
 			o.putNL ("Error: SLang folder with artefacts '" + IRfolderName + "' not found")
 		end -- if
-	end -- build_from_file
+	end -- build_script_based_program
+	
 	build_from_system_description (sysDsc: SystemDescriptor; fs: FileSystem) is
 	require
 		non_void_sd: sysDsc /= Void
@@ -213,6 +220,7 @@ not_implemented_yet ("Building library `" + sysDsc.name + "`")
 not_implemented_yet ("Building executable `" + sysDsc.name + "`")
 			end -- if
 		else
+			wasError := True
 			o.putNL ("Error: Not able to create SLang folder with artefacts  '" + folderName + "'")
 		end -- if
 	end -- build_from_system_description

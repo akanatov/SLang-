@@ -216,7 +216,7 @@ feature {Any}
 			col := 0
 			pos := 1
 			create file.make_open_read (fileName)
-			timeStamp := fs.file_data(fileName).time
+			timeStamp := fs.file_data(fileName).time.rounded
 			sourceFileName := fileName
 			size := file.count
 			create buffer.make (64) -- probably 64 bytes is the rigth run-time buffer size
@@ -1423,8 +1423,8 @@ feature {None}
 	keywords: Array [String]
 	file: File
 	row, col, pos, size: Integer
-feature {SlangCompiler}
-	timeStamp: Real
+feature {SlangCompiler, COMPILATIONUNITCOMMON}
+	timeStamp: Integer
 feature {None}
 	toRead: Boolean
 	buffer: String
