@@ -3,7 +3,7 @@
 			object.call ("foo", 1,2,3)
 			result is object.call ("goo", True, False, "xyz")
 			if result is
-				Integer: StandardIO.put ("Recieved Integer from loaded code ", result)
+				:Integer StandardIO.put ("Recieved Integer from loaded code ", result)
 				else
 					StandardIO.put ("Received nothing from loaded code")
 			end

@@ -1,12 +1,12 @@
 class LinePosition
 feature {Any}
 	row: Integer
-	set_row (r: Integer) is
-	require
-		valid_row: r > 0
-	do
-		row := r
-	end -- set_row
+	--set_row (r: Integer) is
+	--require
+	--	valid_row: r > 0
+	--do
+	--	row := r
+	--end -- set_row
 invariant
 	valid_row: row >= 0
 end -- class LinePosition
@@ -542,8 +542,7 @@ feature {Any}
 				when '%T' then -- just skip
 					col := col + TabSize - 1
 				when '%N' then
-					row := row + 1
-					col := 0
+					next_row
 					if returnSemicolon then -- newline is treated as separator as well where necessary
 						setToken (semicolon_token)
 						ch := ';'
@@ -632,8 +631,7 @@ feature {Any}
 									end	-- if					
 								when '%N' then
 									buffer.append_character ('%N')
-									row := row + 1
-									col := 0
+									next_row
 								when '%R' then
 									buffer.append_character ('%R')
 								else
@@ -659,8 +657,7 @@ feature {Any}
 									ch
 								when '%R' then -- just skip
 								when '%N' then -- end of comemnt line
-									row := row + 1
-									col := 0
+									next_row
 									toLeave := True
 								else
 									buffer.append_character (ch)
@@ -1220,7 +1217,7 @@ feature {Any}
 			i := i - 1
 			factor := factor * 16
 		end -- loop
-	end -- if
+	end -- 
 	convertOctaToDecimal is
 	local
 		i : Integer
@@ -1253,7 +1250,8 @@ feature {Any}
 			i := i - 1
 			factor := factor * 8
 		end -- loop
-	end -- if
+	end -- convertOctaToDecimal
+
 	convertBitToDecimal is
 	local
 		i : Integer
@@ -1295,7 +1293,7 @@ feature {None}
 	local
 		isBitConst: Boolean
 		isOctaConst: Boolean
-		--isHexConst: Boolean
+		isHexConst: Boolean
 		isRealConst: Boolean
 		Efound: Boolean
 		EsignFound: Boolean
@@ -1305,18 +1303,20 @@ feature {None}
 		-- number ..
 		-- number b/B/h/H/o/O
 		isRealConst := False
-		if ch = '1' then
+		inspect
+			ch
+		when '0', '1' then
 			isBitConst := True
 		else
 			isBitConst := False
-		end
+		end -- inspect
 		inspect	
 			ch
 		when '1'..'7' then
 			isOctaConst := True
 		else
 			isOctaConst := False
-		end
+		end -- inspect
 		setCharBuff(ch)
 		token := integer_const_token
 		from
@@ -1336,8 +1336,39 @@ feature {None}
 				isBitConst := False
 				isOctaConst := False
 				buffer.append_character (ch)
+			when 'a', 'A', 'c', 'C', 'd', 'D', 'f', 'F' then
+				isBitConst := False
+				isOctaConst := False
+				isHexConst := True
+				buffer.append_character (ch)
+			when 'b', 'B' then
+				if isBitConst then
+					isOctaConst := False
+					isHexConst := False
+				else
+					toRead := False
+				end -- if
+				toLeave := True
+			when 'o', 'O' then
+				if isOctaConst then
+					isBitConst := False
+					isHexConst := False
+				else
+					toRead := False
+				end -- if
+				toLeave := True
+			when 'h', 'H' then
+				if isHexConst then
+					isBitConst := False
+					isOctaConst := False
+				else
+					toRead := False
+				end -- if
+				toLeave := True
 			--------------------
 			when 'e', 'E' then -- not tested !!!
+				isBitConst := False
+				isOctaConst := False
 				if Efound then
 					toRead := False
 					toLeave := True
@@ -1379,19 +1410,18 @@ feature {None}
 						toRead := False
 						toLeave := True
 					end
-				else
+				else -- decimal const
+					isBitConst := False
+					isOctaConst := False
 					setTheNextToken (dot_token)
 					toLeave := True
 				end -- if
 			
 -- Not supported so far
 --						when 'e', 'E' then
-
--- Not supported so far
---						when 'b', 'B' then
---						when 'h', 'H' then
---						when 'o', 'O' then
-			else
+			else -- decimal const
+				isBitConst := False
+				isOctaConst := False
 				toRead := False
 				if isRealConst then
 					token := real_const_token
@@ -1404,6 +1434,8 @@ feature {None}
 				convertBitToDecimal
 			elseif isOctaConst then
 				convertOctaToDecimal
+			elseif isHexConst then
+				convertHexToDecimal
 			else
 				integer_value := buffer.to_integer
 			end -- if
@@ -1432,6 +1464,13 @@ feature {None}
 	ch: Character
 	returnSemicolon: Boolean
 
+	next_row is
+	require
+		valid_row: row > 0
+	do
+		row := row + 1
+		col := 0
+	end -- next_row
 
 	register_buffer_return_identifier: Integer is
 	require
@@ -1752,9 +1791,9 @@ feature {None}
 		to_read_is_set: toRead
 	do
 		file.read_character
+		ch  := file.last_character
 		pos := pos + 1
 		col := col + 1
-		ch := file.last_character
 	end -- getNextChar
 
 	clear_buffer is

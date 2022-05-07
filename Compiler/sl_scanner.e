@@ -16,7 +16,7 @@ feature {None}
 		if args = Void then
 			o.putNL ("Valid usage: slng_scan <file_name>")
 		else
-			create scanner.init (args.item (1), fs)
+			create scanner.init (args.item (1))
 			if scanner.isReady then
 				from 
 					create {ScreenAndFileOutput}o.init ("_SLang_scanner.out")

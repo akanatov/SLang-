@@ -1,4 +1,4 @@
-system "slng_scn"
+system "slng_scn_d"
 
 root
    SLangScanner
@@ -27,16 +27,16 @@ option
    -- General options
    target             exe console
    map                off
-   debug              off
-   debug instructions off
+   debug              on
+   debug instructions on
    -- Assertions control options
-   assertions         off
-   check              off
-   require            off
+   assertions         on
+   check              on
+   require            on
    ensure             off
-   class invariant    off
-   loop  invariant    off
-   loop  variant      off
+   class invariant    on
+   loop  invariant    on
+   loop  variant      on
    -- Optimizations control options
    optimize fst       on
    optimize inline    on
@@ -47,9 +47,9 @@ option
    optimize dead_code on
    linker             default
 	   
-   run_time_in_dll    off
+   run_time_in_dll    on
 
    optimize leaves    on
-   optimize calls     on
-	finalize on
+   optimize calls     off
+   finalize off
 end
