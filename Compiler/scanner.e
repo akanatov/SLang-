@@ -1366,10 +1366,10 @@ feature {None}
 				end -- if
 				toLeave := True
 			--------------------
-			when 'e', 'E' then -- not tested !!!
+			when 'e', 'E' then -- not tested !!! Incorrect !!!
 				isBitConst := False
 				isOctaConst := False
-				if Efound then
+				if Efound then -- Incorrect!! check 5E5Eh
 					toRead := False
 					toLeave := True
 				else
@@ -1404,6 +1404,7 @@ feature {None}
 						isRealConst := True
 						isBitConst := False
 						isOctaConst := False
+						isHexConst := False
 						buffer.append_character (ch)
 					else	
 						setTheNextToken (dot_token)
@@ -1413,15 +1414,14 @@ feature {None}
 				else -- decimal const
 					isBitConst := False
 					isOctaConst := False
+					isHexConst := False
 					setTheNextToken (dot_token)
 					toLeave := True
 				end -- if
-			
--- Not supported so far
---						when 'e', 'E' then
-			else -- decimal const
+			else
 				isBitConst := False
 				isOctaConst := False
+				isHexConst := False
 				toRead := False
 				if isRealConst then
 					token := real_const_token
@@ -1456,7 +1456,7 @@ feature {None}
 	keywords: Array [String]
 	file: File
 	row, col, pos, size: Integer
-feature {SlangCompiler, COMPILATIONUNITCOMMON}
+feature {SlangCompiler, COMPILATIONUNITCOMMON, SYSTEMDESCRIPTOR}
 	timeStamp: Integer
 feature {None}
 	toRead: Boolean

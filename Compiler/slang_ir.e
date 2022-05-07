@@ -31,6 +31,121 @@ feature {Any}
 	clusters: Sorted_Array [ClusterDescriptor] -- Clusters to search for usage of units and routines
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 
+	
+	parseFolder (path: String; o: Output) is
+	require	
+		non_void_path: path /= Void
+		non_void_output: o /= Void
+	local
+		scanner: SLang_scanner
+		parser: SLang_parser
+		files: Array [FSys_Dat]
+		fName: String
+		sName: String
+		tsfName: String
+		ext: String
+		slangFileCount: Integer
+		saveErrCount: Integer
+		skipBuild: Boolean
+		i, n: Integer
+	do
+		files := fs.file_list (path)
+		if files /= Void then
+			from
+				i := 1
+				n := files.count
+			until 
+				i > n
+			loop
+				fName := files.item (i).name
+				ext := fs.getFileExtension (fName)
+				if ext.is_equal (SLangExt) or else ext.is_equal (CLangExt) then
+					slangFileCount := slangFileCount + 1
+					if slangFileCount < i then
+						files.put (files.item (i), slangFileCount)
+					end -- if
+				end -- if
+				i := i + 1
+			end	-- loop
+			if slangFileCount < n then
+				files.resize (1, slangFileCount)
+			end -- if
+			n := slangFileCount
+			from 
+				if n > 1 then
+					o.putLine (n.out + " files to parse ...")
+				end -- if
+				i := 1
+			until
+				i > n
+			loop
+				fName := files.item (i).path
+				ext := fs.getFileExtension (fName)
+				sName := fs.getFileName(fName)
+				if False then --fs.younger (fName, IRfolderName + "\_" + sName + INText) then
+					-- How to detect the case when exe or lib deleted ...
+					-- No need to process
+					o.putLine ("File `" + fName + "` was not changed. Procesing skipped")
+				else
+					create scanner.init (fName)
+					if scanner.isReady then
+						if ext.is_equal (CLangExt) then
+							scanner.setCmode
+						else
+							scanner.setPmode
+						end -- if
+						create parser.init (scanner, Void, o)
+						o.putLine ("Parsing file `" + fName + "`")
+						parser.parseSourceFile
+						scanner.close
+						parser.ast.attach_usage_pool_to_units_and_standalone_routines 
+
+						inspect 
+							parser.errorsCount
+						when 0 then
+							if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
+								saveErrCount := parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, ASText, o, Void)
+								parser.ast.cutImplementation
+								saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o, Void)
+								if saveErrCount = 0 then
+									-- Remove previous timestamp files and store the latest parsing timestamp !!!
+									tsfName := fs.getFilePath(fName) + "/" + IRfolderName + "/" + fs.getFileName(fName)
+									fs.remove_files_with_the_same_name (tsfName)
+									tsfName.append_string ("." + scanner.timeStamp.out)
+									fs.add_file (tsfName, "r")
+									o.putLine ("File `" + fName + "` parsed with no errors!")
+								else
+									o.putLine (
+										"File `" + fName + 
+										"` parsed with no errors! But some parsing results were not stored due to " + 
+										saveErrCount.out + " I/O errors!"
+									)
+									skipBuild := True
+								end -- if
+							else
+								o.putLine (
+									"Failed to create folder `" + IRfolderName + 
+									"` to store internal files. Parsing results of file `" + fName + "` are not saved!"
+								)
+								skipBuild := True
+							end -- if
+						when 1 then
+							o.putLine ("File `" + fName + "` parsed with 1 error!")
+							skipBuild := True
+						else
+							o.putLine ("File `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
+							skipBuild := True
+						end -- inspect
+					else
+						o.putLine ("File `" + fName + "` not found or cannot be opened for parsing")
+						skipBuild := True
+					end -- if
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
+	end -- parseFolder
+		
 	is_script: Boolean is
 	do
 		Result := name.is_equal ("*")

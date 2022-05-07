@@ -64,7 +64,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.07 (Build <AVK May 6th 2022>)")
+		o.putNL ("SLang compiler v0.99.07 (Build <AVK May 7th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -169,7 +169,7 @@ feature {None}
 										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o, Void)
 										if saveErrCount = 0 then
 											-- Remove previous timestamp files and store the latest parsing timestamp !!!
-											tsfName := IRfolderName + "/" + fs.getFileName(fName)
+											tsfName := fs.getFilePath(fName) + "/" + IRfolderName + "/" + fs.getFileName(fName)
 											fs.remove_files_with_the_same_name (tsfName)
 											tsfName.append_string ("." + scanner.timeStamp.out)
 											fs.add_file (tsfName, "r")

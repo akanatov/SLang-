@@ -1108,6 +1108,10 @@ unit StandardIO alias io
 			end
 		end
 	end // put
+	pure putNL (arguments: ()) do
+		put (arguments)
+		put ('\n')
+	end // putNL
 	pure put (anInteger: Integer) none
 	pure put (aCardinal: Cardinal) none
 	pure put (aCharacter: Character) none

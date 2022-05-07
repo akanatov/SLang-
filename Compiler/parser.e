@@ -5334,7 +5334,9 @@ feature {None}
 		commaFound: Boolean
 --pos: Integer
 	do
---trace (">>> parseUnitTypeName1")
+debug
+--	trace (">>> parseUnitTypeName1")
+end
 		if scanner.genericsStart then
 			from
 				create generics.make (1, 0)
@@ -5342,6 +5344,9 @@ feature {None}
 			until
 				toLeave
 			loop
+debug
+--	trace ("%T%TparseUnitTypeName1 " + name)
+end
 				inspect
 					scanner.token
 				when scanner.comma_token then
@@ -5369,6 +5374,9 @@ feature {None}
 					end -- if
 				when scanner.as_token, scanner.detach_token, scanner.rtn_token then
 					-- Type!
+debug
+--	trace ("%T%TparseUnitTypeName1 " + name + " as|?|rtn")
+end
 					if commaFound or else generics.count = 0 then
 						commaFound := False
 						-- td := parseTypeOrConstExprDescriptor
