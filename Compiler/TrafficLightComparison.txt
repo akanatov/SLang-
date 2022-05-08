@@ -1,11 +1,11 @@
-// SLang Pascal-style 436/29 lines
+// SLang Pascal-style 436/29 chars/lines
 unit Color
 	const:
 		Red, Yellow, Green, Off
 	end
 end
 unit TrafficLight use const Color
-	light: Color := Off
+	light: Color is Off
 	switchOn do
 		light := Red
 	end
@@ -29,15 +29,15 @@ while tLight /= Off do
 	tLight.switchNext
 end
 
-// SLang C-style 420/29 lines
+// SLang C-style 417/29 chars/lines
 unit Color
 	const:
 		Red, Yellow, Green, Off
 	}
 }
 unit TrafficLight use const Color
-	light: Color := Off
-	switchOn {}
+	Color light is Off
+	switchOn {
 		light := Red
 	}
 	switchNext
@@ -54,13 +54,13 @@ unit TrafficLight use const Color
 		}
 	}
 }
-tLight: TrafficLight
+TrafficLight tLight
 tLight.switchOn
 while tLight /= Off {
 	tLight.switchNext
 }
 
-// Accord 490/24 lines
+// Accord 488/23 chars/lines
 type TrafficLight = (Red|Yellow|Green|Off)
 default TrafficLight .(Off)
 fn TrafficLight.switchOn() {
@@ -77,7 +77,6 @@ fn TrafficLight.switchNext () {
 			this = .(Red)
 	}
 }
-
 entry {
 	let tLight: trafficLight
 	tLight.siwtchOn()

@@ -1,12 +1,6 @@
 class LinePosition
 feature {Any}
 	row: Integer
-	--set_row (r: Integer) is
-	--require
-	--	valid_row: r > 0
-	--do
-	--	row := r
-	--end -- set_row
 invariant
 	valid_row: row >= 0
 end -- class LinePosition
@@ -225,6 +219,7 @@ feature {Any}
 			keywords := <<
 				"<EOF>",
 				"<identifier>", 
+				"<type name>",
 				"<comment>",
 				"<operator>", 
 				"<integer_const>",
@@ -318,6 +313,7 @@ feature {Any}
 
 	eof_token,
 	identifier_token,
+	type_name_token,
 	comment_token,	
 	operator_token,
 	integer_const_token,
@@ -467,7 +463,22 @@ feature {Any}
 				when '-' then
 					setToken (operator_token)
 --					setToken (minus_token)
-				when 'A'..'Z', 'a'..'z' then
+				when 'A'..'Z' then
+					if toRead then
+						tokenRow := row
+						tokenCol := col
+						setTokenNoRead (eof_token)
+					else
+						tokenRow := row
+						tokenCol := col
+						setCharBuff (ch)
+						token := type_name_token
+						check
+							pool_set: pool /= Void
+						end -- check
+						buffer := pool.add_it (buffer)
+					end -- if
+				when 'a'..'z' then
 					if toRead then
 						tokenRow := row
 						tokenCol := col
@@ -1456,7 +1467,7 @@ feature {None}
 	keywords: Array [String]
 	file: File
 	row, col, pos, size: Integer
-feature {SlangCompiler, COMPILATIONUNITCOMMON, SYSTEMDESCRIPTOR}
+feature {SlangCompiler, CompilationUnitCommon, SystemDescriptor}
 	timeStamp: Integer
 feature {None}
 	toRead: Boolean
@@ -1472,13 +1483,22 @@ feature {None}
 		col := 0
 	end -- next_row
 
-	register_buffer_return_identifier: Integer is
+	register_buffer_and_return_identifier_token: Integer is
 	require
 		pool_set: pool /= Void
 	do
 		buffer := pool.add_it (buffer)
 		Result := identifier_token
-	end -- register_buffer_return_identifier
+	end -- register_buffer_and_return_identifier_token
+
+	register_buffer_and_return_type_name_token: Integer is
+	require
+		pool_set: pool /= Void
+	do
+		buffer := pool.add_it (buffer)
+		Result := type_name_token
+	end -- register_buffer_and_return_type_name_token
+
 	
 	getKeywordPos: Integer is
 	local
@@ -1489,6 +1509,9 @@ feature {None}
 		buff_len := buffer.count
 		inspect
 			first_ch
+		when 'A' .. 'Z' then
+			-- that is a unit name and a type!
+			Result := register_buffer_and_return_type_name_token			    
 		when 'a' then -- "alias", "as"
 			inspect
 				buff_len
@@ -1496,22 +1519,22 @@ feature {None}
 				if buffer.item (2) = 's' then
 					Result := as_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			when 5 then
 				if buffer.is_equal (keywords.item (alias_token)) then
 					Result := alias_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end
 		when 'b' then -- "build"
 			if systemMode and then buffer.is_equal (keywords.item (build_token)) then
 				Result := build_token
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end -- if
 		when 'c' then -- "concurrent", "const"
 			inspect
@@ -1520,16 +1543,16 @@ feature {None}
 				if buffer.is_equal (keywords.item (const_token)) then
 					Result := const_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			when 10 then
 				if buffer.is_equal (keywords.item (concurrent_token)) then
 					Result := concurrent_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end
 		when 'd' then -- "do"
 			if buff_len = 2 and then buffer.item (2) = 'o' then
@@ -1539,7 +1562,7 @@ feature {None}
 					Result := do_token
 				end -- if
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end
 		when 'e' then -- "else" 4, "elsif" -5, "end" - 3, "ensure" 6, "extend" - 6, "elseif" - 6
 			inspect
@@ -1552,40 +1575,40 @@ feature {None}
 						Result := end_token
 					end -- if
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			when 4 then -- else
 				if buffer.is_equal (keywords.item (else_token)) then
 					Result := else_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			when 5 then -- elsif
 				if buffer.is_equal (keywords.item (elsif_token)) then
 					Result := elsif_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			when 6 then -- "ensure", "extend", "elseif"
 				if buffer.item (2) = 'n' then
 					if buffer.is_equal (keywords.item (ensure_token)) then 
 						Result := ensure_token
 					else
-						Result := register_buffer_return_identifier
+						Result := register_buffer_and_return_identifier_token
 					end -- if
 				elseif buffer.item (2) = 'x' then
 					if buffer.is_equal (keywords.item (extend_token)) then 
 						Result := extend_token
 					else
-						Result := register_buffer_return_identifier
+						Result := register_buffer_and_return_identifier_token
 					end -- if
 				elseif buffer.is_equal ("elseif") then
 					Result := elsif_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end
 		when 'f' then -- "final" - 5, "foreign" - 7
 			inspect
@@ -1594,16 +1617,16 @@ feature {None}
 				if buffer.is_equal (keywords.item (final_token)) then
 					Result := final_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			when 7 then
 				if buffer.is_equal (keywords.item (foreign_token)) then
 					Result := foreign_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end
 		when 'i' then -- "if", "in", "is"
 			inspect
@@ -1616,10 +1639,10 @@ feature {None}
 				elseif buffer.item (2) = 'n' then
 					Result := in_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end -- inspect
 		when 'n' then -- "new", "none"
 			inspect
@@ -1628,16 +1651,16 @@ feature {None}
 				if buffer.item (2) = 'e' and then buffer.item (3) = 'w' then
 					Result := new_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			when 4 then
 				if buffer.is_equal (keywords.item (none_token)) then
 					Result := none_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end -- inspect
 		when 'o' then -- "old", "override"
 			inspect
@@ -1646,22 +1669,22 @@ feature {None}
 				if buffer.item (2) = 'l' and then buffer.item (3) = 'd' then
 					Result := old_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			when 8 then
 				if buffer.is_equal (keywords.item (override_token)) then
 					Result := override_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end -- inspect
 		when 'p' then -- "pure"
 			if buff_len = 4 and then buffer.item (2) = 'u' and then buffer.item (3) = 'r' and then buffer.item (4) = 'e' then
 				Result := pure_token
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end -- if
 		when 'r' then -- "raise" - 5, "ref" - 3, "rename" - 6, "require" - 7, "return" - 6, "rigid" - 5, "rtn" - 3
 			inspect
@@ -1672,7 +1695,7 @@ feature {None}
 				elseif buffer.item (2) = 't' and then buffer.item (3) = 'n' then
 					Result := rtn_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			when 5 then -- raise rigid
 				if buffer.is_equal (keywords.item (rigid_token)) then
@@ -1680,22 +1703,22 @@ feature {None}
 				elseif buffer.is_equal (keywords.item (raise_token)) then
 					Result := raise_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			when 6 then -- return
 				if buffer.is_equal (keywords.item (return_token)) then
 					Result := return_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			when 7 then -- "require"
 				if buffer.is_equal (keywords.item (require_token)) then
 					Result := require_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end -- inspect
 		when 's' then -- "safe", "select"
 			inspect
@@ -1704,22 +1727,22 @@ feature {None}
 				if buffer.item (2) = 'a' and then buffer.item (3) = 'f' and then buffer.item (4) = 'e' then
 					Result := safe_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			when 6 then
 				if buffer.is_equal (keywords.item (select_token)) then
 					Result := select_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end	-- inspect		
 		when 't' then -- "this"
 			if buff_len = 4 and then buffer.item (2) = 'h' and then buffer.item (3) = 'i' and then buffer.item (4) = 's' then
 				Result := this_token
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end -- if
 		when 'u' then -- "unit", "use"
 			inspect
@@ -1728,16 +1751,16 @@ feature {None}
 				if buffer.item (2) = 's' and then buffer.item (3) = 'e' then
 					Result := use_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			when 4 then
 				if buffer.item (2) = 'n' and then buffer.item (3) = 'i'  and then buffer.item (4) = 't' then
 					Result := unit_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end -- inspect
 		when 'v' then -- "val", "var", "virtual"
 			inspect
@@ -1748,16 +1771,16 @@ feature {None}
 				elseif buffer.item (2) = 'a' and then buffer.item (3) = 'l' then
 					Result := val_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			when 7 then
 				if buffer.is_equal (keywords.item (virtual_token)) then
 					Result := virtual_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end -- inspect
 		when 'w' then -- "when", "while"
 			inspect
@@ -1766,19 +1789,19 @@ feature {None}
 				if buffer.item (2) = 'h' and then buffer.item (3) = 'e' and then buffer.item (4) = 'n' then
 					Result := when_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			when 5 then
 				if buffer.is_equal (keywords.item (while_token)) then
 					Result := while_token
 				else
-					Result := register_buffer_return_identifier
+					Result := register_buffer_and_return_identifier_token
 				end -- if
 			else
-				Result := register_buffer_return_identifier
+				Result := register_buffer_and_return_identifier_token
 			end	-- inspect		
 		else
-			Result := register_buffer_return_identifier
+			Result := register_buffer_and_return_identifier_token
 		end -- inspect
 	ensure
 		token_assigned: Result > 0

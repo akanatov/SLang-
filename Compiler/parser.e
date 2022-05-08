@@ -136,11 +136,11 @@ feature {Any}
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.identifier_token then -- parse unit
+						when scanner.type_name_token then -- parse unit
 							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 							parseUnit (True, False, False, False, False, False)
 						else
-							syntaxError ("Unit name expected", <<scanner.identifier_token>>,<<>>)
+							syntaxError ("Unit name expected", <<scanner.type_name_token>>,<<>>)
 						end
 					else
 						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.unit_token>>, unit_folowers)
@@ -211,11 +211,11 @@ feature {Any}
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.identifier_token then -- parse unit
+					when scanner.type_name_token then -- parse unit
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, False, False, False)
 					else
-						syntax_error (<<scanner.identifier_token>>)
+						syntax_error (<<scanner.type_name_token>>)
 						toExit := True
 					end
 					ast.stop_unit_parsing
@@ -417,6 +417,7 @@ feature {None}
 		Result := <<
 			 scanner.build_token, scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
 			 scanner.virtual_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
+			 scanner.type_name_token,
 			 scanner.if_token, scanner.while_token, scanner.new_token, scanner.detach_token, scanner.raise_token, scanner.return_token,
 			 scanner.left_paranthesis_token, scanner.var_token, scanner.require_token, scanner.rigid_token
 		>>
@@ -718,7 +719,7 @@ feature {None}
 	require
 		target_not_void: name /= Void
 		valid_token: validToken (<<
-			scanner.operator_token, -- scanner.minus_token,
+			scanner.operator_token,
 			scanner.bar_token, scanner.tilda_token, scanner.identifier_token
 		>>)
 	local
@@ -789,6 +790,8 @@ feature {None}
 		then
 			-- name ( operator		>> unqualified call or assignment ().x or ().x := expr
 			--        ^
+		when scanner.type_name_token then
+not_implemented_yet("UnitTypeName ....")		
 		when scanner.identifier_token then
 			-- name ( nextName
 			--        ^
@@ -949,7 +952,7 @@ feature {None}
 				end -- loop
 			else
 				syntax_error (<<
-					scanner.colon_token, scanner.operator_token, -- scanner.minus_token,
+					scanner.colon_token, scanner.operator_token,
 					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.dot_token, scanner.right_paranthesis_token,
 					scanner.is_token
 				>>)
@@ -958,7 +961,7 @@ feature {None}
 			end -- inspect			
 		else
 			syntax_error (<<
-				scanner.rigid_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.rigid_token, scanner.operator_token,
 				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.identifier_token
 			>>)
 			wasError := True
@@ -1524,7 +1527,9 @@ feature {None}
 		unitType: UnitTypeCommonDescriptor
 		wasError: Boolean
 	do
-		if scanner.token = scanner.identifier_token then
+		inspect
+			scanner.token
+		when scanner.identifier_token then
 			identifier := scanner.tokenString
 			scanner.nextToken
 			if scanner.token = scanner.colon_token then
@@ -1538,8 +1543,17 @@ feature {None}
 					identifier := Void
 				end -- if
 			end -- if
+		when scanner.type_name_token then
+			identifier := scanner.tokenString
+			scanner.nextToken
+			unitType := parseUnitTypeName1 (identifier, False)
+			if unitType = Void then
+				wasError := True
+			else
+				identifier := Void
+			end -- if
 		else
-			syntax_error (<<scanner.identifier_token>>)
+			syntax_error (<<scanner.identifier_token, scanner.type_name_token>>)
 			wasError := True
 		end -- if
 		if not wasError then
@@ -1592,7 +1606,6 @@ feature {None}
 			end -- if
 		end -- if
 	end -- parseExceptionHandlingCaluse
-
 	
 	parseStatementsWithReperatWhileCheck (requireNonEmptyResult: Boolean): Array [StatementDescriptor] is
 	do
@@ -1647,7 +1660,7 @@ feature {None}
 		scanner.nextToken
 		inspect
 			scanner.token
-		when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+		when scanner.identifier_token, scanner.operator_token,
 			scanner.implies_token, scanner.less_token, scanner.greater_token
 		then
 			-- x.** (expr) is allowed :-)
@@ -1658,7 +1671,7 @@ feature {None}
 			create Result.init (constDsc, name1, arguments, callChain)
 		else
 			syntax_error (<<
-				scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+				scanner.identifier_token, scanner.operator_token,
 				scanner.implies_token, scanner.less_token, scanner.greater_token
 			>>)
 		end -- if

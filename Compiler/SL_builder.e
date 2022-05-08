@@ -204,6 +204,7 @@ feature {Any}
 		end -- if
 		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
 			-- Build the system
+			sysDsc.checkSources (o)
 			if sysDsc.entry = Void then
 				-- Library
 				o.putNL ("Building library `" + sysDsc.name + "`")
