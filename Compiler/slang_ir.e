@@ -2233,9 +2233,10 @@ feature {Any}
 	constObjects: Sorted_Array [ConstObjectDescriptor]
 	
 	unitMembers: Sorted_Array [MemberDeclarationDescriptor]
+	initMembers: Sorted_Array [MemberDeclarationDescriptor]
 	
 	invariantPredicates: Array [PredicateDescriptor]
-	
+
 	setInvariant (ip: like invariantPredicates) is
 	require
 		non_void_invariant: ip /= Void
@@ -2269,6 +2270,15 @@ feature {Any}
 			i > n
 		loop
 			unitMembers.item (i).cutImplementation
+			i := i + 1
+		end -- loop
+		from
+			n := initMembers.count
+			i := 1
+		until
+			i > n
+		loop
+			initMembers.item (i).cutImplementation
 			i := i + 1
 		end -- loop
 		create invariantPredicates.make (1, 0)
@@ -2472,6 +2482,26 @@ feature {Any}
 			Result.append_string ("%N%Tend%N")
 		end -- if
 
+		n := initMembers.count
+		if n > 0 then
+			from
+				i := 1
+				if Result.item (Result.count) /= '%N' then
+					Result.append_character('%N')
+				end -- if
+				Result.append_string ("// " + n.out + " unit initializer(s)%N")
+			until
+				i > n
+			loop
+				Result.append_character('%T')
+				Result.append_string (initMembers.item (i).out)
+				if Result.item (Result.count) /= '%N' then
+					Result.append_character ('%N')
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
+
 		n := unitMembers.count
 		if n > 0 then
 			from
@@ -2624,6 +2654,7 @@ feature {None}
 		create inhertitedInits.make	
 		create constObjects.make
 		create unitMembers.make	
+		create initMembers.make	
 		create invariantPredicates.make (1, 0)
 	end -- init
 invariant	
@@ -2642,6 +2673,7 @@ invariant
     non_void_inhertitedInits: inhertitedInits /= Void
     non_void_constObjects: constObjects /= Void
     non_void_unitMembers: unitMembers /= Void
+    non_void_initMembers: initMembers /= Void
     non_void_invariantPredicates: invariantPredicates /= Void
 end 
 

@@ -1538,12 +1538,6 @@ not_implemented_yet("UnitTypeName ....")
 			else
 				wasError := True
 				syntax_error (<<scanner.colon_token>>)
-				--unitType := parseUnitTypeName1 (identifier, False)
-				--if unitType = Void then
-				--	wasError := True
-				--else
-				--	identifier := Void
-				--end -- if
 			end -- if
 		when scanner.type_name_token then
 			identifier := scanner.tokenString
@@ -6429,72 +6423,76 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		end -- inspect
 	end -- parseInheritedMemberOverridingOrMemberDeclaration
 
---	parseInitDeclaration (currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
---	--75 InitDeclaration: init [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
---	--                         ^
---	require
---		valid_token: validToken (<<scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.foreign_token,
---			scanner.do_token, scanner.left_curly_bracket_token>>)
---	local
---		parameters: Array [ParameterDescriptor]
---		preconditions: Array [PredicateDescriptor]
---		postconditions: Array [PredicateDescriptor]
---		innerBlock: InnerBlockDescriptor
---		ucb: UseConstBlock
---		checkForEnd: Boolean
---		isForeign: Boolean
---		wasError: Boolean
---	do
---		if scanner.token = scanner.left_paranthesis_token then
---			-- scanner.nextToken
---			parameters := parseParameters
---		end -- if
---		if scanner.token = scanner.use_token then
---			ucb := parseEnclosedUseDirective
---		end -- if
---		if scanner.token = scanner.require_token then
---			scanner.nextToken
---			preconditions := parsePredicates
---		end -- if
---		inspect
---			scanner.token
---		when scanner.foreign_token then
---			isForeign := True
---			scanner.nextToken
---		else
---			if scanner.blockStart then
---				innerBlock := parseInnerBlock (False)
---				checkForEnd := True
---			elseif scanner.Cmode then
---				syntax_error (<<scanner.left_curly_bracket_token, scanner.foreign_token>>)
---				wasError := True
---			else
---				syntax_error (<<scanner.do_token, scanner.foreign_token>>)
---				wasError := True
---			end -- if
---		end -- inspect
---		if not wasError then
---			if scanner.token = scanner.ensure_token then
---				checkForEnd := True
---				scanner.nextToken
---				postconditions := parsePredicates
---			end -- if
---			if checkForEnd then 
---				if scanner.blockEnd then
---					scanner.nextToken
---					if ucb = Void then
---						create Result.init (currentVisibilityZone, parameters, Void, Void, preconditions, isForeign, innerBlock, postconditions )
---					else
---						create Result.init (currentVisibilityZone, parameters, ucb.usage, ucb.constants, preconditions, isForeign, innerBlock, postconditions )
---					end -- if
---				elseif scanner.Cmode then
---					syntax_error (<<scanner.right_curly_bracket_token>>)
---				else
---					syntax_error (<<scanner.end_routine_expected>>)
---				end -- if
---			end -- if
---		end -- if	
---	end -- parseInitDeclaration
+	parseInitDeclaration (unitDsc: UnitDeclarationDescriptor; currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
+	--75 InitDeclaration: UnitName [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
+	--                    ^     
+	require
+		non_void_current_unit: unitDsc /= Void
+		valie_token: validToken(<<scanner.type_name_token>>)
+	--require
+	--	valid_token: validToken (<<scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.foreign_token,
+	--		scanner.do_token, scanner.left_curly_bracket_token>>)
+	local
+		parameters: Array [ParameterDescriptor]
+		preconditions: Array [PredicateDescriptor]
+		postconditions: Array [PredicateDescriptor]
+		innerBlock: InnerBlockDescriptor
+		ucb: UseConstBlock
+		checkForEnd: Boolean
+		isForeign: Boolean
+		wasError: Boolean
+	do
+		scanner.nextToken
+		if scanner.token = scanner.left_paranthesis_token then
+			-- scanner.nextToken
+			parameters := parseParameters
+		end -- if
+		if scanner.token = scanner.use_token then
+			ucb := parseEnclosedUseDirective
+		end -- if
+		if scanner.token = scanner.require_token then
+			scanner.nextToken
+			preconditions := parsePredicates
+		end -- if
+		inspect
+			scanner.token
+		when scanner.foreign_token then
+			isForeign := True
+			scanner.nextToken
+		else
+			if scanner.blockStart then
+				innerBlock := parseInnerBlock (False)
+				checkForEnd := True
+			elseif scanner.Cmode then
+				syntax_error (<<scanner.left_curly_bracket_token, scanner.foreign_token>>)
+				wasError := True
+			else
+				syntax_error (<<scanner.do_token, scanner.foreign_token>>)
+				wasError := True
+			end -- if
+		end -- inspect
+		if not wasError then
+			if scanner.token = scanner.ensure_token then
+				checkForEnd := True
+				scanner.nextToken
+				postconditions := parsePredicates
+			end -- if
+			if checkForEnd then 
+				if scanner.blockEnd then
+					scanner.nextToken
+					if ucb = Void then
+						create Result.init (unitDsc, currentVisibilityZone, parameters, Void, Void, preconditions, isForeign, innerBlock, postconditions )
+					else
+						create Result.init (unitDsc, currentVisibilityZone, parameters, ucb.usage, ucb.constants, preconditions, isForeign, innerBlock, postconditions )
+					end -- if
+				elseif scanner.Cmode then
+					syntax_error (<<scanner.right_curly_bracket_token>>)
+				else
+					syntax_error (<<scanner.end_routine_expected>>)
+				end -- if
+			end -- if
+		end -- if	
+	end -- parseInitDeclaration
 	
 	parseInitProcedureInheritanceOrMemberDeclaration
 		(currentVisibilityZone: MemberVisibilityDescriptor; unitDsc: UnitDeclarationDescriptor): Boolean is 
@@ -8005,6 +8003,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		formalGenerics: Array [FormalGenericDescriptor]
 		unitUsageAndConst: UseConstBlock
 		unitName: String
+		typeName: String
+		initDsc: InitDeclarationDescriptor
 		toLeave: Boolean
 		initialErrorsCount: Integer
 	do
@@ -8164,6 +8164,41 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						end -- if
 						toLeave := True
 					end -- inspect
+				when scanner.type_name_token then
+					typeName := scanner.tokenString
+					if typeName.is_equal (unitName) then
+						-- That is init start !!!
+						scanner.nextToken
+						initDsc := parseInitDeclaration (currentUnitDsc, currentVisibilityZone) 
+						if initDsc /= Void then
+							if not currentUnitDsc.initMembers.added (initDsc) then
+								-- Duplicated init 
+								validityError (initDsc.toSourcePosition, "Duplicated declaration of unit  '" + unitName + "' initializer") 
+							end -- if
+						end -- if
+					else
+						if scanner.Cmode then
+							syntax_error (<<
+								scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
+								scanner.identifier_token, scanner.operator_token,
+								scanner.implies_token, scanner.less_token, scanner.greater_token,
+								scanner.tilda_token,
+								scanner.bar_token,
+								scanner.left_square_bracket_token,
+								scanner.assignment_token
+							>>)
+						else
+							syntax_error (<<
+								scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
+								scanner.identifier_token, scanner.operator_token,
+								scanner.implies_token, scanner.tilda_token,
+								scanner.bar_token,
+								scanner.left_curly_bracket_token,
+								scanner.assignment_token
+							>>)
+						end -- if
+						toLeave := True
+					end -- if					
 				when scanner.left_paranthesis_token then
 					scanner.nextToken
 					if scanner.token = scanner.right_paranthesis_token then
@@ -8312,7 +8347,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	
 feature {None}
 
-	currentUnitDsc: UnitDeclarationDescriptor -- may be Void whiel parsing standalone routines or anonymous one
+	currentUnitDsc: UnitDeclarationDescriptor -- may be Void while parsing standalone routines or anonymous one
 	
 	validityError (srcp: expanded SourcePosition; message: String) is
 	require
