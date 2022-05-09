@@ -930,8 +930,31 @@ feature {Any}
 						setTokenNoRead (tilda_token)
 						ch := '%U'
 					end -- if
-				when 'A' .. 'Z', 'g', 'h', 'j', 'k', 'l', 'm', 'q', 'x', 'y', 'z' then -- start of identifier
+				when 'g', 'h', 'j', 'k', 'l', 'm', 'q', 'x', 'y', 'z' then -- start of identifier
 					token := identifier_token
+					setCharBuff (ch)
+					from
+						toLeave := False
+					until
+						pos > size or else toLeave
+					loop
+						getNextChar
+						inspect
+							ch
+						when 'A'..'Z', 'a'..'z', '0'..'9', '_' then
+							buffer.append_character (ch)
+						else
+							toRead := False						 
+							toLeave := True
+						end
+					end -- loop
+					check
+						pool_set: pool /= Void
+					end -- check
+					buffer := pool.add_it (buffer)
+				when 'A' .. 'Z' then -- start of unit name/type
+					-- or hex constant in form of FFFH which is not supported!
+					token := type_name_token
 					setCharBuff (ch)
 					from
 						toLeave := False

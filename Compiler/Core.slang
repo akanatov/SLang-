@@ -91,11 +91,11 @@ virtual unit () extend Enumeration // That is a tuple unit
 
 end /// unit tuple
 
-val unit Bit [N: Cardinal]
+val unit Bit [bitsCount: Cardinal]
 	const : // All Bit constants not longer than B bits in it
 	    //{Bit.0b0 | Bit.0b1}N
 	end
-	{} data: val Array [0 .. N-1, Bit] // Bit field ...
+	{} data: val Array [0 .. bitsCount-1, Bit] // Bit field ...
 	:= (other: Cardinal) none
 	:= (other: Integer) none /*do
 	/// Set N low bits from Integer other into this
@@ -108,47 +108,47 @@ val unit Bit [N: Cardinal]
 		end*/ 
 	end */
 	override pure sizeof: Cardinal do
-		// return sizeof in bytes !!!! N is a number of bits !!!
-		return N / Platform.BitsInByteCount + if N \ Platform.BitsInByteCount = 0 do 0 else 1
+		// return sizeof in bytes !!!! bitsCount is a number of bits !!!
+		return bitsCount / Platform.BitsInByteCount + if bitsCount \ Platform.BitsInByteCount = 0 do 0 else 1
 	end
 	pure & alias and (other: as this): as this do
 		result is this
-		while pos in 0 .. N - 1 do
+		while pos in 0 .. bitsCount - 1 do
 			result (pos) := if this(pos) = 0 or else other(pos) = 0 do 0 else 1
 		end
 		return result
 	end // and
 	pure | alias or (other: as this): as this do
 		result is this
-		while pos in 0 .. N - 1 do
+		while pos in 0 .. bitsCount - 1 do
 			result (pos) := if this(pos) = 1 or else other (pos) = 1 do 1 else 0
 		end
 		return result
 	end // or
 	pure ^ alias xor (other: as this): as this do
 		result is this
-		while pos in 0 .. N - 1 do
+		while pos in 0 .. bitsCount - 1 do
 			result (pos) := if this (pos) = other(pos) do 0 else 1
 		end
 		return result
 	end
 	pure ~ alias not (): as this do
 		result is this
-		while pos in 0 .. N - 1 do
+		while pos in 0 .. bitsCount - 1 do
 			result.toggle (pos)
 		end
 		return result
 	end // not
 	() (pos: Cardinal; value: Boolean)
 	require
-		pos in 0 .. N - 1 /// Valid bit position
+		pos in 0 .. bitsCount - 1 /// Valid bit position
 	do	
 		this (pos) := if value do 1 else 0
 	end // ()
 	() (pos: Cardinal; value: Integer)
 	/// Set bit as position 'pos' to value 'value'
 	require
-		pos in 0 .. N - 1 /// Valid bit position
+		pos in 0 .. bitsCount - 1 /// Valid bit position
 		value in 0 .. 1 /// Valid value
 	do
 		if value = 0 do
@@ -159,14 +159,14 @@ val unit Bit [N: Cardinal]
 	end // ()
 	pure () (pos: Cardinal): Boolean
 	require
-		pos in 0 .. N - 1 // Valid position
+		pos in 0 .. bitsCount - 1 // Valid position
 	do
 		return this (pos) = 0b1
 	end // ()
 	pure () (pos: Cardinal): 0 .. 1
 	/// Get bit value at position 'pos'
 	require
-		pos in 0 .. N - 1 /// Valid position	 
+		pos in 0 .. bitsCount - 1 /// Valid position	 
 	do
 		if (data (pos) = 0b0) do
 			return 0
@@ -177,10 +177,10 @@ val unit Bit [N: Cardinal]
 		return in 0 .. 1 /// Valid Integer from Bit */
 	end // ()
 	pure toInteger: Integer do
-		/// Build Integer from Bit
+		/// Build Integer from Bit  - sign bit is not processed !!!!! Negative !!!
 		var result is 0
 		var factor is 1
-		while pos in 0 .. N - 1 do
+		while pos in 0 .. bitsCount - 1 do
 			if this (pos) = 1 do
 				result := result + factor
 				factor := factor * 2
@@ -192,27 +192,27 @@ val unit Bit [N: Cardinal]
 		/// Build Integer from Bit
 		var result: Cardinal is 0
 		var factor is 1
-		while pos in 0 .. N - 1 do
+		while pos in 0 .. bitsCount - 1 do
 			if this (pos) = 1 do
 				result := result + factor
 				factor := factor * 2
 			end
 		end
 		return result
-	end // ToCardinal
-	pure getLowBits (bitsCount: Cardinal) : Bit [bitsCount]
+	end // toCardinal
+	pure getLowBits (bitsToGet: Cardinal) : Bit [bitsCount]
 	require
-		bitsCount in 1 .. N /// Valid Bits Count
+		bitsToGet in 1 .. bitsCount /// Valid Bits Count
 	do
-		result is new Bit [bitsCount] // Hmmm .... Dynamic bit field allocation
-		while pos in 0 .. bitsCount - 1 do
+		result is new Bit [bitsToGet] // Hmmm .... Dynamic bit field allocation
+		while pos in 0 .. bitsToGet - 1 do
 			result (pos) := this (pos)
 		end
 		return result
 	end // getLowBits
 	toggle (pos: Cardinal)
 	require
-		pos in 0 .. N - 1 /// validPos
+		pos in 0 .. bitsCount - 1 /// validPos
 	do
 		this (pos) := if this (pos) = 1 do 0 else 1
 	ensure
@@ -220,12 +220,12 @@ val unit Bit [N: Cardinal]
 	end // toggle
 	Bit do
 		/// Every BIT field is initialized with 0s
-		while pos in 0 .. N - 1 do
+		while pos in 0 .. bitsCount - 1 do
 			this (pos) := 0b0
 		end
 	end // Bit
 require
-	N > 0 /// Number of Bits is greater than zero
+	bitsCount > 0 /// Number of Bits is greater than zero
 end // Bit [N]
 
 virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.MaxCardinal]
@@ -269,18 +269,18 @@ end // System
 final unit Platform
 
 	const
-		BitsInByteCount is 8,
-		IntegerBitsCount is 32,
-		CardinalBitsCount is IntegerBitsCount,
-		CharacterBitsCount is 8,
-		BooleanBitsCount is 8,
-		PointerBitsCount is 32,
-		RealBitsCount is 64,
-		RealMantissaBitsCount is 55,
-		RealOrderBitsCount is 8
+		bitsInByteCount is 8,
+		integerBitsCount is 32,
+		cardinalBitsCount is integerBitsCount,
+		characterBitsCount is 8,
+		booleanBitsCount is 8,
+		pointerBitsCount is 32,
+		realBitsCount is 64,
+		realMantissaBitsCount is 55,
+		realOrderBitsCount is 8
 
 require
-	RealBitsCount = RealMantissaBitsCount + RealOrderBitsCount + 1
+	realBitsCount = realMantissaBitsCount + realOrderBitsCount + 1
 end // Platform
 
 virtual unit Numeric
@@ -385,7 +385,7 @@ end // Enumeration
 val unit Pointer
 	/// Unit Pointer allows to introduce address arithmetics in a safe way :-)
 	// WIP!!!
-	override const sizeof: Cardinal is Platform.PointerBitsCount / Platform.BitsInByteCount
+	override const sizeof: Cardinal is Platform.pointerBitsCount / Platform.bitsInByteCount
 	write (b: Byte) none
 	write (ab: Array [Byte]) none
 	safe read: Byte none
@@ -393,7 +393,7 @@ val unit Pointer
 	require
 		numberOfBytes > 0 /// Number of bytes to read is greater than zero
 	none
-	{} data : Bit [Platform.PointerBitsCount]
+	{} data : Bit [Platform.pointerBitsCount]
 	Pointer (address: Cardinal) 
 	require
 		validPointer (address) /// Pointer should be valid from the OS point of view
@@ -406,11 +406,11 @@ require
 	validPointer (this) /// Any pointer must be valid in terms of underlying OS to provide acess to data
 end // Pointer
 
-val unit Cardinal alias uInt extend Cardinal [Platform.CardinalBitsCount]
-	new Cardinal[Platform.CardinalBitsCount]( as this ), Cardinal[Platform.CardinalBitsCount]
+val unit Cardinal alias uInt extend Cardinal [Platform.cardinalBitsCount]
+	new Cardinal[Platform.cardinalBitsCount]( as this ), Cardinal[Platform.cardinalBitsCount]
 end // Cardinal
 
-val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
+val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
 	// WIP!!!!
 	// the caveat how to distingush Integer.1 from Cardinal.1 - now Cardinal constants are not imported into Any due to name clash!!! .... 
 	// Cardinal must have := (that: Integer) toi ensure we may assign Integer to Cardinal with proper precondition!!! 
@@ -423,10 +423,10 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 		minCardinal .. maxCardinal   // Parser bug - to be fixed !!!
 	end
 	const minCardinal is Cardinal.0
-	const maxCardinal is Cardinal.2 ^ (BitsNumber)
+	const maxCardinal is Cardinal.2 ^ (bitsCount)
 	override const one is Cardinal.1
 	override const zero is Cardinal.0
-	override const sizeof: Cardinal is BitsNumber / Platform.BitsInByteCount
+	override const sizeof: Cardinal is bitsCount / Platform.bitsInByteCount
 
 	override safe succ: as this => this + one
 	override safe pred: as this => this - one
@@ -436,13 +436,13 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	override safe ord: Cardinal => this
 
 
-	Cardinal (other: Integer [BitsNumber])
+	Cardinal (other: Integer [bitsCount])
 	require
 		other > - 1 /// Integer must be not less than 0 to be converted into Cardinal
 	do
 		data is other.data
 	end // Cardinal
-	:= (other: Integer [BitsNumber])
+	:= (other: Integer [bitsCount])
 	require
 		other > - 1 /// Integer must be not less than 0 to be converted into Cardinal
 	do
@@ -450,19 +450,19 @@ val unit Cardinal alias uInt [BitsNumber: Cardinal] extend Numeric, Enumeration
 	end // :=
 end // Cardinal
 
-val unit Integer extend Integer [Platform.IntegerBitsCount]
-	new Integer [Platform.IntegerBitsCount] (Integer), Integer [Platform.IntegerBitsCount]
+val unit Integer extend Integer [Platform.integerBitsCount]
+	new Integer [Platform.integerBitsCount] (Integer), Integer [Platform.integerBitsCount]
 end // Integer
 
-val unit Integer [BitsNumber: Cardinal] extend Numeric, Enumeration
+val unit Integer [bitsCount: Cardinal] extend Numeric, Enumeration
 	const : // That is ordered set defined as range of all Integer constant values (objects)
 		minInteger .. maxInteger
 	end
-	const minInteger is - (2 ^ (BitsNumber - 1))
-	const maxInteger is 2 ^ (BitsNumber - 1) - 1
+	const minInteger is - (2 ^ (bitsCount - 1))
+	const maxInteger is 2 ^ (bitsCount - 1) - 1
 	override const one is 1
 	override const zero is 0
-	override const sizeof: Cardinal is BitsNumber / Platform.BitsInByteCount
+	override const sizeof: Cardinal is bitsCount / Platform.bitsInByteCount
 
 	override safe succ: as this => this + one
 	override safe pred: as this => this - one
@@ -550,7 +550,7 @@ val unit Integer [BitsNumber: Cardinal] extend Numeric, Enumeration
 		// Bit-level implementation of Integer equal
 		return data = other.data
 	end
-	override safe = (other: Cardinal[BitsNumber]): Boolean none /* do
+	override safe = (other: Cardinal[bitsCount]): Boolean none /* do
 		// Bit-level implementation of Integer-Cardinal comparison
 		raise "Not implemented!!!"
 		//return data = other.data
@@ -573,28 +573,28 @@ val unit Integer [BitsNumber: Cardinal] extend Numeric, Enumeration
 		else
 		end*/
 	end */
-	:= (other: Cardinal[BitsNumber]) none /* do
+	:= (other: Cardinal[bitsCount]) none /* do
 		// Assign cardinal to integer
 		raise "Not implemented!!!"
 	end */
 	safe := alias toCharacter: Character
 	require
-		this in 0 .. 2 ^ Platform.CharacterBitsCount /// containsChacraterCode: 
+		this in 0 .. 2 ^ Platform.characterBitsCount /// containsChacraterCode: 
 	do
-		return new Character (data.getLowBits (Platform.CharacterBitsCount))
+		return new Character (data.getLowBits (Platform.characterBitsCount))
 	end
-	{} data: Bit [BitsNumber]	
+	{} data: Bit [bitsCount]	
 	Integer (value: Integer) do
 		// Not that simple !!! Copy the bits we need and pad the gap with 0 bits!!!
 		data is value.data
 	end
 	Integer do
 		/// Default zero value
-		data is Bit [BitsNumber]
+		data is Bit [bitsCount]
 	end
 end // Integer
 
-//val unit Byte extend Bit [Platform.BitsInByteCount] use const Bit [Platform.BitsInByteCount]
+//val unit Byte extend Bit [Platform.bitsInByteCount] use const Bit [Platform.bitsInByteCount]
 //end
 val unit Byte
 	// WIP - to be fully implemented
@@ -603,9 +603,9 @@ val unit Byte
 	end
 	Byte do
 		/// Default zero value
-		data is Bit [Platform.BitsInByteCount]
+		data is Bit [Platform.bitsInByteCount]
 	end
-	{} data: Bit [Platform.BitsInByteCount]	
+	{} data: Bit [Platform.bitsInByteCount]	
 end // Byte
 
 virtual unit Rational extend Numeric, Comparable
@@ -629,20 +629,20 @@ virtual unit Float [nBits: Integer] extend Numeric, Comparable
 	// TBD!!!
 end // Float
 
-val unit Real extend Float [Platform.RealBitsCount]
+val unit Real extend Float [Platform.realBitsCount]
 	const : // All Real numbers 
 		//{minReal + epsilon} <= maxReal
 		minReal {+epsilon} .. maxReal
 	end
-	const minReal: Real is -RealMaxMantissa * 10 ^ RealMaxOrder
-	const maxReal: Real is RealMaxMantissa * 10 ^ RealMaxOrder
-	const epsilon: Real is RealMinMantissa * 10 ^ -RealMaxOrder
-	{} const RealMaxMantissa is 2 ^ Platform.RealMantissaBitsCount - 1
-	{} const RealMinMantissa is 0.000001 /// TBD
-	{} const RealMaxOrder is 2 ^ Platform.RealOderBitsCount - 1
+	const minReal: Real is -maxMantissa * 10 ^ maxOrder
+	const maxReal: Real is maxMantissa * 10 ^ maxOrder
+	const epsilon: Real is minMantissa * 10 ^ -maxOrder
+	{} const maxMantissa is 2 ^ Platform.realMantissaBitsCount - 1
+	{} const minMantissa is 0.000001 /// TBD
+	{} const maxOrder is 2 ^ Platform.RealOderBitsCount - 1
 	override const one is 1.0
 	override const zero is 0.0
-	override const sizeof: Integer is Platform.RealBitsCount / Platform.BitsInByteCount
+	override const sizeof: Integer is Platform.realBitsCount / Platform.bitsInByteCount
 	override safe + (other: as this): as this none /* do
 		// Bit-level implementation
 		raise "Not implemented!!!"
@@ -722,9 +722,9 @@ val unit Real extend Float [Platform.RealBitsCount]
 		data is value.data
 	end
 	Real do
-		data is Bit [Platform.RealBitsCount]
+		data is Bit [Platform.realBitsCount]
 	end
-	{} data : Bit [Platform.RealBitsCount]	
+	{} data : Bit [Platform.realBitsCount]	
 end // Real
 
 val unit Character alias Char extend Enumeration
@@ -732,19 +732,19 @@ val unit Character alias Char extend Enumeration
 		minCharacter .. maxCharacter
 	end	
 	const minCharacter is 0.ToCharacter
-	const maxCharacter is (2 ^ Platform.CharacterBitsCount - 1).ToCharacter
+	const maxCharacter is (2 ^ Platform.characterBitsCount - 1).ToCharacter
 	override safe succ: as this => (this.toInteger + one).toCharacter
 	override safe pred: as this => (this.toInteger - one).ToCharacter
 	override const first is minCharacter
 	override const last is maxCharacter
-	const count is 2 ^ Platform.CharacterBitsCount
+	const count is 2 ^ Platform.characterBitsCount
 	ord: Cardinal => toCardinal
 	override safe < (other: as this): Boolean => data < other.data
-	override const sizeof: Integer is Platform.CharacterBitsCount / Platform.BitsInByteCount
+	override const sizeof: Integer is Platform.characterBitsCount / Platform.bitsInByteCount
 	safe toCardinal: Cardinal => new Cardinal (data.ToCardinal)
 	:= (other: Cardinal)
 	require
-		other in 0 .. 2 ^ Platform.CharacterBitsCount - 1 /// Invalid character code		
+		other in 0 .. 2 ^ Platform.characterBitsCount - 1 /// Invalid character code		
 	do
 		data := other
 	end
@@ -752,9 +752,9 @@ val unit Character alias Char extend Enumeration
 		data is value.data
 	end
 	Character do
-		data is Bit [Platform.CharacterBitsCount]
+		data is Bit [Platform.characterBitsCount]
 	end
-	{} data : Bit [Platform.CharacterBitsCount]	
+	{} data : Bit [Platform.characterBitsCount]	
 end // Character
 
 val unit Boolean alias Bool extend Enumeration
@@ -772,7 +772,7 @@ val unit Boolean alias Bool extend Enumeration
 	override const last is true
 	const count is 2
 	safe ord: Integer => if this do one else zero 
-	override const sizeof: Integer is Platform.BooleanBitsCount / Platform.BitsInByteCount
+	override const sizeof: Integer is Platform.booleanBitsCount / Platform.bitsInByteCount
 	safe & alias and (other: as this): Boolean => if this do if other do true else false else false
 		/* 	00 -> 0
 			01 -> 0
@@ -810,7 +810,7 @@ val unit Boolean alias Bool extend Enumeration
 		end 
 		// data is value
 	end
-	{} data: Bit [Platform.BooleanBitsCount]	
+	{} data: Bit [Platform.booleanBitsCount]	
 require
 	this and this = this /// idempotence of 'and'
 	this or this = this /// idempotence of 'or'
@@ -959,14 +959,14 @@ virtual unit OneDimentionalArray [G new ()] extend AnArray [G]
 	end
 end
 
-unit Array [G new (), N: Cardinal] extend OneDimentionalArray [G]
+unit Array [G new (), arrayLength: Cardinal] extend OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a0 is Array [Integer, 5]
 	// That is what we like to have ....
 */
 	override lower: Integer is 1
-	override upper: Integer is N
+	override upper: Integer is arrayLength
 
 	Array (other: as this) do
 		while pos in other.lower .. other.upper do
@@ -982,14 +982,14 @@ unit Array [G new (), N: Cardinal] extend OneDimentionalArray [G]
 	end
 end // Array
 
-unit Array [G new (), N: (Integer,Integer)] extend OneDimentionalArray [G]
+unit Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a1 is Array [Real, (10,25)]
 	// That is what we like to have ....
 */
-	override lower: Integer is N(1)
-	override upper: Integer is N(2)
+	override lower: Integer is arrayBounds(1)
+	override upper: Integer is arrayBounds(2)
 	Array (other: as this) do
 		while pos in other.lower .. other.upper do
 			this (lower + pos - 1) := other (pos)
@@ -1079,7 +1079,7 @@ end // Array
 	end
 end // Array 
 */
-unit StandardIO alias io
+unit StandardIO alias IO
 	StandardIO do
 		// Init procedure is missed or way how to setup IO !!!!
 	end // StandardIO
