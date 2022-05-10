@@ -109,7 +109,7 @@ val unit Bit [bitsCount: Cardinal]
 	end */
 	override pure sizeof: Cardinal do
 		// return sizeof in bytes !!!! bitsCount is a number of bits !!!
-		return bitsCount / Platform.BitsInByteCount + if bitsCount \ Platform.BitsInByteCount = 0 do 0 else 1
+		return bitsCount / Platform.bitsInByteCount + if bitsCount \ Platform.bitsInByteCount = 0 do 0 else 1
 	end
 	pure & alias and (other: as this): as this do
 		result is this
@@ -228,7 +228,7 @@ require
 	bitsCount > 0 /// Number of Bits is greater than zero
 end // Bit [N]
 
-virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.MaxCardinal]
+virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.maxCardinal]
 	// Adding all constant objects from basic units allows to use these constants without respective unit name prefix.
 
 
@@ -406,7 +406,7 @@ require
 	validPointer (this) /// Any pointer must be valid in terms of underlying OS to provide acess to data
 end // Pointer
 
-val unit Cardinal alias uInt extend Cardinal [Platform.cardinalBitsCount]
+val unit Cardinal alias Uint extend Cardinal [Platform.cardinalBitsCount]
 	new Cardinal[Platform.cardinalBitsCount]( as this ), Cardinal[Platform.cardinalBitsCount]
 end // Cardinal
 
@@ -639,7 +639,7 @@ val unit Real extend Float [Platform.realBitsCount]
 	const epsilon: Real is minMantissa * 10 ^ -maxOrder
 	{} const maxMantissa is 2 ^ Platform.realMantissaBitsCount - 1
 	{} const minMantissa is 0.000001 /// TBD
-	{} const maxOrder is 2 ^ Platform.RealOderBitsCount - 1
+	{} const maxOrder is 2 ^ Platform.realOrderBitsCount - 1
 	override const one is 1.0
 	override const zero is 0.0
 	override const sizeof: Integer is Platform.realBitsCount / Platform.bitsInByteCount
@@ -731,17 +731,17 @@ val unit Character alias Char extend Enumeration
 	const : // The set of all constant objects of unit type Character
 		minCharacter .. maxCharacter
 	end	
-	const minCharacter is 0.ToCharacter
-	const maxCharacter is (2 ^ Platform.characterBitsCount - 1).ToCharacter
+	const minCharacter is 0.toCharacter
+	const maxCharacter is (2 ^ Platform.characterBitsCount - 1).toCharacter
 	override safe succ: as this => (this.toInteger + one).toCharacter
-	override safe pred: as this => (this.toInteger - one).ToCharacter
+	override safe pred: as this => (this.toInteger - one).toCharacter
 	override const first is minCharacter
 	override const last is maxCharacter
 	const count is 2 ^ Platform.characterBitsCount
 	ord: Cardinal => toCardinal
 	override safe < (other: as this): Boolean => data < other.data
 	override const sizeof: Integer is Platform.characterBitsCount / Platform.bitsInByteCount
-	safe toCardinal: Cardinal => new Cardinal (data.ToCardinal)
+	safe toCardinal: Cardinal => new Cardinal (data.toCardinal)
 	:= (other: Cardinal)
 	require
 		other in 0 .. 2 ^ Platform.characterBitsCount - 1 /// Invalid character code		
@@ -825,10 +825,10 @@ virtual unit AString extend Comparable
 	{} data: Array [Bit [8]] // Byte array of data
 end // unit Astring
 
-unit String [N:Integer] extend AString, Array [Character, N]
+unit String [stringLength:Integer] extend AString, Array [Character, stringLength]
 	/// String with fixed length
-	const : // "" .. "Character*" - all Strings of size not more than N
-		//{Character.minCharacter |.. Character.maxCharacter}N		
+	const : // "" .. "Character*" - all Strings of size not more than stringLength
+		//{Character.minCharacter |.. Character.maxCharacter}stringLength
 	end
 end
 
@@ -1104,7 +1104,7 @@ unit StandardIO alias IO
 				:Boolean
 					putBoolean (argument)
 				else
-					putString (argument.ToString)
+					putString (argument.toString)
 			end
 		end
 	end // put

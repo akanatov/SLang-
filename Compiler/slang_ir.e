@@ -58,6 +58,9 @@ feature {Any}
 			Result := <<>>
 		else
 			Result := fs.file_list (path)
+			if Result = Void then
+				Result := <<>>
+			end -- if
 		end -- if
 	ensure
 		non_void_result: Result /= Void
@@ -1421,7 +1424,7 @@ invariant
 end 
 
 class InnerBlockDescriptor
---6 do [“{”Identifier {“,” Identifier} “}”]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
+--6 do ["{"Identifier {"," Identifier} "}"]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
 inherit	
 	StatementDescriptor
 	end
@@ -2202,7 +2205,7 @@ feature {Any}
 	end -- getExternalName
 		
 	parents: Sorted_Array [ParentDescriptor]
-		-- extend ParentDescriptor {“,” ParentDescriptor}
+		-- extend ParentDescriptor {"," ParentDescriptor}
 	
 	findParent (utnDsc: UnitTypeNameDescriptor): UnitTypeNameDescriptor is
 	require
@@ -2219,16 +2222,16 @@ feature {Any}
 
 	usage: Sorted_Array [EnclosedUseEementDescriptor]
 	constants: Sorted_Array [UnitTypeNameDescriptor] --FullUnitNameDescriptor]
-		-- EnclosedUseDirective: [use [EnclosedUseEement {“,” EnclosedUseEement}] [const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}]]
+		-- EnclosedUseDirective: [use [EnclosedUseEement {"," EnclosedUseEement}] [const FullUnitNameDescriptor {"," FullUnitNameDescriptor}]]
 
 	memberSelections: Sorted_Array [SelectionDescriptor]
-		-- select SelectionDescriptor {“,” SelectionDescriptor}	
+		-- select SelectionDescriptor {"," SelectionDescriptor}	
 	
 	inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]
-		-- override InheritedMemberOverridingDescriptor {“,” InheritedMemberOverridingDescriptor}
+		-- override InheritedMemberOverridingDescriptor {"," InheritedMemberOverridingDescriptor}
 	
 	inhertitedInits: Sorted_Array [InitFromParentDescriptor]
-		-- init InitFromParentDescriptor {[“,”] InitFromParentDescriptor}
+		-- new InitFromParentDescriptor {[","] InitFromParentDescriptor}
 	
 	constObjects: Sorted_Array [ConstObjectDescriptor]
 	
@@ -3578,6 +3581,7 @@ feature {Any}
 	isVirtual: Boolean is False
 	isOverriding: Boolean is False
 	isFinal: Boolean is False
+--	isNone: Boolean
 	name: String is -- "init"
 	do
 		Result := unitDsc.name		
@@ -5125,6 +5129,56 @@ feature {ExpressionDescriptor}
 invariant
 	non_void_expression: expr /= Void
 end -- class ParenthedExpressionDescriptor
+
+---------
+-- class InitDescriptor
+-- inherit
+-- 	MemberCallDescriptor
+-- 		redefine
+-- 			sameAs, lessThan
+-- --	ExpressionDescriptor
+-- --	end
+-- --	EntityDescriptor
+-- --		undefine
+-- --			is_equal
+-- --	end
+-- create
+-- 	init
+-- feature
+-- 	unitName: String
+-- 	init (aName: like unitName) is
+-- 	require
+-- 		non_void_unit_name: aName /= Void
+-- 	do
+-- 		unitName := aName
+-- 	end -- init
+-- 	out: String is do Result :=  "" + unitName end
+-- 	sameAs (other: like Current): Boolean is
+-- 	do
+-- 		Result := unitName.is_equal (other.unitName)
+-- 	end -- sameAs
+-- 	lessThan (other: like Current): Boolean is
+-- 	do
+-- 		Result := unitName < other.unitName
+-- 	end -- theSame
+-- 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+-- 	local
+-- 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+-- 		--stringPool: Sorted_Array [String]
+-- 		--typePool: Sorted_Array[TypeDescriptor]	
+-- 		-- notValid: Boolean
+-- 	do
+-- 	--useConst := context.useConst
+-- 	--stringPool := context.stringPool
+-- 	--typePool := context.typePool
+-- 		-- do nothing so far
+-- 	end -- isInvalid
+-- --feature {ExpressionDescriptor}
+-- --	weight: Integer is -2
+-- end -- class InitDescriptor
+---------
+
+
 
 class OldDescriptor
 inherit
@@ -7173,13 +7227,16 @@ inherit
 	--		sameAs, lessThan
 	--end
 
+	ExpressionDescriptor
+	end
+
 	StatementDescriptor
 		redefine
-			sameAs, lessThan
+			sameAs, lessThan --, out
 	end
 	RoutineArguments
-		rename 
-			setArguments as init
+		--rename 
+		--	setArguments as init
 		undefine
 			is_equal
 		redefine
@@ -7188,13 +7245,16 @@ inherit
 create
 	init
 feature{Any}
-	--init (arguments: Array [ExpressionDescriptor]) is
+	unitTypeDsc: UnitTypeNameDescriptor
+	init (unitDsc: like unitTypeDsc; args: like arguments) is
 	--local
 	--	ccElement: CallChainElement
-	--do
+	do
+		unitTypeDsc := unitDsc
+		arguments := args
 	--	create ccElement.init ("init", arguments)
 	--	callChain:= <<ccElement>>
-	--end -- if
+	end -- if
 	
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -7202,9 +7262,9 @@ feature{Any}
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+		useConst := context.useConst
+		stringPool := context.stringPool
+		typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7214,25 +7274,27 @@ feature{Any}
 	
 	out: String is
 	do
-		--Result := outCallChain
-		Result := "init "
+		Result := unitTypeDsc.out
 		Result.append_string (outArguments)
 	end -- out
 	sameAs (other: like Current): Boolean is
 	do
 		--Result := theSameCallChain (other)
-		Result := sameArguments (other)
+		Result := unitTypeDsc.is_equal (other.unitTypeDsc) and then sameArguments (other)
 	end -- sameAs
 	lessThan (other: like Current): Boolean is
 	do
 		--Result := lessThanCallChain (other)
-		Result := lessArguments (other)
+		Result := unitTypeDsc < other.unitTypeDsc
+		if not Result and then unitTypeDsc.is_equal (other.unitTypeDsc) then
+			Result := lessArguments (other)
+		end -- if
 	end -- lessThan
 feature {ExpressionDescriptor}
 	weight: Integer is -24
 end -- class InitCallDescriptor
 class PrecursorCallDescriptor
--- old [“{”UnitTypeName”}”] [Arguments] {CallChain}
+-- old ["{"UnitTypeName"}"] [Arguments] {CallChain}
 inherit
 	MemberCallDescriptor
 		redefine
@@ -9207,16 +9269,20 @@ inherit
 	AttachedTypeDescriptor
 	end
 create
-	init
+	init --, fill
 feature {Any}
 	fields: Array [TupleFieldDescriptor]
-	init (f: like fields) is
+	--fill (f: like fields) is
+	--do
+	--	if f = Void then
+	--		create fields.make (1, 0)
+	--	else
+	--		fields := f
+	--	end -- if
+	--end -- fill
+	init is
 	do
-		if f = Void then
-			create fields.make (1, 0)
-		else
-			fields := f
-		end -- if
+		create fields.make (1, 0)
 	end -- init
 	sameAs (other: like Current): Boolean is
 	local
@@ -9342,266 +9408,356 @@ invariant
 	non_void_fields: fields /= Void
 end -- class TupleTypeDescriptor
 
-deferred class TupleFieldDescriptor
--- [Identifier {"," Identifier}":"] UnitTypeDescriptor
+class TupleFieldDescriptor
 inherit
 	Comparable
 		undefine
 			out, is_equal
 	end
-feature
-	getExternalName: String is
-	deferred
-	ensure
-		non_void_external_name: Result /= Void
-	end -- getExternalName
-
-end -- class TupleFieldDescriptor
-
-class ListOfTypesDescriptor
-inherit
-	TupleFieldDescriptor
-	end
 create
 	init
 feature {Any}
-	types: Array [UnitTypeCommonDescriptor]
-	init (t: like types) is
-	require
-		non_void_types: t /= Void
-	do
-		types := t
-	end -- init
+	type: UnitTypeCommonDescriptor
 	out: String is
-	local
-		i, n : Integer
 	do
-		from
-			Result := ""
-			i := 1
-			n := types.count
-		until
-			i > n
-		loop
-			Result.append_string (types.item (i).out)
-			if i < n then
-				Result.append_string("; ")
-			end -- if
-			i := i + 1
-		end -- loop
+		Result := type.out
 	end -- out
 	getExternalName: String is
-	local
-		i, n : Integer
 	do
-		from
-			Result := ""
-			i := 1
-			n := types.count
-		until
-			i > n
-		loop
-			Result.append_string (types.item (i).getExternalName)
-			if i < n then
-				Result.append_character('_')
-			end -- if
-			i := i + 1
-		end -- loop
+		Result := type.getExternalName
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
-	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
-	end -- isInvalid
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
-	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
-	end -- isNotLoaded
-	
-	
 	is_equal (other: like Current): Boolean is
-	local
-		i, n : Integer
 	do
-		n := types.count
-		Result := n = other.types.count
-		if Result then
-			from
-				i := 0
-			until
-				i > n
-			loop
-				if types.item (i).is_equal (other.types.item (i)) then
-					i := i + 1
-				else
-					i := n + 1
-					Result := False
-				end -- if
-			end -- loop
-		end -- if
+		Result := type.is_equal (other.type) 
 	end -- is_equal
 	infix "<" (other: like Current): Boolean is
-	local
-		i, n, m : Integer
 	do
-		n := types.count
-		m := other.types.count
-		Result := n < m
-		if not Result and then n = m then
-			from
-				i := 1
-			until
-				i > n
-			loop
-				if types.item (i) < other.types.item (i) then
-					Result := True
-					i := n + 1
-				elseif types.item (i).is_equal(other.types.item (i)) then
-					i := i + 1
-				else
-					i := n + 1
-				end -- if
-			end -- loop
-		end -- if
+		Result := type < other.type
 	end -- infix "<"
-invariant
-	non_void_types: types /= Void
-end -- class ListOfTypesDescriptor
 
+	init (t: like type) is
+	require
+		non_void_type: t /= Void	
+	do
+		type := t
+	end -- init
+invariant
+	non_void_type: type /= Void
+end -- class TupleFieldDescriptor
 class NamedTupleFieldDescriptor
 inherit
 	TupleFieldDescriptor
+		rename 
+			init as setType
+		redefine
+			out, is_equal, infix "<", getExternalName
 	end
 create
 	init
 feature {Any}
-	names: Sorted_Array[String]
-	type: UnitTypeCommonDescriptor
+	name: String
 	out: String is
-	local
-		i, n : Integer
 	do
-		from
-			Result := ""
-			i := 1
-			n := names.count
-		until
-			i > n
-		loop
-			Result.append_string (names.item (i))
-			if i < n then
-				Result.append_string(", ")
-			end -- if
-			i := i + 1
-		end -- loop
+		Result := "" + name
 		Result.append_string (": ")
 		Result.append_string (type.out)
 	end -- out
 	getExternalName: String is
-	local
-		i, n : Integer
 	do
-		from
-			Result := ""
-			i := 1
-			n := names.count
-		until
-			i > n
-		loop
-			Result.append_string (names.item (i))
-			if i < n then
-				Result.append_character('_')
-			end -- if
-			i := i + 1
-		end -- loop
+		Result := "" + name
 		Result.append_character ('$')
 		Result.append_string (type.getExternalName)
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
 	is_equal (other: like Current): Boolean is
-	local
-		i, n : Integer
 	do
-		Result := type.is_equal (other.type)
-		if Result then
-			n := names.count
-			Result := n = other.names.count 
-			if Result then
-				from
-					i := 1
-				until
-					i > n
-				loop
-					if names.item (i).is_equal (other.names.item (i)) then
-						i := i + 1
-					else
-						i := n + 1
-						Result := False
-					end -- if
-				end -- loop
-			end -- if
-		end -- if
+		Result := name.is_equal (other.name) and then type.is_equal (other.type) 
 	end -- is_equal
 	infix "<" (other: like Current): Boolean is
-	local
-		i, n, m : Integer
 	do
-		Result := type < other.type
-		if not Result and then type.is_equal(other.type) then
-			n := names.count
-			m := other.names.count
-			Result := n < m
-			if not Result and then n = m then
-				from
-					i := 1
-				until
-					i > n
-				loop
-					if names.item (i) < other.names.item (i) then
-						Result := True
-						i := n + 1
-					elseif names.item (i).is_equal (other.names.item (i)) then
-						i := i + 1
-					else
-						i := n + 1
-					end -- if
-				end -- loop
-			end -- if
+		Result := name < other.name
+		if not Result and then name.is_equal (other.name) then
+			Result := type < other.type
 		end -- if
 	end -- infix "<"
 
-	init (n: like names; t: like type) is
+	init (n: like name; t: like type) is
 	require
 		non_void_type: t /= Void	
-		non_void_names: n /= Void
+		non_void_name: n /= Void
 	do
 		type := t
-		names := n
+		name := n
 	end -- init
 invariant
-	non_void_type: type /= Void
-	non_void_names: names /= Void
+	non_void_name: name /= Void
 end -- class NamedTupleFieldDescriptor
+
+
+
+--deferred class TupleFieldDescriptor
+---- [Identifier {"," Identifier}":"] UnitTypeDescriptor
+--inherit
+--	Comparable
+--		undefine
+--			out, is_equal
+--	end
+--feature
+--	getExternalName: String is
+--	deferred
+--	ensure
+--		non_void_external_name: Result /= Void
+--	end -- getExternalName
+--
+--end -- class TupleFieldDescriptor
+--
+--class ListOfTypesDescriptor
+--inherit
+--	TupleFieldDescriptor
+--	end
+--create
+--	init
+--feature {Any}
+--	types: Array [UnitTypeCommonDescriptor]
+--	init (t: like types) is
+--	require
+--		non_void_types: t /= Void
+--	do
+--		types := t
+--	end -- init
+--	out: String is
+--	local
+--		i, n : Integer
+--	do
+--		from
+--			Result := ""
+--			i := 1
+--			n := types.count
+--		until
+--			i > n
+--		loop
+--			Result.append_string (types.item (i).out)
+--			if i < n then
+--				Result.append_string("; ")
+--			end -- if
+--			i := i + 1
+--		end -- loop
+--	end -- out
+--	getExternalName: String is
+--	local
+--		i, n : Integer
+--	do
+--		from
+--			Result := ""
+--			i := 1
+--			n := types.count
+--		until
+--			i > n
+--		loop
+--			Result.append_string (types.item (i).getExternalName)
+--			if i < n then
+--				Result.append_character('_')
+--			end -- if
+--			i := i + 1
+--		end -- loop
+--		Result.append_string ("_" + Result.hash_code.out)
+--	end -- getExternalName
+--
+--	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	local
+--		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+--		--stringPool: Sorted_Array [String]
+--		--typePool: Sorted_Array[TypeDescriptor]
+--		--notValid: Boolean
+--		--i, n: Integer
+--	do
+--	--useConst := context.useConst
+--	--stringPool := context.stringPool
+--	--typePool := context.typePool
+--		-- not_implemened_yet
+--	end -- isInvalid
+--	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+--	local
+--		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+--		--stringPool: Sorted_Array [String]
+--		--typePool: Sorted_Array[TypeDescriptor]
+--		--notValid: Boolean
+--		--i, n: Integer
+--	do
+--	--useConst := context.useConst
+--	--stringPool := context.stringPool
+--	--typePool := context.typePool
+--		-- not_implemened_yet
+--	end -- isNotLoaded
+--	
+--	
+--	is_equal (other: like Current): Boolean is
+--	local
+--		i, n : Integer
+--	do
+--		n := types.count
+--		Result := n = other.types.count
+--		if Result then
+--			from
+--				i := 0
+--			until
+--				i > n
+--			loop
+--				if types.item (i).is_equal (other.types.item (i)) then
+--					i := i + 1
+--				else
+--					i := n + 1
+--					Result := False
+--				end -- if
+--			end -- loop
+--		end -- if
+--	end -- is_equal
+--	infix "<" (other: like Current): Boolean is
+--	local
+--		i, n, m : Integer
+--	do
+--		n := types.count
+--		m := other.types.count
+--		Result := n < m
+--		if not Result and then n = m then
+--			from
+--				i := 1
+--			until
+--				i > n
+--			loop
+--				if types.item (i) < other.types.item (i) then
+--					Result := True
+--					i := n + 1
+--				elseif types.item (i).is_equal(other.types.item (i)) then
+--					i := i + 1
+--				else
+--					i := n + 1
+--				end -- if
+--			end -- loop
+--		end -- if
+--	end -- infix "<"
+--invariant
+--	non_void_types: types /= Void
+--end -- class ListOfTypesDescriptor
+--
+--class NamedTupleFieldDescriptor
+--inherit
+--	TupleFieldDescriptor
+--	end
+--create
+--	init
+--feature {Any}
+--	names: Sorted_Array[String]
+--	type: UnitTypeCommonDescriptor
+--	out: String is
+--	local
+--		i, n : Integer
+--	do
+--		from
+--			Result := ""
+--			i := 1
+--			n := names.count
+--		until
+--			i > n
+--		loop
+--			Result.append_string (names.item (i))
+--			if i < n then
+--				Result.append_string(", ")
+--			end -- if
+--			i := i + 1
+--		end -- loop
+--		Result.append_string (": ")
+--		Result.append_string (type.out)
+--	end -- out
+--	getExternalName: String is
+--	local
+--		i, n : Integer
+--	do
+--		from
+--			Result := ""
+--			i := 1
+--			n := names.count
+--		until
+--			i > n
+--		loop
+--			Result.append_string (names.item (i))
+--			if i < n then
+--				Result.append_character('_')
+--			end -- if
+--			i := i + 1
+--		end -- loop
+--		Result.append_character ('$')
+--		Result.append_string (type.getExternalName)
+--		Result.append_string ("_" + Result.hash_code.out)
+--	end -- getExternalName
+--
+--	is_equal (other: like Current): Boolean is
+--	local
+--		i, n : Integer
+--	do
+--		Result := type.is_equal (other.type)
+--		if Result then
+--			n := names.count
+--			Result := n = other.names.count 
+--			if Result then
+--				from
+--					i := 1
+--				until
+--					i > n
+--				loop
+--					if names.item (i).is_equal (other.names.item (i)) then
+--						i := i + 1
+--					else
+--						i := n + 1
+--						Result := False
+--					end -- if
+--				end -- loop
+--			end -- if
+--		end -- if
+--	end -- is_equal
+--	infix "<" (other: like Current): Boolean is
+--	local
+--		i, n, m : Integer
+--	do
+--		Result := type < other.type
+--		if not Result and then type.is_equal(other.type) then
+--			n := names.count
+--			m := other.names.count
+--			Result := n < m
+--			if not Result and then n = m then
+--				from
+--					i := 1
+--				until
+--					i > n
+--				loop
+--					if names.item (i) < other.names.item (i) then
+--						Result := True
+--						i := n + 1
+--					elseif names.item (i).is_equal (other.names.item (i)) then
+--						i := i + 1
+--					else
+--						i := n + 1
+--					end -- if
+--				end -- loop
+--			end -- if
+--		end -- if
+--	end -- infix "<"
+--
+--	init (n: like names; t: like type) is
+--	require
+--		non_void_type: t /= Void	
+--		non_void_names: n /= Void
+--	do
+--		type := t
+--		names := n
+--	end -- init
+--invariant
+--	non_void_type: type /= Void
+--	non_void_names: names /= Void
+--end -- class NamedTupleFieldDescriptor
 
 class UnitTypeDescriptor
 --  [ref|val|concurrent] UnitTypeNameDescriptor
@@ -9674,8 +9830,8 @@ deferred class UnitTypeCommonDescriptor
 inherit
 	AttachedTypeDescriptor
 	end
-	TupleFieldDescriptor
-	end
+	--TupleFieldDescriptor
+	--end
 feature {Any}
 	name: String
 	generics: Array [TypeOrExpressionDescriptor]
