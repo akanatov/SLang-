@@ -79,6 +79,7 @@ feature {Any}
 		files: Array [FSys_Dat]
 		fName: String
 		sName: String
+		
 		tsfName: String
 		ext: String
 		slangFileCount: Integer
@@ -1237,110 +1238,12 @@ end -- class UnitImage
 
 ------------ AST/IR classes -------------------------------------------
 
----- UseConstDirective -- use const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
---class FullUnitNameDescriptor
-----3 Identifier [“[“ FactualGenericType {“,” FactualGenericType}“]”]
---inherit
---	Comparable
---		redefine	
---			is_equal, out
---	end
---create 
---	init
---feature {Any}
---	infix "<" (other: like Current): Boolean is
---	do
---		Result := name < other.name
---	end
---	is_equal (other: like Current): Boolean is
---	do
---		Result := name.is_equal (other.name)
---	end
---	name: String
---	factualGenerics: Array [FactualGenericTypeDescriptor]
---	out: String is
---	local	
---		i, n: Integer
---	do
---		Result := ""
---		Result.append_string (name)
---		n := factualGenerics.count
---		if n > 0 then
---			from
---				Result.append_string (" [")
---				i := 1
---			until
---				i > n
---			loop
---				Result.append_string (factualGenerics.item (i).out)		
---				if i < n then
---					Result.append_string (", ")
---				end -- if
---				i := i + 1
---			end -- loop
---			Result.append_character (']')
---		end -- if
---	end -- out
---
---	add (fgtd: FactualGenericTypeDescriptor) is
---	require
---		non_void_factual_generic_parameter: fgtd /= Void
---	do
---		factualGenerics.force (fgtd, factualGenerics.count + 1)
---	end -- add
---
---feature {None}
---	init (aName: like name) is
---	require	
---		unit_name_not_void: aName /= Void
---	do
---		name := aName
---		create factualGenerics.make (1, 0)
---	end -- init
---end 
---
---deferred class FactualGenericTypeDescriptor
--- UnitTypeDescriptor | Constant | RoutineType
---inherit
---	Any
---		undefine
---			out, is_equal
---	end
---end -- class FactualGenericTypeDescriptor
---
---class ConstOrUnitTypeDescriptor
---inherit
---	FactualGenericTypeDescriptor
---create
---	init
---feature
---	identifier: String
---	init (id: like identifier) is
---	require
---		non_void_identifier: id /= Void
---	do
---		identifier := id
---	end -- init
---	out: String is
---	do
---		Result := identifier
---	end -- out
---	is_equal (other: like Current): Boolean is
---	do
---		Result := identifier.is_equal (other.identifier)
---	end -- is_equal
---invariant
---	non_void_identifier: identifier /= Void
---end -- class ConstOrUnitTypeDescriptor
-
-
--- StatementsListDescriptor { Statement[“;”]}
-
 class WhenClauseDescriptor
---5 when [Identifier:] UnitTypeDescriptor do StatementsList
+-- when [Identifier:] UnitTypeDescriptor do StatementsList
 inherit	
 	Any
-		redefine out
+		redefine
+			out
 	end
 create
 	init
@@ -1424,7 +1327,7 @@ invariant
 end 
 
 class InnerBlockDescriptor
---6 do ["{"Identifier {"," Identifier} "}"]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
+-- do ["{"Identifier {"," Identifier} "}"]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
 inherit	
 	StatementDescriptor
 	end
@@ -1621,7 +1524,7 @@ invariant
 end -- class InnerBlockDescriptor
 
 class StandaloneRoutineDescriptor
---7 [pure|safe] 
+-- [pure|safe] 
 -- Identifier [FormalGenerics] [Parameters] [":" Type] [EnclosedUseDirective]        
 --       ([RequireBlock] InnerBlockDescriptor|foreign [EnsureBlock] [end] ) | ("=>"Expression )
 -- Parameters    : "("ParameterDescriptor {";" ParameterDescriptor}")"
@@ -1856,11 +1759,9 @@ end
 
 deferred class ParameterDescriptor
 inherit	
-	Comparable
+	SmartComparable
 		undefine
 			out 
-		redefine
-			is_equal
 	end
 feature {Any}
 	name: String
@@ -1869,34 +1770,6 @@ feature {Any}
 	ensure
 		non_void_external_name: Result /= Void
 	end -- getExternalName
-	is_equal (other: like Current): Boolean is
-	do
---		Result := name.is_equal (other.name)
---		Result := weight = other.weight and then name.is_equal (other.name) and then sameAs (other)
-		Result := weight = other.weight and then sameAs (other)
-	end -- is_equal
-	infix "<"  (other: like Current): Boolean is
-	do
---		Result := name < other.name
-		Result := weight < other.weight
-		if not Result and then weight = other.weight then
-			Result := lessThan (other)
---			Result := name < other.name
---			if not Result and then name.is_equal (other.name) then
---				Result := lessThan (other)
---			end -- if
-		end -- if
-	end -- infix "<"
-	sameAs (other: like Current): Boolean is
-	deferred
-	end -- sameAs
-	lessThan(other: like Current): Boolean is
-	deferred
-	end -- lessThan
-feature {ParameterDescriptor}
-	weight: Integer is
-	deferred
-	end -- weight
 invariant
 	name_not_void: name /= Void
 end -- class ParameterDescriptor
@@ -1954,7 +1827,6 @@ feature {None}
 		name := aName
 		type := aType
 	end -- init
-	weight: Integer is 0
 invariant
 	type_not_void: type /= Void
 end  -- class NamedParameterDescriptor
@@ -1998,7 +1870,6 @@ feature {None}
 		name := aName
 		expr := e
 	end -- init
-	weight: Integer is 1
 invariant
 	expression_not_void: expr /= Void
 	name_not_void: name /= Void
@@ -2041,11 +1912,10 @@ feature {None}
 	do
 		name := aName
 	end -- init
-	weight: Integer is 2
 end  -- class AssignAttributeParameterDescriptor
 
 class EnclosedUseEementDescriptor
---9 UnitTypeNameDescriptor [as Identifier]]
+-- UnitTypeNameDescriptor [as Identifier]]
 inherit	
 	Comparable
 		redefine
@@ -2087,10 +1957,10 @@ end
 -- RequireBlock : require PredicatesList 
 -- EnsureBlock  : ensure PredicatesList
 -- InvariantBlock: require PredicatesList
--- PredicatesList : [PredicateDescriptor {[”;”|“,”] PredicateDescriptor}] : Array [PredicateDescriptor]
+-- PredicatesList : [PredicateDescriptor {[";"|","] PredicateDescriptor}] : Array [PredicateDescriptor]
 
 class PredicateDescriptor
---10 BooleanExpression [DocumentingComment]
+-- BooleanExpression [DocumentingComment]
 inherit	
 	Any
 		redefine
@@ -2681,7 +2551,7 @@ invariant
 end 
 
 class ParentDescriptor
---12 ["~"] UnitTypeNameDescriptor 
+-- ["~"] UnitTypeNameDescriptor 
 inherit 
 	Comparable
 		redefine
@@ -2721,43 +2591,43 @@ end -- class ParentDescriptor
 
 
 deferred class FormalGenericDescriptor
---13 Identifier (["extend" Type ] ["new" [Signature]])| [":" (UnitTypeDescriptor | RoutineType)]
+-- Identifier (["extend" Type ] ["new" [Signature]])| [":" (UnitTypeDescriptor | RoutineType)]
 inherit
-	Comparable
+	SmartComparable
 		undefine
 			out
-		redefine
-			is_equal
+--		redefine
+--			is_equal
 	end
 feature {Any}
 	name: String
-	is_equal (other: like Current): Boolean is
-	do
-		if same_type (other) then
-			Result := sameAs (other)
-		end -- if
-	end -- is_equal
-	infix "<" (other: like Current): Boolean is
-	do
-		if same_type (other) then
-			Result := lessThan (other)
-		else
-			Result := name < other.name
-		end -- if
-	end -- is_equal
+--	is_equal (other: like Current): Boolean is
+--	do
+--		if same_type (other) then
+--			Result := sameAs (other)
+--		end -- if
+--	end -- is_equal
+--	infix "<" (other: like Current): Boolean is
+--	do
+--		if same_type (other) then
+--			Result := lessThan (other)
+--		else
+--			Result := name < other.name
+--		end -- if
+--	end -- is_equal
 	getExternalName: String is
 	deferred
 	ensure
 		external_name_not_void: Result /= Void
 	end -- getExternalName
 	
-feature {FormalGenericDescriptor}
-	sameAs (other: like Current): Boolean is
-	deferred
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	deferred
-	end -- lessThan
+--feature {FormalGenericDescriptor}
+--	sameAs (other: like Current): Boolean is
+--	deferred
+--	end -- sameAs
+--	lessThan (other: like Current): Boolean is
+--	deferred
+--	end -- lessThan
 invariant
 	name_not_void: name /= Void
 end -- class FormalGenericDescriptor
@@ -3002,7 +2872,7 @@ invariant
 end -- class InitFromParentDescriptor
 
 class InheritedMemberOverridingDescriptor
---17 UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]
+-- UnitTypeNameDescriptor"."Identifier[SignatureDescriptor]
 inherit	
 	Comparable
 		redefine
@@ -3052,7 +2922,7 @@ invariant
 end
 
 deferred class MemberVisibilityDescriptor
---18 “{” [this| UnitTypeNameDescriptor {“,” UnitTypeNameDescriptor}  ] “}”
+-- "{"" [this| UnitTypeNameDescriptor {"," UnitTypeNameDescriptor}  ] "}"
 inherit
 	Any
 		undefine out
@@ -3148,9 +3018,9 @@ end -- class PrivateVisibilityDescriptor
 deferred class MemberDeclarationDescriptor
 -- MemberDeclaration: [MemberVisibility] ([override] [final] UnitAttribiteDeclaration|UnitRoutineDeclaration) | InitDeclaration
 inherit
-	Comparable
+	SmartComparable
 		redefine
-			out, is_equal
+			out, is_equal, infix "<"
 	end
 	SourcePosition
 		redefine
@@ -3214,17 +3084,17 @@ feature {Any}
 			Result := lessThan (other)
 		end -- if
 	end -- infix "<"
-	sameAs (other: like Current): Boolean is
-	require
-		names_are_equal: name.is_equal (other.name)
-	deferred
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	require
-		names_are_equal: name.is_equal (other.name)
-	deferred
-	end -- lessThan
-invariant
+--	sameAs (other: like Current): Boolean is
+--	require
+--		names_are_equal: name.is_equal (other.name)
+--	deferred
+--	end -- sameAs
+--	lessThan (other: like Current): Boolean is
+--	require
+--		names_are_equal: name.is_equal (other.name)
+--	deferred
+--	end -- lessThan
+--invariant
 end -- class MemberDeclarationDescriptor
 
 class RoutineDescriptor
@@ -3525,7 +3395,7 @@ invariant
 	is_one_line_consistent: isOneLine implies innerBlock = Void and then expr /= Void
 end -- class UnitRoutineDescriptor
 class UnitRoutineDeclarationDescriptor
--- [pure|safe] RoutineName [final Identifier] [Parameters] [“:” Type] [EnclosedUseDirective] ([RequireBlock] InnerBlock|virtual|foreign [EnsureBlock] [end]) | (“=>”Expression )
+-- [pure|safe] RoutineName [final Identifier] [Parameters] [":" Type] [EnclosedUseDirective] ([RequireBlock] InnerBlock|virtual|foreign [EnsureBlock] [end]) | (“=>”Expression )
 inherit
 	UnitRoutineDescriptor
 		redefine
@@ -3618,33 +3488,33 @@ deferred class ConstObjectDescriptor
 --20 ConstObject : ( Constant | (Idenitifer [“.”init] [ Arguments ]) [ “..”  Constant | (Idenitifer [“.”init] [ Arguments ]) ] ) | (“{” RegularExpression “}” IntegerConstant [“+”])
 -- RegularExpression: Constant ({“|”Constant}) | (“|” ”..” Constant)
 inherit	
-	Comparable
+	SmartComparable
 		undefine 
 			out 
-		redefine 
-			is_equal
+--		redefine 
+--			is_equal
 	end
-feature {Any}
-	is_equal (other: like Current): Boolean is
-	do
-		Result := Current = other or else Current.same_type (other) and then sameAs (other)
-	end -- is_equal
-	infix "<" (other: like Current): Boolean is
-	do
-		if Current /= other then
-			Result := Current.generating_type < other.generating_type
-			if not Result and then Current.same_type (other) then 
-				Result := lessThan (other)
-			end -- if
-		end -- if
-	end -- infix "<"
-feature {ConstObjectDescriptor}
-	sameAs (other: like Current): Boolean is
-	deferred		
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	deferred
-	end -- lessThan
+--feature {Any}
+--	is_equal (other: like Current): Boolean is
+--	do
+--		Result := Current = other or else Current.same_type (other) and then sameAs (other)
+--	end -- is_equal
+--	infix "<" (other: like Current): Boolean is
+--	do
+--		if Current /= other then
+--			Result := Current.generating_type < other.generating_type
+--			if not Result and then Current.same_type (other) then 
+--				Result := lessThan (other)
+--			end -- if
+--		end -- if
+--	end -- infix "<"
+--feature {ConstObjectDescriptor}
+--	sameAs (other: like Current): Boolean is
+--	deferred		
+--	end -- sameAs
+--	lessThan (other: like Current): Boolean is
+--	deferred
+--	end -- lessThan
 end -- class ConstObjectDescriptor
 class RegExpDescriptor
 -- RegularExpression:
@@ -4007,12 +3877,12 @@ feature {Any}
 
 feature {StatementDescriptor}
 	sameAs (other: like Current): Boolean is
-	do
-print ("StatementDescriptor.sameAs:  not_implemented_yet%N")
+	once
+print ("StatementDescriptor.sameAs:  never should be called !!!%N")
 	end -- sameAs
 	lessThan (other: like Current): Boolean is
-	do
-print ("StatementDescriptor.lessThan:  not_implemented_yet%N")
+	once
+print ("StatementDescriptor.lessThan: never should be called !!!%N")
 	end -- lessThan
 end -- class StatementDescriptor
 
@@ -4053,7 +3923,7 @@ feature {Any}
 end -- class RepeatWhileDescriptor
 
 class DetachStatementDescriptor
---22 ? Identifier
+-- ? Identifier
 inherit	
 	StatementDescriptor
 	end
@@ -4094,7 +3964,7 @@ invariant
 end -- class DetachStatementDescriptor
 
 class RaiseStatementDescriptor
---23 raise (Expression | “;”)
+-- raise (Expression | ";")
 inherit	
 	StatementDescriptor
 	end
@@ -4137,7 +4007,7 @@ feature {Any}
 end -- class RaiseStatementDescriptor
 
 class ReturnStatementDescriptor
---24 return (Expression | “;”) 
+-- return (Expression | ";")
 inherit	
 	StatementDescriptor
 	end
@@ -4179,7 +4049,7 @@ feature {Any}
 end -- class ReturnStatementDescriptor
 
 class HyperBlockDescriptor
---26 [RequireBlock] InnerBlockDescriptor [EnsureBlock] end
+-- [RequireBlock] InnerBlockDescriptor [EnsureBlock] end
 inherit
 	InnerBlockDescriptor
 		rename
@@ -4332,7 +4202,7 @@ invariant
 end -- class EntityDeclarationStatementDescriptor
 
 class AssignmentStatementDescriptor
---27 Writable ":=" Expression
+-- Writable ":=" Expression
 inherit	
 	StatementDescriptor
 	end
@@ -4988,11 +4858,6 @@ feature {Any}
 		-- do nothing so far
 	end -- isInvalid
 	
-feature {ExpressionDescriptor}
-	weight: Integer is 
-	do
-		Result := -25
-	end -- weight
 end -- class IsDetachedDescriptor
 class IsAttachedDescriptor
 inherit
@@ -5002,7 +4867,9 @@ inherit
 		export
 			{None} detached_init
 		redefine
-			out, weight, sameAs, lessThan
+			out, 
+			--weight,
+			sameAs, lessThan
 	end
 create
 	init
@@ -5030,8 +4897,6 @@ feature {Any}
 			Result := typeDsc < other.typeDsc
 		end -- if
 	end -- theSame
-feature {ExpressionDescriptor}
-	weight: Integer is -26
 invariant
 	non_void_type: typeDsc /= Void
 end -- class IsAttachedDescriptor
@@ -5079,8 +4944,6 @@ feature
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -21
 invariant
 	forcedType_not_void: forcedType /= Void
 	realExpr_not_void: realExpr /= Void
@@ -5124,8 +4987,6 @@ feature
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -22
 invariant
 	non_void_expression: expr /= Void
 end -- class ParenthedExpressionDescriptor
@@ -5212,8 +5073,6 @@ feature
 	lessThan (other: like Current): Boolean is
 	do
 	end -- theSame
-feature {ExpressionDescriptor}
-	weight: Integer is -1
 end -- class OldDescriptor
 class ThisDescriptor
 inherit
@@ -5247,8 +5106,6 @@ feature
 	--typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -2
 end -- class ThisDescriptor
 class ReturnDescriptor
 inherit
@@ -5278,8 +5135,6 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -3
 end -- class ReturnDescriptor
 deferred class EntityDescriptor
 inherit
@@ -5354,17 +5209,15 @@ feature {Any}
 		end -- check
 	end -- isInvalid
 
-feature {ExpressionDescriptor}
-	weight: Integer is -4
 end -- class IdentifierDescriptor
 
-class TupleDescriptor
+class TupleExpressionDescriptor
 inherit
 	ExpressionDescriptor
 	end
 create
 	init
-feature {Any}	
+feature
 	tuple: Array [ExpressionDescriptor]
 	init (t: like tuple) is
 	do
@@ -5461,15 +5314,13 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -5
 invariant
 	tuple_not_void: tuple /= Void
-end -- class TupleDescriptor
+end -- class TupleExpressionDescriptor
 
 
 class RefExpressionDescriptor
---30 ref Expression
+-- ref Expression
 inherit
 	ExpressionDescriptor
 	end
@@ -5514,14 +5365,14 @@ feature {Any}
 			-- not_implemented_yet
 		end -- if
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -7
+--feature {ExpressionDescriptor}
+--	weight: Integer is -7
 invariant
 	non_void_expression: expr /= Void
 end -- class RefExpressionDescriptor
 
 deferred class LambdaExpression
---31 (rtn Identifier [Signature])|InlineLambdaExpression
+-- (rtn Identifier [Signature])|InlineLambdaExpression
 -- InlineLambdaExpression  : [pure|safe] rtn [Parameters] [“:” Type]
 -- 	( [RequireBlock] InnerBlockDescriptor | foreign [EnsureBlock] [end] )|(“=>”Expression )
 inherit
@@ -5529,6 +5380,7 @@ inherit
 	end
 feature {Any}	
 end -- class LambdaExpression
+
 class LambdaFromRoutineExpression
 -- rtn Identifier [Signature]
 inherit
@@ -5595,11 +5447,10 @@ feature {Any}
 		end -- if
 	end -- isInvalid
 	
-feature {ExpressionDescriptor}
-	weight: Integer is -8
 invariant
 	name_not_void: name /= Void
 end -- class LambdaFromRoutineExpression
+
 class InlineLambdaExpression
 -- [pure|safe] rtn [Parameters] [“:” Type] ( [RequireBlock] InnerBlockDescriptor | foreign [EnsureBlock] [end] )|(“=>”Expression )
 inherit
@@ -5641,9 +5492,6 @@ print ("InlineLambdaExpression.lessThan not_implemented_yet%N")
 		-- do nothing so far
 	end -- isInvalid
 
-feature {ExpressionDescriptor}
-	weight: Integer is -9
-invariant
 end -- class InlineLambdaExpression
 
      
@@ -5692,12 +5540,11 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -10
 invariant
 	non_void_expr: expr /= Void
 	non_void_range: range /= Void
 end -- class InRangeExpression
+
 class RangeExpressionDescriptor
 -- RangeExpression : Expression ["{"OperatorName ConstantExpression "}"] ".."Expression
 inherit
@@ -5769,8 +5616,6 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -11
 invariant
 	left_expr_not_void: left /= Void
 	right_expr_not_void: right /= Void
@@ -5816,128 +5661,126 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -13
 invariant
 	expr_not_void: expr /= Void
 end -- class OldExpressionDescriptor
 
-class TupleExpressionDescriptor
--- "("[TupleElement {"," TupleElement}]")"
-inherit
-	ExpressionDescriptor
-	end
-create
-	init
-feature {Any}	
-	tuples: Array [TupleElement]
-	out: String is
-	local
-		i, n: Integer
-	do
-		from
-			Result := " ("
-			i := 1
-			n := tuples.count
-		until
-			i > n
-		loop
-			Result.append_string (tuples.item(i).out)
-			if i < n then
-				Result.append_string (", ")
-			end -- if
-			i := i + 1
-		end -- loop
-		Result.append_character (')')
-	end -- out
-	sameAs (other: like Current): Boolean is
-	local
-		i, n: Integer
-	do
-		from
-			i := 1
-			n := tuples.count
-			Result := True
-		until
-			i > n
-		loop
-			if tuples.item(i).is_equal (other.tuples.item(i)) then
-				i := i + 1
-			else	
-				Result := False
-				i := n + 1
-			end -- if
-		end -- loop
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	local
-		i, n, m: Integer
-	do
-		n := tuples.count
-		m := other.tuples.count
-		Result := n < m
-		if not Result and then n = m then
-			from
-				i := 1
-			until
-				i > n
-			loop
-				if tuples.item(i) < other.tuples.item(i) then
-					i := n + 1
-					Result := True
-				elseif tuples.item(i).is_equal (other.tuples.item(i)) then
-					i := i + 1
-				else	
-					i := n + 1
-				end -- if
-			end -- loop
-		end -- if
-	end -- lessThan
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
-	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
-		-- do nothing so far
-	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -14
-end
-class TupleElement 
--- Expression| Parameter
-inherit	
-	Any
-		redefine
-			out
-	end
-create
-	init
-feature
-	expr: ExpressionDescriptor
-	param: ParameterDescriptor
-	out: String is
-	do
-		if expr = Void then
-			Result := param.out
-		else
-			Result := expr.out
-		end -- if
-	end -- out
-	init(e: like expr; p : like param) is
-	require
-		consistent_tuple_element: not (e = Void and then p = Void)
-	do
-		expr  := e
-		param := p
-	end -- init	
-invariant
-	consistent_tuple_element: not (expr = Void and then param = Void)
-end -- class TupleElement
+--class TupleExpressionDescriptor
+---- "("[TupleElement {"," TupleElement}]")"
+--inherit
+--	ExpressionDescriptor
+--	end
+--create
+--	init
+--feature {Any}	
+--	tuples: Array [TupleElement]
+--	out: String is
+--	local
+--		i, n: Integer
+--	do
+--		from
+--			Result := " ("
+--			i := 1
+--			n := tuples.count
+--		until
+--			i > n
+--		loop
+--			Result.append_string (tuples.item(i).out)
+--			if i < n then
+--				Result.append_string (", ")
+--			end -- if
+--			i := i + 1
+--		end -- loop
+--		Result.append_character (')')
+--	end -- out
+--	sameAs (other: like Current): Boolean is
+--	local
+--		i, n: Integer
+--	do
+--		from
+--			i := 1
+--			n := tuples.count
+--			Result := True
+--		until
+--			i > n
+--		loop
+--			if tuples.item(i).is_equal (other.tuples.item(i)) then
+--				i := i + 1
+--			else	
+--				Result := False
+--				i := n + 1
+--			end -- if
+--		end -- loop
+--	end -- sameAs
+--	lessThan (other: like Current): Boolean is
+--	local
+--		i, n, m: Integer
+--	do
+--		n := tuples.count
+--		m := other.tuples.count
+--		Result := n < m
+--		if not Result and then n = m then
+--			from
+--				i := 1
+--			until
+--				i > n
+--			loop
+--				if tuples.item(i) < other.tuples.item(i) then
+--					i := n + 1
+--					Result := True
+--				elseif tuples.item(i).is_equal (other.tuples.item(i)) then
+--					i := i + 1
+--				else	
+--					i := n + 1
+--				end -- if
+--			end -- loop
+--		end -- if
+--	end -- lessThan
+--	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	local
+--		useConst: Sorted_Array [UnitTypeNameDescriptor]
+--		stringPool: Sorted_Array [String]
+--		typePool: Sorted_Array[TypeDescriptor]	
+--		-- notValid: Boolean
+--	do
+--	useConst := context.useConst
+--	stringPool := context.stringPool
+--	typePool := context.typePool
+--		-- do nothing so far
+--	end -- isInvalid
+----feature {ExpressionDescriptor}
+----	weight: Integer is -14
+--end
+--class TupleElement 
+---- Expression| Parameter
+--inherit	
+--	Any
+--		redefine
+--			out
+--	end
+--create
+--	init
+--feature
+--	expr: ExpressionDescriptor
+--	param: ParameterDescriptor
+--	out: String is
+--	do
+--		if expr = Void then
+--			Result := param.out
+--		else
+--			Result := expr.out
+--		end -- if
+--	end -- out
+--	init(e: like expr; p : like param) is
+--	require
+--		consistent_tuple_element: not (e = Void and then p = Void)
+--	do
+--		expr  := e
+--		param := p
+--	end -- init	
+--invariant
+--	consistent_tuple_element: not (expr = Void and then param = Void)
+--end -- class TupleElement
 
 class TypeOfExpression
 -- Expression is "?"| UnitTypeDescriptor
@@ -5993,8 +5836,6 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -15
 invariant
 	expr_not_void: expr /= Void
 end
@@ -6110,8 +5951,6 @@ feature	{Any}
 			end -- if
 		end -- if
 	end -- out
-feature {ExpressionDescriptor}
-	weight: Integer is -16
 invariant
 	non_void_value: value /= Void
 	-- valid_token: token = scanner.string_const_token or else
@@ -6317,8 +6156,8 @@ feature
 		-- do nothing so far
 	end -- generate
 	
-feature {ExpressionDescriptor}
-	weight: Integer is -29
+--feature {ExpressionDescriptor}
+--	weight: Integer is -29
 	
 invariant
 	non_void_expr: exprDsc /= Void
@@ -6524,14 +6363,13 @@ feature {Any}
 			end -- loop
 		end -- if
 	end -- lessThan
-feature {ExpressionDescriptor}
-	weight: Integer is -17
+
 invariant
 	tuple_not_void: tuple /= Void
 end -- class WritableTupleDescriptor
 
 class ExpressionCallDescriptor
---  “(”Expression“)”{CallChain}
+--  "("Expression")"{CallChain}
 inherit
 	MemberCallDescriptor
 		redefine
@@ -6621,8 +6459,6 @@ feature{Any}
 			Result := lessThanCallChain (other)
 		end -- if
 	end -- theSame
-feature {ExpressionDescriptor}
-	weight: Integer is -18
 invariant
 	non_void_expression : expression /= Void
 end -- class ExpressionCallDescriptor
@@ -6760,13 +6596,12 @@ feature{Any}
 			end -- if
 		end -- if
 	end -- lessThan
-feature {ExpressionDescriptor}
-	weight: Integer is -19
 invariant
 	non_void_target: target /= Void
 end -- class UnqualifiedCallDescriptor
+
 class ConstantCallDescriptor
---  ConstantCall: Constant “.”Identifier [Arguments]  {CallChain}
+--  ConstantCall: Constant "."Identifier [Arguments]  {CallChain}
 inherit
 	MemberCallDescriptor
 		redefine
@@ -6905,15 +6740,13 @@ feature{Any}
 			end -- if
 		end -- if
 	end -- lessThan
-feature {ExpressionDescriptor}
-	weight: Integer is -20
 invariant
 	non_void_constant: constDsc /= Void
 	non_void_identifier : name /= Void
 end -- class ConstantCallDescriptor
 
 class QualifiedCallDescriptor
---  Identifier|this|return “.”Identifier [Arguments] {CallChain}
+--  Identifier|this|return "."Identifier [Arguments] {CallChain}
 inherit
 	UnqualifiedCallDescriptor
 		rename
@@ -7058,6 +6891,7 @@ feature{Any}
 invariant
 	non_void_identifier : identifier /= Void
 end -- class QualifiedCallDescriptor
+
 class ThisCallDescriptor
 -- this {CallChain}
 inherit
@@ -7092,8 +6926,8 @@ feature{Any}
 	do
 		Result := "this" + outCallChain
 	end -- out
-invariant
 end -- class ThisCallDescriptor
+
 class ReturnCallDescriptor
 -- return {CallChain}
 inherit
@@ -7126,8 +6960,8 @@ feature{Any}
 	do
 		Result := "return " + outCallChain
 	end -- out
-invariant
 end -- class ReturnCallDescriptor
+
 class RoutineArguments
 feature 
 	arguments: Array [ExpressionDescriptor]
@@ -7216,6 +7050,7 @@ feature {RoutineArguments}
 		end -- if
 	end -- lessArguments
 end -- class RoutineArguments
+
 class InitCallDescriptor
 inherit
 	--MemberCallDescriptor
@@ -7290,9 +7125,8 @@ feature{Any}
 			Result := lessArguments (other)
 		end -- if
 	end -- lessThan
-feature {ExpressionDescriptor}
-	weight: Integer is -24
 end -- class InitCallDescriptor
+
 class PrecursorCallDescriptor
 -- old ["{"UnitTypeName"}"] [Arguments] {CallChain}
 inherit
@@ -7364,9 +7198,6 @@ feature{Any}
 			Result := lessArguments (other)
 		end -- if
 	end -- theSame
-feature {ExpressionDescriptor}
-	weight: Integer is -28
-invariant
 end -- class PrecursorCallDescriptor
 
 class NewStatementDescriptor
@@ -7485,14 +7316,12 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-feature {ExpressionDescriptor}
-	weight: Integer is -27
 invariant
 	non_void_unitType : unitType /= Void
 	non_void_arguments : arguments /= Void
 end -- class NewExpressionDescriptor
 
--- ExpressionList: Expression{“,” Expression}
+-- ExpressionList: Expression{"," Expression}
 
 class IfStatementDescriptor
 -- IfCase:
@@ -7805,7 +7634,6 @@ invariant
 	statements_not_void: statements /= Void
 end -- class IfDoLineDecsriptor
 
-
 deferred class AlternativeDescriptor
 -- AlternativeTags StatementsList
 -- or
@@ -8010,8 +7838,8 @@ inherit
 	SmartComparable
 		undefine	
 			out
-		redefine
-			is_equal, infix "<"
+--		redefine
+--			is_equal, infix "<"
 	end 
 feature {Any}
 	name: String
@@ -8020,26 +7848,26 @@ feature {Any}
 		Result := clone (name)
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
-	is_equal (other: like Current): Boolean is
-	do
-		if weight = other.weight and then name.is_equal (other.name) then
-			Result := sameAs (other)
-		end -- if
-	end -- is_equal
-	infix "<"(other: like Current): Boolean is
-	do
-		Result := weight < other.weight
-		if not Result and then weight = other.weight then
-			Result := name < other.name
-			if not Result and then name.is_equal (other.name) then
-				Result := lessThan (other)
-			end -- if
-		end -- if
-	end -- infix "<"
-feature {MemberDescriptionDescriptor}
-	weight: Integer is
-	deferred
-	end
+--	is_equal (other: like Current): Boolean is
+--	do
+--		if weight = other.weight and then name.is_equal (other.name) then
+--			Result := sameAs (other)
+--		end -- if
+--	end -- is_equal
+--	infix "<"(other: like Current): Boolean is
+--	do
+--		Result := weight < other.weight
+--		if not Result and then weight = other.weight then
+--			Result := name < other.name
+--			if not Result and then name.is_equal (other.name) then
+--				Result := lessThan (other)
+--			end -- if
+--		end -- if
+--	end -- infix "<"
+--feature {MemberDescriptionDescriptor}
+--	weight: Integer is
+--	deferred
+--	end
 invariant
 	not_void_name: name /= Void
 end -- class MemberDescriptionDescriptor
@@ -8064,22 +7892,21 @@ feature {Any}
 		Result := name + " " + signature.out
 	end -- out
 feature {MemberDescriptionDescriptor}
-	weight: Integer is 1
 	sameAs (other: like Current): Boolean is
 	do
-		--Result := name.is_equal (other.name) and then signature.is_equal (other.signature)
-		Result := signature.is_equal (other.signature)
+		Result := name.is_equal (other.name) and then signature.is_equal (other.signature)
 	end -- sameAs
 	lessThan(other: like Current): Boolean is
 	do
-		--Result := name < other.name
-		--if not Result then
+		Result := name < other.name
+		if not Result and then name.is_equal (other.name) then
 			Result := signature < other.signature
-		--end -- if
+		end -- if
 	end -- lessThan
 invariant
 	not_void_signature: signature /= Void
 end -- class RoutineDescriptionDescriptor
+
 class AttributeDescriptionDescriptor
 inherit	
 	MemberDescriptionDescriptor
@@ -8101,25 +7928,23 @@ feature {Any}
 		Result := name + ": " + type.out
 	end -- out
 feature {MemberDescriptionDescriptor}
-	weight: Integer is 0
 	sameAs (other: like Current): Boolean is
 	do
-		-- Result := name.is_equal (other.name) and then type.is_equal (other.type)
-		Result := type.is_equal (other.type)
+		Result := name.is_equal (other.name) and then type.is_equal (other.type)
 	end -- sameAs
 	lessThan(other: like Current): Boolean is
 	do
-		--Result := name < other.name
-		--if not Result and then name.is_equal (other.name) then
+		Result := name < other.name
+		if not Result and then name.is_equal (other.name) then
 			Result := type < other.type
-		--end -- if
+		end -- if
 	end -- lessThan
 invariant
 	not_void_type: type /= Void
 end -- class AttributeDescriptionDescriptor
 
 class LoopStatementDescriptor
---38 [while BooleanExpression] [RequireBlock] InnerBlockDescriptor [while BooleanExpression] [EnsureBlock] end
+-- [while BooleanExpression] [RequireBlock] InnerBlockDescriptor [while BooleanExpression] [EnsureBlock] end
 inherit	
 	InnerBlockDescriptor
 		rename
@@ -8249,22 +8074,16 @@ feature
 		non_void_external_name: Result /= Void
 	end -- getExternalName
 
-feature {TypeOrExpressionDescriptor}
-	weight: Integer is
-	deferred
-	end -- weight
 end -- class TypeOrExpressionDescriptor
 
 deferred class TypeDescriptor
---39 Type: ["?"] AttachedTypeDescriptor
+-- Type: ["?"] AttachedTypeDescriptor
 --  AttachedTypeDescriptor: UnitType|AnchorType|MultiType|TupleType|RangeType|RoutineType
 
 -- UnitTypeDescriptor|AnchorTypeDescriptor|MultiTypeDescriptor|DetachableTypeDescriptor |TupleType|RangeTypeDescriptor|RoutineTypeDescriptor
 -- identifier, as, ?, rtn, (
 inherit	
 	TypeOrExpressionDescriptor
-		export
-			{SLangCompiler} weight -- temporary for debuggging purposes !!!!
 	end
 feature {Any}
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -8423,8 +8242,6 @@ feature {Any}
 			end -- loop
 		end -- if
 	end -- lessThan
-feature {TypeDescriptor}
-	weight: Integer is 9
 invariant
 	non_void_members: members /= Void
 end -- class AnonymousUnitTypeDescriptor
@@ -8498,8 +8315,6 @@ feature {Any}
 	do
 		Result := signature < other.signature
 	end
-feature {TypeDescriptor}
-	weight: Integer is 0
 invariant
 	non_void_signature: signature /= Void
 end -- class RoutineTypeDescriptor
@@ -8796,8 +8611,6 @@ feature {Any}
 		-- not_implemened_yet
 	end -- isNotLoaded
 	
-feature {TypeDescriptor}
-	weight: Integer is 1
 invariant
 	non_void_left: left /= Void
 	non_void_right: right /= Void
@@ -8929,8 +8742,6 @@ feature {Any}
 			end -- loop
 		end -- if
 	end -- lessThan
-feature {TypeDescriptor}
-	weight: Integer is 2
 invariant
 	values_not_void: values /= Void
 end -- class EnumeratedRangeTypeDescriptor
@@ -8965,8 +8776,6 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 	end -- isInvalid, isNotLoaded
-feature {TypeDescriptor}
-	weight: Integer is 10
 end -- class AsThisTypeDescriptor
 
 deferred class AnchoredCommonDescriptor
@@ -9057,14 +8866,12 @@ feature {Any}
 			end -- if
 		end -- if
 	end -- lessThan
-feature {TypeDescriptor}
-	weight: Integer is 3
 invariant
 	anchor_not_void: anchorId /= Void
 end -- class AnchorTypeDescriptor
 
 class MultiTypeDescriptor
---44 UnitTypeDescriptor {"|" UnitTypeDescriptor} 
+-- UnitTypeDescriptor {"|" UnitTypeDescriptor} 
 inherit
 	AttachedTypeDescriptor
 	end
@@ -9193,8 +9000,6 @@ feature {Any}
 			end -- loop
 		end -- if
 	end -- lessThan
-feature {TypeDescriptor}
-	weight: Integer is 4
 invariant
 	non_void_types: types /= Void
 	valid_multi_type: types /= Void implies types.count > 1
@@ -9257,8 +9062,6 @@ feature {Any}
 		Result := type.isNotLoaded (context, o)
 	end -- isNotLoaded
 
-feature {TypeDescriptor}
-	weight: Integer is 5
 invariant
 	non_void_type: type /= Void
 end -- class DetachableTypeDescriptor
@@ -9401,23 +9204,34 @@ feature {Any}
 		-- not_implemened_yet
 	end -- isNotLoaded
 	
-	
-feature {TypeDescriptor}
-	weight: Integer is 8
 invariant
 	non_void_fields: fields /= Void
 end -- class TupleTypeDescriptor
 
-class TupleFieldDescriptor
+deferred class TupleFieldDescriptor
 inherit
-	Comparable
+	SmartComparable
 		undefine
-			out, is_equal
+			out
+	end
+feature
+	getExternalName: String is
+	deferred
+	ensure
+		non_void_external_name: Result /= Void
+	end -- getExternalName
+	type: UnitTypeCommonDescriptor
+invariant
+	non_void_type: type /= Void
+end -- class TupleFieldDescriptor
+
+class TypedTupleFieldDescriptor
+inherit
+	TupleFieldDescriptor
 	end
 create
 	init
 feature {Any}
-	type: UnitTypeCommonDescriptor
 	out: String is
 	do
 		Result := type.out
@@ -9428,14 +9242,14 @@ feature {Any}
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
-	is_equal (other: like Current): Boolean is
+	sameAs (other: like Current): Boolean is
 	do
 		Result := type.is_equal (other.type) 
-	end -- is_equal
-	infix "<" (other: like Current): Boolean is
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
 	do
 		Result := type < other.type
-	end -- infix "<"
+	end -- lessThan
 
 	init (t: like type) is
 	require
@@ -9443,16 +9257,11 @@ feature {Any}
 	do
 		type := t
 	end -- init
-invariant
-	non_void_type: type /= Void
-end -- class TupleFieldDescriptor
+end -- class TypedTupleFieldDescriptor
+
 class NamedTupleFieldDescriptor
 inherit
 	TupleFieldDescriptor
-		rename 
-			init as setType
-		redefine
-			out, is_equal, infix "<", getExternalName
 	end
 create
 	init
@@ -9472,18 +9281,17 @@ feature {Any}
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
-	is_equal (other: like Current): Boolean is
+	sameAs (other: like Current): Boolean is
 	do
 		Result := name.is_equal (other.name) and then type.is_equal (other.type) 
-	end -- is_equal
-	infix "<" (other: like Current): Boolean is
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
 	do
 		Result := name < other.name
 		if not Result and then name.is_equal (other.name) then
 			Result := type < other.type
 		end -- if
-	end -- infix "<"
-
+	end -- lessThan
 	init (n: like name; t: like type) is
 	require
 		non_void_type: t /= Void	
@@ -9495,269 +9303,6 @@ feature {Any}
 invariant
 	non_void_name: name /= Void
 end -- class NamedTupleFieldDescriptor
-
-
-
---deferred class TupleFieldDescriptor
----- [Identifier {"," Identifier}":"] UnitTypeDescriptor
---inherit
---	Comparable
---		undefine
---			out, is_equal
---	end
---feature
---	getExternalName: String is
---	deferred
---	ensure
---		non_void_external_name: Result /= Void
---	end -- getExternalName
---
---end -- class TupleFieldDescriptor
---
---class ListOfTypesDescriptor
---inherit
---	TupleFieldDescriptor
---	end
---create
---	init
---feature {Any}
---	types: Array [UnitTypeCommonDescriptor]
---	init (t: like types) is
---	require
---		non_void_types: t /= Void
---	do
---		types := t
---	end -- init
---	out: String is
---	local
---		i, n : Integer
---	do
---		from
---			Result := ""
---			i := 1
---			n := types.count
---		until
---			i > n
---		loop
---			Result.append_string (types.item (i).out)
---			if i < n then
---				Result.append_string("; ")
---			end -- if
---			i := i + 1
---		end -- loop
---	end -- out
---	getExternalName: String is
---	local
---		i, n : Integer
---	do
---		from
---			Result := ""
---			i := 1
---			n := types.count
---		until
---			i > n
---		loop
---			Result.append_string (types.item (i).getExternalName)
---			if i < n then
---				Result.append_character('_')
---			end -- if
---			i := i + 1
---		end -- loop
---		Result.append_string ("_" + Result.hash_code.out)
---	end -- getExternalName
---
---	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
---	local
---		--useConst: Sorted_Array [UnitTypeNameDescriptor]
---		--stringPool: Sorted_Array [String]
---		--typePool: Sorted_Array[TypeDescriptor]
---		--notValid: Boolean
---		--i, n: Integer
---	do
---	--useConst := context.useConst
---	--stringPool := context.stringPool
---	--typePool := context.typePool
---		-- not_implemened_yet
---	end -- isInvalid
---	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
---	local
---		--useConst: Sorted_Array [UnitTypeNameDescriptor]
---		--stringPool: Sorted_Array [String]
---		--typePool: Sorted_Array[TypeDescriptor]
---		--notValid: Boolean
---		--i, n: Integer
---	do
---	--useConst := context.useConst
---	--stringPool := context.stringPool
---	--typePool := context.typePool
---		-- not_implemened_yet
---	end -- isNotLoaded
---	
---	
---	is_equal (other: like Current): Boolean is
---	local
---		i, n : Integer
---	do
---		n := types.count
---		Result := n = other.types.count
---		if Result then
---			from
---				i := 0
---			until
---				i > n
---			loop
---				if types.item (i).is_equal (other.types.item (i)) then
---					i := i + 1
---				else
---					i := n + 1
---					Result := False
---				end -- if
---			end -- loop
---		end -- if
---	end -- is_equal
---	infix "<" (other: like Current): Boolean is
---	local
---		i, n, m : Integer
---	do
---		n := types.count
---		m := other.types.count
---		Result := n < m
---		if not Result and then n = m then
---			from
---				i := 1
---			until
---				i > n
---			loop
---				if types.item (i) < other.types.item (i) then
---					Result := True
---					i := n + 1
---				elseif types.item (i).is_equal(other.types.item (i)) then
---					i := i + 1
---				else
---					i := n + 1
---				end -- if
---			end -- loop
---		end -- if
---	end -- infix "<"
---invariant
---	non_void_types: types /= Void
---end -- class ListOfTypesDescriptor
---
---class NamedTupleFieldDescriptor
---inherit
---	TupleFieldDescriptor
---	end
---create
---	init
---feature {Any}
---	names: Sorted_Array[String]
---	type: UnitTypeCommonDescriptor
---	out: String is
---	local
---		i, n : Integer
---	do
---		from
---			Result := ""
---			i := 1
---			n := names.count
---		until
---			i > n
---		loop
---			Result.append_string (names.item (i))
---			if i < n then
---				Result.append_string(", ")
---			end -- if
---			i := i + 1
---		end -- loop
---		Result.append_string (": ")
---		Result.append_string (type.out)
---	end -- out
---	getExternalName: String is
---	local
---		i, n : Integer
---	do
---		from
---			Result := ""
---			i := 1
---			n := names.count
---		until
---			i > n
---		loop
---			Result.append_string (names.item (i))
---			if i < n then
---				Result.append_character('_')
---			end -- if
---			i := i + 1
---		end -- loop
---		Result.append_character ('$')
---		Result.append_string (type.getExternalName)
---		Result.append_string ("_" + Result.hash_code.out)
---	end -- getExternalName
---
---	is_equal (other: like Current): Boolean is
---	local
---		i, n : Integer
---	do
---		Result := type.is_equal (other.type)
---		if Result then
---			n := names.count
---			Result := n = other.names.count 
---			if Result then
---				from
---					i := 1
---				until
---					i > n
---				loop
---					if names.item (i).is_equal (other.names.item (i)) then
---						i := i + 1
---					else
---						i := n + 1
---						Result := False
---					end -- if
---				end -- loop
---			end -- if
---		end -- if
---	end -- is_equal
---	infix "<" (other: like Current): Boolean is
---	local
---		i, n, m : Integer
---	do
---		Result := type < other.type
---		if not Result and then type.is_equal(other.type) then
---			n := names.count
---			m := other.names.count
---			Result := n < m
---			if not Result and then n = m then
---				from
---					i := 1
---				until
---					i > n
---				loop
---					if names.item (i) < other.names.item (i) then
---						Result := True
---						i := n + 1
---					elseif names.item (i).is_equal (other.names.item (i)) then
---						i := i + 1
---					else
---						i := n + 1
---					end -- if
---				end -- loop
---			end -- if
---		end -- if
---	end -- infix "<"
---
---	init (n: like names; t: like type) is
---	require
---		non_void_type: t /= Void	
---		non_void_names: n /= Void
---	do
---		type := t
---		names := n
---	end -- init
---invariant
---	non_void_type: type /= Void
---	non_void_names: names /= Void
---end -- class NamedTupleFieldDescriptor
 
 class UnitTypeDescriptor
 --  [ref|val|concurrent] UnitTypeNameDescriptor
@@ -9817,8 +9362,6 @@ feature {Any}
 		setNameAndGenerics (aName, g)
 	end -- init
 
-feature {TypeDescriptor}
-	weight: Integer is 6
 invariant
 	is_ref_consistent: isRef implies not isVal and then not isConcurrent 
 	is_val_consistent: isVal implies not isref and then not isConcurrent 
@@ -10005,10 +9548,7 @@ inherit
 	end 
 create
 	init
-feature
 
-feature {TypeDescriptor}
-	weight: Integer is 7
 end -- class UnitTypeNameDescriptor
 
 
@@ -10147,8 +9687,6 @@ feature {Any}
 			end -- if
 		end -- if
 	end -- lessThan
-feature {ExpressionDescriptor}
-	weight: Integer is -23
 invariant
 	consistent_if: ifExprLines /= Void and then ifExprLines.count > 0
 end -- class IfExpressionDescriptor

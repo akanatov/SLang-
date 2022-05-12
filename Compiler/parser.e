@@ -1038,7 +1038,7 @@ feature {None}
 			if expressions.count = 1 then
 				create {ParenthedExpressionDescriptor} Result.init (firstExprDsc)
 			else
-				create {TupleDescriptor} Result.init (expressions)
+				create {TupleExpressionDescriptor} Result.init (expressions)
 			end -- if
 			if scanner.token = scanner.dot_token then
 				-- “(”Expression {“,”Expression}“)” “.”Identifier [ Arguments ] {CallChain}
@@ -1059,7 +1059,7 @@ feature {None}
 		expressions: Array [ExpressionDescriptor]
 		exprDsc: ExpressionDescriptor
 		callChain: Array [CallChainElement]
-		--tuple: TupleDescriptor
+		--tuple: TupleExpressionDescriptor
 		wtDsc: WritableTupleDescriptor
 		toLeave: Boolean
 		wasError: Boolean
@@ -4877,7 +4877,7 @@ end
 		--tupleFields: Array [TupleFieldDescriptor]
 		--typesList: ListOfTypesDescriptor
 		tupleFieldType: UnitTypeCommonDescriptor
-		tupleFieldDsc: TupleFieldDescriptor
+		tupleFieldDsc: TypedTupleFieldDescriptor
 		separatorFound: Boolean
 		toLeave: Boolean
 	do

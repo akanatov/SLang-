@@ -942,7 +942,7 @@ virtual unit AnArray [G]
 	end
 require
 	count >= 0 /// Consistent array count must be greater than zero
-	lower <= upper - 1 /// Consistent  array range – lower index is not greater than upper when array is not empty. Array is empty when lower = upper - 1
+	lower <= (upper - 1) /// Consistent  array range – lower index is not greater than upper when array is not empty. Array is empty when lower = upper - 1
 end // AnArray [G]
 
 virtual unit OneDimentionalArray [G new ()] extend AnArray [G]
