@@ -2805,6 +2805,7 @@ not_implemented_yet ("call ModuleName. not supported yet")
 		exprDsc2 := parseExpressionWithSemicolon1 (checkSemicolonAfter)
 		if exprDsc2 /= Void then
 			-- exprDsc1.operator(exprDsc2)
+--trace ("#3: " + exprDsc1.out + " " + operator + " " + exprDsc2.out)
 --trace ("#3: " + exprDsc1.out + " " + operator + "[" + getOrder (operator).out + "] " + exprDsc2.out + "[" + exprDsc2.getOrder.out + "]")
 			order := exprDsc2.getOrder
 			if order = 0 then
@@ -2863,6 +2864,8 @@ not_implemented_yet ("call ModuleName. not supported yet")
 			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 'r' then
 				Result := 3
 			end -- if
+		when '<', '>' then
+			Result := 3
 		else
 			-- Result := 10
 		end -- inspect

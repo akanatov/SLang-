@@ -1,5 +1,5 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.07 May 6th 2022
+// Version 0.99.08 May 13th 2022
 build Kernel:"." // Kernel library is to be built from all SLang files from the current folder
 end
 
@@ -942,7 +942,7 @@ virtual unit AnArray [G]
 	end
 require
 	count >= 0 /// Consistent array count must be greater than zero
-	lower <= (upper - 1) /// Consistent  array range – lower index is not greater than upper when array is not empty. Array is empty when lower = upper - 1
+	lower <= upper - 1 /// Consistent  array range – lower index is not greater than upper when array is not empty. Array is empty when lower = upper - 1
 end // AnArray [G]
 
 virtual unit OneDimentionalArray [G new ()] extend AnArray [G]

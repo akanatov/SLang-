@@ -6012,6 +6012,8 @@ feature {Any}
 			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 'r' then
 				Result := 3
 			end -- if
+		when '>', '<' then
+			Result := 3
 		else
 			-- Result := 10
 		end -- inspect
@@ -6796,6 +6798,8 @@ feature{Any}
 			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 'r' then
 				Result := 3
 			end -- if
+		when '<', '>' then
+			Result := 3
 		else
 			-- Result := 10
 		end -- inspect
