@@ -1,1 +1,1 @@
-io.put ("Hello world!\n")
+IO.put ("Hello world!\n")

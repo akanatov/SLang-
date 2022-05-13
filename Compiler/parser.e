@@ -66,7 +66,6 @@ feature {Any}
 		rtnDsc: StandaloneRoutineDescriptor
 		identDsc: IdentifierDescriptor
 		exprDsc: ExpressionDescriptor
-		callDsc: MemberCallDescriptor
 		uCallDsc: UnqualifiedCallDescriptor
 		sysDsc: SystemDescriptor
 	do
@@ -264,24 +263,10 @@ feature {Any}
 						parseAssignmentOrUnqualifiedCallOrRoutineStart (name)
 					when scanner.dot_token then
 						-- Anonymous routine call statement : ident.
-						callDsc := parseWritableCall (identDsc)
-						if callDsc /= Void then
-							inspect
-								scanner.token
-							when scanner.assignment_token then
-								-- <writable> := <expr>
-								scanner.nextToken
-								exprDsc := parseExpression
-								if exprDsc /= Void then
-									create {AssignmentStatementDescriptor} stmtDsc.init (callDsc, exprDsc)
-									if stmtDsc /= Void then
-										ast.addStatement (stmtDsc)
-									end -- if				
-								end -- if
-							else
-								ast.addStatement (callDsc)
-							end -- if
-						end -- if				
+						stmtDsc := parseCallWithOptionalTailAssignment (identDsc)
+						if stmtDsc /= Void then
+							ast.addStatement (stmtDsc)
+						end -- if
 					when scanner.assignment_token then
 						-- Anonymous routine assignemnt: ident := 
 						stmtDsc := parseAssignmentToIdentifierStatement (name)
@@ -350,6 +335,11 @@ feature {Any}
 				-- Statement: Assignment | LocalAttributeCreation | +IfCase | ? Identifier | Return | +HyperBlock | Raise |MemberCallOrCreation 		|  +Loop
 				--            ( ident      var ident                if        ?              return    +require do   raise   ident new old this return     while require do
 				-- Anonymous routine start (statements list)
+				when scanner.type_name_token then -- Anonymous routine: Module feature call
+					stmtDsc := parseModuleCall
+					if stmtDsc /= Void then
+						ast.addStatement (stmtDsc)
+					end -- if
 				when scanner.if_token then -- Anonymous routine: if statement
 					stmtDsc := parseIfStatement
 					if stmtDsc /= Void then
@@ -411,6 +401,31 @@ feature {Any}
 	end -- parseSourceFile
 	
 feature {None}
+
+	parseCallWithOptionalTailAssignment (targetDsc: ExpressionDescriptor): StatementDescriptor is
+	require
+		non_void_target_expression: targetDsc /= Void
+		valid_token: validToken (<<scanner.dot_token>>)
+	local
+		exprDsc: ExpressionDescriptor
+		callDsc: MemberCallDescriptor	
+	do
+		callDsc := parseWritableCall (targetDsc)
+		if callDsc /= Void then
+			inspect
+				scanner.token
+			when scanner.assignment_token then
+				-- <writable> := <expr>
+				scanner.nextToken
+				exprDsc := parseExpression
+				if exprDsc /= Void then
+					create {AssignmentStatementDescriptor} Result.init (callDsc, exprDsc)
+				end -- if
+			else
+				Result := callDsc
+			end -- if
+		end -- if				
+	end -- parseCallWithOptionalTailAssignment
 
 	unit_folowers: Array [Integer] is
 	do
@@ -790,9 +805,11 @@ feature {None}
 		then
 			-- name ( operator		>> unqualified call or assignment ().x or ().x := expr
 			--        ^
---		when scanner.type_name_token then
---not_implemented_yet("UnitTypeName ....")		
-		when scanner.identifier_token, scanner.type_name_token then
+		when scanner.type_name_token then
+			-- name ( TypeName
+			--        ^
+not_implemented_yet("identifer ( TypeName ....")		
+		when scanner.identifier_token then
 			-- name ( nextName
 			--        ^
 			scanner.push
@@ -1764,14 +1781,14 @@ feature {None}
 	--                                                 type_name
 	local
 		name: String
+		identDsc: IdentifierDescriptor
+		unitTypeDsc: UnitTypeNameDescriptor
 		stmtDsc: StatementDescriptor
 		exprDsc: ExpressionDescriptor
 		callDsc: MemberCallDescriptor
-		identDsc: IdentifierDescriptor
 		assignDsc: AssignmentStatementDescriptor
-		writableCallDsc: MemberCallDescriptor
+		--writableCallDsc: MemberCallDescriptor
 		initCallDsc: InitCallDescriptor
-		unitTypeDsc: UnitTypeNameDescriptor
 		--initDsc: InitDescriptor
 	do
 --trace (">>>parseStatement1")
@@ -1797,12 +1814,11 @@ feature {None}
 						exprDsc := parseExpression
 						if exprDsc /= Void then
 							-- callDsc := exprDsc1
-							writableCallDsc ?= callDsc
-							if writableCallDsc = Void then
-								validity_error( "Left part of assignment is not writable - " + callDsc.out + " := ...")
-							else
-								create assignDsc.init (writableCallDsc, exprDsc)
+							if callDsc.isWritable then
+								create assignDsc.init (callDsc, exprDsc)
 								Result := <<assignDsc>>							
+							else
+								validity_error( "Left part of assignment is not writable - " + callDsc.out + " := ...")
 							end -- if
 						end -- if
 					else
@@ -1838,7 +1854,7 @@ not_implemented_yet("foo[X] call noit supported")
 		when scanner.type_name_token then
 			name := scanner.tokenString
 			scanner.nextToken
-			inspect	
+			inspect
 				scanner.token
 			when scanner.left_paranthesis_token then
 				-- parse init call: UnitName(  .... 
@@ -1855,7 +1871,11 @@ not_implemented_yet("foo[X] call noit supported")
 				--end -- if 
 			when scanner.dot_token then
 				-- ModuleName.
-not_implemented_yet ("call ModuleName. not supported yet")
+				create unitTypeDsc.init (name, Void)				
+				stmtDsc := parseCallWithOptionalTailAssignment (unitTypeDsc)
+				if stmtDsc /= Void then
+					Result := <<stmtDsc>>
+				end -- if
 			else
 				if scanner.genericsStart then -- Hmmm ... a < b -- not supported so far
 					-- parse for more Type [ .... ] .....
@@ -1865,17 +1885,24 @@ not_implemented_yet ("call ModuleName. not supported yet")
 					create unitTypeDsc.init (name, Void)
 				end -- if
 				if unitTypeDsc /= Void then
-					create {InitCallDescriptor}initCallDsc.init (unitTypeDsc, Void)
-					if currentUnitDsc.name.is_equal (name) then
-						Result := <<initCallDsc>>
+					if scanner.token = scanner.dot_token then
+						stmtDsc := parseCallWithOptionalTailAssignment (unitTypeDsc)
+						if stmtDsc /= Void then
+							Result := <<stmtDsc>>
+						end -- if
 					else
-						validity_error ("Initializer for unit `" + name + "` can not be called within the unit `" + currentUnitDsc.name + "`")
+						create {InitCallDescriptor}initCallDsc.init (unitTypeDsc, Void)
+						if currentUnitDsc.name.is_equal (name) then
+							Result := <<initCallDsc>>
+						else
+							validity_error ("Initializer for unit `" + name + "` can not be called within the unit `" + currentUnitDsc.name + "`")
+						end -- if
 					end -- if
 				end -- if
 				--create initDsc.init (name)
 				--create {UnqualifiedCallDescriptor} stmtDsc.init (initDsc, Void, Void)
 				--Result := <<stmtDsc>>
-			end
+			end -- inspect
 		when scanner.var_token, scanner.rigid_token then
 			create Result.make (1, 0)
 			parseLocalsDeclaration(Result, True, Void)
@@ -1911,12 +1938,11 @@ not_implemented_yet ("call ModuleName. not supported yet")
 						exprDsc := parseExpression
 						if exprDsc /= Void then
 							-- callDsc := exprDsc1
-							writableCallDsc ?= callDsc
-							if writableCallDsc = Void then
-								validity_error( "Left part of assignment is not writable - " + callDsc.out + " := ...")
-							else
-								create assignDsc.init (writableCallDsc, exprDsc)
+							if callDsc.isWritable then
+								create assignDsc.init (callDsc, exprDsc)
 								Result := <<assignDsc>>							
+							else
+								validity_error( "Left part of assignment is not writable - " + callDsc.out + " := ...")
 							end -- if
 						end -- if
 					else
@@ -3561,6 +3587,42 @@ not_implemented_yet ("call ModuleName. not supported yet")
 --trace ("%TAlternative expression: " +  Result.out)
 --end -- if
 	end -- parseAlternativeTag
+	
+	parseModuleCall: StatementDescriptor is
+	require
+		valid_start_token: validToken (<<scanner.type_name_token>>)
+	local
+		typeName: String
+		unitTypeDsc: UnitTypeNameDescriptor	
+	do
+		typeName := scanner.tokenString
+		scanner.nextToken		
+		inspect
+			scanner.token
+		when scanner.dot_token then
+			-- Module member call in the form of the call: ident.
+			--                                                  ^
+			create unitTypeDsc.init (typeName, Void)
+			Result := parseWritableCall (unitTypeDsc)
+		else
+			if scanner.genericsStart then
+				-- parse for more Type [ .... ] .....
+				--                     ^
+				unitTypeDsc := parseUnitTypeName1 (typeName, False)
+				if unitTypeDsc /= Void then
+					if scanner.token = scanner.dot_token then
+						Result := parseWritableCall (unitTypeDsc)				
+					else
+						syntax_error (<<scanner.dot_token>>)
+					end -- if
+				end -- if
+			elseif scanner.Cmode then
+				syntax_error (<<scanner.dot_token, scanner.greater_token>>)
+			else
+				syntax_error (<<scanner.dot_token, scanner.right_square_bracket_token>>)
+			end -- if
+		end -- inspect
+	end -- parseModuleCall
 	
 	parseIfStatement: StatementDescriptor is
 	do
@@ -5421,10 +5483,11 @@ end
 		generics: Array [TypeOrExpressionDescriptor]
 		td: TypeOrExpressionDescriptor
 		commaFound: Boolean
+--		identifier: String
 --pos: Integer
 	do
 debug
---	trace (">>> parseUnitTypeName1")
+--	trace (">>> parseUnitTypeName1: " + name)
 end
 		if scanner.genericsStart then
 			from
@@ -5433,9 +5496,6 @@ end
 			until
 				toLeave
 			loop
-debug
---	trace ("%T%TparseUnitTypeName1 " + name)
-end
 				inspect
 					scanner.token
 				when scanner.comma_token then
@@ -5447,14 +5507,38 @@ end
 						commaFound := True
 						scanner.nextToken
 					end -- if
-				when scanner.identifier_token, scanner.type_name_token then
-					-- Type or ConstExpr
+--				when scanner.identifier_token, scanner.type_name_token then
+				when scanner.identifier_token then
 					if commaFound or else generics.count = 0 then
 						commaFound := False
-						td := parseTypeOrConstExprDescriptor
+						td := parseConstExpression (False)
 						if td = Void then
 							toLeave := True
 						else
+debug
+--	trace (">>> parseUnitTypeName1: " + name + "[ident " + td.out)
+end
+							generics.force (td, generics.count + 1)
+						end -- if
+					else
+						syntax_error (<<scanner.comma_token>>)
+						toLeave := True
+					end -- if
+				when scanner.type_name_token then
+					-- Type or ConstExpr
+					if commaFound or else generics.count = 0 then
+						commaFound := False
+						td := parseTypeWithOptionalCallChain
+--						identifier := scanner.tokenString
+--						scanner.nextToken
+--						td := parseUnitTypeName1 (identifier, False)
+----						td := parseTypeDescriptor
+						if td = Void then
+							toLeave := True
+						else
+debug
+--	trace (">>> parseUnitTypeName1: " + name + "[unit " + td.out)
+end
 							generics.force (td, generics.count + 1)
 						end -- if
 					else
@@ -5473,6 +5557,9 @@ end
 						if td = Void then
 							toLeave := True
 						else
+debug
+--	trace (">>> parseUnitTypeName1: " + name + "[type " + td.out)
+end
 							generics.force (td, generics.count + 1)
 						end -- if
 					else
@@ -5481,7 +5568,6 @@ end
 					end -- if
 				when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
 					-- Expr started with constant!
---trace ("%T%TparseUnitTypeName1 " + name + "[ " + scanner.tokenString)
 					if commaFound or else generics.count = 0 then
 						commaFound := False
 						--td := parseTypeOrConstExprDescriptor
@@ -5489,6 +5575,9 @@ end
 						if td = Void then
 							toLeave := True
 						else
+debug
+--	trace (">>> parseUnitTypeName1: " + name + "[const " + td.out)
+end
 							generics.force (td, generics.count + 1)
 						end -- if
 					else
@@ -5496,6 +5585,9 @@ end
 						toLeave := True
 					end -- if
 				else
+debug
+--	trace (">>> parseUnitTypeName1: finish !!! " + name)
+end
 					if scanner.genericsEnd then
 						if commaFound then
 --trace ("%T%TparseUnitTypeName1 " + name + "[   .... ] END #1")
@@ -5513,11 +5605,10 @@ end
 							scanner.nextWithSemicolon (checkSemicolonAfter)
 							create Result.init (name, generics)
 						end -- if
-						toLeave := True
 					else
 --trace ("%T%TparseUnitTypeName1 " + name + " ???? " + scanner.tokenString)
 						if commaFound then
-							syntax_error (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token,
+							syntax_error (<<scanner.identifier_token, scanner.type_name_token, scanner.as_token, scanner.detach_token, scanner.rtn_token,
 								scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
 							>>)
 						elseif scanner.Cmode then
@@ -5525,8 +5616,8 @@ end
 						else
 							syntax_error (<<scanner.comma_token, scanner.right_square_bracket_token>>)
 						end -- if
-						toLeave := True					
 					end -- if
+					toLeave := True
 				end -- inspect
 			end -- loop
 		else
@@ -5546,129 +5637,42 @@ end
 --trace ("<<< parseUnitTypeName1")
 	end -- parseUnitTypeName1
 	
---	checkIfIdentIsType (identDsc: IdentifierDescriptor): EntityDescriptor is
---	require
---		identifier_not_void: identDsc /= Void
---	local
---		unitTypeDsc: UnitTypeNameDescriptor
---	do
---		create unitTypeDsc.init (identDsc.name, Void)
---		unitTypeDsc := ast.typePool.search (unitTypeDsc)
---		if unitTypeDsc = Void then
---trace ("+++ Identifier: " + identDsc.out)
---			Result := identDsc
---		else
---trace ("+++ Registered type: " + unitTypeDsc.out)
---			Result := unitTypeDsc
---		end -- if
---	end -- checkIfIdentIsType
-
-	parseTypeOrConstExprDescriptor: TypeOrExpressionDescriptor is
-	-- Type|ConstantExpression
-	-- ConstantExpression: (Identifier {“.” Identifier}) | Constant [Operator ConstantExpression]
-	--                     ^ 
+	parseTypeWithOptionalCallChain: TypeOrExpressionDescriptor is
+	-- UnitType [“.”CallChain]
 	require
-		valid_token: validToken (<<scanner.identifier_token, scanner.type_name_token>>)
-		--valid_token: validToken (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token, 
-		--	scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token>>)
+		valid_token: validToken (<<scanner.type_name_token>>)
 	local
-		identDsc: IdentifierDescriptor
 		typeName: String
-		--entDsc: EntityDescriptor
-		unitTypeDsc: UnitTypeNameDescriptor	
+		unitTypeDsc: UnitTypeNameDescriptor
 	do
---trace ("%T%T%TparseTypeOrConstExprDescriptor")
-		inspect 
-			scanner.token 
-		when scanner.type_name_token then
-			-- ModuleName.callchain
-			-- TypeName(args) -- object creation!
-			typeName := scanner.tokenString
-			scanner.nextToken
-			inspect 
-				scanner.token 
-			when scanner.dot_token then
-				-- Module member call
-				-- Expression !!! in the form of the call
-				-- ident.
-				--      ^
-				---- it could be module call (if ident is registered in the type pool) or feature call 
-				--entDsc := checkIfIdentIsType (identDsc)
-				--Result := parseWritableCall (entDsc)
-				create unitTypeDsc.init (typeName, Void)
-				Result := parseWritableCall (unitTypeDsc)
---not_implemented_yet("Parse module member call")
-			when scanner.left_paranthesis_token then
-				-- Object creation
-				create unitTypeDsc.init (typeName, Void)
-not_implemented_yet("Parse object creation")
-			else
-				if scanner.genericsStart then -- Hmmm ... a < b -- not supported so far
-					-- parse for more Type [ .... ] .....
-					Result := parseUnitTypeName1 (typeName, False)
-				else
-					-- Just a type name - looks like generic instantiation
-					create {UnitTypeNameDescriptor} Result.init (typeName, Void)
+		-- ModuleName.callchain
+		typeName := scanner.tokenString
+		scanner.nextToken
+		inspect
+			scanner.token
+		when scanner.dot_token then
+			-- Module member call in the form of the call: ident.
+			--                                                  ^
+			create unitTypeDsc.init (typeName, Void)
+			Result := parseWritableCall (unitTypeDsc)
+		else
+			if scanner.genericsStart then
+				-- parse for more Type [ .... ] .....
+				--                     ^
+				unitTypeDsc := parseUnitTypeName1 (typeName, False)
+				if unitTypeDsc /= Void then
+					if scanner.token = scanner.dot_token then
+						Result := parseWritableCall (unitTypeDsc)				
+					else
+						Result := unitTypeDsc			
+					end -- if
 				end -- if
-			end -- inspect
-		when scanner.identifier_token then
-			create identDsc.init (scanner.tokenString)
-			scanner.nextToken
-			inspect 
-				scanner.token 
-			when scanner.dot_token then
-				-- Expression !!! in the form of the call
-				-- ident.
-				--      ^
-				---- it could be module call (if ident is registered in the type pool) or feature call 
-				--entDsc := checkIfIdentIsType (identDsc)
-				--Result := parseWritableCall (entDsc)
-				Result := parseWritableCall (identDsc)
-			when scanner.left_paranthesis_token then
-				-- Expression or Init procedure call !!!
-				-- ident ( 
-				--       ^
-				---- It could be object creation call (if ident is registered in the type pool) or featurte call or init procedure call !!!
-				--entDsc := checkIfIdentIsType (identDsc)
-				--Result := parseWritableCall (entDsc) -- identDsc)
-				Result := parseWritableCall (identDsc)
 			else
---				Result := identDsc
-				if scanner.genericsStart then -- Hmmm ... a < b -- not supported so far
-					-- Expression in the form of type
-					Result := parseUnitTypeName1 (identDsc.name, False)
--- Need to pasre the case like ident[Type] or ident[Type] (args).call_chain 
-					--utnDsc := parseUnitTypeName1 (identDsc.name, False)
-					--if utnDsc /= Void then
-					--	Result := utnDsc
-					--end -- if
-				else -- it could be init procedure call !!!
--- trace ("It is just an identifier or init call: " + identDsc.out)
-					Result := identDsc
-					--Result := checkIfIdentIsType (identDsc)
-					--check 
-					--	identifier_or_type_not_void: Result /= Void
-					--end -- check
-					--if currentUnitDsc /= Void then
-					--	unitTypeDsc ?= Result
-					--	if unitTypeDsc /= Void and then unitTypeDsc.name.is_equal (currentUnitDsc.name) then
-					--	-- Init procedure with no arguments call !!!
-					--	trace ("It is init call: " + Result.out)
-					--	else
-					--	trace ("It is just an identifier: " + Result.out)
-					--	end -- if
-					--end -- if
-				end -- if
-			end -- inspect
-		--when scanner.as_token, scanner.detach_token, scanner.rtn_token then
-		--	-- Type !!!
-		--	Result := parseTypeDescriptor
-		--when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
-		--	-- Expression !!!
-		--	Result := parseExpression
+				create {UnitTypeNameDescriptor} Result.init (typeName, Void)				
+			end -- if
 		end -- inspect
 --trace ("%T%T%TparseTypeOrConstExprDescriptor: " + Result.out)
-	end -- parseTypeOrConstExprDescriptor
+	end -- parseTypeWithOptionalCallChain
 
 	parseUnitTypeNameWithPotentialSemicolonAfter(checkSemicolonAfter: Boolean): UnitTypeNameDescriptor is
 	do
@@ -6633,7 +6637,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						else
 							utnDsc1 := unitDsc.findParent (utnDsc)
 							if utnDsc1 = Void then
-								validity_error( "Construction procedure can not be inherited from the unit '" +  utnDsc.name + "' as it is not a parent of '" + unitDsc.name + "'")
+								validity_error( "Initialization procedure can not be inherited from the unit '" +  utnDsc.name + "' as it is not a parent of '" + unitDsc.name + "'")
 							else
 								utnDsc := utnDsc1
 							end -- if
@@ -6645,9 +6649,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 								create ifpDsc.init (utnDsc, Void)
 							end -- if
 							if theSameUnit1 (unitDsc, utnDsc) then
-								validity_error( "Construction procedure can not be inherited from the same unit '" + unitDsc.name + "'")
+								validity_error( "Initialization procedure can not be inherited from the same unit '" + unitDsc.name + "'")
 							elseif not unitDsc.inhertitedInits.added (ifpDsc) then
-								validity_error( "Duplicated Construction procedure inheritance of '" + ifpDsc.out + "' in unit '" + unitDsc.name + "'")
+								validity_error( "Duplicated initialization procedure inheritance of '" + ifpDsc.out + "' in unit '" + unitDsc.name + "'")
 							end -- if
 						end -- if
 					else

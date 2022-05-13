@@ -6185,6 +6185,10 @@ inherit
 	end
 feature {Any}
 	callChain: Array [CallChainElement]	
+	isWritable: Boolean is
+	do
+		Result := True
+	end -- isWritable
 	setCallChain (cc: like callChain) is
 	do
 		if cc = Void then
@@ -6271,7 +6275,6 @@ inherit
 create
 	init
 feature {Any}
---	tuple: Array [MemberCallDescriptor]
 	tuple: Array [ExpressionDescriptor]
 
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -6904,12 +6907,15 @@ inherit
 			setCallChain as init,
 			theSameCallChain as theSame,
 			lessThanCallChain as lessThan
-		--redefine
+		redefine
+			isWritable
 		--	theSame, lessThan
 	end
 create
 	init
 feature{Any}
+	isWritable: Boolean is False
+
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
