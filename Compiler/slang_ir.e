@@ -607,12 +607,12 @@ feature {Any}
 		scanner.setPool (stringPool)
 	end -- stop_standalone_rotuine_parsing
 
-	add_name_to_standalone_rotuines_pool (name: String) is
+	add_name_to_standalone_routines_pool (name: String) is
 	require
 		non_void_name: name /= Void
 	do
 		rtn_stringPool.add (name)
-	end -- add_name_to_standalone_rotuines_pool
+	end -- add_name_to_standalone_routines_pool
 
 	attachSystemDescription (sDsc: like sysDsc) is
 	do
@@ -5210,6 +5210,26 @@ feature {Any}
 	end -- isInvalid
 
 end -- class IdentifierDescriptor
+
+class GenericIdentifierDescriptor
+inherit
+	IdentifierDescriptor
+		rename init as non_actual_init
+		export {None} non_actual_init 
+	end
+create
+	init
+feature
+	generics: Array [TypeOrExpressionDescriptor]
+	init (n: like name; g: like generics) is
+	require
+		non_void_name: n /= Void
+		non_void_generics: g /= Void
+	do
+		name := n
+		generics := g
+	end -- init
+end -- class GenericIdentifierDescriptor 
 
 class TupleExpressionDescriptor
 inherit
