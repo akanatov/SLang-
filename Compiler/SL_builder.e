@@ -96,7 +96,7 @@ feature {Any}
 				loop
 					if typePool.item(i).isNotLoaded (cuDsc, o) then
 						debug
-							--o.putNL ("Load interface of '" + typePool.item(i).out + "' failed!")
+							--o.putNL ("Load interface of `" + typePool.item(i).out + "` failed!")
 						end -- debug
 						wasError := True
 						skipCodeGen := True
@@ -114,7 +114,7 @@ feature {Any}
 				loop
 					if statements.item(i).isInvalid (cuDsc, o) then
 						debug
-							o.putNL ("Statement '" + statements.item(i).out + "' invalid!")
+							o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
 						end -- debug
 						skipCodeGen := True
 						wasError := True
@@ -186,7 +186,7 @@ feature {Any}
 			end -- if
 		else
 			wasError := True
-			o.putNL ("Error: SLang folder with artefacts '" + IRfolderName + "' not found")
+			o.putNL ("Error: SLang folder with artefacts `" + IRfolderName + "` not found")
 		end -- if
 	end -- build_script_based_program
 	
@@ -220,7 +220,7 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "`")
 			end -- if
 		else
 			wasError := True
-			o.putNL ("Error: Not able to create SLang folder with artefacts  '" + folderName + "'")
+			o.putNL ("Error: Not able to create SLang folder with artefacts  `" + folderName + "`")
 		end -- if
 	end -- build_from_system_description
 feature {None}

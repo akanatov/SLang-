@@ -47,7 +47,7 @@ feature {None}
 				o.newLine
 				scanner.close
 			else
-				o.putNL ("File '" + args.item (1) + "' not found or cannot be opened")
+				o.putNL ("File `" + args.item (1) + "` not found or cannot be opened")
 			end -- if
 		end -- if
 		o.close

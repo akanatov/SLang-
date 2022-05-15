@@ -313,9 +313,9 @@ feature {Any}
 		end -- if
 debug
 	if Result then
-		--print ("Unit '" + unitName + "' found,  file '" + fileName + "' is in place%N")
+		--print ("Unit `" + unitName + "` found,  file `" + fileName + "` is in place%N")
 	else
-		--print ("Unit '" + unitName + "' not found,  file '" + fileName + "' is missed%N")
+		--print ("Unit `" + unitName + "` not found,  file `" + fileName + "` is missed%N")
 	end -- if
 end -- debug
 	end -- clusterHasUnit
@@ -737,12 +737,17 @@ feature {None}
 		end -- if
 	end -- fileParsedForUnit
 
+	unitAnyDsc: UnitTypeNameDescriptor is
+	once
+		create Result.init ("Any", Void)
+	end -- unitAnyDsc
+	
 	scanner: SLang_Scanner
 	init_pools (scn: like scanner) is
 	do
 		create useConst.make 
 		create stringPool.make
-		create typePool.make
+		create typePool.fill (<<unitAnyDsc>>)
 		
 		create rtn_stringPool.make
 		create rtn_typePool.make
@@ -2422,7 +2427,7 @@ feature {Any}
 	setAliasName (aName: String) is
 	do
 		aliasName := aName
-	end
+	end -- setAliasName
 	infix "<" (other: like Current): Boolean is
 	local
 		i, n, m: Integer
@@ -2596,38 +2601,15 @@ inherit
 	SmartComparable
 		undefine
 			out
---		redefine
---			is_equal
 	end
 feature {Any}
 	name: String
---	is_equal (other: like Current): Boolean is
---	do
---		if same_type (other) then
---			Result := sameAs (other)
---		end -- if
---	end -- is_equal
---	infix "<" (other: like Current): Boolean is
---	do
---		if same_type (other) then
---			Result := lessThan (other)
---		else
---			Result := name < other.name
---		end -- if
---	end -- is_equal
 	getExternalName: String is
 	deferred
 	ensure
 		external_name_not_void: Result /= Void
 	end -- getExternalName
 	
---feature {FormalGenericDescriptor}
---	sameAs (other: like Current): Boolean is
---	deferred
---	end -- sameAs
---	lessThan (other: like Current): Boolean is
---	deferred
---	end -- lessThan
 invariant
 	name_not_void: name /= Void
 end -- class FormalGenericDescriptor
@@ -2636,6 +2618,8 @@ class FormalGenericTypeDescriptor
 -- Identifier ["extend" Type ] ["new" [Signature]]
 inherit
 	FormalGenericDescriptor
+	end
+	TypeDescriptor
 	end
 create
 	init
@@ -2678,6 +2662,34 @@ feature {Any}
 		typeConstraint:= tc
 		initConstraint:= ic
 	end -- init
+
+	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isInvalid
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+	
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
 	do
@@ -2688,6 +2700,7 @@ feature {FormalGenericDescriptor}
 		Result := name < other.name
 	end -- lessThan
 end -- class FormalGenericTypeDescriptor
+
 class FormalGenericConstantDescriptor
 -- Identifier ":" TypeDescriptor
 inherit
@@ -3084,17 +3097,6 @@ feature {Any}
 			Result := lessThan (other)
 		end -- if
 	end -- infix "<"
---	sameAs (other: like Current): Boolean is
---	require
---		names_are_equal: name.is_equal (other.name)
---	deferred
---	end -- sameAs
---	lessThan (other: like Current): Boolean is
---	require
---		names_are_equal: name.is_equal (other.name)
---	deferred
---	end -- lessThan
---invariant
 end -- class MemberDeclarationDescriptor
 
 class RoutineDescriptor
@@ -3491,36 +3493,14 @@ inherit
 	SmartComparable
 		undefine 
 			out 
---		redefine 
---			is_equal
 	end
---feature {Any}
---	is_equal (other: like Current): Boolean is
---	do
---		Result := Current = other or else Current.same_type (other) and then sameAs (other)
---	end -- is_equal
---	infix "<" (other: like Current): Boolean is
---	do
---		if Current /= other then
---			Result := Current.generating_type < other.generating_type
---			if not Result and then Current.same_type (other) then 
---				Result := lessThan (other)
---			end -- if
---		end -- if
---	end -- infix "<"
---feature {ConstObjectDescriptor}
---	sameAs (other: like Current): Boolean is
---	deferred		
---	end -- sameAs
---	lessThan (other: like Current): Boolean is
---	deferred
---	end -- lessThan
 end -- class ConstObjectDescriptor
+
 class RegExpDescriptor
 -- RegularExpression:
--- Constant {“|”Constant}
+-- Constant {"|" Constant}
 -- |
--- Constant “|” ”..” Constant
+-- Constant "|" ".." Constant
 inherit
 	Comparable
 		redefine
@@ -3613,13 +3593,14 @@ feature {Any}
 invariant
 	non_void_constants: constants /= Void and then ( isPeriod implies constants.count = 2 or else not isPeriod implies constants.count > 0) 
 end -- class RegExpDescriptor
+
 class RegExpConstObjectDescriptor
 -- Regular expression:
--- “{” RegularExpression “}” IntegerConstant [“+”]
+-- "{" RegularExpression "}" IntegerConstant ["+"]
 -- RegularExpression:
--- Constant {“|”Constant}
+-- Constant {"|" Constant}
 -- |
--- Constant “|” ”..” Constant
+-- Constant "|" ".." Constant
 inherit
 	ConstObjectDescriptor
 	end
@@ -3663,8 +3644,9 @@ invariant
 	non_void_reg_exp: regExp /= Void
 	non_void_cont_dsc: intConst /= Void
 end -- class RegExpConstObjectDescriptor
+
 class ConstRangeObjectDescriptor
--- Constant | (Idenitifer [“.”init] [ Arguments ]) “..”  Constant | (Idenitifer [“.”init] [ Arguments ])
+-- Constant | (Idenitifer [ Arguments ]) ".."  Constant | (Idenitifer [ Arguments ])
 inherit
 	ConstObjectDescriptor
 	end
@@ -3749,7 +3731,6 @@ invariant
 	operator_not_void: operator /= Void
 	expression_not_void: exprDsc /= Void
 end -- class ConstWithIteratorDescriptor
-
 
 class ConstWithInitDescriptor
 inherit
@@ -3851,10 +3832,10 @@ invariant
 end -- class ConstWithInitDescriptor
 
 -- RegularExpression:
---      Constant ({“|”Constant}) | (“|” ”..” Constant)
+--      Constant ({"|" Constant}) | ("|" ".." Constant)
 
 deferred class StatementDescriptor
---21 AssignmentStatementDescriptor | LocalAttributeCreation | MemberCallOrCreation | IfCase | LoopStatementDescriptor | BreakStatementDescriptor | DetachStatementDescriptor
+-- AssignmentStatementDescriptor | LocalAttributeCreation | MemberCallOrCreation | IfCase | LoopStatementDescriptor | BreakStatementDescriptor | DetachStatementDescriptor
 --    | ReturnStatementDescriptor | HyperBlockDescriptor | RaiseStatementDescriptor 
 inherit
 	SmartComparable
@@ -5965,7 +5946,7 @@ feature	{Any}
 		else
 			aChar ?= value
 			if aChar /= Void then
-				Result := "'" + value.out + "'"
+				Result := "`" + value.out + "`"
 			else
 				Result := value.out
 			end -- if
@@ -8129,6 +8110,73 @@ feature {Any}
 	end -- isNotLoaded
 	
 end -- class TypeDescriptor
+
+class AliasedTypeDescriptor
+inherit
+	TypeDescriptor
+	end
+create
+	init
+feature {Any}
+	aliasName: String
+	realType: AttachedTypeDescriptor
+	init (aName: like aliasName; aType: like realType) is
+	require
+		non_void_alias_name: aName /= Void
+		non_void_real_type: aType /= Void
+	do
+		aliasName:= aName
+		realType:= aType
+	end -- init
+	out: String is
+	do
+		Result := realType.out
+	end -- out
+	sameAs (other: like Current) : Boolean is
+	do
+		Result := aliasName.is_equal (other.aliasName)
+	end -- sameAs
+	lessThan (other: like Current) : Boolean is
+	do
+		Result := aliasName < other.aliasName
+	end -- lessThan
+
+	getExternalName: String is
+	do
+		Result := realType.getExternalName
+	end -- getExternalName
+
+	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isInvalid
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+	
+invariant
+	non_void_alias_name: aliasName /= Void
+	non_void_real_type: realType /= Void
+end -- class AliasedTypeDescriptor
 
 deferred class AttachedTypeDescriptor
 -- AttachedType: UnitType|AnchorType|MultiType|TupleType|RangeType|RoutineType|AnonymousUnitType

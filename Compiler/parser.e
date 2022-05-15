@@ -85,7 +85,7 @@ feature {Any}
 			when scanner.build_token then
 				sysDsc := parseSystemDescription
 				if sysDsc /= Void and then not systems.added (sysDsc) then
-					validity_warning ( "Duplicated system declaration '" + sysDsc.name + "', ignored")
+					validity_warning ( "Duplicated system declaration `" + sysDsc.name + "', ignored")
 				end -- if
 			else
 				scanner.disableSystemMode
@@ -226,7 +226,7 @@ feature {Any}
 					when scanner.identifier_token then -- standalone pure routine
 						rtnDsc := parseStandAloneRoutine (True, False)
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-							validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+							validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 						end -- if
 					else
 						syntax_error (<<scanner.identifier_token>>)
@@ -241,7 +241,7 @@ feature {Any}
 					when scanner.identifier_token then -- standalone safe routine
 						rtnDsc := parseStandAloneRoutine (False, True)
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-							validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+							validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 						end -- if
 					else
 						syntax_error (<<scanner.identifier_token>>)
@@ -293,7 +293,7 @@ feature {Any}
 						ast.start_standalone_rotuine_parsing
 						rtnDsc := parseStandAloneRoutine1 (False, False, name)
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-							validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+							validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 						end -- if					
 						ast.stop_standalone_rotuine_parsing
 					else
@@ -306,7 +306,7 @@ feature {Any}
 							ast.start_standalone_rotuine_parsing
 							rtnDsc := parseStandAloneRoutine1 (False, False, name)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-								validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+								validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 							end -- if					
 							ast.stop_standalone_rotuine_parsing
 						elseif scanner.genericsStart then
@@ -320,7 +320,7 @@ feature {Any}
 							ast.start_standalone_rotuine_parsing
 							rtnDsc := parseStandAloneRoutine1 (False, False, name)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-								validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+								validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 							end -- if					
 							ast.stop_standalone_rotuine_parsing
 						elseif scanner.Cmode then
@@ -567,7 +567,7 @@ feature {None}
 				end -- if
 				create clusterDsc.init (name, exclude_clause, rename_clause, select_clause)
 				if not Result.added (clusterDsc) then
-					validity_error ( "Duplicated cluster '" + name + "' identified")
+					validity_error ( "Duplicated cluster `" + name + "` identified")
 					wasError := True
 				end -- if
 			else
@@ -606,7 +606,7 @@ feature {None}
 						scanner.nextToken
 						create rnmPair.init (oldName, newName)
 						if not Result.added (rnmPair) then
-							validity_warning ( "Duplicated rename '" + rnmPair.out + "', ignored")
+							validity_warning ( "Duplicated rename `" + rnmPair.out + "', ignored")
 						end -- if
 					else
 						syntax_error (<<scanner.identifier_token, scanner.string_const_token>>)
@@ -642,7 +642,7 @@ feature {None}
 			when scanner.identifier_token, scanner.type_name_token, scanner.string_const_token then
 				name := scanner.tokenString
 				if not Result.added (name) then
-					validity_warning ( "Duplicated name '" + name + "', ignored")
+					validity_warning ( "Duplicated name `" + name + "', ignored")
 				end -- if
 				scanner.nextToken
 			else
@@ -672,7 +672,7 @@ feature {None}
 		type := parseTypeDescriptor
 		if type = Void then
 --trace ("parseFunctionOrLocalAttribute " + name + ": (Void) !!!!")
-			--validity_error( "Type of '" + name + "' is not recognized which starts from " +  scanner.tokenString) -- + " in file '" + scanner.sourceFileName + "'")
+			--validity_error( "Type of `" + name + "` is not recognized which starts from " +  scanner.tokenString) -- + " in file `" + scanner.sourceFileName + "`")
 			--scanner.nextToken			
 		else
 --trace (">>> parseFunctionOrLocalAttribute - " + name + ": " + type.out)
@@ -694,7 +694,7 @@ feature {None}
 						create {DetachedLocalAttributeDeclarationDescriptor} localDsc.init (name, detDsc) --.type)
 					end -- if
 					if not ast.addedLocalDeclarationStatement (localDsc) then
-						validity_error( "Duplicated local declaration '" + localDsc.name + "'") 
+						validity_error( "Duplicated local declaration `" + localDsc.name + "`") 
 					end -- if
 				end -- if
 			when scanner.require_token, scanner.foreign_token, scanner.use_token then -- , scanner.none_token
@@ -703,7 +703,7 @@ feature {None}
 				ast.start_standalone_rotuine_parsing
 				rtnDsc := parseStandAloneRoutine1 (False, False, name)
 				if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-					validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+					validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 				end -- if					
 				ast.stop_standalone_rotuine_parsing
 			else
@@ -713,7 +713,7 @@ feature {None}
 					ast.start_standalone_rotuine_parsing
 					rtnDsc := parseStandAloneRoutine1 (False, False, name)
 					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-						validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+						validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 					end -- if					
 					ast.stop_standalone_rotuine_parsing
 				else
@@ -726,15 +726,15 @@ feature {None}
 						end -- check
 						create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, name, attDsc, Void)
 						if not ast.addedLocalDeclarationStatement (localDsc) then
-							validity_error( "Duplicated local declaration '" + localDsc.name + "'") 
+							validity_error( "Duplicated local declaration `" + localDsc.name + "`") 
 						end -- if
 					
 						---- attribute initialization is missed
-						--validity_error( "For attribute '" + name + ": " + type.out + "' initialization is missed") 
+						--validity_error( "For attribute `" + name + ": " + type.out + "` initialization is missed") 
 					else
 						create {DetachedLocalAttributeDeclarationDescriptor} localDsc.init (name, detDsc) --.type)
 						if not ast.addedLocalDeclarationStatement (localDsc) then
-							validity_error( "Duplicated local declaration '" + localDsc.name + "'") 
+							validity_error( "Duplicated local declaration `" + localDsc.name + "`") 
 						end -- if
 					end -- if
 				end -- if
@@ -876,7 +876,7 @@ not_implemented_yet("identifer ( TypeName ....")
 						scanner.token
 					when scanner.eof_token then
 						scanner.flush
-						validity_error( "Unexpected end of file '" + scanner.sourceFileName + "'")
+						validity_error( "Unexpected end of file `" + scanner.sourceFileName + "`")
 						toLeave := True
 						wasError := True
 					when scanner.operator_token, -- scanner.minus_token,
@@ -1006,7 +1006,7 @@ not_implemented_yet("identifer ( TypeName ....")
 				if parameters /= Void then
 					rtnDsc ?= parseAnyRoutine (False, False, False, False, name, Void, Void, True, False, parameters, False)			
 					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
-						validity_error( "Duplicated routine declaration '" + rtnDsc.name + "'") 
+						validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 					end -- if					
 				end -- if
 				ast.stop_standalone_rotuine_parsing
@@ -1261,7 +1261,7 @@ not_implemented_yet("identifer ( TypeName ....")
 						if scanner.token = scanner.identifier_token then
 							create tmpDsc.init (isVar, isRigid, scanner.tokenString)
 							if not localAttrs.added (tmpDsc) then
-								validity_error( "Duplicated local declaration '" + tmpDsc.name + "'") 
+								validity_error( "Duplicated local declaration `" + tmpDsc.name + "`") 
 							end -- if
 							scanner.nextToken
 						else
@@ -1277,7 +1277,7 @@ not_implemented_yet("identifer ( TypeName ....")
 						commaFound := False
 						create tmpDsc.init (False, False, scanner.tokenString)
 						if not localAttrs.added (tmpDsc) then
-							validity_error( "Duplicated local declaration '" + tmpDsc.name + "'") 
+							validity_error( "Duplicated local declaration `" + tmpDsc.name + "`") 
 						end -- if
 						scanner.nextToken
 					else
@@ -1476,7 +1476,7 @@ not_implemented_yet("identifer ( TypeName ....")
 					elseif commaFound then
 						commaFound := False
 						if not invariantOffList.added (scanner.tokenString) then
-							validity_warning ( "Duplicated entity name '" + scanner.tokenString + "' in file '" + scanner.sourceFileName + "'")
+							validity_warning ( "Duplicated entity name `" + scanner.tokenString + "` in file `" + scanner.sourceFileName + "`")
 						end -- if
 						scanner.nextToken
 					else
@@ -1900,6 +1900,7 @@ not_implemented_yet("genericRtnName[X] call not supported")
 				unitTypeDsc := parseUnitTypeName1 (name, False)
 			else
 				create unitTypeDsc.init (name, Void)
+				unitTypeDsc ?= register_type (unitTypeDsc)
 			end -- if 
 			if unitTypeDsc /= Void then
 				inspect
@@ -2336,9 +2337,23 @@ not_implemented_yet("genericRtnName[X] call not supported")
 				-- Just return
 				Result := returnDsc
 			end -- inspect
---		when scanner.type_name_token then
---not_implemented_yet("Type usage in expression is not suppported yet: Type.foo - module member acess")
-		when scanner.identifier_token, scanner.type_name_token then
+		when scanner.type_name_token then
+			name := scanner.tokenString
+			scanner.nextToken
+			utnDsc := parseUnitTypeName1 (name, False)
+			if utnDsc = Void then
+				toExit := True
+			else
+				inspect
+					scanner.token
+				when scanner.dot_token, scanner.left_paranthesis_token then
+					Result := parseWritableCall (utnDsc)
+				else
+					-- assume: new Type
+					create {NewExpressionDescriptor} Result.init (utnDsc, Void)
+				end
+			end -- if
+		when scanner.identifier_token then -- , scanner.type_name_token then
 			name := scanner.tokenString
 			if name.is_equal ("not") then
 				-- operator Expression
@@ -3076,7 +3091,7 @@ not_implemented_yet("genericRtnName[X] call not supported")
 				scanner.token
 			when scanner.end_token, scanner.else_token, scanner.elsif_token, scanner.when_token, scanner.ensure_token, scanner.illegal_token then
 			else
-				validity_warning ( "All statements after return till end of the block will never be executed in the file '" + scanner.sourceFileName + "'")
+				validity_warning ( "All statements after return till end of the block will never be executed in the file `" + scanner.sourceFileName + "`")
 			end -- inspect
 		end -- if
 	end -- parseReturnStatement
@@ -3101,27 +3116,27 @@ not_implemented_yet("genericRtnName[X] call not supported")
 			when scanner.else_token, scanner.elsif_token, scanner.when_token, scanner.ensure_token, scanner.illegal_token then
 			else
 				if not scanner.blockEnd then
-					validity_warning ( "All statements after raise till end of the block will never be executed in the file '" + scanner.sourceFileName + "'")
+					validity_warning ( "All statements after raise till end of the block will never be executed in the file `" + scanner.sourceFileName + "`")
 				end -- if
 			end -- inspect
 		end -- if
 	end -- parseRaiseStatement
 
 	parseDetachStatement: DetachStatementDescriptor is
-	--53
+	-- ? entity
 	require
 		valid_start_token: validToken (<<scanner.detach_token>>)
 	do
 		scanner.nextToken
-		if scanner.token = scanner.type_name_token then -- ? identifier
+		if scanner.token = scanner.identifier_token then
 			create Result.init (scanner.tokenString)
 		else
-			syntax_error (<<scanner.type_name_token>>)
+			syntax_error (<<scanner.identifier_token>>)
 		end -- if	
 	end -- parseDetachStatement
 
 	parseNewExpression: NewExpressionDescriptor is
-	-- NewExpression: new UnitType [“.”init] [ Arguments ]
+	-- NewExpression: new UnitType [ Arguments ]
 	require
 		valid_start_token: validToken (<<scanner.new_token>>)
 	local
@@ -3305,7 +3320,7 @@ not_implemented_yet("genericRtnName[X] call not supported")
 					when scanner.identifier_token then
 						if commaFound or else names.count = 1 then
 							if not names.added (scanner.tokenString) then
-								validity_error( "Duplicated declaration of attribute '" + scanner.tokenString + "'")
+								validity_error( "Duplicated declaration of attribute `" + scanner.tokenString + "`")
 								wasError := True
 							end -- if
 							scanner.nextToken
@@ -3624,6 +3639,7 @@ not_implemented_yet("genericRtnName[X] call not supported")
 			-- Module member call in the form of the call: ident.
 			--                                                  ^
 			create unitTypeDsc.init (typeName, Void)
+			unitTypeDsc ?= register_type (unitTypeDsc)
 			Result := parseWritableCall (unitTypeDsc)
 		else
 			if scanner.genericsStart then
@@ -4381,7 +4397,7 @@ end
 			when scanner.colon_token then
 				-- ident : Type
 				if initialisedParFound then
-					validity_error( "Initialised parameter should not be followed by the non-initilized one '" + name + "'")
+					validity_error( "Initialised parameter should not be followed by the non-initilized one `" + name + "`")
 				end -- if
 				scanner.nextToken
 				typeDsc := parseTypeDescriptorWithSemicolon
@@ -4394,7 +4410,7 @@ end
 				-- ident , ....
 				--         ^
 				if initialisedParFound then
-					validity_error( "Initialised parameter should not be followed by the non-initilized one '" + name + "'")
+					validity_error( "Initialised parameter should not be followed by the non-initilized one `" + name + "`")
 				end -- if
 				create namedParDsc.init (False, name, asThisType)
 				scanner.nextToken
@@ -4470,7 +4486,7 @@ end
 				if scanner.token = scanner.identifier_token then
 					name := scanner.tokenString
 					if not pars.added (name) then
-						validity_error( "Duplicated parameter declaration ':= " + name + "'")
+						validity_error( "Duplicated parameter declaration ':= " + name + "`")
 						wasError := True
 					end -- if							
 					create {AssignAttributeParameterDescriptor} parDsc.init (name) --, genAssignment)
@@ -4500,7 +4516,7 @@ end
 						if pars.added (parBlock.item (i).name) then
 							Result.force (parBlock.item (i), Result.count + 1)
 						else
-							validity_error( "Duplicated parameter declaration '" + parBlock.item(i).out + "'")
+							validity_error( "Duplicated parameter declaration `" + parBlock.item(i).out + "`")
 							wasError := True
 						end -- if							
 						i := i + 1							
@@ -4558,7 +4574,7 @@ end
 					toLeave := True
 				else
 					if not Result.added (astUnitDsc) then
-						validity_warning ( "Importing constants from the unit '" + astUnitDsc.out + "' more than once") -- .name 
+						validity_warning ( "Importing constants from the unit `" + astUnitDsc.out + "` more than once") -- .name 
 						-- wasError := True
 					end -- if 
 					if scanner.token = scanner.comma_token then
@@ -4589,6 +4605,8 @@ end
 	local	
 		constants: Sorted_Array [UnitTypeNameDescriptor]
 		atDsc: AttachedTypeDescriptor
+		aliasedDsc: AliasedTypeDescriptor
+		aliasName: String
 	do
 		scanner.nextToken
 		inspect	
@@ -4608,7 +4626,10 @@ end
 				if scanner.token = scanner.as_token then
 					scanner.nextToken
 					if scanner.token = scanner.type_name_token then
-						atDsc.setAliasName (scanner.tokenString)
+						aliasName := scanner.tokenString
+						create aliasedDsc.init (aliasName, atDsc)
+						aliasedDsc ?= register_type (aliasedDsc)
+						atDsc.setAliasName (aliasName)
 						scanner.nextToken						
 					else
 						syntax_error (<<scanner.type_name_token>>)
@@ -4818,9 +4839,9 @@ end
 				create Result.init (atd)
 --pos := ast.typePool.seek (Result)
 --if pos <= 0 then
---trace ("#4 To add '" + Result.out + "' after pos " + (-pos).out)
+--trace ("#4 To add `" + Result.out + "` after pos " + (-pos).out)
 --end -- if
-				Result ?= ast.typePool.add_it (Result)
+				Result ?= register_type (Result)
 				check
 					type_registred: Result /= Void
 				end
@@ -4943,7 +4964,7 @@ end
 		--		if utDsc /= Void then
 		--			create {NamedTupleFieldDescriptor} Result.init (names, utDsc)
 		--			if names.count /= types.count then
-		--				validity_error( "Duplicated field name in a tuple '" + Result.out + "'")
+		--				validity_error( "Duplicated field name in a tuple `" + Result.out + "`")
 		--			end -- if
 		--		end -- if
 		--	else
@@ -5217,7 +5238,7 @@ end
 -- const check does not work any more!!! paredExpression parses the whole construction ce1 | ce2 | ce ....
 								cDsc ?= constExpr2 -- expr
 								if cDsc /= Void and then not constants.added (cDsc) then
-									validity_error( "Duplicated constant '" + cDsc.value.out + "' in range type ")
+									validity_error( "Duplicated constant `" + cDsc.value.out + "` in range type ")
 									--toLeave := True
 								end -- if
 								values.force (constExpr2, values.count + 1)
@@ -5282,7 +5303,7 @@ end
 							toLeave := True
 						else
 							if not types.added (typeDsc) then
-								validity_error( "Duplicated type '" + typeDsc.name + "' within the the multi-type")
+								validity_error( "Duplicated type `" + typeDsc.name + "` within the the multi-type")
 							end -- if
 							barFound := False
 						end -- if
@@ -5352,7 +5373,7 @@ end
 					i > n
 				loop
 					if not members.added (m1.item (i)) then
-						validity_error( "Duplicated unit member declaration '" + m1.item (i).name + "'") 
+						validity_error( "Duplicated unit member declaration `" + m1.item (i).name + "`") 
 						wasError := True
 					end -- if
 					i := i + 1
@@ -5461,9 +5482,9 @@ end
 			-- Register type in the type pool
 --pos := ast.typePool.seek (Result)
 --if pos <=  0 then
---trace ("#3 To add '" + Result.out + "' after pos " + (-pos).out)
+--trace ("#3 To add `" + Result.out + "` after pos " + (-pos).out)
 --end -- if
-			Result ?= ast.typePool.add_it (Result)
+			Result ?= register_type (Result)
 			check
 				type_registred: Result /= Void
 			end
@@ -5648,9 +5669,9 @@ end
 			-- Register type in the type pool
 --pos := ast.typePool.seek (Result)
 --if pos <=  0 then
---trace ("#2 To add '" + Result.out + "' after pos " + (-pos).out)
+--trace ("#2 To add `" + Result.out + "` after pos " + (-pos).out)
 --end -- if
-			Result ?= ast.typePool.add_it (Result)
+			Result ?= register_type (Result)
 			check
 				type_registred: Result /= Void
 			end
@@ -5675,6 +5696,7 @@ end
 			-- Module member call in the form of the call: ident.
 			--                                                  ^
 			create unitTypeDsc.init (typeName, Void)
+			unitTypeDsc ?= register_type(unitTypeDsc)
 			Result := parseWritableCall (unitTypeDsc)
 		else
 			if scanner.genericsStart then
@@ -5720,9 +5742,9 @@ end
 				-- Register type in the type pool
 --pos := ast.typePool.seek (Result)
 --if pos  <= 0 then
---trace ("#1 To add '" + Result.out + "' after pos " + (-pos).out)
+--trace ("#1 To add `" + Result.out + "` after pos " + (-pos).out)
 --end -- if
-				Result ?= ast.typePool.add_it (Result)
+				Result ?= register_type (Result)
 				check
 					type_registred: Result /= Void
 				end -- check
@@ -5755,7 +5777,6 @@ end
 		end -- inspect
 	end -- parseUnitType2
 
-
 	parseUnitType1 (checkSemicolonAfter: Boolean): UnitTypeCommonDescriptor is
 	require
 		valid_token: validToken (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)
@@ -5786,7 +5807,7 @@ end
 					Result := utd
 				else
 					create {UnitTypeDescriptor} Result.init (isRef, isVal, isConcurrent, utd.name, utd.generics)
-					Result ?= ast.typePool.add_it (Result)
+					Result ?= register_type (Result)
 					check
 						type_registred: Result /= Void
 					end -- check
@@ -5797,6 +5818,15 @@ end
 		end -- if
 	end -- parseUnitType1
 
+	register_type (aType: TypeDescriptor): TypeDescriptor is
+	require
+		non_void_type: aType /= Void
+	do
+		Result := ast.typePool.add_it (aType)
+	ensure
+		non_void_registered_type: Result /= Void		
+	end -- register_type
+	
 	parseUnitTypeWithSemicolonAfter: UnitTypeCommonDescriptor is
 	do
 		inspect
@@ -5809,8 +5839,8 @@ end
 	end -- parseUnitTypeWithSemicolonAfter
 	
 	parseFormalGenericType: FormalGenericDescriptor is
-	--70
-	-- Identifier ([“extend” UnitTypeName ] [“new” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
+	-- Identifier|TypeName ([“extend” UnitTypeName ] [“new” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
+	-- ^
 
 	require
 		valid_token: validToken (<<scanner.type_name_token, scanner.identifier_token>>)
@@ -5821,6 +5851,7 @@ end
 		tDsc: UnitTypeCommonDescriptor
 		rtnTypeDsc: RoutineTypeDescriptor
 		tupleTypeDsc: TupleTypeDescriptor
+		fgtDsc: FormalGenericTypeDescriptor
 	do
 		name := scanner.tokenString
 		inspect
@@ -5840,14 +5871,20 @@ end
 						when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
 							signDsc := parseSignature
 							if signDsc /= Void then
-								create {FormalGenericTypeDescriptor} Result.init (name, typeDsc, signDsc)
+								create fgtDsc.init (name, typeDsc, signDsc)
+								fgtDsc ?= register_type (fgtDsc)
+								Result := fgtDsc
 							end -- if
 						else
 							create signDsc.init (Void, Void)
-							create {FormalGenericTypeDescriptor} Result.init (name, Void, signDsc)
+							create fgtDsc.init (name, Void, signDsc)
+							fgtDsc ?= register_type (fgtDsc)
+							Result := fgtDsc
 						end -- inspect
 					else
-						create {FormalGenericTypeDescriptor} Result.init (name, typeDsc, signDsc)
+						create fgtDsc.init (name, typeDsc, signDsc)
+						fgtDsc ?= register_type (fgtDsc)
+						Result := fgtDsc
 					end -- if
 				end -- if
 			when scanner.new_token then
@@ -5857,14 +5894,20 @@ end
 				when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
 					signDsc := parseSignature
 					if signDsc /= Void then
-						create {FormalGenericTypeDescriptor} Result.init (name, Void, signDsc)
+						create fgtDsc.init (name, Void, signDsc)
+						fgtDsc ?= register_type (fgtDsc)
+						Result := fgtDsc
 					end -- if
 				else
 					create signDsc.init (Void, Void)
-					create {FormalGenericTypeDescriptor} Result.init (name, Void, signDsc)
+					create fgtDsc.init (name, Void, signDsc)
+					fgtDsc ?= register_type (fgtDsc)
+					Result := fgtDsc
 				end -- inspect
 			else
-				create {FormalGenericTypeDescriptor} Result.init (name, Void, Void)
+				create fgtDsc.init (name, Void, Void)
+				fgtDsc ?= register_type (fgtDsc)
+				Result := fgtDsc
 			end -- inspect
 		when scanner.identifier_token then
 			scanner.nextToken
@@ -5987,7 +6030,7 @@ end
 							toLeave := True
 						else
 							if theSameUnit1 (unitDsc, utnDsc) then
-								validity_error( "Attempt to inherit from itself. Extending unit '" + utnDsc.out + "' in unit '" + unitDsc.name + "'")
+								validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
 								--toLeave := True
 								-- Inheritance graph simple cycle
 							else
@@ -5996,7 +6039,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 								end -- if
 								create parentDsc.init (True, utnDsc)
 								if not unitDsc.parents.added (parentDsc) then
-									validity_error( "Duplicated inheritance from unit '" + parentDsc.out + "' in unit '" + unitDsc.name + "'")
+									validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
 									--toLeave := True
 									-- Repeated inheritance is prohibited
 								end -- if
@@ -6023,13 +6066,13 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						toLeave := True
 					else
 						if theSameUnit1 (unitDsc, utnDsc) then
-							validity_error( "Attempt to inherit from itself. Extending unit '" + utnDsc.out + "' in unit '" + unitDsc.name + "'")
+							validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
 							--toLeave := True
 							-- Inheritance graph simple cycle
 						else
 							create parentDsc.init (False, utnDsc)
 							if not unitDsc.parents.added (parentDsc) then
-								validity_error( "Duplicated inheritance from unit '" + parentDsc.out + "' in unit '" + unitDsc.name + "'")
+								validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
 								--toLeave := True
 								-- Repeated inheritance is prohibited
 							end -- if
@@ -6120,7 +6163,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							-- 		UnitTypeNameDescriptor [as Identifier]]
 							create eueDsc.init (utnd, Void)
 							if not usage.added (eueDsc) then
-								validity_error( "Duplicated import of consntants from unit '" + eueDsc.out + "'") --  in unit '" + unitDsc.name + "'")
+								validity_error( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in unit `" + unitDsc.name + "`")
 								--toLeave := True
 								wasError := True
 							else
@@ -6132,7 +6175,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							if scanner.token = scanner.identifier_token then
 								create eueDsc.init (utnd, scanner.tokenString)
 								if not usage.added (eueDsc) then
-									validity_error( "Duplicated import of consntants from '" + eueDsc.out + "'") --  in in unit '" + unitDsc.name + "'")
+									validity_error( "Duplicated import of consntants from `" + eueDsc.out + "`") --  in in unit `" + unitDsc.name + "`")
 									wasError := True
 								end -- if
 								scanner.nextToken
@@ -6148,7 +6191,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							-- 		UnitTypeNameDescriptor [as Identifier]]
 							create eueDsc.init (utnd, Void)
 							if not usage.added (eueDsc) then
-								validity_warning ( "Duplicated import of consntants from unit '" + eueDsc.out + "'") --  in unit '" + unitDsc.name + "'")
+								validity_warning ( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in unit `" + unitDsc.name + "`")
 								--wasError := True
 							end -- if
 							toLeave := True
@@ -6339,7 +6382,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				if not toLeave then
 					create sDsc.init (memberName, signatureDsc)
 					if not unitDsc.memberSelections.added (sDsc) then
-						validity_error( "Duplicated selection of '" + sDsc.out + "' in unit '" + unitDsc.name + "'")
+						validity_error( "Duplicated selection of `" + sDsc.out + "` in unit `" + unitDsc.name + "`")
 					end -- if
 				end -- if
 			when scanner.comma_token then
@@ -6360,7 +6403,8 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 	end -- parseMemberSelection
 
 	parseInheritedOverrideTail (uDsc: UnitTypeNameDescriptor; unitDsc: UnitDeclarationDescriptor) is
-	--73
+	-- override uDsc.
+	--              ^
 	require
 		utnd_not_void: uDsc /= Void
 		unit_dsc_not_void: unitDsc /= Void
@@ -6373,9 +6417,12 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		commaFound: Boolean
 		toLeave: Boolean
 	do
-		-- override ident.
+		if unitDsc.findParent (uDsc) = Void then
+			validity_error( "Override refers to the unit `" + uDsc.out + "` which is not a parent of unit `" + unitDsc.name + "`")
+		end -- if
 		scanner.nextToken
 		if scanner.token = scanner.identifier_token then
+			-- override uDsc.ident
 			ident := scanner.tokenString
 			scanner.nextToken
 			inspect
@@ -6387,7 +6434,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			create imoDsc.init (uDsc, ident, signDsc)
 			-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
 			if not unitDsc.inheritedOverrides.added (imoDsc) then
-				validity_error( "Duplicated overriding of '" + imoDsc.out + "' in unit '" + unitDsc.name + "'")
+				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + unitDsc.name + "`")
 			end -- if
 			-- Now check for the list 
 			if scanner.token = scanner.comma_token then
@@ -6430,7 +6477,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 										create imoDsc.init (utnDsc, ident, signDsc)
 										-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
 										if not unitDsc.inheritedOverrides.added (imoDsc) then
-											validity_error( "Duplicated overriding of '" + imoDsc.out + "' in unit '" + unitDsc.name + "'")
+											validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + unitDsc.name + "`")
 										end -- if
 									else
 										syntax_error (<<scanner.identifier_token>>)
@@ -6498,6 +6545,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				-- parse "override UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]"
 				-- override ident.
 				create utnDsc.init (ident, Void)
+				utnDsc ?= register_type (utnDsc)
 				parseInheritedOverrideTail (utnDsc, unitDsc)
 			else
 				if scanner.genericsStart then
@@ -6658,7 +6706,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						else
 							utnDsc1 := unitDsc.findParent (utnDsc)
 							if utnDsc1 = Void then
-								validity_error( "Initialization procedure can not be inherited from the unit '" +  utnDsc.name + "' as it is not a parent of '" + unitDsc.name + "'")
+								validity_error( "Initialization procedure can not be inherited from the unit `" +  utnDsc.name + "` as it is not a parent of `" + unitDsc.name + "`")
 							else
 								utnDsc := utnDsc1
 							end -- if
@@ -6670,9 +6718,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 								create ifpDsc.init (utnDsc, Void)
 							end -- if
 							if theSameUnit1 (unitDsc, utnDsc) then
-								validity_error( "Initialization procedure can not be inherited from the same unit '" + unitDsc.name + "'")
+								validity_error( "Initialization procedure can not be inherited from the same unit `" + unitDsc.name + "`")
 							elseif not unitDsc.inhertitedInits.added (ifpDsc) then
-								validity_error( "Duplicated initialization procedure inheritance of '" + ifpDsc.out + "' in unit '" + unitDsc.name + "'")
+								validity_error( "Duplicated initialization procedure inheritance of `" + ifpDsc.out + "` in unit `" + unitDsc.name + "`")
 							end -- if
 						end -- if
 					else
@@ -6721,7 +6769,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				toLeave := True
 			else
 				if not unitDsc.constObjects.added(cobjDsc) then
-					validity_error( "Duplicated constant declaration '" + cobjDsc.out + "' in unit '" + unitDsc.name  +"'") 
+					validity_error( "Duplicated constant declaration `" + cobjDsc.out + "` in unit `" + unitDsc.name  +"'") 
 				end -- if
 				if scanner.token = scanner.comma_token then
 					scanner.nextToken
@@ -7244,7 +7292,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					if scanner.token = scanner.identifier_token then
 						create tmpDsc.init (False, True, scanner.tokenString)
 						if not aResult.added (tmpDsc) then
-							validity_error( "Duplicated attribute declaration '" + attrDsc.name + "'") 
+							validity_error( "Duplicated attribute declaration `" + attrDsc.name + "`") 
 							wasError := True
 						end -- if
 						scanner.nextToken							
@@ -7265,7 +7313,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					if scanner.token = scanner.identifier_token then
 						create tmpDsc.init (True, False, scanner.tokenString)
 						if not aResult.added (tmpDsc) then
-							validity_error( "Duplicated attribute declaration '" + attrDsc.name + "'") 
+							validity_error( "Duplicated attribute declaration `" + attrDsc.name + "`") 
 							wasError := True
 						end -- if
 						scanner.nextToken							
@@ -7284,7 +7332,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					commaFound := False
 					create tmpDsc.init (False, False, scanner.tokenString)
 					if not aResult.added (tmpDsc) then
-						validity_error( "Duplicated attribute declaration '" + attrDsc.name + "'") 
+						validity_error( "Duplicated attribute declaration `" + attrDsc.name + "`") 
 						wasError := True
 					end -- if
 					scanner.nextToken							
@@ -7470,7 +7518,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 										if constBlock.added (tmpDsc) then
 											scanner.nextToken
 										else
-											validityError (tmpDsc.toSourcePosition, "Duplicated constant declaration '" + tmpDsc.name + "'") 
+											validityError (tmpDsc.toSourcePosition, "Duplicated constant declaration `" + tmpDsc.name + "`") 
 											wasError := True
 										end -- if
 									else
@@ -7516,7 +7564,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 									create unitAttrDsc.init (isOverriding, isFinal, tmpDsc.markedConst, tmpDsc.markedRigid, tmpDsc.name, attTypeDsc, Void, Void)
 									unitAttrDsc.set_rc (tmpDsc.row, tmpDsc.col)
 									if not Result.added (unitAttrDsc) then
-										validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+										validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration `" + unitAttrDsc.name + "`") 
 										wasError := True
 									end -- if
 									i := i + 1
@@ -7536,7 +7584,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 								unitAttrDsc.setSourcePosition (srcp)
 									-- init (isO, isF, mc, mr: Boolean; aName: String; aType: like type; a: like assigner; ie: like expr)
 								if not Result.added (unitAttrDsc) then
-									validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration '" + unitAttrDsc.name + "'") 
+									validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration `" + unitAttrDsc.name + "`") 
 									wasError := True
 								end -- if
 							end -- if
@@ -7544,7 +7592,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 							create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
 							unitAttrDsc.setSourcePosition (srcp)
 							if not Result.added (unitAttrDsc) then
-								validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration '" + unitAttrDsc.name + "'")
+								validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration `" + unitAttrDsc.name + "`")
 								wasError := True
 							end -- if
 						end -- if
@@ -7556,7 +7604,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						create unitAttrDsc.init (isOverriding, isFinal, isConst, isRigid, name, attTypeDsc, Void, exprDsc)
 						unitAttrDsc.setSourcePosition (srcp)
 						if not Result.added (unitAttrDsc) then
-							validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration '" + unitAttrDsc.name + "'")
+							validityError (unitAttrDsc.toSourcePosition, "Duplicated constant declaration `" + unitAttrDsc.name + "`")
 							wasError := True
 						end -- if
 					end -- if
@@ -7982,8 +8030,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				--	mdDsc.setVisibility (currentVisibilityZone)
 				--end -- if
 				if not unitDsc.unitMembers.added (mdDsc) then
-					--validity_error( "Duplicated declaration of member '" + mdDsc.name + "' in unit '" + unitDsc.name + "'") 
-					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member '" + mdDsc.name + "' in unit '" + unitDsc.name + "'") 
+					--validity_error( "Duplicated declaration of member `" + mdDsc.name + "` in unit `" + unitDsc.name + "`") 
+					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in unit `" + unitDsc.name + "`") 
 				end -- if
 				i := i + 1
 			end -- loop
@@ -8293,7 +8341,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						if initDsc /= Void then
 							if not currentUnitDsc.initMembers.added (initDsc) then
 								-- Duplicated init 
-								validityError (initDsc.toSourcePosition, "Duplicated declaration of unit  '" + unitName + "' initializer") 
+								validityError (initDsc.toSourcePosition, "Duplicated declaration of unit  `" + unitName + "` initializer") 
 							end -- if
 						end -- if
 					else
@@ -8361,7 +8409,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 									if initDsc /= Void then
 										if not currentUnitDsc.initMembers.added (initDsc) then
 											-- Duplicated init 
-											validityError (initDsc.toSourcePosition, "Duplicated declaration of unit  '" + unitName + "' initializer") 
+											validityError (initDsc.toSourcePosition, "Duplicated declaration of unit  `" + unitName + "` initializer") 
 										end -- if
 									end -- if
 								else
@@ -8489,7 +8537,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			if scanner.blockEnd then
 				-- end of the unit
 				if initialErrorsCount = errorsCount and then not ast.units.added (currentUnitDsc) then
-					validity_error( "More than one unit with name '" + currentUnitDsc.name + "' in the same source/compilation")
+					validity_error( "More than one unit with name `" + currentUnitDsc.name + "` in the same source/compilation")
 				end -- if
 				scanner.nextToken
 			else

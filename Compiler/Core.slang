@@ -1131,7 +1131,7 @@ unit DynamicObject
 		if rtn_descr is ProcedureDescriptor do
 			call (rtn_descr, args)
 		else
-			raise "Call to non-existing procedure '" + rtn_name + "'"
+			raise "Call to non-existing procedure `" + rtn_name + "`"
 		end			
 	end
 	final call (rtn_name: String; args: ()): Any do
@@ -1139,7 +1139,7 @@ unit DynamicObject
 		if rtn_descr is FunctionDescriptor do
 			return call (rtn_descr, args)
 		else
-			raise "Call to non-existing function '" + rtn_name + "'"
+			raise "Call to non-existing function `" + rtn_name + "`"
 		end			
 	end
 	final get_value (attr_name: String): Any do
@@ -1147,7 +1147,7 @@ unit DynamicObject
 		if attr_descr is AttributeDescriptor do
 			return attr_descr.value
 		else
-			raise "Access to non-existing attribute '" + attr_name + "'"
+			raise "Access to non-existing attribute `" + attr_name + "`"
 		end
 	end
 	final set_value (attr_name: String; value: Any) do
@@ -1155,7 +1155,7 @@ unit DynamicObject
 		if attr_descr is VariableDescriptor do
 			attr_descr.value := value
 		else
-			raise "Access to non-existing/writable attribute '" + attr_name + "'"
+			raise "Access to non-existing/writable attribute `" + attr_name + "`"
 		end
 	end
 	// Access members by object (address) 
