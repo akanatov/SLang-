@@ -104,23 +104,27 @@ feature {Any}
 					i := i + 1
 				end -- loop
 
-				-- 3. Check validity of cuDsc.statements
-				from
-					statements := cuDsc.statements
-					n := statements.count
-					i := 1
-				until
-					i > n
-				loop
-					if statements.item(i).isInvalid (cuDsc, o) then
-						debug
-							o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
-						end -- debug
-						skipCodeGen := True
-						wasError := True
-					end -- if
-					i := i + 1
-				end -- loop
+				if not wasError then
+					-- If all required types loaded 
+					-- 3. Check validity of cuDsc.statements
+					from
+						statements := cuDsc.statements
+						n := statements.count
+						i := 1
+					until
+						i > n
+					loop
+						if statements.item(i).isInvalid (cuDsc, o) then
+							debug
+								o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
+							end -- debug
+							skipCodeGen := True
+							wasError := True
+						end -- if
+						i := i + 1
+					end -- loop
+				end -- if
+				
 				if skipCodeGen then
 					o.putNL ("Info: code generation skipped due to errors found")
 				else

@@ -1298,7 +1298,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]
-		notValid: Boolean
+		-- notValid: Boolean
 		i, n: Integer
 	do
 	useConst := context.useConst
@@ -1319,17 +1319,21 @@ feature {Any}
 		until
 			i > n
 		loop
-			notValid := statements.item (i).isInvalid (context, o)
-			if notValid then
+			if statements.item (i).isInvalid (context, o) then
 				Result := True
 			end
 			i := i + 1
 		end -- loop
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
+		end -- if
 	end -- isInvalid
 invariant
 	non_void_unitType: unitType /= Void
 	non_void_statements: statements /= Void
-end 
+end -- class WhenClauseDescriptor
 
 class InnerBlockDescriptor
 -- do ["{"Identifier {"," Identifier} "}"]  StatementsList [ WhenClause {WhenClause} [else [StatementsList]] ]
@@ -1349,7 +1353,7 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]
-		notValid: Boolean
+		--notValid: Boolean
 		i, n: Integer
 	do
 	useConst := context.useConst
@@ -1363,6 +1367,9 @@ feature {Any}
 			i > n
 		loop
 			i := i + 1
+			if False then -- invariantOffList.item (i) is not foudn or visible here
+				Result := True
+			end -- if
 		end -- loop
 		-- Check that all 'statements' are valid 
 		from
@@ -1371,8 +1378,7 @@ feature {Any}
 		until
 			i > n
 		loop
-			notValid := statements.item(i).isInvalid (context, o)
-			if notValid then
+			if statements.item(i).isInvalid (context, o) then
 				Result := True
 			end
 			i := i + 1
@@ -1386,8 +1392,7 @@ feature {Any}
 			until
 				i > n
 			loop
-				notValid := whenClauses.item(i).isInvalid (context, o)
-				if notValid then
+				if whenClauses.item(i).isInvalid (context, o) then
 					Result := True
 				end
 				i := i + 1
@@ -1398,12 +1403,16 @@ feature {Any}
 			until
 				i > n
 			loop
-				notValid := whenElseClause.item(i).isInvalid (context, o)
-				if notValid then
+				if whenElseClause.item(i).isInvalid (context, o) then
 					Result := True
 				end
 				i := i + 1
 			end -- loop
+		end -- if
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -2634,7 +2643,7 @@ feature {Any}
 			Result.append_string (typeConstraint.out)
 		end -- if
 		if initConstraint /= Void then
-			Result.append_string(" init ")
+			Result.append_string(" new ")
 			Result.append_string (initConstraint.out)
 		end -- if
 	end -- out
@@ -2675,6 +2684,9 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -2688,6 +2700,13 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+		if typeConstraint /= Void and then typeConstraint.isNotLoaded (context, o) then
+			Result := True
+		end -- if
+-- Do we need to load all types from the signature?
+--		if initConstraint /= Void and then initConstraint.isNotLoaded (context, o) then
+--			Result := True
+--		end -- if
 	end -- isNotLoaded
 	
 feature {FormalGenericDescriptor}
@@ -3923,6 +3942,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -3964,6 +3986,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -4007,6 +4032,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -4127,7 +4155,6 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
@@ -4135,14 +4162,16 @@ feature {Any}
 		-- do nothing so far
 		-- check entity !!!
 		
-		notValid := expr.isInvalid (context, o)
-		if notValid then 
+		if expr.isInvalid (context, o) then 
 			Result := True
 		end -- if
 		if not Result then
 			-- not_implemened_yet
 			-- entity is to be visible here
 			-- type of expr should be compatible to the type of entity
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -4199,24 +4228,25 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		--notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
 	typePool := context.typePool
-		-- do nothing so far
-		notValid := writable.isInvalid (context, o)
-		if notValid then 
+		if writable.isInvalid (context, o) then 
 			Result := True
 		end -- if
-		notValid := expr.isInvalid (context, o)
-		if notValid then 
+		if expr.isInvalid (context, o) then 
 			Result := True
 		end -- if
 		if not Result then
 			-- not_implemened_yet
 			-- writable is to be visible here
 			-- type of expr should be compatible to the type of writable
+-- not_implemented_yet: AssignmentStatementDescriptor.isInvalid
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -4400,8 +4430,8 @@ invariant
 end -- class DetachedUnitAttributeDeclarationDescriptor
 
 class DetachedLocalAttributeDeclarationDescriptor
-	-- LocalAttributeCreation  => LocalAttributeNamesList “:” “?” UnitTypeDescriptor
-	-- LocalAttributeNamesList => [var | rigid] Identifier {“,”[var | rigid] Identifier}
+	-- LocalAttributeCreation  => LocalAttributeNamesList ":" "?" UnitTypeDescriptor
+	-- LocalAttributeNamesList => [var | rigid] Identifier {","[var | rigid] Identifier}
 inherit
 	LocalAttrDeclarationDescriptor
 		redefine
@@ -4425,6 +4455,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -4477,6 +4510,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -4532,14 +4568,17 @@ create
 feature {Any}
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
+	--	useConst: Sorted_Array [UnitTypeNameDescriptor]
+	--	stringPool: Sorted_Array [String]
+	--	typePool: Sorted_Array[TypeDescriptor]	
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -4837,6 +4876,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	
 end -- class IsDetachedDescriptor
@@ -4909,7 +4951,7 @@ feature
 	lessThan (other: like Current): Boolean is
 	do
 		Result := forcedType < other.forcedType
-		if not Result and then  forcedType.is_equal (other.forcedType) then
+		if not Result and then forcedType.is_equal (other.forcedType) then
 			Result := realExpr < other.realExpr
 		end -- if
 	end -- theSame
@@ -4924,6 +4966,9 @@ feature
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 invariant
 	forcedType_not_void: forcedType /= Void
@@ -4967,6 +5012,9 @@ feature
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 invariant
 	non_void_expression: expr /= Void
@@ -5029,7 +5077,7 @@ inherit
 			sameAs, lessThan
 	end
 feature
-	out: String is do Result :=  "old" end
+	out: String is do Result := "old" end
 
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -5041,6 +5089,9 @@ feature
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -5067,7 +5118,7 @@ inherit
 			is_equal
 	end
 feature
-	out: String is do Result :=  "this" end
+	out: String is do Result := "this" end
 	sameAs (other: like Current): Boolean is
 	do
 		Result := True
@@ -5086,6 +5137,9 @@ feature
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 end -- class ThisDescriptor
 class ReturnDescriptor
@@ -5096,7 +5150,7 @@ inherit
 	ExpressionDescriptor
 	end
 feature {Any}
-	out: String is do Result :=  "return" end
+	out: String is do Result := "return" end
 	sameAs (other: like Current): Boolean is
 	do
 		Result := True
@@ -5115,6 +5169,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 end -- class ReturnDescriptor
 deferred class EntityDescriptor
@@ -5188,6 +5245,9 @@ feature {Any}
 		check
 			identifer_name_not_registered_in_the_pool: pos > 0
 		end -- check
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 
 end -- class IdentifierDescriptor
@@ -5295,7 +5355,7 @@ feature
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
+		--notValid: Boolean
 		i, n: Integer
 	do
 	--useConst := context.useConst
@@ -5308,12 +5368,16 @@ feature
 		until
 			i > n
 		loop
-			notValid := tuple.item (i).isInvalid (context, o)
-			if notValid then
+			if tuple.item (i).isInvalid (context, o) then
 				Result := True
 			end -- if
 			i := i + 1
 		end -- loop
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
+		end -- if
 	end -- isInvalid
 invariant
 	tuple_not_void: tuple /= Void
@@ -5350,24 +5414,23 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- do nothing so far
-		notValid := expr.isInvalid (context, o)
-		if notValid then
+		if expr.isInvalid (context, o) then
 			Result := True
 		end -- if
 		if not Result then
 			-- ref expr
 			-- type of expr should be of the value type !!!
 			-- not_implemented_yet
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
---feature {ExpressionDescriptor}
---	weight: Integer is -7
 invariant
 	non_void_expression: expr /= Void
 end -- class RefExpressionDescriptor
@@ -5431,7 +5494,6 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
@@ -5441,10 +5503,14 @@ feature {Any}
 		-- it should be a valid routine name
 		-- signature: SignatureDescriptor
 		if signature /= Void then
-			notValid := signature.isInvalid (context, o)
-			if notValid then
+			if signature.isInvalid (context, o) then
 				Result := True
 			end -- if
+		end -- if
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 	
@@ -5491,6 +5557,9 @@ print ("InlineLambdaExpression.lessThan not_implemented_yet%N")
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 
 end -- class InlineLambdaExpression
@@ -5540,6 +5609,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 invariant
 	non_void_expr: expr /= Void
@@ -5616,6 +5688,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 invariant
 	left_expr_not_void: left /= Void
@@ -5661,6 +5736,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 invariant
 	expr_not_void: expr /= Void
@@ -5830,21 +5908,23 @@ feature {Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 invariant
 	expr_not_void: expr /= Void
-end
+end -- class TypeOfExpression
 
 -- Operator: OperatorName|in
 
 class ConstantDescriptor
--- [UnitTypeDescriptor "."] CharacterConstant |IntegerConstant |RealConstant |StringConstant |Identifier  
+-- [UnitTypeNameDescriptor "."] CharacterConstant |IntegerConstant |RealConstant |StringConstant |Identifier  
 inherit
 	ConstObjectDescriptor
 		undefine
@@ -5858,7 +5938,7 @@ inherit
 create
 	init
 feature	{Any}
-	unitPrefix: UnitTypeDescriptor
+--	unitPrefix: UnitTypeNameDescriptor
 	token: Integer
 	value: Any
 	
@@ -5878,11 +5958,12 @@ feature	{Any}
 		end -- if
 	end -- negate
 	
-	init (up: like unitPrefix; t: Integer; v: like value) is
+--	init (up: like unitPrefix; t: Integer; v: like value) is
+	init (t: Integer; v: like value) is
 	require
 		non_void_value: v /= Void
 	do
-		unitPrefix:= up
+--		unitPrefix:= up
 		token:= t
 		value:= v
 	end -- init
@@ -5923,16 +6004,8 @@ feature	{Any}
 		end -- if
 	end -- lessThan	
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
-		-- do nothing so far
+		-- Always valid !!!
 	end -- isInvalid
 
 	out: String is
@@ -6152,6 +6225,9 @@ feature
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 
 	generate (cg: CodeGenerator) is
@@ -6288,6 +6364,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -6396,6 +6475,9 @@ feature{Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -6488,17 +6570,52 @@ feature{Any}
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]	
+		i, n: Integer
 	do
 	useConst := context.useConst
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+		if target.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if arguments /= Void then
+			from
+				n := arguments.count
+				i := 1
+			until
+				i > n
+			loop
+				if arguments.item (i).isInvalid (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop			
+		end -- if
+		if callChain /= Void then
+			from
+				n := callChain.count
+				i := 1
+			until
+				i > n
+			loop
+				if False then -- to be like this callChain.item (i).isInvalid (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop			
+		end -- if
+		if not Result then
+			-- Need to check that target(arguments).classChain combination is valid
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
+		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
 	end -- generate
-
 
 	init (ceDsc: like target; args: like arguments; cc: like callChain) is
 	require
@@ -6630,6 +6747,9 @@ feature{Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -6927,6 +7047,9 @@ feature{Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -6961,6 +7084,9 @@ feature{Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -7112,6 +7238,9 @@ feature{Any}
 		stringPool := context.stringPool
 		typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -7166,6 +7295,9 @@ feature{Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -7238,6 +7370,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -7326,6 +7461,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 invariant
 	non_void_unitType : unitType /= Void
@@ -7359,6 +7497,9 @@ feature {Any}
 	stringPool := context.stringPool
 	typePool := context.typePool
 		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -7824,18 +7965,20 @@ feature {Any}
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
 		-- i, n: Integer
-		notValid: Boolean
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
-		notValid := expr.isInvalid (context, o)
-		if notValid then
+		if expr.isInvalid (context, o) then
 			Result := True
 		end -- if
-		notValid := alternativeTagsValid (context, o)
-		if notValid then
+		if alternativeTagsValid (context, o) then
 			Result := True
+		end -- if
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 invariant
@@ -8158,6 +8301,9 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -8262,6 +8408,9 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -8357,16 +8506,19 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
-		notValid: Boolean
 		--i, n: Integer
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
-		notValid := signature.isInvalid (context, o)
-		if notValid then
+		if signature.isInvalid (context, o) then
 			Result := True
+		end -- if
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 	
@@ -8543,7 +8695,6 @@ feature {Any}
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
-		notValid: Boolean		
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
@@ -8555,18 +8706,21 @@ feature {Any}
 		until	
 			i > n
 		loop
-			notValid := parameters.item (i).isInvalid (context, o)
-			if notValid then
+			if parameters.item (i).isInvalid (context, o) then
 				Result := True
 			end -- if
 			i := i + 1
 		end -- loop
 		if returnType /= Void then
 			-- Return type is to be be valid
-			notValid := returnType.isInvalid (context, o)
-			if notValid then
+			if returnType.isInvalid (context, o) then
 				Result := True
 			end -- if
+		end -- if
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 invariant
@@ -8674,6 +8828,9 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -8762,6 +8919,9 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -8906,16 +9066,19 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean		
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		if anchorSignature /= Void then
-			notValid := anchorSignature.isInvalid (context, o)
-			if notValid then
+			if anchorSignature.isInvalid (context, o) then
 				Result := True
 			end -- if
+		end -- if
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 
@@ -9018,6 +9181,9 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -9120,15 +9286,17 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
-		notValid: Boolean
-		--i, n: Integer
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
-		notValid := type.isInvalid (context, o)
-		if notValid then
+		if type.isInvalid (context, o) then
 			Result := True
+		end -- if
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 		-- Check
 		-- type should be attached !!!
@@ -9266,6 +9434,9 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -9274,12 +9445,23 @@ feature {Any}
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
 		--notValid: Boolean
-		--i, n: Integer
+		i, n: Integer
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+		from
+			i := 1
+			n := fields.count
+		until
+			i > n
+		loop
+			if fields.item (i).isNotLoaded (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop		
 	end -- isNotLoaded
 	
 invariant
@@ -9299,6 +9481,11 @@ feature
 		non_void_external_name: Result /= Void
 	end -- getExternalName
 	type: UnitTypeCommonDescriptor
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+		Result := type.isNotLoaded (context, o)
+	end -- isNotLoaded
+
 invariant
 	non_void_type: type /= Void
 end -- class TupleFieldDescriptor
@@ -9534,6 +9721,9 @@ feature {Any}
 		check
 			unit_registered : pos > 0
 		end -- check
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -9652,7 +9842,6 @@ feature {Any}
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
-		notValid: Boolean
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
@@ -9663,17 +9852,20 @@ feature {Any}
 		until
 			i > n
 		loop
-			notValid := ifExprLines.item (i).isInvalid (context, o)
-			if notValid then
+			if ifExprLines.item (i).isInvalid (context, o) then
 				Result := True
 			end -- if
 			i := i + 1
 		end -- loop
 		if elseExpr /= Void then
-			notValid := elseExpr.isInvalid (context, o)
-			if notValid then
+			if elseExpr.isInvalid (context, o) then
 				Result := True
 			end -- if
+		end -- if
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -9825,14 +10017,12 @@ feature {Any}
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
-		notValid: Boolean
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- do nothing so far
-		notValid := expr.isInvalid (context, o)
-		if notValid then
+		if expr.isInvalid (context, o) then
 			Result := True
 		end -- if
 		from
@@ -9841,8 +10031,7 @@ feature {Any}
 		until
 			i > n
 		loop
-			notValid := alternatives.item (i).isInvalid (context, o)
-			if notValid then
+			if alternatives.item (i).isInvalid (context, o) then
 				Result := True
 			end -- if
 			i := i + 1
@@ -9850,6 +10039,9 @@ feature {Any}
 		if not Result then
 			-- expr and all alternatives are valid then check types accordance
 			-- not_implemented_yet
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 invariant
@@ -9881,21 +10073,22 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
-		notValid: Boolean
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
-		-- do nothing so far
 		-- 'expr' is valid and of Boolean type
-		notValid := expr.isInvalid (context, o)
-		if notValid then
+		if expr.isInvalid (context, o) then
 			Result := True
 		end -- if
 		-- 'doExpr' is valid
-		notValid := doExpr.isInvalid (context, o)
-		if notValid then
+		if doExpr.isInvalid (context, o) then
 			Result := True
+		end -- if
+		if not Result then
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 		end -- if
 	end -- isInvalid
 invariant
@@ -9937,17 +10130,17 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
-		-- i, n: Integer
-		notValid: Boolean
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- do nothing so far
-		notValid := expr.isInvalid (context, o)
-		if notValid then
+		if expr.isInvalid (context, o) then
 			Result := True
 		else
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
 			-- expr should be either Type or value ....
 			-- not_implemented_yet
 		end -- if

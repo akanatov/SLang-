@@ -4654,11 +4654,11 @@ end
 		inspect
 			scanner.token
 		when scanner.string_const_token, scanner.char_const_token then
-			create Result.init (Void, scanner.token, scanner.tokenString)
+			create Result.init (scanner.token, scanner.tokenString)
 		when scanner.integer_const_token then
-			create Result.init (Void, scanner.token, scanner.integer_value)
+			create Result.init (scanner.token, scanner.integer_value)
 		when scanner.real_const_token then
-			create Result.init (Void, scanner.token, scanner.tokenString.to_real)
+			create Result.init (scanner.token, scanner.tokenString.to_real)
 		end -- if
 		--scanner.nextToken
 		scanner.nextWithSemicolon (checkSemicolonAfter)
