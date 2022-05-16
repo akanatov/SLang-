@@ -56,6 +56,10 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		-- stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]
+		typeDsc: TypeDescriptor
+		aliasTypes: Sorted_Array [AliasedTypeDescriptor]
+		unitTypeDsc: UnitTypeNameDescriptor
+		aliasTypeDsc: AliasedTypeDescriptor
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
 		generators: Array [CodeGenerator]
@@ -89,22 +93,48 @@ feature {Any}
 				--end -- loop
 				from
 					typePool := cuDsc.typePool
+					create aliasTypes.make
 					n := typePool.count
 					i := 1
 				until
 					i > n					
 				loop
-					if typePool.item(i).isNotLoaded (cuDsc, o) then
+					typeDsc := typePool.item(i) 
+					if typeDsc.isNotLoaded (cuDsc, o) then
 						debug
 							--o.putNL ("Load interface of `" + typePool.item(i).out + "` failed!")
 						end -- debug
 						wasError := True
 						skipCodeGen := True
+					elseif typeDsc.aliasName /= Void then
+						unitTypeDsc ?= typeDsc
+						check
+							non_void_unit_type: unitTypeDsc /= Void
+						end -- check
+						create aliasTypeDsc.init (typeDsc.aliasName, unitTypeDsc)
+						if not aliasTypes.added (aliasTypeDsc) then
+							o.putNL ("Error: at least two unit types has the same alias `" + typeDsc.aliasName + "`")
+							wasError := True
+							skipCodeGen := True
+						end -- if
 					end -- if
 					i := i + 1
 				end -- loop
 
 				if not wasError then
+					-- Register all alias types
+					from
+						typePool := cuDsc.typePool
+						n := aliasTypes.count
+						i := 1
+					until
+						i > n					
+					loop
+						typePool.add (aliasTypes.item (i))
+						i := i + 1
+					end -- loop
+
+					
 					-- If all required types loaded 
 					-- 3. Check validity of cuDsc.statements
 					from

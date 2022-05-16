@@ -422,7 +422,7 @@ feature {None}
 		valid_token: validToken (<<scanner.dot_token, scanner.left_paranthesis_token>>)
 	local
 		exprDsc: ExpressionDescriptor
-		callDsc: MemberCallDescriptor	
+		callDsc: CallDescriptor	
 	do
 		callDsc := parseWritableCall (targetDsc)
 		if callDsc /= Void then
@@ -1704,8 +1704,8 @@ not_implemented_yet("identifer ( TypeName ....")
 		end -- if
 	end -- parseMemberCallWithConstant
 
-	--parseWritableCall(ceDsc: MemberCallDescriptor): MemberCallDescriptor is
-	parseWritableCall(ceDsc: ExpressionDescriptor): MemberCallDescriptor is
+	--parseWritableCall(ceDsc: CallDescriptor): CallDescriptor is
+	parseWritableCall(ceDsc: ExpressionDescriptor): CallDescriptor is
 	-- WritableCall: (((Identifier|return|this) [“.”(Identifier|OperatorName)])|old [“{”UnitTypeName”}”]) [Arguments] {CallChain}
 	--#1 Identifier|this|return [“.”Identifier|OperatorName] [Arguments]  {CallChain}
 	--                            ^                           ^
@@ -1800,7 +1800,7 @@ not_implemented_yet("identifer ( TypeName ....")
 		unitTypeDsc: UnitTypeNameDescriptor
 		stmtDsc: StatementDescriptor
 		exprDsc: ExpressionDescriptor
-		callDsc: MemberCallDescriptor
+		callDsc: CallDescriptor
 		assignDsc: AssignmentStatementDescriptor
 		initCallDsc: InitCallDescriptor
 	do
@@ -2844,7 +2844,7 @@ not_implemented_yet("genericRtnName[X] call not supported")
 	end -- parseRangeExpression
 	
 	parseBinaryOperatorExpression (exprDsc1: ExpressionDescriptor; checkSemicolonAfter: Boolean ): ExpressionCallDescriptor is --ExprOperatorExprDescriptor is
-	--parseBinaryOperatorExpression (exprDsc1: MemberCallDescriptor; checkSemicolonAfter: Boolean ): ExpressionCallDescriptor is --ExprOperatorExprDescriptor is
+	--parseBinaryOperatorExpression (exprDsc1: CallDescriptor; checkSemicolonAfter: Boolean ): ExpressionCallDescriptor is --ExprOperatorExprDescriptor is
 	require
 		first_expression_not_void: exprDsc1 /= Void
 		valid_token: validToken (<<

@@ -647,6 +647,11 @@ feature {Any}
 	local
 		clusters: Array [ClusterDescriptor]
 	do
+debug
+	if unitDsc.aliasName /= Void then
+		o.putNL ("Loading interface of `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
+	end -- if
+end	-- debug
 		clusters := sysDsc.hasUnit(unitExternalName)
 		if clusters = Void or else clusters.count = 0 then
 			-- Such unit is not found in the search universe !!!
@@ -1092,6 +1097,7 @@ feature {Any}
 		i, n: Integer
 		fName: String
 		filePrefix: String
+		unitDsc: UnitDeclarationDescriptor
 	do
 		filePrefix := fs.getFilePath(FullSourceFileName) + "\" + IRfolderName  + "\"
 		if statements.count > 0 then
@@ -1121,9 +1127,18 @@ feature {Any}
 			i > n
 		loop
 			-- per unit: useConst + unit
-			create uImg.init (FullSourceFileName, tStamp, useConst, units.item(i), units.item(i).stringPool, units.item(i).typePool)
-			fName := filePrefix  + units.item(i).getExternalName + irFileExtension
+			unitDsc := units.item(i)
+			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc, unitDsc.stringPool, unitDsc.typePool)
+			fName := filePrefix  + unitDsc.getExternalName + irFileExtension
 			if IRstored (fName, uImg) then
+				if unitDsc.aliasName /= Void then
+					-- Straightforward decision to store the full copy of IR for the alias name ... May be optimized
+					fName := filePrefix  + unitDsc.getAliasExternalName + irFileExtension
+					if not IRstored (fName, uImg) then
+						o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
+						Result := Result + 1
+					end -- if
+				end -- if
 				if unitOfInterest /= Void then
 					unitOfInterest.sameUnitFill (uImg.unit)
 				end -- if
@@ -2060,12 +2075,20 @@ feature {Any}
 	formalGenerics: Array [FormalGenericDescriptor]
 		--  "["" FormalGenericDescriptor {"," FormalGenericDescriptor}"]" 
 
+	getAliasExternalName: String is
+	do
+		Result := buildExternalName (aliasName)
+	end -- getAliasExternalName
 	getExternalName: String is
+	do
+		Result := buildExternalName (name)
+	end -- getExternalName
+	buildExternalName(aName: String): String is
 	local
 		i, n: Integer
 	do
 		Result := ""
-		Result.append_string (name)
+		Result.append_string (aName)
 		n := formalGenerics.count
 		if n > 0 then
 			from
@@ -4219,7 +4242,7 @@ inherit
 create	
 	init
 feature {Any}
---	writable: MemberCallDescriptor
+--	writable: CallDescriptor
 	writable: ExpressionDescriptor
 	expr: ExpressionDescriptor
 
@@ -5023,7 +5046,7 @@ end -- class ParenthedExpressionDescriptor
 ---------
 -- class InitDescriptor
 -- inherit
--- 	MemberCallDescriptor
+-- 	CallDescriptor
 -- 		redefine
 -- 			sameAs, lessThan
 -- --	ExpressionDescriptor
@@ -5072,7 +5095,7 @@ end -- class ParenthedExpressionDescriptor
 
 class OldDescriptor
 inherit
-	MemberCallDescriptor
+	CallDescriptor
 		redefine
 			sameAs, lessThan
 	end
@@ -5108,7 +5131,7 @@ end -- debug
 end -- class OldDescriptor
 class ThisDescriptor
 inherit
-	--MemberCallDescriptor
+	--CallDescriptor
 	--	redefine
 	--		sameAs, lessThan
 	ExpressionDescriptor
@@ -5144,7 +5167,7 @@ end -- debug
 end -- class ThisDescriptor
 class ReturnDescriptor
 inherit
-	--MemberCallDescriptor
+	--CallDescriptor
 	--	redefine
 	--		sameAs, lessThan
 	ExpressionDescriptor
@@ -5183,7 +5206,7 @@ inherit
 end -- class EntityDescriptor
 class IdentifierDescriptor
 inherit
-	--MemberCallDescriptor
+	--CallDescriptor
 	ConstExpressionDescriptor -- ExpressionDescriptor
 		redefine
 			getExternalName
@@ -5930,7 +5953,7 @@ inherit
 		undefine
 			is_equal, infix "<"
 	end
-	--MemberCallDescriptor
+	--CallDescriptor
 	--	redefine
 	--		sameAs, lessThan
 	ConstExpressionDescriptor --ExpressionDescriptor
@@ -6036,9 +6059,8 @@ invariant
 end -- class ConstantDescriptor
 
 class CallChainElement
--- CallChain: “.”Identifier [ Arguments ]
--- Arguments: “(” [ExpressionList] ”)”
--- ExpressionList: Expression{“,” Expression}
+-- CallChain: "."Identifier [ Arguments ]
+-- Arguments: "(" [Expression{"," Expression}] ")"
 inherit
 	Comparable
 		redefine
@@ -6060,6 +6082,23 @@ feature {Any}
 			arguments := args
 		end -- if
 	end -- init
+	
+	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- do nothing so far
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
+	end -- isInvalid
+	
+	
 	getOrder: Integer is
 	do
 		inspect
@@ -6177,7 +6216,7 @@ class QualifiedConstantDescriptor
 inherit
 	ConstExpressionDescriptor
 	end
-	MemberCallDescriptor
+	CallDescriptor
 		redefine
 			sameAs, lessThan
 	end
@@ -6235,23 +6274,13 @@ end -- debug
 		-- do nothing so far
 	end -- generate
 	
---feature {ExpressionDescriptor}
---	weight: Integer is -29
-	
 invariant
 	non_void_expr: exprDsc /= Void
 	non_void_const: constDsc /= Void
 end -- class QualifiedConstantDescriptor
 
 deferred class CallDescriptor
-inherit
-	Any
-		undefine out
-	end
-end -- class CallDescriptor
-
-deferred class MemberCallDescriptor
--- MemberCall: WritableCall |  (this {CallChain})
+-- WritableCall |  (this {CallChain})
 -- WritableCall: (  (Identifier ["."Identifier])| (old ["{"UnitTypeName"}"]) [Arguments] )| return {CallChain}
 inherit
 	StatementDescriptor
@@ -6340,12 +6369,12 @@ feature {Any}
 	end -- outCallChain
 invariant
 	non_void_call_chain: callChain /= Void
-end -- class MemberCallDescriptor
+end -- class CallDescriptor
 
 class WritableTupleDescriptor
 -- "("WritableCall {"," WritableCall } ")"
 inherit
-	MemberCallDescriptor
+	CallDescriptor
 		redefine
 			sameAs, lessThan
 	end
@@ -6456,7 +6485,7 @@ end -- class WritableTupleDescriptor
 class ExpressionCallDescriptor
 --  "("Expression")"{CallChain}
 inherit
-	MemberCallDescriptor
+	CallDescriptor
 		redefine
 			sameAs, lessThan, getOrder
 	end
@@ -6467,23 +6496,41 @@ feature{Any}
 
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		i, n: Integer
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
 		-- do nothing so far
+		if expression.isInvalid (context, o) then
+			Result := True
+		end --if
+		if callChain /= Void then
+			from
+				i := 1
+				n := callChain.count
+			until
+				i > n
+			loop
+				if callChain.item(i).isInvalid (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
+		if not Result then
 debug
 	print ("Validity check for: " + out + "%N")
 end -- debug
+		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
 	end -- generate
-
 
 	init (expr: like expression; cc: like callChain) is
 	require
@@ -6554,28 +6601,27 @@ end -- class ExpressionCallDescriptor
 class UnqualifiedCallDescriptor
 --  Identifier [Arguments] {CallChain}
 inherit
-	MemberCallDescriptor
+	CallDescriptor
 		redefine
 			sameAs, lessThan
 	end
 create
 	init
 feature{Any}
---	target: MemberCallDescriptor
+--	target: CallDescriptor
 	target: ExpressionDescriptor
 	arguments: Array [ExpressionDescriptor]
 
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
-		-- do nothing so far
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
 		if target.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -6599,7 +6645,7 @@ feature{Any}
 			until
 				i > n
 			loop
-				if False then -- to be like this callChain.item (i).isInvalid (context, o) then
+				if callChain.item (i).isInvalid (context, o) then
 					Result := True
 				end -- if
 				i := i + 1
@@ -6726,7 +6772,7 @@ end -- class UnqualifiedCallDescriptor
 class ConstantCallDescriptor
 --  ConstantCall: Constant "."Identifier [Arguments]  {CallChain}
 inherit
-	MemberCallDescriptor
+	CallDescriptor
 		redefine
 			sameAs, lessThan
 	end
@@ -6879,7 +6925,7 @@ inherit
 			init as UnqualifiedCallInit
 		export {None} UnqualifiedCallInit
 		redefine
-			out, sameAs, lessThan, getOrder
+			out, sameAs, lessThan, getOrder, isInvalid, generate
 	end
 create
 	init
@@ -6892,6 +6938,60 @@ feature{Any}
 		identifier := aName
 		UnqualifiedCallInit (ceDsc, args, cc)
 	end -- init
+	
+	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		if target.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if arguments /= Void then
+			from
+				n := arguments.count
+				i := 1
+			until
+				i > n
+			loop
+				if arguments.item (i).isInvalid (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop			
+		end -- if
+		if callChain /= Void then
+			from
+				n := callChain.count
+				i := 1
+			until
+				i > n
+			loop
+				if callChain.item (i).isInvalid (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop			
+		end -- if
+		if not Result then
+			-- Need to check that target.identifier(arguments).classChain combination is valid
+debug
+	print ("Validity check for: " + out + "%N")
+end -- debug
+		end -- if
+	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
+	
+	
 	getOrder: Integer is
 -- 0. All other
 -- 1. not, ~, /=, =, ^
@@ -7023,7 +7123,7 @@ end -- class QualifiedCallDescriptor
 class ThisCallDescriptor
 -- this {CallChain}
 inherit
-	MemberCallDescriptor
+	CallDescriptor
 		rename
 			setCallChain as init,
 			theSameCallChain as theSame,
@@ -7065,7 +7165,7 @@ end -- class ThisCallDescriptor
 class ReturnCallDescriptor
 -- return {CallChain}
 inherit
-	MemberCallDescriptor
+	CallDescriptor
 		rename
 			setCallChain as init,
 			theSameCallChain as sameAs,
@@ -7190,7 +7290,7 @@ end -- class RoutineArguments
 
 class InitCallDescriptor
 inherit
-	--MemberCallDescriptor
+	--CallDescriptor
 	--	--rename
 	--	--	outCallChain as out, 
 	--	--	theSameCallChain as sameAs,
@@ -7204,11 +7304,9 @@ inherit
 
 	StatementDescriptor
 		redefine
-			sameAs, lessThan --, out
+			sameAs, lessThan
 	end
 	RoutineArguments
-		--rename 
-		--	setArguments as init
 		undefine
 			is_equal
 		redefine
@@ -7219,13 +7317,9 @@ create
 feature{Any}
 	unitTypeDsc: UnitTypeNameDescriptor
 	init (unitDsc: like unitTypeDsc; args: like arguments) is
-	--local
-	--	ccElement: CallChainElement
 	do
 		unitTypeDsc := unitDsc
 		arguments := args
-	--	create ccElement.init ("init", arguments)
-	--	callChain:= <<ccElement>>
 	end -- if
 	
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -7254,12 +7348,10 @@ end -- debug
 	end -- out
 	sameAs (other: like Current): Boolean is
 	do
-		--Result := theSameCallChain (other)
 		Result := unitTypeDsc.is_equal (other.unitTypeDsc) and then sameArguments (other)
 	end -- sameAs
 	lessThan (other: like Current): Boolean is
 	do
-		--Result := lessThanCallChain (other)
 		Result := unitTypeDsc < other.unitTypeDsc
 		if not Result and then unitTypeDsc.is_equal (other.unitTypeDsc) then
 			Result := lessArguments (other)
@@ -7270,7 +7362,7 @@ end -- class InitCallDescriptor
 class PrecursorCallDescriptor
 -- old ["{"UnitTypeName"}"] [Arguments] {CallChain}
 inherit
-	MemberCallDescriptor
+	CallDescriptor
 		redefine
 			sameAs, lessThan
 	end
@@ -8252,11 +8344,15 @@ feature {Any}
 	deferred
 	end -- isNotLoaded
 	
+	aliasName: String is do end
+	
 end -- class TypeDescriptor
 
 class AliasedTypeDescriptor
 inherit
 	TypeDescriptor
+		redefine
+			aliasName
 	end
 create
 	init
@@ -8328,6 +8424,8 @@ deferred class AttachedTypeDescriptor
 -- AttachedType: UnitType|AnchorType|MultiType|TupleType|RangeType|RoutineType|AnonymousUnitType
 inherit
 	TypeDescriptor
+		redefine
+			aliasName
 	end
 feature {Any}
 	aliasName: String
