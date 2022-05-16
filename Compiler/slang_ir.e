@@ -649,7 +649,7 @@ feature {Any}
 	do
 debug
 	if unitDsc.aliasName /= Void then
-		o.putNL ("Loading interface of `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
+--		o.putLine ("Loading interface of `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
 	end -- if
 end	-- debug
 		clusters := sysDsc.hasUnit(unitExternalName)
@@ -662,7 +662,7 @@ end	-- debug
 			o.putNL ("Error: " + clusters.count.out + " versions of unit `" + unitPrintableName + "` found in the provided universe. Select only one to be used")
 		else
 			-- Load it
-			o.putNL ("Loading interface of `" + unitPrintableName + "`")
+			o.putLine ("Loading interface of `" + unitPrintableName + "`")
 			Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
 			if Result = Void then
 				-- There was a problem to load unit interface 
@@ -1341,7 +1341,7 @@ feature {Any}
 		end -- loop
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -1426,7 +1426,7 @@ feature {Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -2708,7 +2708,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- not_implemened_yet
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -3966,7 +3966,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -4010,7 +4010,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -4056,7 +4056,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -4193,7 +4193,7 @@ feature {Any}
 			-- entity is to be visible here
 			-- type of expr should be compatible to the type of entity
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -4268,7 +4268,7 @@ feature {Any}
 			-- type of expr should be compatible to the type of writable
 -- not_implemented_yet: AssignmentStatementDescriptor.isInvalid
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -4479,7 +4479,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -4534,7 +4534,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -4600,7 +4600,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -4900,7 +4900,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	
@@ -4990,7 +4990,7 @@ feature
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 invariant
@@ -5036,7 +5036,7 @@ feature
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 invariant
@@ -5113,7 +5113,7 @@ feature
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -5161,7 +5161,7 @@ feature
 	--typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 end -- class ThisDescriptor
@@ -5193,7 +5193,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 end -- class ReturnDescriptor
@@ -5269,7 +5269,7 @@ feature {Any}
 			identifer_name_not_registered_in_the_pool: pos > 0
 		end -- check
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 
@@ -5398,7 +5398,7 @@ feature
 		end -- loop
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -5450,7 +5450,7 @@ feature {Any}
 			-- type of expr should be of the value type !!!
 			-- not_implemented_yet
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -5532,7 +5532,7 @@ feature {Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -5581,7 +5581,7 @@ print ("InlineLambdaExpression.lessThan not_implemented_yet%N")
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 
@@ -5633,7 +5633,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 invariant
@@ -5712,7 +5712,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 invariant
@@ -5760,7 +5760,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 invariant
@@ -5937,7 +5937,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 invariant
@@ -6094,7 +6094,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	
@@ -6265,7 +6265,7 @@ feature
 	--typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 
@@ -6394,7 +6394,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -6523,7 +6523,7 @@ feature{Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -6654,7 +6654,7 @@ feature{Any}
 		if not Result then
 			-- Need to check that target(arguments).classChain combination is valid
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -6794,7 +6794,7 @@ feature{Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -6981,7 +6981,7 @@ feature{Any}
 		if not Result then
 			-- Need to check that target.identifier(arguments).classChain combination is valid
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -7148,7 +7148,7 @@ feature{Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7185,7 +7185,7 @@ feature{Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7333,7 +7333,7 @@ feature{Any}
 		typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7388,7 +7388,7 @@ feature{Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7436,7 +7436,7 @@ end -- debug
 end -- class PrecursorCallDescriptor
 
 class NewStatementDescriptor
--- new ['{' UnitType '}'] ( Identifier | return ) [ Arguments ]
+-- new ['{' UnitType '}'] ( identifier | return ) [ Arguments ]
 inherit
 	StatementDescriptor
 	end
@@ -7463,7 +7463,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7554,7 +7554,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 invariant
@@ -7590,7 +7590,7 @@ feature {Any}
 	typePool := context.typePool
 		-- do nothing so far
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -8069,7 +8069,7 @@ feature {Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -8253,7 +8253,7 @@ feature {Any}
 
 		if not isWhileLoop then
 			Result.append_character('%T')
-			Result.append_string ("while " + whileExpr.out + "%N")
+			Result.append_string ("while " + whileExpr.out)
 		end -- if
 
 		n := ensureClause.count
@@ -8398,7 +8398,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- not_implemened_yet
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -8507,7 +8507,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- not_implemened_yet
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -8615,7 +8615,7 @@ feature {Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -8817,7 +8817,7 @@ feature {Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -8927,7 +8927,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- not_implemened_yet
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -9018,7 +9018,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- not_implemened_yet
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -9175,7 +9175,7 @@ feature {Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -9280,7 +9280,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- not_implemened_yet
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -9393,7 +9393,7 @@ feature {Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 		-- Check
@@ -9533,7 +9533,7 @@ feature {Any}
 	--typePool := context.typePool
 		-- not_implemened_yet
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 
@@ -9820,7 +9820,7 @@ feature {Any}
 			unit_registered : pos > 0
 		end -- check
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -9962,7 +9962,7 @@ feature {Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -10138,7 +10138,7 @@ feature {Any}
 			-- expr and all alternatives are valid then check types accordance
 			-- not_implemented_yet
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -10185,7 +10185,7 @@ feature {Any}
 		end -- if
 		if not Result then
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 		end -- if
 	end -- isInvalid
@@ -10237,7 +10237,7 @@ feature {Any}
 			Result := True
 		else
 debug
-	print ("Validity check for: " + out + "%N")
+	o.putLine ("Validity check for: " + out)
 end -- debug
 			-- expr should be either Type or value ....
 			-- not_implemented_yet

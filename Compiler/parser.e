@@ -1797,6 +1797,7 @@ not_implemented_yet("identifer ( TypeName ....")
 		name: String
 		identDsc: IdentifierDescriptor
 		genIdentDsc: GenericIdentifierDescriptor
+		factualGenerics: Array [TypeOrExpressionDescriptor]
 		unitTypeDsc: UnitTypeNameDescriptor
 		stmtDsc: StatementDescriptor
 		exprDsc: ExpressionDescriptor
@@ -1850,40 +1851,40 @@ not_implemented_yet("identifer ( TypeName ....")
 					Result := Void
 				end -- if
 			else
--- Check for generic arguments !!!
-				if scanner.genericsStart then -- Hmmm ... a < b -- not supported so far
-					-- parse for more identifier[ ] CallChain
-not_implemented_yet("genericRtnName[X] call not supported")
-					create genIdentDsc.init (name, Void)
-					
-					inspect	
-						scanner.token
-					when scanner.dot_token, scanner.left_paranthesis_token then
-						-- parse call statement: ident. | ident(  .... [:= Expr]
-						-- call or assignment!!!
-						-- ident. | ident( 
-						callDsc := parseWritableCall (genIdentDsc)
-						if callDsc /= Void then
-							if scanner.token = scanner.assignment_token then
-								scanner.nextToken
-								exprDsc := parseExpression
-								if exprDsc /= Void then
-									-- callDsc := exprDsc1
-									if callDsc.isWritable then
-										create assignDsc.init (callDsc, exprDsc)
-										Result := <<assignDsc>>							
-									else
-										validity_error( "Left part of assignment is not writable - " + callDsc.out + " := ...")
+				if scanner.genericsStart then
+					-- parse for more identifier[...].CallChain
+					factualGenerics := parseFactualGenerics
+					if factualGenerics /= Void then
+						create genIdentDsc.init (name, factualGenerics)				
+						inspect	
+							scanner.token
+						when scanner.dot_token, scanner.left_paranthesis_token then
+							-- parse call statement: ident. | ident(  .... [:= Expr]
+							-- call or assignment!!!
+							-- ident. | ident( 
+							callDsc := parseWritableCall (genIdentDsc)
+							if callDsc /= Void then
+								if scanner.token = scanner.assignment_token then
+									scanner.nextToken
+									exprDsc := parseExpression
+									if exprDsc /= Void then
+										-- callDsc := exprDsc1
+										if callDsc.isWritable then
+											create assignDsc.init (callDsc, exprDsc)
+											Result := <<assignDsc>>							
+										else
+											validity_error( "Left part of assignment is not writable - " + callDsc.out + " := ...")
+										end -- if
 									end -- if
+								else
+									-- Statement is the procedure call
+									Result := <<callDsc>>
 								end -- if
-							else
-								-- Statement is the procedure call
-								Result := <<callDsc>>
-							end -- if
-						end -- if 
-					else
-						syntax_error (<< scanner.left_paranthesis_token, scanner.dot_token>>)
-					end -- inspect
+							end -- if 
+						else
+							syntax_error (<< scanner.left_paranthesis_token, scanner.dot_token>>)
+						end -- inspect
+					end -- if
 				else
 					-- That is just a procedure call with no arguments!!! 
 					create identDsc.init (name)
@@ -3150,53 +3151,50 @@ not_implemented_yet("genericRtnName[X] call not supported")
 	end -- parseNewExpression
 
 	parseNewStatement: NewStatementDescriptor is
-	--55 NewStatement: new [“{” UnitType “}”] ( Identifier | return ) [“.”init] [ Arguments ]
-	-- NewExpression: new UnitType [“.”init] [ Arguments ]
-
+	-- NewStatement: new [“{” UnitType “}”] ( identifier | return ) [ Arguments ]
 	require
 		valid_start_token: validToken (<<scanner.new_token>>)
 	local
-		utDsc: UnitTypeCommonDescriptor
-		--args: Array [ExpressionDescriptor]
+		unitTypeDsc: UnitTypeCommonDescriptor
 		name: String
 		wasError: Boolean
 	do
 		scanner.nextToken
 		inspect
 			scanner.token
-		when scanner.type_name_token then
+		when scanner.identifier_token then
 			name := scanner.tokenString
 			scanner.nextToken
 		when scanner.return_token then
 			scanner.nextToken
 		when scanner.left_curly_bracket_token then
 			scanner.nextToken
-			utDsc := parseUnitType
-			if utDsc = Void then
+			unitTypeDsc := parseUnitType
+			if unitTypeDsc = Void then
 				wasError := True
 			end -- if
 			if scanner.token = scanner.right_curly_bracket_token then
 				scanner.nextToken
 				inspect
 					scanner.token
-				when scanner.type_name_token then
+				when scanner.identifier_token then
 					name := scanner.tokenString
 					scanner.nextToken
 				when scanner.return_token then
 					scanner.nextToken
 				else
 					wasError := True
-					syntax_error (<<scanner.type_name_token, scanner.return_token>>)
+					syntax_error (<<scanner.identifier_token, scanner.return_token>>)
 				end -- inspect
 			else
 				wasError := True
 				syntax_error (<<scanner.right_curly_bracket_token>>)
 			end -- if
 			if not wasError then
-				create Result.init (utDsc, name, parseArguments)
+				create Result.init (unitTypeDsc, name, parseArguments)
 			end -- if
 		else
-			syntax_error (<<scanner.type_name_token, scanner.return_token, scanner.left_curly_bracket_token>>)
+			syntax_error (<<scanner.identifier_token, scanner.return_token, scanner.left_curly_bracket_token>>)
 		end -- if	
 	end -- parseNewStatement
 	
@@ -5838,10 +5836,33 @@ end
 		end -- inspect
 	end -- parseUnitTypeWithSemicolonAfter
 	
+	parseFactualGenericType: TypeOrExpressionDescriptor is
+	require
+		valid_token: validToken (<<scanner.type_name_token, scanner.identifier_token, scanner.as_token, scanner.rtn_token>>)
+	local
+		typeDsc: UnitTypeNameDescriptor
+		exprDsc: ExpressionDescriptor
+		name: String
+	do
+		name := scanner.tokenString
+		inspect
+			scanner.token
+		when scanner.type_name_token then		
+			typeDsc := parseUnitTypeName
+			if typeDsc /= Void then
+				Result := typeDsc
+			end -- if		
+		when scanner.identifier_token then
+			exprDsc := parseExpression
+			if exprDsc /= Void then
+				Result := exprDsc
+			end -- if		
+		end -- inspect		
+	end -- parseFactualGenericType
+	
 	parseFormalGenericType: FormalGenericDescriptor is
 	-- Identifier|TypeName ([“extend” UnitTypeName ] [“new” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
 	-- ^
-
 	require
 		valid_token: validToken (<<scanner.type_name_token, scanner.identifier_token>>)
 	local
@@ -8070,10 +8091,78 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		end -- loop
 	end -- parsePredicates
 
-	parseFormalGenerics: Array [FormalGenericDescriptor] is
-	--86	FormalGenerics: “[”FormalGeneric {“,” FormalGeneric}“]”
-	--		FormalGeneric: Identifier ([“extend” UnitTypeName] [“init” [Signature]])| [“:” (UnitType | RoutineType]
+	parseFactualGenerics: Array [TypeOrExpressionDescriptor] is
+	require
+		valid_token: validToken (<<scanner.left_square_bracket_token, scanner.less_token>>) 
+	local
+		typeOrExprDsc: TypeOrExpressionDescriptor
+		toLeave: Boolean
+		commaFound: Boolean
+	do
+		from
+			create Result.make (1, 0)
+			scanner.nextToken
+		until
+			toLeave
+		loop
+			inspect
+				scanner.token
+			when scanner.type_name_token, scanner.identifier_token, scanner.as_token, scanner.rtn_token then
+				-- Type ...
+				if commaFound or else Result.count = 0 then
+					commaFound := False
+					typeOrExprDsc := parseFactualGenericType
+					if typeOrExprDsc = Void then
+						toLeave := True
+						Result := Void
+					else
+						Result.force(typeOrExprDsc, Result.count + 1)
+					end -- if
+				else
+					syntax_error (<<scanner.comma_token>>)
+					Result := Void
+					toLeave := True
+				end -- if
+			when scanner.comma_token then
+				if commaFound or else Result.count = 0 then
+					if scanner.Cmode then
+						syntax_error (<<scanner.type_name_token, scanner.greater_token>>)
+					else
+						syntax_error (<<scanner.type_name_token, scanner.right_square_bracket_token>>)
+					end -- if
+					Result := Void
+					toLeave := True
+				else
+					scanner.nextToken
+					commaFound := True
+				end -- if
+			else
+				if scanner.genericsEnd then
+					if commaFound or else Result.count = 0 then
+						Result := Void
+						syntax_error (<<scanner.type_name_token, scanner.identifier_token>>)
+					end -- if
+					scanner.nextToken
+					toLeave := True				
+--trace ("%TparseFactualGenerics: ]")
+				elseif commaFound then
+					Result := Void
+					syntax_error (<<scanner.type_name_token, scanner.identifier_token>>)
+				elseif scanner.Cmode then
+					Result := Void
+					syntax_error (<<scanner.comma_token, scanner.greater_token>>)
+				else
+					Result := Void
+					syntax_error (<<scanner.comma_token, scanner.right_square_bracket_token>>)
+				end -- if
+				toLeave := True
+			end -- inspect
+		end -- loop
+	end -- parseFactualGenerics
 
+	parseFormalGenerics: Array [FormalGenericDescriptor] is
+	--	FormalGenerics: “[”FormalGeneric {“,” FormalGeneric}“]”
+	--	FormalGeneric: Identifier ([“extend” UnitTypeName] [“init” [Signature]])| [“:” (UnitType | RoutineType]
 	require
 		valid_token: validToken (<<scanner.left_square_bracket_token, scanner.less_token>>) 
 	local

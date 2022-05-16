@@ -1,3 +1,3 @@
-io.put_character ('\r')
-io.put_character ('\n')
-io.put_character ('\t')
+IO.put_character ('\r')
+IO.put_character ('\n')
+IO.put_character ('\t')

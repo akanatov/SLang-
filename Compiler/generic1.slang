@@ -1,15 +1,16 @@
 a: A[rtn]
 
 
-/*
-unit A[G]
+
+unit A1[G]
 end
 
-unit A[G new]
+unit A2[G new]
 end
 
-unit A[G:Type]
+unit A3[t:Type]
 end
-*/
-unit A[G:rtn ]
+
+
+unit A4[r:rtn ]
 end

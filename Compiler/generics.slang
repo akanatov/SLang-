@@ -1,5 +1,5 @@
 unit A
-	var a: Array [Any]
+	a: Array [Any]
 	foo1 do
 		a := new Array[Integer]
 	end
@@ -7,9 +7,9 @@ unit A
 		a := new Array[String]
 	end
 	append (e: Any)  do
-		a [a.count + 1] := e
+		a (a.count + 1) := e
 	end
-	init do
+	A do
 	    new a 
 	end
 end

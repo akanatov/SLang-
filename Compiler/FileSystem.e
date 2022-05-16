@@ -15,7 +15,7 @@ feature {Any}
 		wasError: Boolean
 	do
 		if not wasError then
---print ("%N%TPath1: " + path1 + ", time: " + file_time (path1).out)
+--print ("%N%TPath1: " + path1 + ", time: " + file_time (path1).out + "%N")
 --print ("%N%TPath2: " + path2 + ", time: " + file_time (path2).out + "%N")
 --io.read_character
 			Result := file_time (path1) < file_time (path2)

@@ -1,7 +1,7 @@
 		do
 			object is DynamicObject ("classfile.compiled")
 			object.call ("foo", 1,2,3)
-			result is object.call ("goo", True, False, "xyz")
+			result is object.call ("goo", true, false, "xyz")
 			if result is
 				:Integer StandardIO.put ("Recieved Integer from loaded code ", result)
 				else

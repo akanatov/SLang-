@@ -1,4 +1,4 @@
-val unit Bit [N: Integer]
+val unit Bit [n: Integer]
 	() (pos: Integer; value: Boolean)
 	do	
 	end // ()
