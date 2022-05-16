@@ -1261,7 +1261,7 @@ end -- class UnitImage
 class WhenClauseDescriptor
 -- when [Identifier:] UnitTypeDescriptor do StatementsList
 inherit	
-	Any
+	BuildServer
 		redefine
 			out
 	end
@@ -1308,7 +1308,7 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- out
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -1345,6 +1345,11 @@ debug
 end -- debug
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 invariant
 	non_void_unitType: unitType /= Void
 	non_void_statements: statements /= Void
@@ -1363,7 +1368,7 @@ feature {Any}
 	whenClauses: Array [WhenClauseDescriptor]
 	whenElseClause: Array [StatementDescriptor]
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -2695,7 +2700,7 @@ feature {Any}
 		initConstraint:= ic
 	end -- init
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -2711,6 +2716,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -3876,6 +3886,31 @@ end -- class ConstWithInitDescriptor
 -- RegularExpression:
 --      Constant ({"|" Constant}) | ("|" ".." Constant)
 
+deferred class BuildServer
+feature
+	generate (cg: CodeGenerator) is
+	deferred
+	end -- if
+	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	require
+		non_void_contex: context /= Void
+		non_void_output: o /= Void
+	do
+		if not validityChecked then
+			Result := is_invalid (context, o)
+			validityChecked := True
+		end -- if
+	end -- isInvalid
+	validityChecked: Boolean
+feature {None}
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	require
+		non_void_contex: context /= Void
+		non_void_output: o /= Void
+	deferred
+	end -- checkValidity
+end -- class BuildServer
+
 deferred class StatementDescriptor
 -- AssignmentStatementDescriptor | LocalAttributeCreation | MemberCallOrCreation | IfCase | LoopStatementDescriptor | BreakStatementDescriptor | DetachStatementDescriptor
 --    | ReturnStatementDescriptor | HyperBlockDescriptor | RaiseStatementDescriptor 
@@ -3888,16 +3923,10 @@ inherit
 		undefine
 			out, is_equal
 	end
-feature {Any}
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
-	require
-		non_void_contex: context /= Void
-	deferred
-	end -- checkValidity
-	generate (cg: CodeGenerator) is
-	deferred
-	end -- if
-
+	BuildServer
+		undefine
+			out, is_equal
+	end
 feature {StatementDescriptor}
 	sameAs (other: like Current): Boolean is
 	once
@@ -3955,7 +3984,7 @@ create
 feature {Any}
 	id: String
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -3999,7 +4028,7 @@ create
 feature {Any}
 	expr: ExpressionDescriptor
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -4045,7 +4074,7 @@ create
 feature {Any}
 	expr: ExpressionDescriptor
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -4173,7 +4202,7 @@ feature {Any}
 	entity: String
 	expr: ExpressionDescriptor
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -4246,7 +4275,7 @@ feature {Any}
 	writable: ExpressionDescriptor
 	expr: ExpressionDescriptor
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -4468,7 +4497,7 @@ feature {Any}
 	--type: AttachedTypeDescriptor
 	type: DetachableTypeDescriptor
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -4523,7 +4552,7 @@ feature {Any}
 	type: AttachedTypeDescriptor
 	expr: ExpressionDescriptor -- if expr is Void then type should have no init or init with no parameters
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -4589,7 +4618,7 @@ inherit
 create
 	init
 feature {Any}
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 	--	useConst: Sorted_Array [UnitTypeNameDescriptor]
 	--	stringPool: Sorted_Array [String]
@@ -4844,11 +4873,11 @@ feature{Any}
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
-	require	
-		non_void_context: context /= Void
-	deferred
-	end -- isInvalid	
+	--is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	--require	
+	--	non_void_context: context /= Void
+	--deferred
+	--end -- isInvalid	
 	
 	semType: UnitTypeCommonDescriptor
 	
@@ -4888,7 +4917,7 @@ feature {Any}
 	do
 		Result := expDsc < other.expDsc
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -4903,6 +4932,10 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 	
 end -- class IsDetachedDescriptor
 class IsAttachedDescriptor
@@ -4978,7 +5011,7 @@ feature
 			Result := realExpr < other.realExpr
 		end -- if
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -4993,6 +5026,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 invariant
 	forcedType_not_void: forcedType /= Void
 	realExpr_not_void: realExpr /= Void
@@ -5024,7 +5062,7 @@ feature
 	do
 		Result := expr < other.expr
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -5039,6 +5077,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 invariant
 	non_void_expression: expr /= Void
 end -- class ParenthedExpressionDescriptor
@@ -5074,7 +5117,7 @@ end -- class ParenthedExpressionDescriptor
 -- 	do
 -- 		Result := unitName < other.unitName
 -- 	end -- theSame
--- 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+-- 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 -- 	local
 -- 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 -- 		--stringPool: Sorted_Array [String]
@@ -5102,7 +5145,7 @@ inherit
 feature
 	out: String is do Result := "old" end
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -5149,7 +5192,7 @@ feature
 	lessThan (other: like Current): Boolean is
 	do
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -5164,6 +5207,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 end -- class ThisDescriptor
 class ReturnDescriptor
 inherit
@@ -5181,7 +5229,7 @@ feature {Any}
 	lessThan (other: like Current): Boolean is
 	do
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -5196,6 +5244,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 end -- class ReturnDescriptor
 deferred class EntityDescriptor
 inherit
@@ -5252,7 +5305,7 @@ feature {Any}
 	markedConst, markedRigid, MarkedVar: Boolean is False
 	--type: TypeDescriptor is once end
 	
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -5272,6 +5325,10 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 
 end -- class IdentifierDescriptor
 
@@ -5373,7 +5430,7 @@ feature
 			end -- loop
 		end -- if
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -5402,6 +5459,11 @@ debug
 end -- debug
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 invariant
 	tuple_not_void: tuple /= Void
 end -- class TupleExpressionDescriptor
@@ -5432,7 +5494,7 @@ feature {Any}
 	do
 		Result := expr < other.expr
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -5454,6 +5516,11 @@ debug
 end -- debug
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 invariant
 	non_void_expression: expr /= Void
 end -- class RefExpressionDescriptor
@@ -5512,7 +5579,7 @@ feature {Any}
 			end -- if
 		end -- if
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -5536,6 +5603,10 @@ debug
 end -- debug
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 	
 invariant
 	name_not_void: name /= Void
@@ -5569,7 +5640,7 @@ print ("InlineLambdaExpression.sameAs not_implemented_yet%N")
 	once
 print ("InlineLambdaExpression.lessThan not_implemented_yet%N")
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -5584,6 +5655,10 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 
 end -- class InlineLambdaExpression
 
@@ -5621,7 +5696,7 @@ feature {Any}
 			Result := range < other.range
 		end -- if
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -5636,6 +5711,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 invariant
 	non_void_expr: expr /= Void
 	non_void_range: range /= Void
@@ -5700,7 +5780,7 @@ feature {Any}
 			end -- if
 		end -- if
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -5715,6 +5795,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 invariant
 	left_expr_not_void: left /= Void
 	right_expr_not_void: right /= Void
@@ -5748,7 +5833,7 @@ feature {Any}
 	do
 		Result := expr < other.expr
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -5763,6 +5848,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 invariant
 	expr_not_void: expr /= Void
 end -- class OldExpressionDescriptor
@@ -5838,7 +5928,7 @@ end -- class OldExpressionDescriptor
 --			end -- loop
 --		end -- if
 --	end -- lessThan
---	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 --	local
 --		useConst: Sorted_Array [UnitTypeNameDescriptor]
 --		stringPool: Sorted_Array [String]
@@ -5926,7 +6016,7 @@ feature {Any}
 			Result := type < other.type
 		end -- if
 	end -- sameAs
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -5940,6 +6030,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 invariant
 	expr_not_void: expr /= Void
 end -- class TypeOfExpression
@@ -6026,10 +6121,14 @@ feature	{Any}
 			end -- if
 		end -- if
 	end -- lessThan	
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		-- Always valid !!!
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 
 	out: String is
 	local
@@ -6066,6 +6165,10 @@ inherit
 		redefine
 			out, is_equal
 	end
+	BuildServer
+		redefine
+			out, is_equal
+	end
 create
 	init
 feature {Any}
@@ -6083,7 +6186,7 @@ feature {Any}
 		end -- if
 	end -- init
 	
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -6097,6 +6200,10 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 	
 	
 	getOrder: Integer is
@@ -6253,7 +6360,7 @@ feature
 		end -- if	
 	end -- lessThan
 	
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -6383,7 +6490,7 @@ create
 feature {Any}
 	tuple: Array [ExpressionDescriptor]
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -6494,7 +6601,7 @@ create
 feature{Any}
 	expression: ExpressionDescriptor
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -6612,7 +6719,7 @@ feature{Any}
 	target: ExpressionDescriptor
 	arguments: Array [ExpressionDescriptor]
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -6783,7 +6890,7 @@ feature{Any}
 	name: String
 	arguments: Array [ExpressionDescriptor]
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -6925,7 +7032,7 @@ inherit
 			init as UnqualifiedCallInit
 		export {None} UnqualifiedCallInit
 		redefine
-			out, sameAs, lessThan, getOrder, isInvalid, generate
+			out, sameAs, lessThan, getOrder, is_invalid, generate
 	end
 create
 	init
@@ -6939,7 +7046,7 @@ feature{Any}
 		UnqualifiedCallInit (ceDsc, args, cc)
 	end -- init
 	
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -7137,7 +7244,7 @@ create
 feature{Any}
 	isWritable: Boolean is False
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -7174,7 +7281,7 @@ inherit
 create
 	init
 feature{Any}
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -7322,7 +7429,7 @@ feature{Any}
 		arguments := args
 	end -- if
 	
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -7377,7 +7484,7 @@ create
 feature{Any}
 	unitType: UnitTypeCommonDescriptor
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -7452,7 +7559,7 @@ feature {Any}
 	unitType: UnitTypeCommonDescriptor
 	identifier: String
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -7542,7 +7649,7 @@ feature {Any}
 			Result := lessArguments (other)
 		end -- if
 	end -- theSame
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -7556,7 +7663,12 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
-	end -- isInvalid
+	end -- is_invalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 invariant
 	non_void_unitType : unitType /= Void
 	non_void_arguments : arguments /= Void
@@ -7579,7 +7691,7 @@ feature {Any}
 	ifParts: Array [IfLineDecsriptor]
 	elsePart: Array [StatementDescriptor]
 	
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
@@ -7887,6 +7999,10 @@ inherit
 		undefine
 			out
 	end
+	BuildServer
+		undefine
+			out, is_equal
+	end
 feature {Any}
 	alternativeTags: Sorted_Array[AlternativeTagDescriptor]
 	sameAs (other: like Current): Boolean is
@@ -8020,6 +8136,26 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- out
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		-- i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- is_invalid
+
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 invariant
 	statements_not_void: statements /= Void
 end -- class IfStatementAlternative
@@ -8051,7 +8187,12 @@ feature {Any}
 		Result.append_character (' ')
 		Result.append_string (expr.out)
 	end -- out
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -8094,26 +8235,6 @@ feature {Any}
 		Result := clone (name)
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
---	is_equal (other: like Current): Boolean is
---	do
---		if weight = other.weight and then name.is_equal (other.name) then
---			Result := sameAs (other)
---		end -- if
---	end -- is_equal
---	infix "<"(other: like Current): Boolean is
---	do
---		Result := weight < other.weight
---		if not Result and then weight = other.weight then
---			Result := name < other.name
---			if not Result and then name.is_equal (other.name) then
---				Result := lessThan (other)
---			end -- if
---		end -- if
---	end -- infix "<"
---feature {MemberDescriptionDescriptor}
---	weight: Integer is
---	deferred
---	end
 invariant
 	not_void_name: name /= Void
 end -- class MemberDescriptionDescriptor
@@ -8313,6 +8434,10 @@ inherit
 		undefine
 			out
 	end
+	BuildServer
+		undefine
+			out, is_equal
+	end
 feature
 	getExternalName: String is
 	deferred
@@ -8331,12 +8456,16 @@ deferred class TypeDescriptor
 inherit	
 	TypeOrExpressionDescriptor
 	end
+	--BuildServer
+	--	undefine
+	--		out, is_equal
+	--end
 feature {Any}
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
-	require
-		non_void_context: context /= Void
-	deferred
-	end -- isInvalid
+	--is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	--require
+	--	non_void_context: context /= Void
+	--deferred
+	--end -- is_invalid
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	require
@@ -8384,8 +8513,12 @@ feature {Any}
 	do
 		Result := realType.getExternalName
 	end -- getExternalName
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -8494,7 +8627,7 @@ feature {Any}
 		end -- loop
 		Result.append_string ("end")
 	end -- out
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -8510,6 +8643,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -8599,7 +8737,7 @@ feature {Any}
 		Result := "rtn " + signature.getExternalName
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -8619,6 +8757,10 @@ debug
 end -- debug
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -8652,6 +8794,10 @@ class SignatureDescriptor
 -- ("("[Type {"," Type}]")"[":" Type])| (":" Type)
 inherit
 	Comparable
+		redefine
+			out, is_equal
+	end
+	BuildServer
 		redefine
 			out, is_equal
 	end
@@ -8787,7 +8933,7 @@ feature {Any}
 			end -- if
 		end -- if
 	end -- infix <
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -8821,6 +8967,11 @@ debug
 end -- debug
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 invariant
 	non_void_parameters: parameters /= Void
 end -- class SignatureDescriptor
@@ -8914,7 +9065,7 @@ feature {Any}
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -8930,6 +9081,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -9005,7 +9161,7 @@ feature {Any}
 		end -- loop
 	end -- if
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -9021,6 +9177,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -9101,7 +9262,7 @@ feature {Any}
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
-	isInvalid, isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid, isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -9112,6 +9273,11 @@ feature {Any}
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 	end -- isInvalid, isNotLoaded
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 end -- class AsThisTypeDescriptor
 
 deferred class AnchoredCommonDescriptor
@@ -9159,7 +9325,7 @@ feature {Any}
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -9179,6 +9345,10 @@ debug
 end -- debug
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -9267,7 +9437,7 @@ feature {Any}
 			Result.append_string (aliasName)
 		end -- if
 	end -- out
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -9283,6 +9453,11 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -9379,7 +9554,7 @@ feature {Any}
 	do
 		Result := type < other.type
 	end -- lessThan
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -9400,6 +9575,10 @@ end -- debug
 		-- type should be attached !!!
 		-- not_implemened_yet
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -9520,7 +9699,7 @@ feature {Any}
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -9536,6 +9715,10 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -9803,7 +9986,7 @@ feature {Any}
 		Result.append_string ("_" + Result.hash_code.out)
 	end -- getExternalName
 	
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -9823,6 +10006,10 @@ debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		if interface = Void then
@@ -9934,7 +10121,7 @@ feature {Any}
 	ifExprLines: Array [IfExprLineDescriptor]
 	elseExpr: ExpressionDescriptor
 
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -10064,13 +10251,17 @@ deferred class IfExprLineDescriptor
 inherit
 	IfLineDecsriptor
 	end
+	BuildServer
+		undefine 
+			is_equal, out
+	end
 feature
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
-	require	
-		non_void_context: context /= Void
-		non_void_output: o /= Void		
-	deferred
-	end -- isInvalid
+	--is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	--require	
+	--	non_void_context: context /= Void
+	--	non_void_output: o /= Void		
+	--deferred
+	--end -- isInvalid
 end -- class IfExprLineDescriptor
 
 class IfIsExprLineDescriptor
@@ -10109,7 +10300,7 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- out
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -10119,7 +10310,6 @@ feature {Any}
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
-		-- do nothing so far
 		if expr.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -10142,6 +10332,10 @@ debug
 end -- debug
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 invariant
 	consistent_is_body: alternatives /= Void
 end -- class IfIsExprLineDescriptor
@@ -10166,7 +10360,7 @@ feature {Any}
 	do
 		Result := expr.out + " do " + doExpr.out
 	end -- out
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -10189,6 +10383,11 @@ debug
 end -- debug
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 invariant
 	do_expr_not_void: doExpr /= Void
 end -- class IfDoExprLineDescriptor
@@ -10199,6 +10398,12 @@ class AlternativeTagDescriptor
 inherit
 	SmartComparable
 		redefine
+			out
+	end
+	BuildServer
+		undefine
+			is_equal
+		redefine 
 			out
 	end
 creation
@@ -10223,7 +10428,7 @@ feature {Any}
 	do
 		Result := expr < other.expr
 	end -- lessThan
-	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
@@ -10232,7 +10437,6 @@ feature {Any}
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
-		-- do nothing so far
 		if expr.isInvalid (context, o) then
 			Result := True
 		else
@@ -10243,6 +10447,10 @@ end -- debug
 			-- not_implemented_yet
 		end -- if
 	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 invariant
 	expression_not_void: expr /= Void
 end -- class AlternativeTagDescriptor
