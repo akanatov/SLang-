@@ -586,7 +586,7 @@ feature {Any}
 		scanner.setPool (stringPool)
 	end -- stop_unit_parsing
 
-	start_standalone_rotuine_parsing is
+	start_standalone_routine_parsing is
 	do
 		backup_stringPool:= stringPool
 		backup_typePool:= typePool
@@ -596,8 +596,8 @@ feature {Any}
 			parsing_mode: scanner /= Void
 		end -- check
 		scanner.setPool (stringPool)
-	end -- start_standalone_rotuine_parsing
-	stop_standalone_rotuine_parsing is
+	end -- start_standalone_routine_parsing
+	stop_standalone_routine_parsing is
 	do
 		stringPool:= backup_stringPool
 		typePool:= backup_typePool
@@ -605,7 +605,7 @@ feature {Any}
 			parsing_mode: scanner /= Void
 		end -- check
 		scanner.setPool (stringPool)
-	end -- stop_standalone_rotuine_parsing
+	end -- stop_standalone_routine_parsing
 
 	add_name_to_standalone_routines_pool (name: String) is
 	require

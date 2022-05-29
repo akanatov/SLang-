@@ -219,7 +219,7 @@ feature {Any}
 					end
 					ast.stop_unit_parsing
 				when scanner.pure_token then -- start of standalone pure routine
-					ast.start_standalone_rotuine_parsing
+					ast.start_standalone_routine_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -232,9 +232,9 @@ feature {Any}
 						syntax_error (<<scanner.identifier_token>>)
 						toExit := True
 					end
-					ast.stop_standalone_rotuine_parsing
+					ast.stop_standalone_routine_parsing
 				when scanner.safe_token then -- start of standalone safe routine
-					ast.start_standalone_rotuine_parsing
+					ast.start_standalone_routine_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
@@ -247,7 +247,7 @@ feature {Any}
 						syntax_error (<<scanner.identifier_token>>)
 						toExit := True
 					end
-					ast.stop_standalone_rotuine_parsing
+					ast.stop_standalone_routine_parsing
 				when scanner.identifier_token then -- start of standalone routine or statement of the anonymous one
 -- Not sure what to do with pools !!!!
 					name := scanner.tokenString
@@ -259,7 +259,8 @@ feature {Any}
 					when scanner.colon_token then
 						-- ident: function defintion or local attribute !!!
 						parseFunctionOrLocalAttribute (name)
-					when scanner.left_paranthesis_token then -- identifier ( .... Huh .... prase further ...
+					when scanner.left_paranthesis_token then
+						-- identifier ( .... Huh .... prase further ...
 						parseAssignmentOrUnqualifiedCallOrRoutineStart (name)
 					when scanner.dot_token then
 						-- Anonymous routine call statement : ident.
@@ -290,12 +291,12 @@ feature {Any}
 					then
 						-- Standalone routine start
 --trace (">>#6")
-						ast.start_standalone_rotuine_parsing
+						ast.start_standalone_routine_parsing
 						rtnDsc := parseStandAloneRoutine1 (False, False, name)
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 							validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 						end -- if					
-						ast.stop_standalone_rotuine_parsing
+						ast.stop_standalone_routine_parsing
 					else
 						--if scanner.Cmode and then (scanner.token = scanner.less_token or else scanner.token = scanner.left_curly_bracket_token)
 						--	or else (scanner.token = scanner.left_square_bracket_token or else scanner.token = scanner.do_token)
@@ -303,12 +304,12 @@ feature {Any}
 						if scanner.blockStart then
 							-- Standalone routine start
 --trace (">>#5")
-							ast.start_standalone_rotuine_parsing
+							ast.start_standalone_routine_parsing
 							rtnDsc := parseStandAloneRoutine1 (False, False, name)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 								validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 							end -- if					
-							ast.stop_standalone_rotuine_parsing
+							ast.stop_standalone_routine_parsing
 						elseif scanner.genericsStart then
 --trace (">>#5.5")
 -- NOT SUPPORTED foo[T]() - call chain !!!
@@ -317,12 +318,12 @@ feature {Any}
 -- foo[Integer] - valid procedure call !!!
 -- foo [Integer] (arguments)
 -- Headache to parse !!!
-							ast.start_standalone_rotuine_parsing
+							ast.start_standalone_routine_parsing
 							rtnDsc := parseStandAloneRoutine1 (False, False, name)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 								validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 							end -- if					
-							ast.stop_standalone_rotuine_parsing
+							ast.stop_standalone_routine_parsing
 						elseif scanner.Cmode then
 							syntax_error (<<
 								-- scanner.final_token, scanner.alias_token,
@@ -700,22 +701,22 @@ feature {None}
 			when scanner.require_token, scanner.foreign_token, scanner.use_token then -- , scanner.none_token
 				-- function
 --trace (">>#4")
-				ast.start_standalone_rotuine_parsing
+				ast.start_standalone_routine_parsing
 				rtnDsc := parseStandAloneRoutine1 (False, False, name)
 				if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 					validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 				end -- if					
-				ast.stop_standalone_rotuine_parsing
+				ast.stop_standalone_routine_parsing
 			else
 				if scanner.blockStart then
 					-- function
 --trace (">>#3")
-					ast.start_standalone_rotuine_parsing
+					ast.start_standalone_routine_parsing
 					rtnDsc := parseStandAloneRoutine1 (False, False, name)
 					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 						validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 					end -- if					
-					ast.stop_standalone_rotuine_parsing
+					ast.stop_standalone_routine_parsing
 				else
 					-- ident: ?type
 					detDsc ?= type
@@ -778,6 +779,7 @@ feature {None}
 
 	parseAssignmentOrUnqualifiedCallOrRoutineStart (name: String) is
 	-- name (var 			>> routine declaration
+	-- name ()				>> unqualified call or routine declaration
 	-- name (operator		>> unqualified call or assignment ().x or ().x := expr
 	-- name (id: 			>> routine declaration
 	-- name (id.			>> unqualified call or assignment
@@ -800,6 +802,9 @@ feature {None}
 		callDsc: UnqualifiedCallDescriptor
 		exprDsc: ExpressionDescriptor
 		asgnDsc: AssignmentStatementDescriptor
+		identDsc: IdentifierDescriptor
+		skipParametersParsing: Boolean
+		statementProcessed: Boolean
 		commaFound: Boolean
 		wasError: Boolean
 		isRtnDecl: Boolean
@@ -814,11 +819,48 @@ feature {None}
 			--              ^
 			-- Identifier Parameters [“:” Type] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | ( foreign| (“=>”Expression ) [EnsureBlock end] )
 			isRtnDecl := True
-		when scanner.operator_token, -- scanner.minus_token,
-			scanner.implies_token, scanner.bar_token, scanner.tilda_token
-		then
+		when scanner.operator_token, scanner.implies_token, scanner.bar_token, scanner.tilda_token then
 			-- name ( operator		>> unqualified call or assignment ().x or ().x := expr
 			--        ^
+		when scanner.right_paranthesis_token then 
+			-- name ( )		>> unqualified call or routine declaration
+			--        ^
+			scanner.nextToken
+			inspect	
+				scanner.token 
+			when scanner.dot_token then
+				-- name (). >> call or assignemnt
+			else
+				if scanner.Cmode then			
+					if scanner.token = scanner.left_curly_bracket_token then
+						isRtnDecl := True
+						skipParametersParsing := True
+					else
+						statementProcessed := True
+					end -- if
+				else
+					if scanner.token = scanner.do_token then
+						isRtnDecl := True
+						skipParametersParsing := True
+					else
+						statementProcessed := True
+					end -- if
+				end -- if			
+				if statementProcessed then
+					create identDsc.init (name)
+					create {UnqualifiedCallDescriptor}callDsc.init (identDsc, Void, Void)
+					if scanner.token = scanner.assignment_token then
+						scanner.nextToken
+						exprDsc := parseExpression
+						if exprDsc /= Void then
+							create asgnDsc.init (callDsc, exprDsc)
+							ast.statements.force (asgnDsc, ast.statements.count + 1)
+						end -- if
+					else
+						ast.statements.force (callDsc, ast.statements.count + 1)
+					end -- if
+				end -- if
+			end -- inspect
 		when scanner.type_name_token then
 			-- name ( TypeName
 			--        ^
@@ -930,7 +972,7 @@ not_implemented_yet("identifer ( TypeName ....")
 							end -- inspect
 						else
 							syntax_error (<<
-								scanner.comma_token, scanner.right_paranthesis_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.comma_token, scanner.right_paranthesis_token, scanner.operator_token,
 								scanner.implies_token, scanner.less_token, scanner.greater_token,
 								scanner.bar_token, scanner.tilda_token, scanner.colon_token
 							>>)
@@ -941,7 +983,7 @@ not_implemented_yet("identifer ( TypeName ....")
 					when scanner.comma_token then 
 						if commaFound then
 							syntax_error (<<
-								scanner.rigid_token, scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.rigid_token, scanner.identifier_token, scanner.operator_token,
 								scanner.implies_token, scanner.less_token, scanner.greater_token,
 								scanner.bar_token, scanner.tilda_token
 							>>)
@@ -957,7 +999,7 @@ not_implemented_yet("identifer ( TypeName ....")
 					when scanner.right_paranthesis_token then 
 						if commaFound then
 							syntax_error (<<
-								scanner.rigid_token, scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+								scanner.rigid_token, scanner.identifier_token, scanner.operator_token,
 								scanner.implies_token, scanner.less_token, scanner.greater_token,
 								scanner.bar_token, scanner.tilda_token
 							>>)
@@ -971,7 +1013,7 @@ not_implemented_yet("identifer ( TypeName ....")
 						end -- if
 					else
 						syntax_error (<<
-							scanner.operator_token, -- scanner.minus_token,
+							scanner.operator_token,
 							scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token, 
 							scanner.rigid_token, scanner.identifier_token, scanner.comma_token,
 							scanner.right_paranthesis_token
@@ -1001,18 +1043,25 @@ not_implemented_yet("identifer ( TypeName ....")
 			if isRtnDecl then
 				-- >> routine declaration
 -- trace ("Parsing analysis done OK: >> routine declaration")
-				ast.start_standalone_rotuine_parsing
-				parameters := parseParameters1 -- (False)
-				if parameters /= Void then
-					rtnDsc ?= parseAnyRoutine (False, False, False, False, name, Void, Void, True, False, parameters, False)			
+				ast.start_standalone_routine_parsing
+				if skipParametersParsing then
+					rtnDsc ?= parseAnyRoutine (False, False, False, False, name, Void, Void, True, False, Void, False)
 					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 						validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 					end -- if					
+				else
+					parameters := parseParameters1 -- (False)
+					if parameters /= Void then
+						rtnDsc ?= parseAnyRoutine (False, False, False, False, name, Void, Void, True, False, parameters, False)			
+						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
+							validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
+						end -- if					
+					end -- if
 				end -- if
-				ast.stop_standalone_rotuine_parsing
-			else
+				ast.stop_standalone_routine_parsing
+			elseif not statementProcessed then
 				-- >> unqualified call or assignment
--- trace ("Parsing analysis done OK: >> >> unqualified call or assignment")
+--trace ("Parsing analysis done OK: >> >> unqualified call or assignment")
 				callDsc := parseUnqalifiedCallWithFirstArgument (name)
 				if callDsc /= Void then
 					if scanner.token = scanner.assignment_token then
