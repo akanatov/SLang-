@@ -750,7 +750,7 @@ feature {None}
 		target_not_void: name /= Void
 		valid_token: validToken (<<
 			scanner.operator_token,
-			scanner.bar_token, scanner.tilda_token, scanner.identifier_token
+			scanner.bar_token, scanner.tilda_token, scanner.identifier_token, scanner.type_name_token
 		>>)
 	local
 		callChain: Array [CallChainElement]
@@ -862,9 +862,8 @@ feature {None}
 				end -- if
 			end -- inspect
 		when scanner.type_name_token then
-			-- name ( TypeName
+			-- name ( TypeName  >> that is call or assignemnt
 			--        ^
-not_implemented_yet("identifer ( TypeName ....")		
 		when scanner.identifier_token then
 			-- name ( nextName
 			--        ^
@@ -2296,9 +2295,7 @@ not_implemented_yet("identifer ( TypeName ....")
 		when scanner.rtn_token, scanner.pure_token, scanner.safe_token then
 			-- LambdaExpression
 			Result := parseLambdaExpression (checkSemicolonAfter)
-		when scanner.operator_token,
-			scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
-		then
+		when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
 			-- operator Expression
 			operator := scanner.tokenString
 			scanner.nextToken
