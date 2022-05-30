@@ -638,8 +638,7 @@ feature {Any}
 		if not Result.UnitIR_Loaded (fileName, o) then
 			Result := Void
 		end -- if
-	end -- loadUnitInterafceFrom
-	
+	end -- loadUnitInterafceFrom	
 
 	loadUnitInterface (unitExternalName, unitPrintableName: String; o: Output; unitDsc:UnitTypeCommonDescriptor): CompilationUnitUnit is
 	require
@@ -651,6 +650,7 @@ debug
 	if unitDsc.aliasName /= Void then
 --		o.putLine ("Loading interface of `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
 	end -- if
+--	o.putNL ("Loading interface of `" + unitPrintableName + "` called `" + unitExternalName + "`")
 end	-- debug
 		clusters := sysDsc.hasUnit(unitExternalName)
 		if clusters = Void or else clusters.count = 0 then
@@ -672,7 +672,7 @@ end	-- debug
 				if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
 					-- Ensure source file parsed
 					Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
-				end -- if				
+				end -- if
 			else
 				o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place")
 			end -- if
@@ -1571,10 +1571,21 @@ inherit
 		redefine
 			out, is_equal
 	end
+	BuildServer
+		redefine
+			out, is_equal
+	end
 create
 	init
 feature {Any}
 	name: String
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+	end -- checkValidity
 
 	cutImplementation is
 	do
@@ -1600,10 +1611,8 @@ feature {Any}
 			until
 				i > n
 			loop
+				Result.append_character ('_')
 				Result.append_string (parameters.item (i).getExternalName)
-				if i < n then
-					Result.append_character ('_')
-				end
 				i := i + 1
 			end
 			Result.append_character ('$')
@@ -1612,7 +1621,7 @@ feature {Any}
 			Result.append_character ('$')
 			Result.append_string (type.getExternalName)
 		end -- if
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 	
 	out: String is
@@ -1791,11 +1800,16 @@ invariant
 	postconditions_not_void: postconditions /= Void		
 end 
 
+
 deferred class ParameterDescriptor
 inherit	
 	SmartComparable
 		undefine
 			out 
+	end
+	BuildServer
+		undefine
+			out, is_equal 
 	end
 feature {Any}
 	name: String
@@ -1804,6 +1818,14 @@ feature {Any}
 	ensure
 		non_void_external_name: Result /= Void
 	end -- getExternalName
+feature {None}
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+	end -- checkValidity
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 invariant
 	name_not_void: name /= Void
 end -- class ParameterDescriptor
@@ -1881,7 +1903,7 @@ feature {Any}
 	getExternalName: String	is
 	do
 		Result := clone(name)  + "$is"
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	sameAs (other: like Current): Boolean is
@@ -1928,7 +1950,7 @@ feature {Any}
 	getExternalName: String	is
 	do
 		Result := out
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	sameAs (other: like Current): Boolean is
@@ -2065,6 +2087,10 @@ inherit
 		redefine
 			is_equal, out
 	end
+	BuildServer
+		undefine
+			out, is_equal
+	end
 create 
 	init
 feature {Any}
@@ -2102,18 +2128,19 @@ feature {Any}
 			until
 				i > n
 			loop
-				-- Result.append_string (formalGenerics.item (i).getExternalName)
-				Result.append_string (i.out)
+				Result.append_character ('_')
+				Result.append_string (formalGenerics.item (i).getExternalName(i))
+				--Result.append_string (i.out)
 				--Result.append_character ('_')
 				--Result.append_string (formalGenerics.item (i).getExternalName)
-				if i < n then
-					Result.append_character ('_')
-				end
+				--if i < n then
+				--	Result.append_character ('_')
+				--end
 				i := i + 1
 			end -- loop
 			Result.append_character ('$')
 		end -- if
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 		
 	parents: Sorted_Array [ParentDescriptor]
@@ -2543,6 +2570,13 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- attach_use_pool
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+	end -- checkValidity
 	
 feature {CompilationUnitCompound, SLangCompiler}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -2641,7 +2675,9 @@ inherit
 	end
 feature {Any}
 	name: String
-	getExternalName: String is
+	getExternalName (pos: Integer): String is
+	require
+		valid_formal_generic_position: pos > 0
 	deferred
 	ensure
 		external_name_not_void: Result /= Void
@@ -2657,6 +2693,10 @@ inherit
 	FormalGenericDescriptor
 	end
 	TypeDescriptor
+		rename
+			getExternalName as uselessGetExternalName
+		export
+			{None} uselessGetExternalName
 	end
 create
 	init
@@ -2675,9 +2715,12 @@ feature {Any}
 			Result.append_string (initConstraint.out)
 		end -- if
 	end -- out
-	getExternalName: String is
+	getExternalName (pos: Integer): String is
 	do
-		Result := "1"
+		Result := pos.out
+		Result.append_string (buildHash (Result))
+		-- Ignore constraint and init
+		
 		--Result := "" + name
 		--if typeConstraint /= Void then
 		--	Result.append_string("_extend_")
@@ -2687,8 +2730,12 @@ feature {Any}
 		--	Result.append_string("_new_")
 		--	Result.append_string (initConstraint.getExternalName)
 		--end -- if
-		--Result.append_string ("_" + Result.hash_code.out)
+		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
+	
+	uselessGetExternalName: String is
+	do
+	end -- uselessGetExternalName
 	
 	init (n: like name; tc: like typeConstraint; ic: like initConstraint) is
 	require
@@ -2766,11 +2813,11 @@ feature {Any}
 	do
 		Result := name + ": " + type.out
 	end -- out
-	getExternalName: String is
+	getExternalName (pos: Integer): String is
 	do
-		Result := "2"
+		Result := type.getExternalName
 		--Result := name + "_" + type.getExternalName
-		--Result.append_string ("_" + Result.hash_code.out)
+		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 	
 	init (aName: String; ut: TypeDescriptor) is
@@ -2807,11 +2854,11 @@ feature {Any}
 	do
 		Result := name + ": " + routineType.out
 	end -- out
-	getExternalName: String is
+	getExternalName (pos: Integer): String is
 	do
-		Result := "3"
+		Result := routineType.getExternalName
 		--Result := name + "_" + routineType.getExternalName
-		--Result.append_string ("_" + Result.hash_code.out)
+		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 	
 	init (aName: String; rt: RoutineTypeDescriptor) is
@@ -3888,6 +3935,13 @@ end -- class ConstWithInitDescriptor
 
 deferred class BuildServer
 feature
+	buildHash (aString: String): String is
+	require
+		non_void_string: aString /= Void
+	do
+		Result := aString.hash_code.out
+		Result := ""
+	end -- buildHash
 	generate (cg: CodeGenerator) is
 	deferred
 	end -- if
@@ -4870,8 +4924,16 @@ feature{Any}
 	getExternalName: String is
 	do
 		Result := "<expression>"
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
+	getFactualGenericExternalName (pos: Integer): String is
+	do
+		if semType = Void then
+-- not_implemened_yet !!!!		
+		else
+			Result := semType.getExternalName
+		end -- if
+	end -- getFactualGenericExternalName
 
 	--is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	--require	
@@ -5252,8 +5314,6 @@ end -- debug
 end -- class ReturnDescriptor
 deferred class EntityDescriptor
 inherit
---	Comparable
---	end
 	ExpressionDescriptor
 	end
 end -- class EntityDescriptor
@@ -5299,7 +5359,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := out
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	markedConst, markedRigid, MarkedVar: Boolean is False
@@ -8228,13 +8288,24 @@ inherit
 --		redefine
 --			is_equal, infix "<"
 	end 
-feature {Any}
+	BuildServer
+		undefine
+			out, is_equal
+	end
+feature
 	name: String
 	getExternalName: String is
 	do
 		Result := clone (name)
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+	end -- checkValidity
 invariant
 	not_void_name: name /= Void
 end -- class MemberDescriptionDescriptor
@@ -8444,7 +8515,13 @@ feature
 	ensure
 		non_void_external_name: Result /= Void
 	end -- getExternalName
-
+	getFactualGenericExternalName (pos: Integer): String is
+	require
+		valid_pos: pos > 0
+	deferred
+	ensure
+		non_void_external_name: Result /= Void
+	end -- getFactualGenericExternalName
 end -- class TypeOrExpressionDescriptor
 
 deferred class TypeDescriptor
@@ -8456,16 +8533,11 @@ deferred class TypeDescriptor
 inherit	
 	TypeOrExpressionDescriptor
 	end
-	--BuildServer
-	--	undefine
-	--		out, is_equal
-	--end
 feature {Any}
-	--is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	--require
-	--	non_void_context: context /= Void
-	--deferred
-	--end -- is_invalid
+	getFactualGenericExternalName (pos: Integer): String is
+	do
+		Result := pos.out
+	end -- getFactualGenericExternalName
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	require
@@ -8569,8 +8641,8 @@ feature {Any}
 end -- class AttachedTypeDescriptor
 
 class AnonymousUnitTypeDescriptor
--- AnonymousUnitType “unit” MemberDesciption {[“;”] MemberDesciption} “end”
--- MemberDescription: ([rtn] RoutineName[Signature])|(Idenitifer{“,”Idenitifer} ”:” UnitType)
+-- AnonymousUnitType "unit" MemberDesciption {[";"] MemberDesciption} "end"
+-- MemberDescription: ([rtn] RoutineName[Signature])|(Idenitifer{","Idenitifer} ":" UnitType)
 inherit	
 	AttachedTypeDescriptor
 	end
@@ -8602,7 +8674,7 @@ feature {Any}
 			Result.append_string (members.item (i).getExternalName)
 			i := i + 1
 		end -- loop
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	out: String is 
@@ -8735,7 +8807,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := "rtn " + signature.getExternalName
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -8763,19 +8835,9 @@ end -- debug
 	end -- generate
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
+		-- There is nothign to load for routine type
 	end -- isNotLoaded
-	
 	
 	sameAs (other: like Current): Boolean is
 	do
@@ -8871,7 +8933,7 @@ feature {Any}
 			Result.append_string ("$$")
 			Result.append_string (returnType.getExternalName)
 		end -- if
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	is_equal (other: like Current): Boolean is
@@ -9062,7 +9124,7 @@ feature {Any}
 		end -- if
 		Result.append_string ("$$")
 		Result.append_string (right.out)
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -9107,7 +9169,7 @@ invariant
 end -- class FixedRangeTypeDescriptor
 
 class EnumeratedRangeTypeDescriptor
--- 	(ConstantExpression {“|” ConstantExpression})
+-- 	(ConstantExpression {"|" ConstantExpression})
 inherit
 	RangeTypeDescriptor
 	end
@@ -9139,7 +9201,7 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	out: String is
@@ -9259,7 +9321,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := "as_this"
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	is_invalid, isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -9322,7 +9384,7 @@ feature {Any}
 		if anchorSignature /= Void then
 			Result.append_string (anchorSignature.getExternalName)
 		end -- if
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -9412,7 +9474,7 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	out: String is
@@ -9464,12 +9526,23 @@ end -- debug
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
 		--notValid: Boolean
-		--i, n: Integer
+		i, n: Integer
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+		from
+			i := 1
+			n := types.count
+		until
+			i > n
+		loop
+			if types.item(i).isNotLoaded (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
 	end -- isNotLoaded
 	
 	sameAs (other: like Current): Boolean is
@@ -9696,7 +9769,7 @@ feature {Any}
 			i := i + 1
 		end -- loop
 		Result.append_character ('$')
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -9755,6 +9828,10 @@ inherit
 		undefine
 			out
 	end
+	BuildServer
+		undefine
+			out, is_equal
+	end
 feature
 	getExternalName: String is
 	deferred
@@ -9766,7 +9843,13 @@ feature
 	do
 		Result := type.isNotLoaded (context, o)
 	end -- isNotLoaded
-
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+	end -- checkValidity
 invariant
 	non_void_type: type /= Void
 end -- class TupleFieldDescriptor
@@ -9785,7 +9868,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := type.getExternalName
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	sameAs (other: like Current): Boolean is
@@ -9824,7 +9907,7 @@ feature {Any}
 		Result := "" + name
 		Result.append_character ('$')
 		Result.append_string (type.getExternalName)
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
 	sameAs (other: like Current): Boolean is
@@ -9974,16 +10057,14 @@ feature {Any}
 			until
 				i > n
 			loop
-				--Result.append_string (generics.item (i).getExternalName)
-				Result.append_string (i.out)
-				if i < n then
-					Result.append_character ('_')
-				end -- if
+				Result.append_character ('_')
+				Result.append_string (generics.item (i).getFactualGenericExternalName (i))
+				--Result.append_string (i.out)
 				i := i + 1
 			end -- loop
 			Result.append_character ('$')
 		end -- if
-		Result.append_string ("_" + Result.hash_code.out)
+		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -10011,12 +10092,25 @@ end -- debug
 		-- do nothing so far
 	end -- generate
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		toRegister: Boolean
 	do
 		if interface = Void then
-			-- ask system desciption to load unit interface 
-			interface := context.loadUnitInterface (getExternalName, out, o, Current)
+			if generics.count > 0 then
+				--interface :=  check if the unit was already loaded!
+				if interface = Void then
+					toRegister := True
+					-- ask system desciption to load unit interface 
+					interface := context.loadUnitInterface (getExternalName, out, o, Current)
+				end -- if
+			else
+				-- ask system desciption to load unit interface 
+				interface := context.loadUnitInterface (getExternalName, out, o, Current)
+			end -- if
 			if interface = Void then
 				Result := True
+			elseif toRegister then				
+				-- Regsiter the 'interface' in the pool
 			end -- if
 		end -- if
 	end -- isNotLoaded
@@ -10091,14 +10185,12 @@ inherit
 	end
 	ExpressionDescriptor
 		undefine
-			is_equal, infix "<", getExternalName
+			is_equal, infix "<", getExternalName, getFactualGenericExternalName
 	end
-	EntityDescriptor
-		undefine
-			is_equal, infix "<", getExternalName
---		undefine
---			is_equal, out
-	end 
+	--EntityDescriptor
+	--	undefine
+	--		is_equal, infix "<", getExternalName, getFactualGenericExternalName
+	--end 
 create
 	init
 
