@@ -5,7 +5,6 @@ unit A[G]
 end
 unit X
 end
-
-foo [G] do
+foo [G extend T] -> T do
 end
 

@@ -3072,7 +3072,7 @@ feature {None}
 				scanner.nextToken
 				inspect
 					scanner.token
-				when scanner.colon_token, scanner.left_paranthesis_token then
+				when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
 					signDsc := parseSignature
 					if signDsc /= Void then
 						create {LambdaFromRoutineExpression} Result.init (name, signDsc)
@@ -4089,9 +4089,9 @@ feature {None}
 	parseAnyRoutine(
 		isOverriding, isFinal, is_pure, is_safe: Boolean; name, anAliasName: String; type: TypeDescriptor;
 		isStandAlone, isLambda: Boolean; pars: Array [ParameterDescriptor]; checkSemicolonAfter: Boolean): RoutineDescriptor is
-	-- StandaloneRoutine: 		[pure|safe] Identifier [FormalGenerics] [Parameters] [“:”|"->" Type] [EnclosedUseDirective] ([RequireBlock] (InnerBlock [EnsureBlock] end)|(foreign|(“=>”Expression) [EnsureBlock end])
+	-- StandaloneRoutine: 		[pure|safe] Identifier  [FormalGenerics] [Parameters] [“:”|"->" Type] [EnclosedUseDirective] ([RequireBlock] (InnerBlock [EnsureBlock] end)|(foreign|(“=>”Expression) [EnsureBlock end])
 	-- UnitRoutineDeclaration: 	[pure|safe] RoutineName [final Identifier] [Parameters] [“:”|"->" Type] [EnclosedUseDirective]  [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (virtual|foreign|(“=>”Expression) [EnsureBlock end])
-    --                                      ^
+    --                                                  ^
 	require
 		name_not_void: name /= Void
 		--valid_token : scanner.token = scanner.final_token or else
@@ -4153,7 +4153,7 @@ feature {None}
 					wasError := True
 				end -- if			
 			end -- if
-			if not isStandAlone and then scanner.token = scanner.alias_token  and then not isLambda then
+			if not isStandAlone and then scanner.token = scanner.alias_token and then not isLambda then
 				scanner.nextToken
 				if scanner.token = scanner.identifier_token then
 					aliasName := scanner.tokenString
@@ -4163,9 +4163,9 @@ feature {None}
 					wasError := True
 				end -- if			
 			end -- if
-			if isStandAlone and then scanner.genericsStart and then not isLambda then
-				formalGenerics := parseFormalGenerics
-			end -- if
+--			if isStandAlone and then scanner.genericsStart and then not isLambda then
+--				formalGenerics := parseFormalGenerics
+--			end -- if
 			if scanner.token = scanner.left_paranthesis_token then
 				-- scanner.nextToken
 				parameters := parseParameters
@@ -4745,7 +4745,13 @@ end
 
 	parseSignature: SignatureDescriptor is
 	do
-		Result := parseSignature1 (False)
+		inspect 
+			scanner.token 
+		when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
+			Result := parseSignature1 (False)
+		else
+			-- No signature
+		end -- inspect
 	end -- parseSignature
 	
 	parseSignature1 (checkSemicolonAfter: Boolean): SignatureDescriptor is
@@ -4798,6 +4804,7 @@ end
 						if td = Void then
 							toLeave := True
 						else
+							td ?= register_type (td)
 							params.force (td, params.count +1)
 						end -- if
 					else
@@ -4817,6 +4824,7 @@ end
 					-- syntax_error (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token>>)
 					Result := Void
 				else
+					td ?= register_type (td)
 					create Result.init (params, td)
 				end -- if
 			else
@@ -4832,10 +4840,12 @@ end
 			if td = Void then
 				syntax_error (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token>>)
 			else
+				td ?= register_type (td)
 				create Result.init (Void, td)
 			end -- if
-		else -- empty signature -> Void
-			--	create Result.init (Void, Void)
+		--else -- empty signature -> Void
+		--	-- syntax_error (<<scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token>>)
+		--	-- create Result.init (Void, Void)
 		end -- inspect
 	end -- parseSignature1
 	
@@ -5938,6 +5948,10 @@ end
 				scanner.nextToken
 				typeDsc := parseUnitTypeName
 				if typeDsc /= Void then
+					typeDsc ?= register_type (typeDsc)
+					check
+						type_registered: typeDsc /= Void
+					end -- check
 					if scanner.token = scanner.new_token then
 						scanner.nextToken
 						inspect
@@ -5947,17 +5961,26 @@ end
 							if signDsc /= Void then
 								create fgtDsc.init (name, typeDsc, signDsc)
 								fgtDsc ?= register_type (fgtDsc)
+								check
+									type_registered: fgtDsc /= Void
+								end -- check
 								Result := fgtDsc
 							end -- if
 						else
 							create signDsc.init (Void, Void)
-							create fgtDsc.init (name, Void, signDsc)
+							create fgtDsc.init (name, typeDsc, signDsc)
 							fgtDsc ?= register_type (fgtDsc)
+							check
+								type_registered: fgtDsc /= Void
+							end -- check
 							Result := fgtDsc
 						end -- inspect
 					else
-						create fgtDsc.init (name, typeDsc, signDsc)
+						create fgtDsc.init (name, typeDsc, Void) -- signDsc)
 						fgtDsc ?= register_type (fgtDsc)
+						check
+							type_registered: fgtDsc /= Void
+						end -- check
 						Result := fgtDsc
 					end -- if
 				end -- if
@@ -5970,17 +5993,26 @@ end
 					if signDsc /= Void then
 						create fgtDsc.init (name, Void, signDsc)
 						fgtDsc ?= register_type (fgtDsc)
+						check
+							type_registered: fgtDsc /= Void
+						end -- check
 						Result := fgtDsc
 					end -- if
 				else
 					create signDsc.init (Void, Void)
 					create fgtDsc.init (name, Void, signDsc)
 					fgtDsc ?= register_type (fgtDsc)
+					check
+						type_registered: fgtDsc /= Void
+					end -- check
 					Result := fgtDsc
 				end -- inspect
 			else
 				create fgtDsc.init (name, Void, Void)
 				fgtDsc ?= register_type (fgtDsc)
+				check
+					type_registered: fgtDsc /= Void
+				end -- check
 				Result := fgtDsc
 			end -- inspect
 		when scanner.identifier_token then
@@ -5993,12 +6025,20 @@ end
 					-- Identifier “:” UnitTypeNameDescriptor
 					tDsc := parseUnitTypeName
 					if tDsc /= Void then
+						tDsc ?= register_type (tDsc)
+						check
+							type_registered: tDsc /= Void
+						end -- check
 						create {FormalGenericConstantDescriptor} Result.init (name, tDsc)
 					end -- if
 				when scanner.ref_token, scanner.val_token, scanner.concurrent_token then
 					-- Identifier “:” UnitTypeDescriptor
 					tDsc := parseUnitType
 					if tDsc /= Void then
+						tDsc ?= register_type (tDsc)
+						check
+							type_registered: tDsc /= Void
+						end -- check
 						create {FormalGenericConstantDescriptor} Result.init (name, tDsc)
 					end -- if
 				when scanner.rtn_token then
@@ -6011,6 +6051,10 @@ end
 					-- tuple type expected
 					tupleTypeDsc := parseTupleType (False)
 					if tupleTypeDsc /= Void then
+						tupleTypeDsc ?= register_type (tupleTypeDsc)
+						check
+							type_registered: tupleTypeDsc /= Void
+						end -- check
 						create {FormalGenericConstantDescriptor} Result.init (name, tupleTypeDsc)				
 	--trace ("parseFormalGenericType: tuple type parsed " + Result.out)
 					end -- if				
@@ -6786,7 +6830,8 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							end -- if
 							inspect	
 								scanner.token
-							when scanner.colon_token, scanner.left_paranthesis_token then
+							-- when scanner.colon_token, scanner.left_paranthesis_token then
+							when scanner.left_paranthesis_token then
 								create ifpDsc.init (utnDsc, parseSignature)
 							else
 								create ifpDsc.init (utnDsc, Void)
@@ -8215,7 +8260,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 
 	parseFormalGenerics: Array [FormalGenericDescriptor] is
 	--	FormalGenerics: “[”FormalGeneric {“,” FormalGeneric}“]”
-	--	FormalGeneric: Identifier ([“extend” UnitTypeName] [“init” [Signature]])| [“:” (UnitType | RoutineType]
+	--	FormalGeneric: Identifier ([“extend” UnitTypeName] [“new” [Signature]])| [“:” (UnitType | RoutineType]
 	require
 		valid_token: validToken (<<scanner.left_square_bracket_token, scanner.less_token>>) 
 	local
@@ -8223,7 +8268,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		toLeave: Boolean
 		commaFound: Boolean
 	do
---trace (">>> parseFormalGenerics")
+-- trace (">>> parseFormalGenerics")
 		from
 			create Result.make (1, 0)
 			scanner.nextToken
@@ -8283,7 +8328,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				toLeave := True
 			end -- inspect
 		end -- loop
---trace ("<<<parseFormalGenerics")
+-- trace ("<<<parseFormalGenerics")
 	end -- 	parseFormalGenerics
 
 
