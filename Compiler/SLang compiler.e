@@ -56,7 +56,7 @@ feature {None}
 		saveErrCount: Integer
 		skipBuild: Boolean
 		skipSourceFile: Boolean
-		removeTimeStampFile: Boolean
+		removeTimeStampFile: Boolean 
 		Cmode: Boolean
 		i, n: Integer
 		j, m: Integer

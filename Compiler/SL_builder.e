@@ -99,6 +99,9 @@ feature {Any}
 				until
 					i > n					
 				loop
+debug
+	o.putNL ("Type pool: " + i.out + " - `" + typePool.item(i).out + "` loading!")
+end -- debug
 					typeDsc := typePool.item(i) 
 					if typeDsc.isNotLoaded (cuDsc, o) then
 						debug

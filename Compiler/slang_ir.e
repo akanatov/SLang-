@@ -895,7 +895,15 @@ feature {Any}
 		init_pools (Void)
 		--unit := Void -- ????
 	end -- make
-
+	
+	instantiate (generics: Array [TypeOrExpressionDescriptor]) is
+	require
+		non_void_generics: generics /= Void
+		non_empty_generics: generics.count > 0
+	do
+-- not_implemened_yet - instantiate
+	end -- instantiate
+	
 	sameUnitFill (unitDsc: UnitDeclarationDescriptor) is
 	require
 		non_void_unitDsc: unitDsc /= Void
@@ -904,7 +912,6 @@ feature {Any}
 			unit := unitDsc
 		end -- if
 	end -- sameUnitFill
-
 	
 	UnitIR_Loaded (fileName: String; o: Output): Boolean is
 	local
@@ -1579,6 +1586,8 @@ create
 	init
 feature {Any}
 	name: String
+	generics: Array [FormalGenericDescriptor]
+	
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -1597,6 +1606,14 @@ feature {Any}
 		end -- if
 		expr := Void
 	end -- cutImplementation
+
+	instantiate (factualGenerics: Array [TypeOrExpressionDescriptor]) is
+	require
+		non_void_generics: factualGenerics /= Void
+		non_empty_generics: factualGenerics.count > 0
+	do
+-- not_implemened_yet - instantiate
+	end -- instantiate
 	
 	getExternalName: String is
 	local	
@@ -1637,6 +1654,27 @@ feature {Any}
 		end -- if
 		Result.append_string (name)
 		Result.append_character(' ')
+		
+		if generics /= Void then
+			n := generics.count
+			if n > 0 then
+				from
+					Result.append_character(' ')
+					Result.append_character('[')
+					i := 1
+				until
+					i > n
+				loop
+					Result.append_string (generics.item (i).out)
+					if i < n then
+						Result.append_string (", ")
+					end
+					i := i + 1
+				end -- loop
+				Result.append_character (']')
+				Result.append_character (' ')
+			end -- if
+		end -- if
 		
 		n := parameters.count
 		if n > 0 then
@@ -1761,13 +1799,14 @@ feature {Any}
 		Result := name.is_equal (other.name) -- or else overloading - check types of parameters
 	end
 	init (
-		isP, isS, isF: Boolean; aName: like name; params: like parameters; aType: like type; u: like usage; icf: like constants;
+		isP, isS, isF: Boolean; aName: like name; fg: like generics; params: like parameters; aType: like type; u: like usage; icf: like constants;
 		pre: like preconditions; ib: like innerBlock; anexpr: like expr; post: like postconditions
 	) is
 	require
 		name_not_void: aName /= Void
 	do
 		name := aName
+		generics := fg
 		if params = Void then
 			create parameters.make (1, 0)
 		else
@@ -3204,7 +3243,7 @@ inherit
 	end
 feature {Any}
 	isPure: Boolean
-	isSafe: Boolean
+	isSafe: Boolean	
 	parameters: Array [ParameterDescriptor]
 	type: TypeDescriptor
 	usage: Sorted_Array [EnclosedUseEementDescriptor]
@@ -3214,7 +3253,7 @@ feature {Any}
 	isOneLine: Boolean
 	expr: ExpressionDescriptor
 	innerBlock: InnerBlockDescriptor
-	postconditions: Array [PredicateDescriptor]
+	postconditions: Array [PredicateDescriptor]	
 end -- class RoutineDescriptor
 
 deferred class UnitRoutineDescriptor
@@ -10094,14 +10133,31 @@ end -- debug
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		toRegister: Boolean
+		typePool: Sorted_Array[TypeDescriptor]
+		unitTypeDsc: UnitTypeCommonDescriptor
 	do
 		if interface = Void then
 			if generics.count > 0 then
-				--interface :=  check if the unit was already loaded!
+				typePool := context.typePool
+-- Need to search for the generic unit not the instantiation !!! Replace Current with the proper node!!!
+				unitTypeDsc ?= typePool.search (Current)
+				if unitTypeDsc = Void then
+debug
+--	o.putNL ("Unit type `" + out + "` is NOT found in the type pool")
+end -- debug
+				else
+debug
+--	o.putNL ("Unit type `" + out + "` is found in the type pool")
+end -- debug
+					interface := unitTypeDsc.interface
+				end -- if
 				if interface = Void then
 					toRegister := True
 					-- ask system desciption to load unit interface 
 					interface := context.loadUnitInterface (getExternalName, out, o, Current)
+					if interface /= Void then
+						interface.instantiate (generics)
+					end -- if
 				end -- if
 			else
 				-- ask system desciption to load unit interface 

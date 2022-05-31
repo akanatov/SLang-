@@ -5,3 +5,7 @@ unit A[G]
 end
 unit X
 end
+
+foo [G] do
+end
+

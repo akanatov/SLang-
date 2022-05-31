@@ -4061,7 +4061,7 @@ feature {None}
 					create {DetachedUnitAttributeDeclarationDescriptor} Result.init (isOverriding, isFinal, name, dtDsc.type, Void)
 				end -- if
 			else -- parse function!!!
-				Result ?= parseAnyRoutineWithPreconditions (isOverriding, isFinal, is_pure, is_safe, name, Void, returnType, False, False, Void, False, preconditions, False, Void, Void, Void)
+				Result ?= parseAnyRoutineWithPreconditions (isOverriding, isFinal, is_pure, is_safe, name, Void, Void, returnType, False, False, Void, False, preconditions, False, Void, Void, Void)
 			end -- if
 		end -- if
 	end -- parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant
@@ -4120,7 +4120,14 @@ feature {None}
 		preconditions: Array [PredicateDescriptor]
 		wasError : Boolean		
 	do
-		aliasName := anAliasName
+		if isStandAlone then
+			-- standalone routine may have generics and no alias
+			if scanner.genericsStart and then not isLambda then
+				formalGenerics := parseFormalGenerics
+			end -- if
+		else
+			aliasName := anAliasName
+		end -- if
 		if pars /= Void then
 			parameters := pars
 			if scanner.token = scanner.colon_token or else scanner.token = scanner.implies_token then
@@ -4203,14 +4210,14 @@ feature {None}
 		end -- if
 	
 		Result := parseAnyRoutineWithPreconditions(
-			isOverriding, isFinal, is_pure, is_safe, name, anAliasName, returnType, 
+			isOverriding, isFinal, is_pure, is_safe, name, anAliasName, formalGenerics, returnType, 
 			isStandAlone, isLambda, parameters, checkSemicolonAfter, preconditions, wasError, usage, constants, pars
 		)
 		
 	end -- parseAnyRoutine
 	
 	parseAnyRoutineWithPreconditions (
-		isOverriding, isFinal, is_pure, is_safe: Boolean; name, aliasName: String; returnType: TypeDescriptor;
+		isOverriding, isFinal, is_pure, is_safe: Boolean; name, aliasName: String; formalGenerics: Array [FormalGenericDescriptor]; returnType: TypeDescriptor;
 		isStandAlone, isLambda: Boolean; parameters: Array [ParameterDescriptor]; checkSemicolonAfter: Boolean;
 		preconditions: Array [PredicateDescriptor]; we: Boolean; usage: Sorted_Array [EnclosedUseEementDescriptor];
 		constants: Sorted_Array [UnitTypeNameDescriptor] ; pars: Array [ParameterDescriptor] -- FullUnitNameDescriptor]
@@ -4282,7 +4289,7 @@ feature {None}
 					scanner.nextToken
 					if isStandAlone or else pars /= Void then
 						create {StandaloneRoutineDescriptor} Result.init (
-							is_pure, is_safe, isForeign, name, parameters, returnType, usage, constants, preconditions, innerBlock, expr, postconditions
+							is_pure, is_safe, isForeign, name, formalGenerics, parameters, returnType, usage, constants, preconditions, innerBlock, expr, postconditions
 							-- isP, isS, isF: Boolean; aName: like name; params: like parameters; aType: like type; u: like usage; icf: like constants;
 							-- pre: like preconditions; ib: like innerBlock; anexpr: like expr; post: like postconditions
 						)
@@ -4299,7 +4306,7 @@ feature {None}
 				end -- if
 			elseif isStandAlone or else pars /= Void then
 				create {StandaloneRoutineDescriptor} Result.init (
-					is_pure, is_safe, isForeign, name, parameters, returnType, usage, constants, preconditions, innerBlock, expr, postconditions
+					is_pure, is_safe, isForeign, name, formalGenerics, parameters, returnType, usage, constants, preconditions, innerBlock, expr, postconditions
 				)
 			else
 				create {UnitRoutineDeclarationDescriptor} Result.init (
