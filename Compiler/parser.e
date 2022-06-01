@@ -1603,6 +1603,7 @@ feature {None}
 	--      ^
 	local
 		identifier: String
+		nmdDsc: NamedTypeDescriptor
 		unitType: UnitTypeCommonDescriptor
 		wasError: Boolean
 	do
@@ -1613,7 +1614,16 @@ feature {None}
 			scanner.nextToken
 			if scanner.token = scanner.colon_token then
 				scanner.nextToken
-				unitType := parseUnitType
+				nmdDsc := parseUnitType
+				if nmdDsc = Void then
+					wasError := True
+				else
+					unitType ?= nmdDsc
+					if unitType = Void then
+						wasError := True
+						validity_error ("Formal generic parameter `" + nmdDsc.name + "` canot be used in when clause")
+					end -- if
+				end -- if
 			else
 				wasError := True
 				syntax_error (<<scanner.colon_token>>)
@@ -1621,11 +1631,16 @@ feature {None}
 		when scanner.type_name_token then
 			identifier := scanner.tokenString
 			scanner.nextToken
-			unitType := parseUnitTypeName1 (identifier, False)
-			if unitType = Void then
+			nmdDsc := parseUnitTypeName1 (identifier, False)
+			if nmdDsc = Void then
 				wasError := True
 			else
 				identifier := Void
+				unitType ?= nmdDsc
+				if unitType = Void then
+					wasError := True
+					validity_error ("Formal generic parameter `" + nmdDsc.name + "` canot be used in when clause")
+				end -- if				
 			end -- if
 		else
 			syntax_error (<<scanner.identifier_token, scanner.type_name_token>>)
@@ -1765,6 +1780,7 @@ feature {None}
 	local
 		callChain: Array [CallChainElement]
 		arguments: Array [ExpressionDescriptor]
+		nmdDsc: NamedTypeDescriptor
 		unitType: UnitTypeCommonDescriptor
 		name1: String
 		constDsc: ConstantDescriptor
@@ -1776,7 +1792,16 @@ feature {None}
 			--         ^                   ^            ^
 			if scanner.token = scanner.left_curly_bracket_token then
 				scanner.nextToken
-				unitType := parseUnitType
+				nmdDsc := parseUnitType
+				if nmdDsc = Void then
+					wasError := True
+				else
+					unitType ?= nmdDsc
+					if unitType = Void then
+						validity_error ("Formal genric parameter `" + nmdDsc.name + "` can not be used as a parent unit name")
+						wasError := True
+					end -- if
+				end -- if
 				if scanner.token = scanner.right_curly_bracket_token then
 					scanner.nextToken
 				else
@@ -1846,6 +1871,7 @@ feature {None}
 		identDsc: IdentifierDescriptor
 		genIdentDsc: GenericIdentifierDescriptor
 		factualGenerics: Array [TypeOrExpressionDescriptor]
+		nmdDsc: NamedTypeDescriptor
 		unitTypeDsc: UnitTypeNameDescriptor
 		stmtDsc: StatementDescriptor
 		exprDsc: ExpressionDescriptor
@@ -1946,17 +1972,24 @@ feature {None}
 			scanner.nextToken
 			if scanner.genericsStart then
 				-- parse for Type [ ] 
-				unitTypeDsc := parseUnitTypeName1 (name, False)
+				nmdDsc := parseUnitTypeName1 (name, False)
+				if nmdDsc /= Void then
+					unitTypeDsc ?= nmdDsc
+				end -- if				
+				--unitTypeDsc := parseUnitTypeName1 (name, False)
 			else
 				create unitTypeDsc.init (name, Void)
-				unitTypeDsc ?= register_type (unitTypeDsc)
+				unitTypeDsc ?= register_named_type (unitTypeDsc)
+				if unitTypeDsc = Void then
+					validity_error ("Formal generic parameter `" + name + "` cannot be used as a module")
+				end -- if
 			end -- if 
 			if unitTypeDsc /= Void then
 				inspect
 					scanner.token
 				when scanner.left_paranthesis_token then
 					-- parse init call: UnitName(  .... 
-					create unitTypeDsc.init (name, Void)
+					--create unitTypeDsc.init (name, Void)
 					create {InitCallDescriptor}initCallDsc.init (unitTypeDsc, parseArguments)
 					if currentUnitDsc.name.is_equal (name) then
 						Result := <<initCallDsc>>
@@ -1965,7 +1998,7 @@ feature {None}
 					end -- if
 				when scanner.dot_token then
 					-- ModuleName. 
-					create unitTypeDsc.init (name, Void)				
+					--create unitTypeDsc.init (name, Void)				
 					stmtDsc := parseCallWithOptionalTailAssignment (unitTypeDsc)
 					if stmtDsc /= Void then
 						Result := <<stmtDsc>>
@@ -2269,7 +2302,7 @@ feature {None}
 		operator: String
 		toParseMore: Boolean
 		toExit: Boolean
-		utnDsc: UnitTypeNameDescriptor
+		utnDsc: NamedTypeDescriptor -- UnitTypeNameDescriptor
 		exprCall: ExpressionCallDescriptor
 		exprCall1: ExpressionCallDescriptor
 		cceDsc1: CallChainElement
@@ -2756,7 +2789,7 @@ feature {None}
 	require
 		expr_not_void: exprDsc /= Void
 	local
-		utdDsc: UnitTypeCommonDescriptor
+		utdDsc: NamedTypeDescriptor -- UnitTypeCommonDescriptor
 	do
 		inspect
 			scanner.token
@@ -3187,7 +3220,7 @@ feature {None}
 	require
 		valid_start_token: validToken (<<scanner.new_token>>)
 	local
-		utDsc: UnitTypeCommonDescriptor
+		utDsc: NamedTypeDescriptor -- UnitTypeCommonDescriptor
 	do
 		scanner.nextToken
 		utDsc := parseUnitType
@@ -3202,6 +3235,7 @@ feature {None}
 		valid_start_token: validToken (<<scanner.new_token>>)
 	local
 		unitTypeDsc: UnitTypeCommonDescriptor
+		nmdDsc: NamedTypeDescriptor
 		name: String
 		wasError: Boolean
 	do
@@ -3215,9 +3249,15 @@ feature {None}
 			scanner.nextToken
 		when scanner.left_curly_bracket_token then
 			scanner.nextToken
-			unitTypeDsc := parseUnitType
-			if unitTypeDsc = Void then
+			nmdDsc := parseUnitType
+			if nmdDsc = Void then
 				wasError := True
+			else
+				unitTypeDsc ?= nmdDsc
+				if unitTypeDsc = Void then
+					validity_error ("Formal generic parameter `" + nmdDsc.name + "` can not be used as the type of object creation")
+					wasError := True
+				end -- if
 			end -- if
 			if scanner.token = scanner.right_curly_bracket_token then
 				scanner.nextToken
@@ -3236,12 +3276,16 @@ feature {None}
 				wasError := True
 				syntax_error (<<scanner.right_curly_bracket_token>>)
 			end -- if
-			if not wasError then
-				create Result.init (unitTypeDsc, name, parseArguments)
-			end -- if
+			--if not wasError then
+			--	create Result.init (unitTypeDsc, name, parseArguments)
+			--end -- if
 		else
+			wasError := True
 			syntax_error (<<scanner.identifier_token, scanner.return_token, scanner.left_curly_bracket_token>>)
 		end -- if	
+		if not wasError then
+			create Result.init (unitTypeDsc, name, parseArguments)
+		end -- if
 	end -- parseNewStatement
 	
 	parseArguments: Array [ExpressionDescriptor] is 
@@ -3256,6 +3300,7 @@ feature {None}
 	-- ExpressionList: "( "Expression {“,” Expression} ")"
 	local
 		exprDsc: ExpressionDescriptor
+		nmdDsc: NamedTypeDescriptor
 		forcedType: UnitTypeCommonDescriptor
 		forcedExprDsc: ForcedExpressionDescriptor
 		toLeave: Boolean
@@ -3269,7 +3314,17 @@ feature {None}
 		loop	
 			if scanner.token = scanner.left_curly_bracket_token then
 				scanner.nextToken
-				forcedType := parseUnitType
+				nmdDsc := parseUnitType
+				if nmdDsc = Void then
+					toLeave := True
+				else
+					forcedType ?= nmdDsc
+					if forcedType = Void then
+						-- Forced type cannot be formal generic
+						validity_error ("Formal generic parameter '" + nmdDsc.name + "` cannot be used asa forced type")
+						toLeave := True
+					end -- if
+				end -- if
 				if scanner.token = scanner.right_curly_bracket_token then
 					scanner.nextToken
 					requireExpression := True
@@ -3401,7 +3456,7 @@ feature {None}
 					end
 				end -- loop
 				if not wasError then
-					utnDsc := parseUnitType
+					utnDsc ?= parseUnitType
 					if utnDsc /= Void then
 						from
 							i := 1
@@ -3429,7 +3484,7 @@ feature {None}
 				--                               ^
 				--create rtnDDsc.init (Void, Void)
 				scanner.nextToken
-				utnDsc := parseUnitType
+				utnDsc ?= parseUnitType
 				if utnDsc /= Void then
 					create atrDDsc.init (names.item (1), utnDsc)
 					create Result.fill (<<atrDDsc>>)
@@ -3689,7 +3744,7 @@ feature {None}
 			if scanner.genericsStart then
 				-- parse for more Type [ .... ] .....
 				--                     ^
-				unitTypeDsc := parseUnitTypeName1 (typeName, False)
+				unitTypeDsc ?= parseUnitTypeName1 (typeName, False)
 				if unitTypeDsc /= Void then
 					if scanner.token = scanner.dot_token then
 						Result := parseWritableCall (unitTypeDsc)				
@@ -4061,7 +4116,7 @@ feature {None}
 					create {DetachedUnitAttributeDeclarationDescriptor} Result.init (isOverriding, isFinal, name, dtDsc.type, Void)
 				end -- if
 			else -- parse function!!!
-				Result ?= parseAnyRoutineWithPreconditions (isOverriding, isFinal, is_pure, is_safe, name, Void, Void, returnType, False, False, Void, False, preconditions, False, Void, Void, Void)
+				Result ?= parseAnyRoutineWithPreconditions (isOverriding, isFinal, is_pure, is_safe, name, Void, Void, Void, returnType, False, False, Void, False, preconditions, False, Void, Void, Void)
 			end -- if
 		end -- if
 	end -- parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant
@@ -4112,6 +4167,7 @@ feature {None}
 		finalName: String
 		aliasName: String
 		formalGenerics: Array [FormalGenericDescriptor]
+		fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
 		parameters: Array [ParameterDescriptor]
 		returnType: TypeDescriptor
 		ucb: UseConstBlock
@@ -4123,7 +4179,8 @@ feature {None}
 		if isStandAlone then
 			-- standalone routine may have generics and no alias
 			if scanner.genericsStart and then not isLambda then
-				formalGenerics := parseFormalGenerics
+				create fgTypes.make
+				formalGenerics := parseFormalGenerics (fgTypes)
 			end -- if
 		else
 			aliasName := anAliasName
@@ -4210,14 +4267,16 @@ feature {None}
 		end -- if
 	
 		Result := parseAnyRoutineWithPreconditions(
-			isOverriding, isFinal, is_pure, is_safe, name, anAliasName, formalGenerics, returnType, 
+			isOverriding, isFinal, is_pure, is_safe, name, anAliasName, formalGenerics, fgTypes, returnType, 
 			isStandAlone, isLambda, parameters, checkSemicolonAfter, preconditions, wasError, usage, constants, pars
 		)
 		
 	end -- parseAnyRoutine
 	
 	parseAnyRoutineWithPreconditions (
-		isOverriding, isFinal, is_pure, is_safe: Boolean; name, aliasName: String; formalGenerics: Array [FormalGenericDescriptor]; returnType: TypeDescriptor;
+		isOverriding, isFinal, is_pure, is_safe: Boolean; name, aliasName: String;
+		formalGenerics: Array [FormalGenericDescriptor]; fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor];
+		returnType: TypeDescriptor;
 		isStandAlone, isLambda: Boolean; parameters: Array [ParameterDescriptor]; checkSemicolonAfter: Boolean;
 		preconditions: Array [PredicateDescriptor]; we: Boolean; usage: Sorted_Array [EnclosedUseEementDescriptor];
 		constants: Sorted_Array [UnitTypeNameDescriptor] ; pars: Array [ParameterDescriptor] -- FullUnitNameDescriptor]
@@ -4289,7 +4348,7 @@ feature {None}
 					scanner.nextToken
 					if isStandAlone or else pars /= Void then
 						create {StandaloneRoutineDescriptor} Result.init (
-							is_pure, is_safe, isForeign, name, formalGenerics, parameters, returnType, usage, constants, preconditions, innerBlock, expr, postconditions
+							is_pure, is_safe, isForeign, name, formalGenerics, fgTypes, parameters, returnType, usage, constants, preconditions, innerBlock, expr, postconditions
 							-- isP, isS, isF: Boolean; aName: like name; params: like parameters; aType: like type; u: like usage; icf: like constants;
 							-- pre: like preconditions; ib: like innerBlock; anexpr: like expr; post: like postconditions
 						)
@@ -4306,14 +4365,17 @@ feature {None}
 				end -- if
 			elseif isStandAlone or else pars /= Void then
 				create {StandaloneRoutineDescriptor} Result.init (
-					is_pure, is_safe, isForeign, name, formalGenerics, parameters, returnType, usage, constants, preconditions, innerBlock, expr, postconditions
+					is_pure, is_safe, isForeign, name, formalGenerics, fgTypes, parameters, returnType, usage, constants, preconditions, innerBlock, expr, postconditions
 				)
 			else
 				create {UnitRoutineDeclarationDescriptor} Result.init (
 					isOverriding, isFinal, is_pure, is_safe, name, aliasName, parameters, returnType, usage, constants, preconditions, isForeign, isVirtual, innerBlock, expr, postconditions
 				)
 			end -- if
-		end -- if	
+		end -- if
+		if isStandAlone then
+			ast.setFGpool (Void)
+		end -- if
 	end -- parseAnyRoutineWithPreconditions
 
 	parseMultiVarParameter (aResult: Array [NamedParameterDescriptor]): Array [NamedParameterDescriptor] is
@@ -4607,7 +4669,7 @@ end
 	require
 		valid_token : validToken (<<scanner.const_token>>)
 	local
-		--astUnitDsc: FullUnitNameDescriptor
+		nmdDsc: NamedTypeDescriptor
 		astUnitDsc: UnitTypeNameDescriptor
 		toLeave: Boolean
 		wasError: Boolean
@@ -4619,12 +4681,15 @@ end
 			until
 				scanner.token /= scanner.type_name_token or else toLeave
 			loop
-				--astUnitDsc := parseFullUnitName
-				astUnitDsc := parseUnitTypeName
-				if astUnitDsc = Void then 
+				nmdDsc := parseUnitTypeName
+				if nmdDsc = Void then 
 					toLeave := True
 				else
-					if not Result.added (astUnitDsc) then
+					astUnitDsc ?= nmdDsc
+					if astUnitDsc = Void then
+						validity_error ( "Importing constants from the formal generic parameter `" + nmdDsc.out + "` is not possible")
+						wasError := True
+					elseif not Result.added (astUnitDsc) then
 						validity_warning ( "Importing constants from the unit `" + astUnitDsc.out + "` more than once") -- .name 
 						-- wasError := True
 					end -- if 
@@ -4804,7 +4869,7 @@ end
 						if td = Void then
 							toLeave := True
 						else
-							td ?= register_type (td)
+							--td ?= register_named_type (td)
 							params.force (td, params.count +1)
 						end -- if
 					else
@@ -4824,7 +4889,7 @@ end
 					-- syntax_error (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token>>)
 					Result := Void
 				else
-					td ?= register_type (td)
+					--td ?= register_named_type (td)
 					create Result.init (params, td)
 				end -- if
 			else
@@ -4840,7 +4905,7 @@ end
 			if td = Void then
 				syntax_error (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token>>)
 			else
-				td ?= register_type (td)
+				--td ?= register_type (td)
 				create Result.init (Void, td)
 			end -- if
 		--else -- empty signature -> Void
@@ -4880,8 +4945,7 @@ end
 	asThisType: AsThisTypeDescriptor is
 	once
 		create Result
-	end -- asThisType
-	
+	end -- asThisType	
 	
 	parseDetachableType (checkSemicolonAfter: Boolean): DetachableTypeDescriptor is
 	--64
@@ -4921,7 +4985,7 @@ end
 		names: Sorted_Array [String]
 		--types: Array [UnitTypeCommonDescriptor]
 		tupleField: NamedTupleFieldDescriptor
-		fieldTypeDsc: UnitTypeCommonDescriptor
+		fieldTypeDsc: NamedTypeDescriptor -- UnitTypeCommonDescriptor
 		toLeave: Boolean
 		commaFound: Boolean
 		colonFound: Boolean
@@ -5044,10 +5108,11 @@ end
 	local
 		--tupleFields: Array [TupleFieldDescriptor]
 		--typesList: ListOfTypesDescriptor
-		tupleFieldType: UnitTypeCommonDescriptor
+		tupleFieldType: NamedTypeDescriptor -- UnitTypeCommonDescriptor
 		tupleFieldDsc: TypedTupleFieldDescriptor
 		separatorFound: Boolean
 		toLeave: Boolean
+		wasError: Boolean
 	do
 --trace (">>>parseTupleType")
 		from
@@ -5077,12 +5142,14 @@ end
 				else
 					syntax_error (<<scanner.comma_token, scanner.semicolon_token, scanner.right_paranthesis_token>>)
 					toLeave := True
+					wasError := True
 				end -- if
 			when scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.type_name_token then
 				-- Aha, that is tuple filed with no name, utDsc is just a type
 				tupleFieldType := parseUnitTypeWithSemicolonAfter
 				if tupleFieldType = Void then
 					toLeave := True
+					wasError := True					
 				else
 					create tupleFieldDsc.init (tupleFieldType)
 					Result.fields.force (tupleFieldDsc, Result.fields.count + 1)
@@ -5094,6 +5161,7 @@ end
 						scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.type_name_token
 					>>)
 					toLeave := True
+					wasError := True
 				else
 					scanner.nextToken
 					separatorFound := True
@@ -5118,9 +5186,15 @@ end
 					syntax_error (<<scanner.comma_token, scanner.semicolon_token, scanner.right_paranthesis_token>>)
 				end -- if
 				toLeave := True
+				wasError := True
 			end -- inspect
 		end -- loop
 --trace ("<<<parseTupleType")
+		if wasError then
+			Result := Void
+		else
+			Result ?= register_type (Result)
+		end -- if
 	end -- parseTupleType
 		
 	parseConstExpression (checkSemicolonAfter: Boolean): ConstExpressionDescriptor is
@@ -5329,6 +5403,7 @@ end
 		first_element_not_void: firstDsc /= Void
 		valid_token: validToken (<<scanner.bar_token>>)
 	local
+		nmdDsc: NamedTypeDescriptor
 		typeDsc: UnitTypeCommonDescriptor
 		toLeave: Boolean
 		barFound: Boolean
@@ -5353,9 +5428,9 @@ end
 				if barFound or else types.count = 1 then
 					inspect
 						scanner.token
-					when scanner.identifier_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token then
-						typeDsc := parseUnitType1 (checkSemicolonAfter)
-						if typeDsc = Void then
+					when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token then
+						nmdDsc := parseUnitType1 (checkSemicolonAfter)
+						if nmdDsc = Void then
 							if types.count = 1 then
 								validity_error( "Multi-type should have more than one type in it")
 							else
@@ -5363,13 +5438,16 @@ end
 							end -- if
 							toLeave := True
 						else
-							if not types.added (typeDsc) then
+							typeDsc ?= nmdDsc
+							if typeDsc = Void then
+								validity_error( "Multi-type should not use formal genric parameter `" + nmdDsc.name + "`")
+							elseif not types.added (typeDsc) then
 								validity_error( "Duplicated type `" + typeDsc.name + "` within the the multi-type")
 							end -- if
 							barFound := False
 						end -- if
 					else
-						syntax_error (<<scanner.identifier_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)
+						syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)
 						toLeave := True
 					end -- inspect
 				else
@@ -5455,8 +5533,9 @@ end
 
 	parseAttachedType (checkSemicolonAfter: Boolean): AttachedTypeDescriptor is
 	-- UnitTypeDescriptor|AnchorTypeDescriptor|MultiTypeDescriptor|TupleType|RangeTypeDescriptor|RoutineTypeDescriptor
-	-- identifier         as                   identifier          (         identifier|constant rtn
+	-- type_name          as                   identifier          (         identifier|constant rtn
 	local
+		nmdDsc: NamedTypeDescriptor 
 		typeDsc: UnitTypeCommonDescriptor
 --pos: Integer
 	do
@@ -5466,9 +5545,9 @@ end
 		inspect
 			scanner.token
 		when scanner.type_name_token then
-			-- UnitTypeDescriptor | MultiTypeDescriptor | RangeTypeDescriptor
-			typeDsc := parseUnitTypeNameWithPotentialSemicolonAfter (checkSemicolonAfter)
-			if typeDsc /= Void then
+			-- UnitTypeDescriptor | MultiTypeDescriptor | RangeTypeDescriptor | FormalGenericType
+			nmdDsc := parseUnitTypeName2 (checkSemicolonAfter)
+			if nmdDsc /= Void then
 				inspect
 					scanner.token
 				when scanner.bar_token then
@@ -5480,13 +5559,22 @@ end
 					-- ConstantExpression [“{”OperatorName ConstantExpression"}"] “..” ConstantExpression
 -- Need to think about the new verison of RangeType
 					-- It could be RangeType when all identifiers are in fact constants!!!
-					Result := parseMultiType (typeDsc, checkSemicolonAfter)
+					typeDsc ?= nmdDsc
+					if typeDsc = Void then
+						-- G | - incorrect multi-type
+						validity_error( "Multi-type should not contain formal genric parameter `" + nmdDsc.name + "`") 
+					else
+						Result := parseMultiType (typeDsc, checkSemicolonAfter)
+					end -- if
 				when scanner.period_token then
 					-- RangeType: 
 					-- 	(ConstantExpression “..”ConstantExpression)
 					-- 	|
 					-- 	(ConstantExpression {“|” ConstantExpression})
-					if typeDsc.generics.count = 0 then
+					typeDsc ?= nmdDsc
+					if typeDsc = Void then
+						validity_error( "Range-type should not contain formal genric parameter `" + nmdDsc.name + "`") 
+					elseif typeDsc.generics.count = 0 then
 						Result := parseRangeType1 (typeDsc, checkSemicolonAfter)
 					else
 						Result := typeDsc
@@ -5497,7 +5585,7 @@ end
 				--	scanner.nextToken
 				--	Result := typeDsc
 				else
-					Result := typeDsc
+					Result := nmdDsc
 				end -- inspect
 			end -- if
 		when scanner.ref_token, scanner.val_token, scanner.concurrent_token then
@@ -5545,7 +5633,12 @@ end
 --if pos <=  0 then
 --trace ("#3 To add `" + Result.out + "` after pos " + (-pos).out)
 --end -- if
-			Result ?= register_type (Result)
+			typeDsc ?= Result
+			if typeDsc = Void then
+				Result ?= register_type (Result)
+			else
+				Result ?= register_named_type (typeDsc)
+			end -- if
 			check
 				type_registred: Result /= Void
 			end
@@ -5576,7 +5669,7 @@ end
 		end -- if
 	end -- parseTypeDescriptor
 	
-	parseUnitTypeName1 (name: String; checkSemicolonAfter: Boolean): UnitTypeNameDescriptor is
+	parseUnitTypeName1 (name: String; checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeNameDescriptor
 	-- UnitTypeName: Identifier [“[“ (Type|ConstantExpression) {“,” ( Type|ConstantExpression)}“]” ]
 	-- ConstantExpression: (Identifier {“.” Identifier}) | Constant [Operator ConstantExpression]
 	require
@@ -5706,7 +5799,7 @@ end
 						else
 --trace ("%T%TparseUnitTypeName1 " + name + "[   .... ] END #2")
 							scanner.nextWithSemicolon (checkSemicolonAfter)
-							create Result.init (name, generics)
+							create {UnitTypeNameDescriptor} Result.init (name, generics)
 						end -- if
 					else
 --trace ("%T%TparseUnitTypeName1 " + name + " ???? " + scanner.tokenString)
@@ -5724,7 +5817,7 @@ end
 				end -- inspect
 			end -- loop
 		else
-			create Result.init (name, Void)
+			create {UnitTypeNameDescriptor} Result.init (name, Void)
 		end -- inspect
 		if Result /= Void then
 			-- Register type in the type pool
@@ -5732,10 +5825,14 @@ end
 --if pos <=  0 then
 --trace ("#2 To add `" + Result.out + "` after pos " + (-pos).out)
 --end -- if
-			Result ?= register_type (Result)
+			if generics = Void then
+				Result ?= register_named_type (Result)
+			else
+				Result ?= register_type (Result)
+			end -- if
 			check
 				type_registred: Result /= Void
-			end
+			end -- check
 		end -- if
 --trace ("<<< parseUnitTypeName1")
 	end -- parseUnitTypeName1
@@ -5747,6 +5844,7 @@ end
 	local
 		typeName: String
 		unitTypeDsc: UnitTypeNameDescriptor
+		nmdTypeDsc: NamedTypeDescriptor
 	do
 		-- ModuleName.callchain
 		typeName := scanner.tokenString
@@ -5757,18 +5855,21 @@ end
 			-- Module member call in the form of the call: ident.
 			--                                                  ^
 			create unitTypeDsc.init (typeName, Void)
-			unitTypeDsc ?= register_type(unitTypeDsc)
-			Result := parseWritableCall (unitTypeDsc)
+			nmdTypeDsc ?= register_named_type(unitTypeDsc)
+			check
+				type_registered: nmdTypeDsc /= Void
+			end -- check
+			Result := parseWritableCall (nmdTypeDsc)
 		else
 			if scanner.genericsStart then
 				-- parse for more Type [ .... ] .....
 				--                     ^
-				unitTypeDsc := parseUnitTypeName1 (typeName, False)
-				if unitTypeDsc /= Void then
+				nmdTypeDsc := parseUnitTypeName1 (typeName, False)
+				if nmdTypeDsc /= Void then
 					if scanner.token = scanner.dot_token then
-						Result := parseWritableCall (unitTypeDsc)				
+						Result := parseWritableCall (nmdTypeDsc)
 					else
-						Result := unitTypeDsc			
+						Result := nmdTypeDsc
 					end -- if
 				end -- if
 			else
@@ -5778,20 +5879,20 @@ end
 --trace ("%T%T%TparseTypeOrConstExprDescriptor: " + Result.out)
 	end -- parseTypeWithOptionalCallChain
 
-	parseUnitTypeNameWithPotentialSemicolonAfter(checkSemicolonAfter: Boolean): UnitTypeNameDescriptor is
-	do
-		Result := parseUnitTypeName2 (checkSemicolonAfter)	
-	end -- parseUnitTypeNameWithPotentialSemicolonAfter
+	--parseUnitTypeName2(checkSemicolonAfter: Boolean): UnitTypeNameDescriptor is
+	--do
+	--	Result := parseUnitTypeName2 (checkSemicolonAfter)	
+	--end -- parseUnitTypeName2
 
-	parseUnitTypeName: UnitTypeNameDescriptor is
+	parseUnitTypeName: NamedTypeDescriptor is -- UnitTypeNameDescriptor is
 	do
 		Result := parseUnitTypeName2 (False)
 	end -- parseUnitTypeName
 	
-	parseUnitTypeName2(checkSemicolonAfter: Boolean): UnitTypeNameDescriptor is
+	parseUnitTypeName2(checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeNameDescriptor
 	local
-		name : String
---pos: Integer		
+		name: String
+		utnDsc: UnitTypeNameDescriptor
 	do
 		if scanner.token = scanner.type_name_token then
 			name := scanner.tokenString
@@ -5799,13 +5900,9 @@ end
 			scanner.nextWithSemicolon (checkSemicolonAfter)
 			if checkSemicolonAfter and then scanner.token = scanner.semicolon_token then
 				--scanner.nextToken
-				create Result.init (name, Void)
+				create utnDsc.init (name, Void)
 				-- Register type in the type pool
---pos := ast.typePool.seek (Result)
---if pos  <= 0 then
---trace ("#1 To add `" + Result.out + "` after pos " + (-pos).out)
---end -- if
-				Result ?= register_type (Result)
+				Result ?= register_named_type (utnDsc)
 				check
 					type_registred: Result /= Void
 				end -- check
@@ -5816,36 +5913,43 @@ end
 		end -- if
 	end -- parseUnitTypeName2
 	
-	parseUnitType: UnitTypeCommonDescriptor is
+	parseUnitType: NamedTypeDescriptor is -- UnitTypeCommonDescriptor is
 	do
-		inspect
-			scanner.token
-		when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token then
-			Result := parseUnitType1 (False)
-		else
-			syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)			
-		end -- inspect
+		Result := parseUnitType2 (False)
+		--inspect
+		--	scanner.token
+		--when scanner.type_name_token then
+		--	Result := parseUnitType1 (False)
+		--when scanner.ref_token, scanner.val_token, scanner.concurrent_token then
+		--	Result := parseUnitType1 (False)
+		--else
+		--	syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)			
+		--end -- inspect
 	end -- parseUnitType
 
-	parseUnitType2 (checkSemicolonAfter: Boolean): UnitTypeCommonDescriptor is
+	parseUnitType2 (checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeCommonDescriptor is
 	do
 		inspect
 			scanner.token
-		when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token then
+		when scanner.type_name_token then
+			Result := parseUnitType1 (checkSemicolonAfter)
+		when scanner.ref_token, scanner.val_token, scanner.concurrent_token then
 			Result := parseUnitType1 (checkSemicolonAfter)
 		else
 			syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)			
 		end -- inspect
 	end -- parseUnitType2
 
-	parseUnitType1 (checkSemicolonAfter: Boolean): UnitTypeCommonDescriptor is
+	parseUnitType1 (checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeCommonDescriptor
 	require
 		valid_token: validToken (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)
 	local
 		isRef,
 		isVal,
 		isConcurrent : Boolean
+		nmdDsc: NamedTypeDescriptor
 		utd: UnitTypeNameDescriptor
+		justType: Boolean
 	do
 		inspect
 			scanner.token
@@ -5859,14 +5963,20 @@ end
 			isConcurrent := True
 			scanner.nextToken
 		else
+			justType := True
 		end -- inspect
 		if scanner.token = scanner.type_name_token then
-			utd := parseUnitTypeNameWithPotentialSemicolonAfter(checkSemicolonAfter)
-			if utd /= Void then
+			nmdDsc := parseUnitTypeName2(checkSemicolonAfter)
+			--utd := parseUnitTypeName2(checkSemicolonAfter)
+			if nmdDsc /= Void then
 				--create Result.init (isRef, isVal, isConcurrent, utd.name, utd.generics)
-				if not isRef and then not isVal and then not isConcurrent then
-					Result := utd
+				if justType then
+					Result := nmdDsc
 				else
+					utd ?= nmdDsc
+					check
+						valid_type: utd /= Void
+					end -- check
 					create {UnitTypeDescriptor} Result.init (isRef, isVal, isConcurrent, utd.name, utd.generics)
 					Result ?= register_type (Result)
 					check
@@ -5879,6 +5989,33 @@ end
 		end -- if
 	end -- parseUnitType1
 
+
+	register_named_type (nmdType: NamedTypeDescriptor): TypeDescriptor is
+	require
+		non_void_type: nmdType /= Void
+	local
+		fgtDsc: FormalGenericTypeNameDescriptor
+		commonDsc: UnitTypeCommonDescriptor
+	do
+		commonDsc ?= nmdType
+		if ast.fgTypes /= Void and then commonDsc /= Void and then commonDsc.generics.count = 0 then
+			create fgtDsc.init (nmdType.name)
+			fgtDsc ?= ast.typePool.search (fgtDsc)
+			if fgtDsc = Void then
+				Result := ast.typePool.add_it (nmdType)
+			else
+debug
+--	print ("Registering `" + nmdType.out + "` it is Formal generic type !!!%N")
+end -- debug
+				Result := fgtDsc
+			end -- if
+		else
+			Result := ast.typePool.add_it (nmdType)
+		end -- if
+	ensure
+		non_void_registered_type: Result /= Void		
+	end -- register_named_type
+
 	register_type (aType: TypeDescriptor): TypeDescriptor is
 	require
 		non_void_type: aType /= Void
@@ -5888,7 +6025,7 @@ end
 		non_void_registered_type: Result /= Void		
 	end -- register_type
 	
-	parseUnitTypeWithSemicolonAfter: UnitTypeCommonDescriptor is
+	parseUnitTypeWithSemicolonAfter: NamedTypeDescriptor is -- UnitTypeCommonDescriptor is
 	do
 		inspect
 			scanner.token
@@ -5903,7 +6040,7 @@ end
 	require
 		valid_token: validToken (<<scanner.type_name_token, scanner.identifier_token, scanner.as_token, scanner.rtn_token>>)
 	local
-		typeDsc: UnitTypeNameDescriptor
+		typeDsc: NamedTypeDescriptor -- UnitTypeNameDescriptor
 		exprDsc: ExpressionDescriptor
 		name: String
 	do
@@ -5923,19 +6060,20 @@ end
 		end -- inspect		
 	end -- parseFactualGenericType
 	
-	parseFormalGenericType: FormalGenericDescriptor is
+	parseFormalGenericType (fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]): FormalGenericDescriptor is
 	-- Identifier|TypeName ([“extend” UnitTypeName ] [“new” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
 	-- ^
 	require
 		valid_token: validToken (<<scanner.type_name_token, scanner.identifier_token>>)
 	local
-		typeDsc: UnitTypeNameDescriptor
+		utnDsc: NamedTypeDescriptor -- UnitTypeNameDescriptor
 		name: String
 		signDsc: SignatureDescriptor
-		tDsc: UnitTypeCommonDescriptor
+		tDsc: NamedTypeDescriptor -- UnitTypeCommonDescriptor
 		rtnTypeDsc: RoutineTypeDescriptor
 		tupleTypeDsc: TupleTypeDescriptor
-		fgtDsc: FormalGenericTypeDescriptor
+		fgtnDsc: FormalGenericTypeNameDescriptor
+		wasError: Boolean
 	do
 		name := scanner.tokenString
 		inspect
@@ -5946,42 +6084,20 @@ end
 				scanner.token
 			when scanner.extend_token then
 				scanner.nextToken
-				typeDsc := parseUnitTypeName
-				if typeDsc /= Void then
-					typeDsc ?= register_type (typeDsc)
-					check
-						type_registered: typeDsc /= Void
-					end -- check
+				utnDsc := parseUnitTypeName
+				if utnDsc = Void then
+					wasError := True
+				else
 					if scanner.token = scanner.new_token then
 						scanner.nextToken
 						inspect
 							scanner.token
 						when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
 							signDsc := parseSignature
-							if signDsc /= Void then
-								create fgtDsc.init (name, typeDsc, signDsc)
-								fgtDsc ?= register_type (fgtDsc)
-								check
-									type_registered: fgtDsc /= Void
-								end -- check
-								Result := fgtDsc
-							end -- if
+							wasError := signDsc = Void
 						else
 							create signDsc.init (Void, Void)
-							create fgtDsc.init (name, typeDsc, signDsc)
-							fgtDsc ?= register_type (fgtDsc)
-							check
-								type_registered: fgtDsc /= Void
-							end -- check
-							Result := fgtDsc
 						end -- inspect
-					else
-						create fgtDsc.init (name, typeDsc, Void) -- signDsc)
-						fgtDsc ?= register_type (fgtDsc)
-						check
-							type_registered: fgtDsc /= Void
-						end -- check
-						Result := fgtDsc
 					end -- if
 				end -- if
 			when scanner.new_token then
@@ -5990,31 +6106,27 @@ end
 					scanner.token
 				when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
 					signDsc := parseSignature
-					if signDsc /= Void then
-						create fgtDsc.init (name, Void, signDsc)
-						fgtDsc ?= register_type (fgtDsc)
-						check
-							type_registered: fgtDsc /= Void
-						end -- check
-						Result := fgtDsc
-					end -- if
+					wasError := signDsc = Void
 				else
 					create signDsc.init (Void, Void)
-					create fgtDsc.init (name, Void, signDsc)
-					fgtDsc ?= register_type (fgtDsc)
-					check
-						type_registered: fgtDsc /= Void
-					end -- check
-					Result := fgtDsc
 				end -- inspect
 			else
-				create fgtDsc.init (name, Void, Void)
-				fgtDsc ?= register_type (fgtDsc)
-				check
-					type_registered: fgtDsc /= Void
-				end -- check
-				Result := fgtDsc
 			end -- inspect
+			if not wasError then
+				create fgtnDsc.init (name)
+				fgtnDsc ?= register_type (fgtnDsc)
+				check
+					type_registered: fgtnDsc /= Void
+				end -- check
+				if fgTypes /= Void then
+					fgTypes.add (fgtnDsc)
+				end -- if
+				if utnDsc = Void and then signDsc = Void then
+					Result := fgtnDsc
+				else
+					create {FormalGenericTypeDescriptor}Result.init (name, utnDsc, signDsc)
+				end -- if
+			end -- if
 		when scanner.identifier_token then
 			scanner.nextToken
 			if scanner.token = scanner.colon_token then
@@ -6025,20 +6137,12 @@ end
 					-- Identifier “:” UnitTypeNameDescriptor
 					tDsc := parseUnitTypeName
 					if tDsc /= Void then
-						tDsc ?= register_type (tDsc)
-						check
-							type_registered: tDsc /= Void
-						end -- check
 						create {FormalGenericConstantDescriptor} Result.init (name, tDsc)
 					end -- if
 				when scanner.ref_token, scanner.val_token, scanner.concurrent_token then
 					-- Identifier “:” UnitTypeDescriptor
 					tDsc := parseUnitType
 					if tDsc /= Void then
-						tDsc ?= register_type (tDsc)
-						check
-							type_registered: tDsc /= Void
-						end -- check
 						create {FormalGenericConstantDescriptor} Result.init (name, tDsc)
 					end -- if
 				when scanner.rtn_token then
@@ -6051,10 +6155,6 @@ end
 					-- tuple type expected
 					tupleTypeDsc := parseTupleType (False)
 					if tupleTypeDsc /= Void then
-						tupleTypeDsc ?= register_type (tupleTypeDsc)
-						check
-							type_registered: tupleTypeDsc /= Void
-						end -- check
 						create {FormalGenericConstantDescriptor} Result.init (name, tupleTypeDsc)				
 	--trace ("parseFormalGenericType: tuple type parsed " + Result.out)
 					end -- if				
@@ -6086,14 +6186,20 @@ end
 --		end -- if
 --	end -- theSameUnit2
 
-	theSameUnit1 (unitDsc: UnitDeclarationDescriptor; utnDsc: UnitTypeNameDescriptor) : Boolean is
+	theSameUnit1 (unitDsc: UnitDeclarationDescriptor; nmdTypeDsc: NamedTypeDescriptor) : Boolean is -- UnitTypeNameDescriptor
 	require
 		unit_descriptor_not_void: unitDsc /= Void
-		type_descriptor_not_void: utnDsc /= Void	
+		type_descriptor_not_void: nmdTypeDsc /= Void	
 	local
+		utnDsc: UnitTypeNameDescriptor
 		--i, n: Integer
 	do
-		Result := unitDsc.name.is_equal (utnDsc.name) and then utnDsc.generics.count = unitDsc.formalGenerics.count
+		utnDsc ?= nmdTypeDsc
+		if utnDsc = Void then
+			Result := unitDsc.name.is_equal (nmdTypeDsc.name) and then unitDsc.formalGenerics.count = 0
+		else
+			Result := unitDsc.name.is_equal (utnDsc.name) and then utnDsc.generics.count = unitDsc.formalGenerics.count
+		end -- if
 		--if Result then
 		--	-- check generics!!!
 		--	n := utnDsc.generics.count -- : Array [TypeOrExpressionDescriptor]
@@ -6143,29 +6249,36 @@ end
 				--	commaFound := False
 					scanner.nextToken
 					if scanner.token = scanner.type_name_token then
-						utnDsc := parseUnitTypeName
-						if utnDsc = Void then
+						if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGnericParameter (scanner.tokenString) then
+							-- attempt to override a member of generic parameter
+							validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent unit")
+							scanner.nextToken
 							toLeave := True
 						else
-							if theSameUnit1 (unitDsc, utnDsc) then
-								validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
-								--toLeave := True
-								-- Inheritance graph simple cycle
-							else
-								if scanner.token = scanner.left_paranthesis_token then
-not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)” ")
-								end -- if
-								create parentDsc.init (True, utnDsc)
-								if not unitDsc.parents.added (parentDsc) then
-									validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
-									--toLeave := True
-									-- Repeated inheritance is prohibited
-								end -- if
-							end -- if
-							if scanner.token = scanner.comma_token then
-								scanner.nextToken
-							else
+							utnDsc ?= parseUnitTypeName
+							if utnDsc = Void then
 								toLeave := True
+							else
+								if theSameUnit1 (unitDsc, utnDsc) then
+									validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
+									--toLeave := True
+									-- Inheritance graph simple cycle
+								else
+									if scanner.token = scanner.left_paranthesis_token then
+not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)” ")
+									end -- if
+									create parentDsc.init (True, utnDsc)
+									if not unitDsc.parents.added (parentDsc) then
+										validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
+										--toLeave := True
+										-- Repeated inheritance is prohibited
+									end -- if
+								end -- if
+								if scanner.token = scanner.comma_token then
+									scanner.nextToken
+								else
+									toLeave := True
+								end -- if
 							end -- if
 						end -- if
 					else
@@ -6178,29 +6291,36 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				--end -- if
 			when scanner.type_name_token then
 				--if commaFound or else unitDsc.parents.count = 0 then
-				--	commaFound := False
-					utnDsc := parseUnitTypeName
-					if utnDsc = Void then
+				--	commaFound := False					
+					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGnericParameter (scanner.tokenString) then
+						-- attempt to override a member of generic parameter
+						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent unit")
+						scanner.nextToken
 						toLeave := True
 					else
-						if theSameUnit1 (unitDsc, utnDsc) then
-							validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
-							--toLeave := True
-							-- Inheritance graph simple cycle
+						utnDsc ?= parseUnitTypeName
+						if utnDsc = Void then
+							toLeave := True
 						else
-							create parentDsc.init (False, utnDsc)
-							if not unitDsc.parents.added (parentDsc) then
-								validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
+							if theSameUnit1 (unitDsc, utnDsc) then
+								validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
 								--toLeave := True
-								-- Repeated inheritance is prohibited
+								-- Inheritance graph simple cycle
+							else
+								create parentDsc.init (False, utnDsc)
+								if not unitDsc.parents.added (parentDsc) then
+									validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
+									--toLeave := True
+									-- Repeated inheritance is prohibited
+								end -- if
+							end -- if
+							if scanner.token = scanner.comma_token then
+								scanner.nextToken
+							else
+								toLeave := True
 							end -- if
 						end -- if
-						if scanner.token = scanner.comma_token then
-							scanner.nextToken
-						else
-							toLeave := True
-						end -- if
-					end -- if
+					end -- if		
 				--else
 				--	--syntax_error (<<scanner.comma_token>>)
 				--	toLeave := True
@@ -6247,7 +6367,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			-- add to -> constants: Sorted_Array [FullUnitNameDescriptor]
 			constants := parseUseConst
 --trace ("4# parseEnclosedUseDirective constants: " + constants.out)			
-		when scanner.identifier_token then
+		when scanner.type_name_token then
 			-- use [EnclosedUseEement {“,” EnclosedUseEement}] [const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
 			-- 		UnitTypeNameDescriptor [as Identifier]]
 			from
@@ -6259,65 +6379,85 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					scanner.token
 				when scanner.comma_token then
 					if usage.count = 0 then
-						syntax_error (<<scanner.identifier_token>>)
+						syntax_error (<<scanner.type_name_token>>)
 						toLeave := True
 						wasError := True
 					else
 						commaFound := True
 						scanner.nextToken
 					end -- if
-				when scanner.identifier_token then 		
+				when scanner.type_name_token then
 					commaFound := False
-					utnd := parseUnitTypeName
-					if utnd = Void then
+					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGnericParameter (scanner.tokenString) then
+						-- attempt to override a member of generic parameter
+						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used in the use clause")
+						scanner.nextToken
 						toLeave := True
 						wasError := True
 					else
-						inspect
-							scanner.token
-						when scanner.comma_token then 
-							-- use [EnclosedUseEement {“,” EnclosedUseEement}] [const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
-							--                          ^
-							-- 		UnitTypeNameDescriptor [as Identifier]]
-							create eueDsc.init (utnd, Void)
-							if not usage.added (eueDsc) then
-								validity_error( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in unit `" + unitDsc.name + "`")
-								--toLeave := True
-								wasError := True
-							else
-								commaFound := True
-							end -- if
-							scanner.nextToken
-						when scanner.as_token then
-							scanner.nextToken
-							if scanner.token = scanner.identifier_token then
-								create eueDsc.init (utnd, scanner.tokenString)
+						utnd ?= parseUnitTypeName
+						if utnd = Void then
+							toLeave := True
+							wasError := True
+						else
+							inspect
+								scanner.token
+							when scanner.comma_token then 
+								-- use [EnclosedUseEement {“,” EnclosedUseEement}] [const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
+								--                          ^
+								-- 		UnitTypeNameDescriptor [as Identifier]]
+								create eueDsc.init (utnd, Void)
 								if not usage.added (eueDsc) then
-									validity_error( "Duplicated import of consntants from `" + eueDsc.out + "`") --  in in unit `" + unitDsc.name + "`")
+									validity_error( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in unit `" + unitDsc.name + "`")
+									--toLeave := True
 									wasError := True
+								else
+									commaFound := True
 								end -- if
 								scanner.nextToken
-								commaFound := False
+							when scanner.as_token then
+								scanner.nextToken
+								if scanner.token = scanner.type_name_token then
+									if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGnericParameter (scanner.tokenString) then
+										-- attempt to override a member of generic parameter
+										validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as new name for renaming")
+										scanner.nextToken
+										toLeave := True
+										wasError := True
+									else
+										create eueDsc.init (utnd, scanner.tokenString)
+										if not usage.added (eueDsc) then
+											if currentUnitDsc = Void then
+												validity_error( "Duplicated import of constants from `" + eueDsc.out + "`")
+											else
+												validity_error( "Duplicated import of constants from `" + eueDsc.out + "` in unit `" + currentUnitDsc.name + "`")
+											end -- if
+											wasError := True
+										end -- if
+										scanner.nextToken
+										commaFound := False
+									end -- if
+								else
+									syntax_error (<<scanner.identifier_token>>)
+									toLeave := True
+									wasError := True
+								end -- if
 							else
-								syntax_error (<<scanner.identifier_token>>)
+								-- use [EnclosedUseEement {“,” EnclosedUseEement}] [const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
+								--                          ^
+								-- 		UnitTypeNameDescriptor [as Identifier]]
+								create eueDsc.init (utnd, Void)
+								if not usage.added (eueDsc) then
+									validity_warning ( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in unit `" + unitDsc.name + "`")
+									--wasError := True
+								end -- if
 								toLeave := True
-								wasError := True
-							end -- if
-						else
-							-- use [EnclosedUseEement {“,” EnclosedUseEement}] [const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
-							--                          ^
-							-- 		UnitTypeNameDescriptor [as Identifier]]
-							create eueDsc.init (utnd, Void)
-							if not usage.added (eueDsc) then
-								validity_warning ( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in unit `" + unitDsc.name + "`")
-								--wasError := True
-							end -- if
-							toLeave := True
-						end -- inspect
-					end -- if
+							end -- inspect
+						end -- if
+					end -- if			
 				when scanner.const_token then 
 					if commaFound then
-						syntax_error (<<scanner.identifier_token>>)
+						syntax_error (<<scanner.type_name_token>>)
 						wasError := True
 					end -- if
 					-- use EnclosedUseEement const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
@@ -6341,7 +6481,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 --trace ("3# parseEnclosedUseDirective use const " + constants.out)
 			end -- if
 		else
-			syntax_error (<<scanner.identifier_token, scanner.const_token>>)
+			syntax_error (<<scanner.type_name_token, scanner.const_token>>)
 			wasError := True
 		end -- inspect	
 		if not wasError then
@@ -6365,7 +6505,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		create Result
 	end -- anyDsc
 	
-	parseMemberVisibility: MemberVisibilityDescriptor is
+	parseMemberVisibility (unitDsc: UnitDeclarationDescriptor): MemberVisibilityDescriptor is
 	--18 “{” [this| UnitTypeNameDescriptor {“,” UnitTypeNameDescriptor}  ] “}”
 	require
 		valid_token: validToken (<<scanner.left_curly_bracket_token, scanner.left_square_bracket_token>>)
@@ -6391,7 +6531,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			else
 				syntax_error (<<scanner.right_curly_bracket_token>>)
 			end -- iif
-		when scanner.identifier_token then
+		when scanner.type_name_token then
 			from
 				create svDsc.init -- (Void)
 			until
@@ -6399,17 +6539,24 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			loop
 				inspect
 					scanner.token
-				when scanner.identifier_token then
+				when scanner.type_name_token then
 					if commaFound or else svDsc.clients.count = 0 then
 						commaFound := False
-						utnDsc := parseUnitTypeName
-						if utnDsc = Void then
+						if unitDsc.hasFormalGnericParameter (scanner.tokenString) then
+							-- attempt to override a member of generic parameter
+							validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be listed in clients list")
+							scanner.nextToken
 							toLeave := True
 						else
-							if utnDsc.name.is_equal ("Any") then
-								anyFound := True
-							elseif not anyFound then
-								svDsc.clients.add (utnDsc)
+							utnDsc ?= parseUnitTypeName
+							if utnDsc = Void then
+								toLeave := True
+							else
+								if utnDsc.name.is_equal ("Any") then
+									anyFound := True
+								elseif not anyFound then
+									svDsc.clients.add (utnDsc)
+								end -- if
 							end -- if
 						end -- if
 					else
@@ -6573,37 +6720,44 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							commaFound := True
 						end -- if
 						scanner.nextToken
-					when scanner.identifier_token then
+					when scanner.type_name_token then
 						if commaFound then 
 							-- UnitTypeName”.”Identifier[Signature]
 							commaFound := False
-							utnDsc := parseUnitTypeName
-							if utnDsc = Void then
+							if unitDsc.hasFormalGnericParameter (scanner.tokenString) then
+								-- attempt to override a member of generic parameter
+								validity_error( "Member of the generic parameter `" + scanner.tokenString + "` can not override. Only unit type members can override")
+								scanner.nextToken
 								toLeave := True
 							else
-								if scanner.token = scanner.dot_token then
-									scanner.nextToken
-									if scanner.token = scanner.identifier_token then
-										ident := scanner.tokenString
+								utnDsc ?= parseUnitTypeName
+								if utnDsc = Void then
+									toLeave := True
+								else
+									if scanner.token = scanner.dot_token then
 										scanner.nextToken
-										inspect
-											scanner.token
-										when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
-											signDsc := parseSignature
+										if scanner.token = scanner.identifier_token then
+											ident := scanner.tokenString
+											scanner.nextToken
+											inspect
+												scanner.token
+											when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
+												signDsc := parseSignature
+											else
+											end -- inspect
+											create imoDsc.init (utnDsc, ident, signDsc)
+											-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
+											if not unitDsc.inheritedOverrides.added (imoDsc) then
+												validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + unitDsc.name + "`")
+											end -- if
 										else
-										end -- inspect
-										create imoDsc.init (utnDsc, ident, signDsc)
-										-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
-										if not unitDsc.inheritedOverrides.added (imoDsc) then
-											validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + unitDsc.name + "`")
+											syntax_error (<<scanner.identifier_token>>)
+											toLeave := True
 										end -- if
 									else
-										syntax_error (<<scanner.identifier_token>>)
+										syntax_error (<<scanner.dot_token>>)
 										toLeave := True
 									end -- if
-								else
-									syntax_error (<<scanner.dot_token>>)
-									toLeave := True
 								end -- if
 							end -- if
 						else
@@ -6647,7 +6801,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			parseMember (currentVisibilityZone, unitDsc, True, Void)
 			Result := True
 		when 
-			scanner.operator_token, -- scanner.minus_token,
+			scanner.operator_token,
 			scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
 			scanner.assignment_token, scanner.left_paranthesis_token
 		then
@@ -6657,33 +6811,37 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		when scanner.type_name_token then
 			ident := scanner.tokenString
 			scanner.nextToken
-			inspect
-				scanner.token
-			when scanner.dot_token then
-				-- parse "override UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]"
-				-- override ident.
-				create utnDsc.init (ident, Void)
-				utnDsc ?= register_type (utnDsc)
-				parseInheritedOverrideTail (utnDsc, unitDsc)
+			if unitDsc.hasFormalGnericParameter (ident) then
+				-- attempt to override a member of generic parameter
+				validity_error( "Member of the generic parameter `" + ident + "` can not override. Only unit type members can override")
 			else
-				if scanner.genericsStart then
-					-- parse "override identifier [UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor] {", UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]"}"
-					--                            ^
-					utnDsc := parseUnitTypeName1 (ident, False)
-					if utnDsc /= Void then
-						-- override UnitTypeNameDescriptor.
-						if scanner.token = scanner.dot_token then
-							parseInheritedOverrideTail (utnDsc, unitDsc)
-						else
-							syntax_error (<<scanner.dot_token>>)
-						end -- if
-					end -- if
-				elseif scanner.Cmode then
-					syntax_error (<<scanner.dot_token, scanner.greater_token>>)
+				inspect
+					scanner.token
+				when scanner.dot_token then
+					-- parse "override UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]"
+					create utnDsc.init (ident, Void)
+					utnDsc ?= register_type (utnDsc)
+					parseInheritedOverrideTail (utnDsc, unitDsc)
 				else
-					syntax_error (<<scanner.dot_token, scanner.right_square_bracket_token>>)
-				end -- if
-			end -- inspect
+					if scanner.genericsStart then
+						-- parse "override identifier [UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor] {", UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]"}"
+						--                            ^
+						utnDsc ?= parseUnitTypeName1 (ident, False)
+						if utnDsc /= Void then
+							-- override UnitTypeNameDescriptor.
+							if scanner.token = scanner.dot_token then
+								parseInheritedOverrideTail (utnDsc, unitDsc)
+							else
+								syntax_error (<<scanner.dot_token>>)
+							end -- if
+						end -- if
+					elseif scanner.Cmode then
+						syntax_error (<<scanner.dot_token, scanner.greater_token>>)
+					else
+						syntax_error (<<scanner.dot_token, scanner.right_square_bracket_token>>)
+					end -- if
+				end -- inspect
+			end -- if
 		when scanner.identifier_token then
 			ident := scanner.tokenString
 			scanner.nextToken
@@ -6798,6 +6956,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		valid_token: validToken (<<scanner.new_token>>)
 		unit_descriptor_not_void: unitDsc /= Void
 	local
+		nmdTypeDsc: NamedTypeDescriptor
 		utnDsc: UnitTypeNameDescriptor
 		utnDsc1: UnitTypeNameDescriptor
 		ifpDsc: InitFromParentDescriptor
@@ -6818,28 +6977,34 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				when scanner.type_name_token then
 					if commaFound or else unitDsc.inhertitedInits.count = 0 then
 						commaFound := False
-						utnDsc := parseUnitTypeName
-						if utnDsc = Void then
+						nmdTypeDsc := parseUnitTypeName
+						if nmdTypeDsc = Void then
 							toLeave := True
 						else
-							utnDsc1 := unitDsc.findParent (utnDsc)
-							if utnDsc1 = Void then
-								validity_error( "Initialization procedure can not be inherited from the unit `" +  utnDsc.name + "` as it is not a parent of `" + unitDsc.name + "`")
+							utnDsc ?= nmdTypeDsc
+							if utnDsc = Void then
+								toLeave := True
+								validity_error( "Initialization procedure can not be inherited from the generic type `" + nmdTypeDsc.name + "`")
 							else
-								utnDsc := utnDsc1
-							end -- if
-							inspect	
-								scanner.token
-							-- when scanner.colon_token, scanner.left_paranthesis_token then
-							when scanner.left_paranthesis_token then
-								create ifpDsc.init (utnDsc, parseSignature)
-							else
-								create ifpDsc.init (utnDsc, Void)
-							end -- if
-							if theSameUnit1 (unitDsc, utnDsc) then
-								validity_error( "Initialization procedure can not be inherited from the same unit `" + unitDsc.name + "`")
-							elseif not unitDsc.inhertitedInits.added (ifpDsc) then
-								validity_error( "Duplicated initialization procedure inheritance of `" + ifpDsc.out + "` in unit `" + unitDsc.name + "`")
+								utnDsc1 := unitDsc.findParent (utnDsc)
+								if utnDsc1 = Void then
+									validity_error( "Initialization procedure can not be inherited from the unit `" +  utnDsc.name + "` as it is not a parent of `" + unitDsc.name + "`")
+								else
+									utnDsc := utnDsc1
+								end -- if
+								inspect	
+									scanner.token
+								-- when scanner.colon_token, scanner.left_paranthesis_token then
+								when scanner.left_paranthesis_token then
+									create ifpDsc.init (utnDsc, parseSignature)
+								else
+									create ifpDsc.init (utnDsc, Void)
+								end -- if
+								if theSameUnit1 (unitDsc, utnDsc) then
+									validity_error( "Initialization procedure can not be inherited from the same unit `" + unitDsc.name + "`")
+								elseif not unitDsc.inhertitedInits.added (ifpDsc) then
+									validity_error( "Duplicated initialization procedure inheritance of `" + ifpDsc.out + "` in unit `" + unitDsc.name + "`")
+								end -- if
 							end -- if
 						end -- if
 					else
@@ -8258,7 +8423,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		end -- loop
 	end -- parseFactualGenerics
 
-	parseFormalGenerics: Array [FormalGenericDescriptor] is
+	parseFormalGenerics (fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]): Array [FormalGenericDescriptor] is
 	--	FormalGenerics: “[”FormalGeneric {“,” FormalGeneric}“]”
 	--	FormalGeneric: Identifier ([“extend” UnitTypeName] [“new” [Signature]])| [“:” (UnitType | RoutineType]
 	require
@@ -8281,7 +8446,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				-- Type ...
 				if commaFound or else Result.count = 0 then
 					commaFound := False
-					fgt := parseFormalGenericType
+					fgt := parseFormalGenericType (fgTypes)
 					if fgt = Void then
 						toLeave := True
 						Result := Void
@@ -8329,8 +8494,10 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			end -- inspect
 		end -- loop
 -- trace ("<<<parseFormalGenerics")
+		if Result /= Void and then fgTypes /= Void and then fgTypes.count > 0 then
+			ast.setFGpool (fgTypes)
+		end -- if
 	end -- 	parseFormalGenerics
-
 
 	parseUnit (is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend: Boolean) is
 	--87
@@ -8357,6 +8524,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		mvDsc, currentVisibilityZone: MemberVisibilityDescriptor
 		invPredicates: Array [PredicateDescriptor]
 		formalGenerics: Array [FormalGenericDescriptor]
+		fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
 		unitUsageAndConst: UseConstBlock
 		unitName: String
 		typeName: String
@@ -8406,9 +8574,10 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 
 			if scanner.genericsStart then
 				-- parse formal generics
-				formalGenerics := parseFormalGenerics
+				create fgTypes.make
+				formalGenerics := parseFormalGenerics (fgTypes)
 				if formalGenerics /= Void then
-					currentUnitDsc.setFormalGenercis (formalGenerics)
+					currentUnitDsc.setFormalGenercis (formalGenerics, fgTypes)
 				end -- if
 			end -- if
 			o.putLine ("Parsing unit `" + currentUnitDsc.fullUnitName + "`")
@@ -8572,7 +8741,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					elseif scanner.visibilityStart then
 						--	"{" MemberVisibility “:” {MemberDeclaration}
 						--	"{" MemberVisibility MemberDeclaration
-						mvDsc := parseMemberVisibility
+						mvDsc := parseMemberVisibility (currentUnitDsc)
 						if mvDsc /= Void then
 							inspect
 								scanner.token
@@ -8731,6 +8900,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				syntax_error (<<scanner.end_unit_expected>>)
 			end -- if
 		end -- if
+		ast.setFGpool (Void)
 		currentUnitDsc := Void
 	end -- parseUnit
 	

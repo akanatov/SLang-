@@ -773,6 +773,12 @@ feature {Any}
 	rtn_stringPool: Sorted_Array [String]
 	rtn_typePool: Sorted_Array[TypeDescriptor]
 
+	fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
+	
+	setFGpool (fgt_pool: like fgTypes) is
+	do
+		fgTypes := fgt_pool
+	end -- setFGpool
 	
 invariant
 	non_void_const_usage: useConst /= Void
@@ -1587,6 +1593,7 @@ create
 feature {Any}
 	name: String
 	generics: Array [FormalGenericDescriptor]
+	fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
 	
 	generate (cg: CodeGenerator) is
 	do
@@ -1799,7 +1806,8 @@ feature {Any}
 		Result := name.is_equal (other.name) -- or else overloading - check types of parameters
 	end
 	init (
-		isP, isS, isF: Boolean; aName: like name; fg: like generics; params: like parameters; aType: like type; u: like usage; icf: like constants;
+		isP, isS, isF: Boolean; aName: like name; fg: like generics; fgt: like fgTypes;
+		params: like parameters; aType: like type; u: like usage; icf: like constants;
 		pre: like preconditions; ib: like innerBlock; anexpr: like expr; post: like postconditions
 	) is
 	require
@@ -1807,6 +1815,7 @@ feature {Any}
 	do
 		name := aName
 		generics := fg
+		fgTypes := fgt
 		if params = Void then
 			create parameters.make (1, 0)
 		else
@@ -2144,7 +2153,17 @@ feature {Any}
 	
 	formalGenerics: Array [FormalGenericDescriptor]
 		--  "["" FormalGenericDescriptor {"," FormalGenericDescriptor}"]" 
-
+	fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
+	hasFormalGnericParameter (ident: String): Boolean is
+	local
+		fgtDsc: FormalGenericTypeNameDescriptor
+	do
+		if fgTypes /= Void then
+			create fgtDsc.init (ident)
+			Result := fgTypes.seek (fgtDsc) > 0 
+		end -- if
+	end -- hasFormalGnericParameter
+	
 	getAliasExternalName: String is
 	do
 		Result := buildExternalName (aliasName)
@@ -2225,11 +2244,12 @@ feature {Any}
 		invariantPredicates := ip
 	end -- setInvariant
 
-	setFormalGenercis (fg: like formalGenerics) is
+	setFormalGenercis (fg: like formalGenerics; fgt: like fgTypes) is
 	require
 		formalGenerics_not_void: fg /= Void
 	do
 		formalGenerics := fg
+		fgTypes := fgt
 	end -- setFormalGenercis
 
 	setUseConstBlock (ucb: UseConstBlock) is
@@ -2704,7 +2724,6 @@ invariant
 	non_void_parent: parent /= Void
 end -- class ParentDescriptor 
 
-
 deferred class FormalGenericDescriptor
 -- Identifier (["extend" Type ] ["new" [Signature]])| [":" (UnitTypeDescriptor | RoutineType)]
 inherit
@@ -2712,8 +2731,13 @@ inherit
 		undefine
 			out
 	end
+	NamedTypeDescriptor
+		rename
+			getExternalName as uselessGetExternalName
+		export
+			{None} uselessGetExternalName
+	end 
 feature {Any}
-	name: String
 	getExternalName (pos: Integer): String is
 	require
 		valid_formal_generic_position: pos > 0
@@ -2721,21 +2745,90 @@ feature {Any}
 	ensure
 		external_name_not_void: Result /= Void
 	end -- getExternalName
-	
+	uselessGetExternalName: String is
+	do
+	end -- uselessGetExternalName
 invariant
 	name_not_void: name /= Void
 end -- class FormalGenericDescriptor
+
+class FormalGenericTypeNameDescriptor
+-- Identifier
+inherit
+	FormalGenericDescriptor
+	end
+create
+	init
+feature {Any}
+	out: String is
+	do
+		Result := "" + name
+	end -- out
+	getExternalName (pos: Integer): String is
+	do
+		Result := pos.out
+		Result.append_string (buildHash (Result))
+		-- Ignore constraint and init		
+	end -- getExternalName
+	
+	init (n: like name) is
+	require
+		formal_generic_name_not_void: n /= Void
+	do
+		name := n
+	end -- init
+
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+	
+feature {FormalGenericDescriptor}
+	sameAs (other: like Current): Boolean is
+	do
+		Result := name.is_equal (other.name)
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
+	do
+		Result := name < other.name
+	end -- lessThan
+end -- class FormalGenericTypeNameDescriptor
+
 
 class FormalGenericTypeDescriptor
 -- Identifier ["extend" Type ] ["new" [Signature]]
 inherit
 	FormalGenericDescriptor
-	end
-	TypeDescriptor
-		rename
-			getExternalName as uselessGetExternalName
-		export
-			{None} uselessGetExternalName
 	end
 create
 	init
@@ -2771,10 +2864,6 @@ feature {Any}
 		--end -- if
 		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
-	
-	uselessGetExternalName: String is
-	do
-	end -- uselessGetExternalName
 	
 	init (n: like name; tc: like typeConstraint; ic: like initConstraint) is
 	require
@@ -2868,6 +2957,42 @@ feature {Any}
 		name := aName
 		type := ut
 	end -- init
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+
+
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
 	do
@@ -2880,6 +3005,7 @@ feature {FormalGenericDescriptor}
 invariant
 	type_not_void: type /= Void
 end
+
 class FormalGenericRoutineDescriptor
 -- Identifier ":" RoutineType
 inherit
@@ -2908,6 +3034,43 @@ feature {Any}
 		name := aName
 		routineType := rt
 	end -- init
+
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]
+		--notValid: Boolean
+		--i, n: Integer
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- not_implemened_yet
+	end -- isNotLoaded
+
+
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
 	do
@@ -5054,7 +5217,7 @@ inherit
 create
 	init
 feature {Any}
-	typeDsc: UnitTypeCommonDescriptor
+	typeDsc: NamedTypeDescriptor -- UnitTypeCommonDescriptor
 	init (e: like expDsc; t: like typeDsc) is
 	require
 		non_void_expression: e /= Void
@@ -7719,7 +7882,7 @@ inherit
 create
 	init
 feature {Any}
-	unitType: UnitTypeCommonDescriptor
+	unitType: NamedTypeDescriptor -- UnitTypeCommonDescriptor
 	init (ut: like unitType; args: like arguments) is
 	require
 		non_void_unitType : ut /= Void
@@ -9088,17 +9251,17 @@ end -- class ConstExpressionDescriptor
 
 deferred class RangeTypeDescriptor
 -- RangeType: 
--- 	(ConstantExpression [“{”OperatorName ConstantExpression“}”] “..”ConstantExpression)
+-- 	(ConstantExpression ["{"OperatorName ConstantExpression"}"] ".." ConstantExpression)
 -- 	|
--- 	(ConstantExpression {“|” ConstantExpression})
+-- 	(ConstantExpression {"|" ConstantExpression})
 
 inherit
 	AttachedTypeDescriptor
 	end
-end
+end -- class RangeTypeDescriptor
 
 class FixedRangeTypeDescriptor
--- 	(ConstantExpression [“{”OperatorName ConstantExpression“}”] “..”ConstantExpression)
+-- 	(ConstantExpression ["{"OperatorName ConstantExpression"}"] ".." ConstantExpression)
 inherit
 	RangeTypeDescriptor
 	end
@@ -9877,7 +10040,7 @@ feature
 	ensure
 		non_void_external_name: Result /= Void
 	end -- getExternalName
-	type: UnitTypeCommonDescriptor
+	type: NamedTypeDescriptor -- UnitTypeCommonDescriptor
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		Result := type.isNotLoaded (context, o)
@@ -10037,14 +10200,26 @@ invariant
 	general_consistence: isRef or else isVal or else isConcurrent
 end -- class UnitTypeDescriptor
 
-deferred class UnitTypeCommonDescriptor
+deferred class NamedTypeDescriptor
 inherit
 	AttachedTypeDescriptor
+	end
+	ExpressionDescriptor
+		undefine
+			is_equal, infix "<", getExternalName, getFactualGenericExternalName
+	end
+feature {Any}
+	name: String
+end -- class NamedTypeDescriptor
+
+deferred class UnitTypeCommonDescriptor
+inherit
+	NamedTypeDescriptor
 	end
 	--TupleFieldDescriptor
 	--end
 feature {Any}
-	name: String
+--	name: String
 	generics: Array [TypeOrExpressionDescriptor]
 	setNameAndGenerics (aName: like name; g: like generics) is
 	require	
@@ -10230,8 +10405,7 @@ invariant
 end -- class UnitTypeCommonDescriptor
 
 class UnitTypeNameDescriptor
--- Identifier [GenericInstantiation]    
--- GenericInstantiation: "["Type {"," Type}"]"
+-- Identifier ["["Type {"," Type}"]"]
 inherit
 	UnitTypeCommonDescriptor
 		rename
@@ -10239,10 +10413,10 @@ inherit
 			sameNameAndGenerics as sameAs,
 			lessNameAndGenerics as lessThan
 	end
-	ExpressionDescriptor
-		undefine
-			is_equal, infix "<", getExternalName, getFactualGenericExternalName
-	end
+--	ExpressionDescriptor
+--		undefine
+--			is_equal, infix "<", getExternalName, getFactualGenericExternalName
+--	end
 	--EntityDescriptor
 	--	undefine
 	--		is_equal, infix "<", getExternalName, getFactualGenericExternalName

@@ -64,7 +64,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.09 (Build <AVK May 31th 2022>)")
+		o.putNL ("SLang compiler v0.99.09 (Build <AVK June 1st 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -359,33 +359,33 @@ feature {None}
 						end -- if
 						j := j + 1
 					end -- loop
+					m := parser.ast.typePool.count
+					if m > 0 then
+						from
+							if m = 1 then
+								dumpOutput.put ("/* Anonymous routine depends on 1 type: ")
+							else
+								dumpOutput.put ("/* Anonymous routine depends on " + m.out + " types: ")
+							end -- if
+							j := 1
+						until
+							j > m
+						loop
+							--dumpOutput.putArray (<<"(", parser.ast.typePool.item (j).weight, ")">>)
+							dumpOutput.put (parser.ast.typePool.item (j).out)
+							if j < m then
+								dumpOutput.put(", ")
+							end -- if
+							if j \\ 7 = 0 then
+								dumpOutput.newLine						
+							end -- if
+							j := j + 1
+						end -- loop
+						dumpOutput.put ("*/")
+						dumpOutput.newLine
+					end -- if			
 				end -- if
 			end -- if
-			m := parser.ast.typePool.count
-			if m > 0 then
-				from
-					if m = 1 then
-						dumpOutput.put ("/* Anonymous routine depends on 1 type: ")
-					else
-						dumpOutput.put ("/* Anonymous routine depends on " + m.out + " types: ")
-					end -- if
-					j := 1
-				until
-					j > m
-				loop
-					--dumpOutput.putArray (<<"(", parser.ast.typePool.item (j).weight, ")">>)
-					dumpOutput.put (parser.ast.typePool.item (j).out)
-					if j < m then
-						dumpOutput.put(", ")
-					end -- if
-					if j \\ 7 = 0 then
-						dumpOutput.newLine						
-					end -- if
-					j := j + 1
-				end -- loop
-				dumpOutput.put ("*/")
-				dumpOutput.newLine
-			end -- if			
 			m := parser.ast.routines.count
 			if m > 0 then
 				from
@@ -405,32 +405,32 @@ feature {None}
 					end -- if
 					j := j + 1
 				end -- loop
+				m := parser.ast.rtn_typePool.count
+				if m > 0 then
+					from
+						if m = 1 then
+							dumpOutput.put ("/* Standalone routine(s) depends on 1 type: ")
+						else
+							dumpOutput.put ("/* Standalone routine(s) depends on " + m.out + " types: ")
+						end -- if
+						j := 1
+					until
+						j > m
+					loop
+						--dumpOutput.putArray (<<"(", parser.ast.rtn_typePool.item (j).weight, ")">>)
+						dumpOutput.put (parser.ast.rtn_typePool.item (j).out)
+						if j < m then
+							dumpOutput.put(", ")
+						end -- if
+						if j \\ 7 = 0 then
+							dumpOutput.newLine						
+						end -- if
+						j := j + 1
+					end -- loop
+					dumpOutput.put ("*/")
+					dumpOutput.newLine
+				end -- if			
 			end -- if
-			m := parser.ast.rtn_typePool.count
-			if m > 0 then
-				from
-					if m = 1 then
-						dumpOutput.put ("/* Standalone routine(s) depends on 1 type: ")
-					else
-						dumpOutput.put ("/* Standalone routine(s) depends on " + m.out + " types: ")
-					end -- if
-					j := 1
-				until
-					j > m
-				loop
-					--dumpOutput.putArray (<<"(", parser.ast.rtn_typePool.item (j).weight, ")">>)
-					dumpOutput.put (parser.ast.rtn_typePool.item (j).out)
-					if j < m then
-						dumpOutput.put(", ")
-					end -- if
-					if j \\ 7 = 0 then
-						dumpOutput.newLine						
-					end -- if
-					j := j + 1
-				end -- loop
-				dumpOutput.put ("*/")
-				dumpOutput.newLine
-			end -- if			
 
 			m := parser.ast.units.count
 			if m > 0 then
