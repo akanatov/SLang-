@@ -633,7 +633,7 @@ feature {Any}
 		else
 			fileName := path + "\"
 		end -- if
-		fileName.append_string (IRfolderName  + "\" + unitExternalName + INText)
+		fileName.append_string (IRfolderName  + "\" + unitExternalName + UnitSuffix + INText)
 		create Result.make
 		if not Result.UnitIR_Loaded (fileName, o) then
 			Result := Void
@@ -968,7 +968,7 @@ inherit
 	CompilationUnitCommon
 	end
 create	
-	init
+	init, make
 feature {Any}
 	routines: Sorted_Array [StandaloneRoutineDescriptor]
 
@@ -977,6 +977,13 @@ feature {Any}
 		init_pools (scn)
 		create routines.make
 	end -- init
+
+	make is
+	do
+		init_pools (Void)
+		create routines.make
+	end -- init
+
 
 	RoutinesIR_Loaded (fileName: String; o: Output): Boolean is
 	local
@@ -1116,7 +1123,7 @@ feature {Any}
 		if statements.count > 0 then
 			-- Anonymous Routine IR: useConst + statements 
 			create sImg.init (FullSourceFileName, tStamp, useConst, statements, stringPool, typePool)
-			fName := filePrefix  + "_" + SourceFileName + PgmSuffix + irFileExtension
+			fName := filePrefix  + "_" + SourceFileName + ScriptSuffix + irFileExtension
 			if not IRstored (fName, sImg) then
 				o.putNL ("File open/create/write/close error: unable to store anonymous routine IR into file `" + fName + "`")
 				Result := Result + 1
@@ -1126,8 +1133,7 @@ feature {Any}
 		if routines.count > 0 then
 			-- Standalone routines: useConst + routines
 			create rImg.init (FullSourceFileName, tStamp, useConst, routines, rtn_stringPool, rtn_typePool)
-			--fName := filePrefix  + "_" + SourceFileName + LibSuffix + irFileExtension
-			fName := filePrefix  + "_" + SourceFileName + irFileExtension
+			fName := filePrefix  + "_" + SourceFileName + RoutinesSuffix + irFileExtension
 			if not IRstored (fName, rImg) then
 				o.putNL ("File open/create/write/close error: unable to store standalone routines IR into file `" + fName + "`")
 				Result := Result + 1
@@ -1143,7 +1149,7 @@ feature {Any}
 			-- per unit: useConst + unit
 			unitDsc := units.item(i)
 			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc, unitDsc.stringPool, unitDsc.typePool)
-			fName := filePrefix  + unitDsc.getExternalName + irFileExtension
+			fName := filePrefix  + unitDsc.getExternalName + UnitSuffix + irFileExtension
 			if IRstored (fName, uImg) then
 				if unitDsc.aliasName /= Void then
 					-- Straightforward decision to store the full copy of IR for the alias name ... May be optimized

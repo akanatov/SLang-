@@ -71,7 +71,7 @@ feature {Any}
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
 			create cuDsc.init (Void)
-			fileName := IRfolderName + "\_" + fs.getFileName(fName) + PgmSuffix + ASText
+			fileName := IRfolderName + "\_" + fs.getFileName(fName) + ScriptSuffix + ASText
 			if cuDsc.AnonymousRoutineIR_Loaded (fileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
 				-- 1. How to get system description - where to look for units !!! 
@@ -296,7 +296,9 @@ feature {None}
 	local
 		ir_path: String
 		ast_files: Array [Fsys_Dat]
-		cuDsc : CompilationUnitUnit
+		fileDsc: Fsys_Dat
+		unitDsc: CompilationUnitUnit
+		rtnsDsc: CompilationUnitStandaloneRoutines
 		i, n: Integer
 	do
 		ir_path := path + "/" + IRfolderName
@@ -311,17 +313,28 @@ end -- debug
 			until
 				i > n
 			loop
-				create cuDsc.make 
-				if cuDsc.UnitIR_Loaded (ast_files.item (i).path, o) then
--- How to ignore alias code ... Or process it ....
---					if cuDsc.unit.name.is_equal () then
-						-- That is not alias code
-						cuDsc.attachSystemDescription (sysDsc)
+				fileDsc := ast_files.item (i) 
+				if fileDsc.name.has_substring (UnitSuffix) then
+					create unitDsc.make 
+					if unitDsc.UnitIR_Loaded (fileDsc.path, o) then
+	-- How to ignore alias code ... Or process it ....
+	--					if cuDsc.unit.name.is_equal () then
+							-- That is not alias code
+							unitDsc.attachSystemDescription (sysDsc)
 debug
-	trace ("Unit `" + cuDsc.unit.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+	trace ("Unit `" + unitDsc.unit.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
 end -- debug
---					end -- if
-				end -- if				
+	--					end -- if
+					end -- if				
+				elseif fileDsc.name.has_substring (RoutinesSuffix) then 
+					create rtnsDsc.make 
+					if rtnsDsc.RoutinesIR_Loaded (fileDsc.path, o) then
+						rtnsDsc.attachSystemDescription (sysDsc)
+debug
+	trace ("Standalone routines loaded from file `" + ast_files.item (i).path + "`")
+end -- debug
+					end -- if				
+				end -- if
 				i := i + 1
 			end -- loop
 		end -- if
