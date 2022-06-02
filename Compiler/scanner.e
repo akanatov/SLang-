@@ -879,8 +879,8 @@ feature {Any}
 								toRead := False
 							end
 						-- Add Unicode support - UTF-8 probably
-						--when 'U' then
-						--when 'u' then
+						--when 'U', 'u' then
+							-- scan code point
 						else	
 							buffer := ""
 							buffer.append_character (ch)
