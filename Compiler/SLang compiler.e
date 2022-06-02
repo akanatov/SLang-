@@ -226,8 +226,8 @@ feature {None}
 							fName := scriptsToBuild.item (i)
 							--o.putNL ("Building a program from file `" + fName + "`")
 							create builder.init (o)
-							builder.build_script_based_program (fName)
-							if builder.wasError then
+							if builder.build_script_based_program_failed (fName) then
+							--if builder.wasError then
 								removeTimeStampFile := True
 							end -- if
 							i := i + 1
@@ -248,8 +248,8 @@ feature {None}
 								dumpOutput.putNL (sysDsc.out)			
 							end -- debug
 							create builder.init (o)
-							builder.build_from_system_description (sysDsc)
-							if builder.wasError then
+							if builder.build_from_system_description_failed (sysDsc) then
+							--if builder.wasError then
 								removeTimeStampFile := True
 							end -- if
 							j := j + 1

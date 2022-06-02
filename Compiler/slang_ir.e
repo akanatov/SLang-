@@ -1126,7 +1126,8 @@ feature {Any}
 		if routines.count > 0 then
 			-- Standalone routines: useConst + routines
 			create rImg.init (FullSourceFileName, tStamp, useConst, routines, rtn_stringPool, rtn_typePool)
-			fName := filePrefix  + "_" + SourceFileName + LibSuffix + irFileExtension
+			--fName := filePrefix  + "_" + SourceFileName + LibSuffix + irFileExtension
+			fName := filePrefix  + "_" + SourceFileName + irFileExtension
 			if not IRstored (fName, rImg) then
 				o.putNL ("File open/create/write/close error: unable to store standalone routines IR into file `" + fName + "`")
 				Result := Result + 1
@@ -10827,8 +10828,8 @@ feature {Any}
 	upper: ExpressionDescriptor
 	init (l: like lower; o: like operator; ce: like constExpr; u: like upper) is
 	require
-		non_void_lower: lower /= Void
-		non_void_upper: upper /= Void
+		non_void_lower: l /= Void
+		non_void_upper: u /= Void
 		consistent_reg_exp: o /= Void implies ce /= Void
 	do
 		lower:= l

@@ -771,6 +771,7 @@ feature {Any}
 				when '"' then -- start of String constant
 					from
 						toLeave := False
+						buffer := ""
 					until
 						pos > size or else toLeave
 					loop

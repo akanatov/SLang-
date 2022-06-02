@@ -42,9 +42,9 @@ feature {Any}
 	--parser: SLang_parser
 	--semAnal: SLang_semAnal
 	--cuDsc : CompilationUnitCommon
-	wasError: Boolean
+--	wasError: Boolean
 	
-	build_script_based_program (fName: String) is
+	build_script_based_program_failed (fName: String): Boolean is
 	require
 		non_void_file_name: fName /= Void
 	local 
@@ -63,7 +63,8 @@ feature {Any}
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
 		generators: Array [CodeGenerator]
-		skipCodeGen: Boolean
+		--skipCodeGen: Boolean
+		wasError: Boolean
 		i, n: Integer
 		j, m: Integer
 	do
@@ -100,7 +101,7 @@ feature {Any}
 					i > n					
 				loop
 debug
-	o.putNL ("Type pool: " + i.out + " - `" + typePool.item(i).out + "` loading!")
+--	o.putNL ("Type pool: " + i.out + " - `" + typePool.item(i).out + "` loading!")
 end -- debug
 					typeDsc := typePool.item(i) 
 					if typeDsc.isNotLoaded (cuDsc, o) then
@@ -108,7 +109,7 @@ end -- debug
 							--o.putNL ("Load interface of `" + typePool.item(i).out + "` failed!")
 						end -- debug
 						wasError := True
-						skipCodeGen := True
+						--skipCodeGen := True
 					elseif typeDsc.aliasName /= Void then
 						unitTypeDsc ?= typeDsc
 						check
@@ -118,7 +119,7 @@ end -- debug
 						if not aliasTypes.added (aliasTypeDsc) then
 							o.putNL ("Error: at least two unit types has the same alias `" + typeDsc.aliasName + "`")
 							wasError := True
-							skipCodeGen := True
+							--skipCodeGen := True
 						end -- if
 					end -- if
 					i := i + 1
@@ -151,14 +152,14 @@ end -- debug
 							debug
 								o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
 							end -- debug
-							skipCodeGen := True
+							--skipCodeGen := True
 							wasError := True
 						end -- if
 						i := i + 1
 					end -- loop
 				end -- if
 				
-				if skipCodeGen then
+				if wasError then
 					o.putNL ("Info: code generation skipped due to errors found")
 				else
 					-- 4. Generate code for cudsc.statements
@@ -225,27 +226,29 @@ end -- debug
 			wasError := True
 			o.putNL ("Error: SLang folder with artefacts `" + IRfolderName + "` not found")
 		end -- if
-	end -- build_script_based_program
+		Result := wasError
+	end -- build_script_based_program_failed
 	
-	build_from_system_description (sysDsc: SystemDescriptor) is
+	build_from_system_description_failed (sysDsc: SystemDescriptor): Boolean is
 	require
 		non_void_sd: sysDsc /= Void
 	local 
 		folderName: String -- name of the folder where object files be stored
 	do
 		folderName := "_$"
-		if sysDsc.name.is_equal ("*") then
-			folderName.append_string ("IR")
-		else
+--		if sysDsc.name.is_equal ("*") then
+--			folderName.append_string ("_OBJ")
+--		else
 			folderName.append_string ("$" + sysDsc.name)
-		end -- if
+--		end -- if
 		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
 			-- Build the system
+			-- All 'from' sources are to be parsed 
 			sysDsc.checkSources (o)
 			if sysDsc.entry = Void then
 				-- Library
 				o.putNL ("Building library `" + sysDsc.name + "`")
-not_implemented_yet ("Building library `" + sysDsc.name + "`")
+				Result := library_build_failed (sysDsc)	
 --			elseif sysDsc.name.is_equal ("*") then
 --				-- Set of object files from all units and routines of the current folder
 --				o.putNL ("Building all files")
@@ -256,14 +259,77 @@ not_implemented_yet ("Building library `" + sysDsc.name + "`")
 not_implemented_yet ("Building executable `" + sysDsc.name + "`")
 			end -- if
 		else
-			wasError := True
+			Result := True
 			o.putNL ("Error: Not able to create SLang folder with artefacts  `" + folderName + "`")
 		end -- if
-	end -- build_from_system_description
+	end -- build_from_system_description_failed
+
 feature {None}
+
+	library_build_failed (sysDsc: SystemDescriptor): Boolean is
+	require
+		non_void_system_dsc: sysDsc /= Void
+		is_library: sysDsc.entry = Void and sysDsc.from_paths /= Void
+	local
+		from_paths: Sorted_Array [String] -- List of paths to build the library from
+		i, n: Integer
+	do
+		from_paths := sysDsc.from_paths -- List of paths to build the library from
+		from
+			i := 1
+			n := from_paths.count
+		until
+			i > n
+		loop
+			if unitsBuildFailed (sysDsc, from_paths.item (i)) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+--not_implemented_yet ("Building library `" + sysDsc.name + "`")
+	end -- library_build_failed
+
+	unitsBuildFailed (sysDsc: SystemDescriptor; path: String): Boolean is
+	require
+		non_void_sd: sysDsc /= Void
+		non_void_path: path /= Void
+	local
+		ir_path: String
+		ast_files: Array [Fsys_Dat]
+		cuDsc : CompilationUnitUnit
+		i, n: Integer
+	do
+		ir_path := path + "/" + IRfolderName
+		if fs.folderExists (ir_path) then
+debug
+--	trace ("Load units from `" + ir_path + "`")
+end -- debug
+			from
+				ast_files := fs.getAllFilesWithExtension (ir_path, ASText)
+				i := 1
+				n := ast_files.count
+			until
+				i > n
+			loop
+				create cuDsc.make 
+				if cuDsc.UnitIR_Loaded (ast_files.item (i).path, o) then
+-- How to ignore alias code ... Or process it ....
+--					if cuDsc.unit.name.is_equal () then
+						-- That is not alias code
+						cuDsc.attachSystemDescription (sysDsc)
+debug
+	trace ("Unit `" + cuDsc.unit.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+end -- debug
+--					end -- if
+				end -- if				
+				i := i + 1
+			end -- loop
+		end -- if
+	end -- unitsBuildFailed
+
 trace (message: String ) is
 do
-	o.putNL ("Trace: " + message)
+	o.putNL (">>> " + message)
 end -- trace
 
 not_implemented_yet (featureName: String) is

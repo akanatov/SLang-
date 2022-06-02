@@ -35,31 +35,44 @@ feature {Any}
 		fsysDat: Fsys_Dat
 		fileExt: String
 		i, n, m: Integer
-		
+		wasError: Boolean
+		extension: String
 	do
-		allFiles := file_list (path)
-		if allFiles /= Void then
-			n := allFiles.count
-			create Result.make (1, n)
-			from
-				i := 1
-			until
-				i > n
-			loop
-				fsysDat := allFiles.item (i)
-				fileExt := getFileExtension(fsysDat.name)
-				if fileExt.is_equal (ext) then
-					m := m + 1
-					Result.put (fsysDat, m)
-				end -- if
-				i := i + 1
-			end -- loop
-			if m < n then
-				Result.resize (1, m)
-			end -- if
-		else
+		if wasError then
 			Result := <<>>
+		else
+			allFiles := file_list (path)
+			if allFiles /= Void then
+				if ext.item (1) = '.' then
+					extension := ext.substring (2, ext.count)
+				else
+					extension := ext
+				end -- if
+				n := allFiles.count
+				create Result.make (1, n)
+				from
+					i := 1
+				until
+					i > n
+				loop
+					fsysDat := allFiles.item (i)
+					fileExt := getFileExtension(fsysDat.name)
+					if fileExt.is_equal (extension) then
+						m := m + 1
+						Result.put (fsysDat, m)
+					end -- if
+					i := i + 1
+				end -- loop
+				if m < n then
+					Result.resize (1, m)
+				end -- if
+			else
+				Result := <<>>
+			end -- if
 		end -- if
+	rescue
+		wasError := True
+		retry
 	end -- getAllFilesWithExtension
 	folderCreated (folderName: String): Boolean is
 	require
