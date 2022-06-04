@@ -357,9 +357,9 @@ feature {Any}
 			if path.item (path.count) = '\' or else path.item (path.count) = '/' then
 				fileName := path + ""
 			else
-				fileName := path + "\"
+				fileName := path + "/"
 			end -- if
-			fileName.append_string (IRfolderName  + "\" + clusterDsc.getRealName (unitName) + "." + INText)
+			fileName.append_string (IRfolderName  + "/" + clusterDsc.getRealName (unitName) + UnitSuffix + "." + INText)
 			Result := fs.file_exists (fileName)
 		end -- if
 debug
@@ -717,7 +717,7 @@ feature {Any}
 		else
 			fileName := path + "\"
 		end -- if
-		fileName.append_string (IRfolderName  + "\" + unitExternalName + UnitSuffix + "." + INText)
+		fileName.append_string (IRfolderName  + "/" + unitExternalName + UnitSuffix + "." + INText)
 		create Result.make
 		if not Result.UnitIR_Loaded (fileName, o) then
 			Result := Void
@@ -727,6 +727,7 @@ feature {Any}
 	loadUnitInterface (unitExternalName, unitPrintableName: String; o: Output; unitDsc:UnitTypeCommonDescriptor): CompilationUnitUnit is
 	require
 		non_void_unit_name: unitExternalName /= Void
+		non_void_print_name: unitPrintableName /= Void		
 	local
 		clusters: Array [ClusterDescriptor]
 	do
@@ -1237,7 +1238,7 @@ feature {Any}
 			if IRstored (fName, uImg) then
 				if unitDsc.aliasName /= Void then
 					-- Straightforward decision to store the full copy of IR for the alias name ... May be optimized
-					fName := filePrefix  + unitDsc.getAliasExternalName + "." + irFileExtension
+					fName := filePrefix  + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
 					if not IRstored (fName, uImg) then
 						o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
 						Result := Result + 1
