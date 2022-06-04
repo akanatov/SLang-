@@ -71,7 +71,7 @@ feature {Any}
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
 			create cuDsc.init (Void)
-			fileName := IRfolderName + "\_" + fs.getFileName(fName) + ScriptSuffix + ASText
+			fileName := IRfolderName + "\_" + fs.getFileName(fName) + ScriptSuffix + "." + ASText
 			if cuDsc.AnonymousRoutineIR_Loaded (fileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
 				-- 1. How to get system description - where to look for units !!! 

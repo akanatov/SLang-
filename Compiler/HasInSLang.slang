@@ -36,7 +36,7 @@ unit Whale
 end
 
 while animal in (Duck(), Sparrow(), Whale()) do
-	if animal is (rtn fly ()) do
+	if animal is unit (rtn fly ()) do
 		animal.fly ()
 	end
 end

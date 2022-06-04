@@ -1,8 +1,8 @@
 class SLangConstants
 feature
 	IRfolderName: String is "_$IR"
-	ASText: String is ".ast"
-	INText: String is ".int"
+	ASText: String is "ast"
+	INText: String is "int"
 	ScriptSuffix: String is "$S"
 	RoutinesSuffix: String is "$R"
 	UnitSuffix: String is "$U"
@@ -53,7 +53,7 @@ feature {None}
 		tsfName: String
 		ext: String
 		slangFileCount: Integer
-		actualFiles: Integer
+		--actualFiles: Integer
 		saveErrCount: Integer
 		skipBuild: Boolean
 		skipSourceFile: Boolean
@@ -65,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.09 (Build <AVK June 1st 2022>)")
+		o.putNL ("SLang compiler v0.99.09 (Build <AVK June 4th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -131,85 +131,78 @@ feature {None}
 						skipSourceFile := False
 					else
 						sName := fs.getFileName(fName)
-						if False then --fs.younger (fName, IRfolderName + "\_" + sName + INText) then
-							-- How to detect the case when exe or lib deleted ...
-							-- No need to process
-							o.putLine ("File `" + fName + "` was not changed. Procesing skipped")
-							actualFiles := actualFiles + 1
-						else
-							create scanner.init (fName)
-							if scanner.isReady then
-								if Cmode then
-									scanner.setCmode
-								else
-									scanner.setPmode
-								end -- if
-								create parser.init (scanner, systems, o)
-								o.putLine ("Parsing file `" + fName + "`")
-								parser.parseSourceFile
-								scanner.close
-								parser.ast.attach_usage_pool_to_units_and_standalone_routines 
-								if parser.ast.statements.count > 0 then
-									-- File has anonymous routine - it is a script ! Build mode is to be activated!
-									scriptsToBuild.add (fName)
-								end -- if  
-								if parser.systems /= Void and then parser.systems.count > 0 then
-									-- File has description of systems to be built. Build mode is to be activated!
-									systems.append (parser.systems)
-								end -- if
-								debug
-									dumpAST (parser, dumpOutput)
-								end -- debug
+						create scanner.init (fName)
+						if scanner.isReady then
+							if Cmode then
+								scanner.setCmode
+							else
+								scanner.setPmode
+							end -- if
+							create parser.init (scanner, systems, o)
+							o.putLine ("Parsing file `" + fName + "`")
+							parser.parseSourceFile
+							scanner.close
+							parser.ast.attach_usage_pool_to_units_and_standalone_routines 
+							if parser.ast.statements.count > 0 then
+								-- File has anonymous routine - it is a script ! Build mode is to be activated!
+								scriptsToBuild.add (fName)
+							end -- if  
+							if parser.systems /= Void and then parser.systems.count > 0 then
+								-- File has description of systems to be built. Build mode is to be activated!
+								systems.append (parser.systems)
+							end -- if
+							debug
+								dumpAST (parser, dumpOutput)
+							end -- debug
 
-								inspect 
-									parser.errorsCount
-								when 0 then
-									if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
-										saveErrCount := parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, ASText, o, Void)
-										parser.ast.cutImplementation
-										saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o, Void)
-										if saveErrCount = 0 then
-											-- Remove previous timestamp files and store the latest parsing timestamp !!!
-											tsfName := fs.getFilePath(fName) + "/" + IRfolderName + "/" + fs.getFileName(fName)
-											fs.remove_files_with_the_same_name (tsfName)
-											tsfName.append_string ("." + scanner.timeStamp.out)
-											fs.add_file (tsfName, "r")
-											o.putLine ("File `" + fName + "` parsed with no errors!")
-										else
-											o.putLine (
-												"File `" + fName + 
-												"` parsed with no errors! But some parsing results were not stored due to " + 
-												saveErrCount.out + " I/O errors!"
-											)
-											skipBuild := True
-										end -- if
+							inspect 
+								parser.errorsCount
+							when 0 then
+								if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
+									saveErrCount := parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, ASText, o, Void)
+									parser.ast.cutImplementation
+									saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o, Void)
+									if saveErrCount = 0 then
+										-- Remove previous timestamp files and store the latest parsing timestamp !!!
+										tsfName := fs.getFilePath(fName) + "/" + IRfolderName + "/" + fs.getFileName(fName)
+										fs.remove_files_with_the_same_name (tsfName)
+										tsfName.append_string ("." + scanner.timeStamp.out)
+										fs.add_file (tsfName, "r")
+										o.putLine ("File `" + fName + "` parsed with no errors!")
 									else
 										o.putLine (
-											"Failed to create folder `" + IRfolderName + 
-											"` to store internal files. Parsing results of file `" + fName + "` are not saved!"
+											"File `" + fName + 
+											"` parsed with no errors! But some parsing results were not stored due to " + 
+											saveErrCount.out + " I/O errors!"
 										)
 										skipBuild := True
 									end -- if
-								when 1 then
-									o.putLine ("File `" + fName + "` parsed with 1 error!")
-									skipBuild := True
 								else
-									o.putLine ("File `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
+									o.putLine (
+										"Failed to create folder `" + IRfolderName + 
+										"` to store internal files. Parsing results of file `" + fName + "` are not saved!"
+									)
 									skipBuild := True
-								end -- inspect
-							else
-								o.putLine ("File `" + fName + "` not found or cannot be opened for parsing")
+								end -- if
+							when 1 then
+								o.putLine ("File `" + fName + "` parsed with 1 error!")
 								skipBuild := True
-							end -- if
+							else
+								o.putLine ("File `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
+								skipBuild := True
+							end -- inspect
+						else
+							o.putLine ("File `" + fName + "` not found or cannot be opened for parsing")
+							skipBuild := True
 						end -- if
 					end -- if
 					i := i + 1
 				end -- loop
-				if actualFiles = 1 then
-					o.putLine ("1 file is actual, processing skipped")
-				elseif actualFiles > 1 then
-					o.putLine (actualFiles.out + " files are actual, processing skipped")
-				end -- if
+				--if actualFiles = 1 then
+				--	o.putLine ("1 file is actual, processing skipped")
+				--elseif actualFiles > 1 then
+				--	o.putLine (actualFiles.out + " files are actual, processing skipped")
+				--end -- if
 				n := scriptsToBuild.count
 				m := systems.count
 				if skipBuild then

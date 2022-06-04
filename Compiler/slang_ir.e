@@ -69,6 +69,32 @@ feature {Any}
 		retry
 	end -- safe_file_list
 	
+	readMarkers (path: String): Sorted_Array [FilePair] is
+	local
+		files: Array [FSys_Dat]
+		fileDsc: FilePair
+		fName: String
+		ext: String
+		i, n: Integer
+	do
+		from
+			create Result.make
+			files := safe_file_list (path)
+			i := 1
+			n := files.count
+		until 
+			i > n
+		loop
+			fName := files.item (i).name
+			ext := fs.getFileExtension (fName)
+			if not (ext.is_equal (ASText) or else ext.is_equal (INText)) and then ext.is_real then
+				create fileDsc.init(fs.getFileName(fName), ext)
+				Result.add (fileDsc)
+			end -- if
+			i := i + 1
+		end -- loop
+	end -- readMarkers
+
 	parseFolder (path: String; o: Output) is
 	require	
 		non_void_path: path /= Void
@@ -77,7 +103,11 @@ feature {Any}
 		scanner: SLang_scanner
 		parser: SLang_parser
 		files: Array [FSys_Dat]
-		markerFiles: Sorted_Array [String]
+		markerFiles: Sorted_Array [FilePair]
+		markerCount: Integer
+		fileDsc: FilePair
+		srcFileTime: Real
+		tagFileTime: Real
 		fName: String
 		sName: String		
 		tsfName: String
@@ -85,11 +115,15 @@ feature {Any}
 		slangFileCount: Integer
 		saveErrCount: Integer
 		skipBuild: Boolean
+		toParse: Boolean
+		actualFilesCount: Integer
 		i, n: Integer
 	do
+		o.putLine ("Checking cluser at `" + path + "`")
 		from
 			files := safe_file_list (path)
-			create markerFiles.make
+			markerFiles := readMarkers (path + "/" + IRfolderName)
+			markerCount := markerFiles.count
 			i := 1
 			n := files.count
 		until 
@@ -98,45 +132,54 @@ feature {Any}
 			fName := files.item (i).name
 			ext := fs.getFileExtension (fName)
 			if ext.is_equal (SLangExt) or else ext.is_equal (CLangExt) then
-				sName := fs.getFileName(fName)
-				if False then -- File was not changed since last succsecful parsing 
-				--fs.younger (fName, IRfolderName + "\_" + sName + INText) then
-				-- How to detect the case when exe or lib deleted ...
-				-- No need to process
-					o.putLine ("File `" + fName + "` was not changed. Procesing skipped")
-				else	
+				if markerCount > 0 then
+					sName := fs.getFileName(fName)
+					srcFileTime := files.item (i).time
+					create fileDsc.init(sName, ext)
+					fileDsc := markerFiles.search (fileDsc)
+					if fileDsc /= Void then
+						tagFileTime := fileDsc.fileExtension.to_real
+						srcFileTime := files.item (i).time
+						toParse := srcFileTime /= tagFileTime
+					else
+						toParse := True
+					end -- if				
+				else
+					toParse := True
+				end -- if
+				if toParse then
 					slangFileCount := slangFileCount + 1
 					if slangFileCount < i then
 						files.put (files.item (i), slangFileCount)
 					end -- if
+				else
+					actualFilesCount := actualFilesCount + 1
+				--if markerCount > 0 then  -- File was never parsed or not changed since last succsecful parsing 
+				--	-- No need to process
+				--	o.putLine ("File `" + fName + "` was not changed. Procesing skipped")
 				end -- if
-			else
-			--if then 
-debug
-	print ("File `" + fs.getFileName(fName) + "`")
-end
-				markerFiles.add (fs.getFileName(fName))
 			end -- if
 			i := i + 1
 		end	-- loop
 		if slangFileCount < n then
 			files.resize (1, slangFileCount)
 		end -- if
+		if actualFilesCount > 0 then 
+			o.putLine (actualFilesCount.out + " files are actual ...")
+		end -- if
 		n := slangFileCount
 		from 
-			--if n > 1 then
-			--	o.putLine (n.out + " files to parse ...")
-			--end -- if
+			if n > 0 then
+				o.putLine (n.out + " files to parse to actualize ...")
+			end -- if
 			i := 1
 		until
 			i > n
 		loop
 			fName := files.item (i).path
-			ext := fs.getFileExtension (fName)
-			--sName := fs.getFileName(fName)
 			create scanner.init (fName)
 			if scanner.isReady then
-				if ext.is_equal (CLangExt) then
+				if fs.getFileExtension (fName).is_equal (CLangExt) then
 					scanner.setCmode
 				else
 					scanner.setPmode
@@ -145,8 +188,7 @@ end
 				o.putLine ("Parsing file `" + fName + "`")
 				parser.parseSourceFile
 				scanner.close
-				parser.ast.attach_usage_pool_to_units_and_standalone_routines 
-
+				parser.ast.attach_usage_pool_to_units_and_standalone_routines
 				inspect 
 					parser.errorsCount
 				when 0 then
@@ -317,7 +359,7 @@ end
 			else
 				fileName := path + "\"
 			end -- if
-			fileName.append_string (IRfolderName  + "\" + clusterDsc.getRealName (unitName) + INText)
+			fileName.append_string (IRfolderName  + "\" + clusterDsc.getRealName (unitName) + "." + INText)
 			Result := fs.file_exists (fileName)
 		end -- if
 debug
@@ -388,6 +430,39 @@ invariant
 	clusters_not_void: clusters /= Void
 	libraries_not_void: libraries /= Void	
 end -- class SystemDescriptor
+
+class FilePair
+inherit
+	Comparable
+		redefine
+			is_equal 
+	end
+create
+	init
+feature
+	fileName: String
+	fileExtension: String
+	init (fn: like fileName; fe: like fileExtension) is
+	require
+		non_void_file_name: fn /= Void
+		non_void_file_extension: fe /= Void
+	do
+		fileName := fn
+		fileExtension :=fe
+	end -- init
+	is_equal (other: like Current): Boolean is
+	do
+		Result := fileName.is_equal (other.fileName)
+	end -- infix "<"
+
+	infix "<" (other: like Current): Boolean is
+	do
+		Result := fileName < other.fileName
+	end -- infix "<"
+invariant
+	non_void_file_name: fileName /= Void
+	non_void_file_extension: fileExtension /= Void	
+end -- class FilePair
 
 class ClusterDescriptor
 inherit	
@@ -642,7 +717,7 @@ feature {Any}
 		else
 			fileName := path + "\"
 		end -- if
-		fileName.append_string (IRfolderName  + "\" + unitExternalName + UnitSuffix + INText)
+		fileName.append_string (IRfolderName  + "\" + unitExternalName + UnitSuffix + "." + INText)
 		create Result.make
 		if not Result.UnitIR_Loaded (fileName, o) then
 			Result := Void
@@ -1132,7 +1207,7 @@ feature {Any}
 		if statements.count > 0 then
 			-- Anonymous Routine IR: useConst + statements 
 			create sImg.init (FullSourceFileName, tStamp, useConst, statements, stringPool, typePool)
-			fName := filePrefix  + "_" + SourceFileName + ScriptSuffix + irFileExtension
+			fName := filePrefix  + "_" + SourceFileName + ScriptSuffix + "." + irFileExtension
 			if not IRstored (fName, sImg) then
 				o.putNL ("File open/create/write/close error: unable to store anonymous routine IR into file `" + fName + "`")
 				Result := Result + 1
@@ -1142,7 +1217,7 @@ feature {Any}
 		if routines.count > 0 then
 			-- Standalone routines: useConst + routines
 			create rImg.init (FullSourceFileName, tStamp, useConst, routines, rtn_stringPool, rtn_typePool)
-			fName := filePrefix  + "_" + SourceFileName + RoutinesSuffix + irFileExtension
+			fName := filePrefix  + "_" + SourceFileName + RoutinesSuffix + "." + irFileExtension
 			if not IRstored (fName, rImg) then
 				o.putNL ("File open/create/write/close error: unable to store standalone routines IR into file `" + fName + "`")
 				Result := Result + 1
@@ -1158,11 +1233,11 @@ feature {Any}
 			-- per unit: useConst + unit
 			unitDsc := units.item(i)
 			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc, unitDsc.stringPool, unitDsc.typePool)
-			fName := filePrefix  + unitDsc.getExternalName + UnitSuffix + irFileExtension
+			fName := filePrefix  + unitDsc.getExternalName + UnitSuffix + "." + irFileExtension
 			if IRstored (fName, uImg) then
 				if unitDsc.aliasName /= Void then
 					-- Straightforward decision to store the full copy of IR for the alias name ... May be optimized
-					fName := filePrefix  + unitDsc.getAliasExternalName + irFileExtension
+					fName := filePrefix  + unitDsc.getAliasExternalName + "." + irFileExtension
 					if not IRstored (fName, uImg) then
 						o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
 						Result := Result + 1
