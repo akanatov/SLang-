@@ -38,11 +38,6 @@ feature {None}
 		end -- if
 	end -- getAnonymousRoutineClusters
 feature {Any}
-	--scanner: SLang_scanner
-	--parser: SLang_parser
-	--semAnal: SLang_semAnal
-	--cuDsc : CompilationUnitCommon
---	wasError: Boolean
 	
 	build_script_based_program_failed (fName: String): Boolean is
 	require
@@ -50,11 +45,7 @@ feature {Any}
 	local 
 		cuDsc : CompilationUnitAnonymousRoutine
 		sysDsc: SystemDescriptor
-		--folderName: String
 		fileName: String
-		codeGenerator: CodeGenerator
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		-- stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]
 		typeDsc: TypeDescriptor
 		aliasTypes: Sorted_Array [AliasedTypeDescriptor]
@@ -63,8 +54,6 @@ feature {Any}
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
 		generators: Array [CodeGenerator]
-		--skipCodeGen: Boolean
-		wasError: Boolean
 		i, n: Integer
 		j, m: Integer
 	do
@@ -108,8 +97,7 @@ end -- debug
 						debug
 							--o.putNL ("Load interface of `" + typePool.item(i).out + "` failed!")
 						end -- debug
-						wasError := True
-						--skipCodeGen := True
+						Result := True
 					elseif typeDsc.aliasName /= Void then
 						unitTypeDsc ?= typeDsc
 						check
@@ -117,15 +105,15 @@ end -- debug
 						end -- check
 						create aliasTypeDsc.init (typeDsc.aliasName, unitTypeDsc)
 						if not aliasTypes.added (aliasTypeDsc) then
+-- not_implemented_yet: It should be a validity error !!!
 							o.putNL ("Error: at least two unit types has the same alias `" + typeDsc.aliasName + "`")
-							wasError := True
-							--skipCodeGen := True
+							Result := True
 						end -- if
 					end -- if
 					i := i + 1
 				end -- loop
 
-				if not wasError then
+				if not Result then
 					-- Register all alias types
 					from
 						typePool := cuDsc.typePool
@@ -137,7 +125,6 @@ end -- debug
 						typePool.add (aliasTypes.item (i))
 						i := i + 1
 					end -- loop
-
 					
 					-- If all required types loaded 
 					-- 3. Check validity of cuDsc.statements
@@ -152,36 +139,18 @@ end -- debug
 							debug
 								o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
 							end -- debug
-							--skipCodeGen := True
-							wasError := True
+							Result := True
 						end -- if
 						i := i + 1
 					end -- loop
 				end -- if
 				
-				if wasError then
+				if Result then
 					o.putNL ("Info: code generation skipped due to errors found")
 				else
-					-- 4. Generate code for cudsc.statements
-
-					create generators.make (1, 0)
-					
-					-- LLVM Windows generation activation
-					create {LLVM_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), "x86_64-pc-windows-msvc", true)
-					registerCodeGenerator (codeGenerator, generators, "Generation 'LLVM - x86_64-pc-windows-msvc' failed to start")
-					-- LLVM Linux generation activation
-					create {LLVM_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), "x86_64-pc-linux-gnu", true)
-					registerCodeGenerator (codeGenerator, generators, "Generation 'LLVM - x86_64-pc-linux-gnu' failed to start")
-					-- MSIL generation activation
-					create {MSIL_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), true)
-					registerCodeGenerator (codeGenerator, generators, "Generation 'MSIL' failed to start")
-					-- JVM generation activation
-					create {JVM_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), true)
-					registerCodeGenerator (codeGenerator, generators, "Generation 'JVM' failed to start")
-					-- ARK generation activation
-					create {ARK_CodeGenerator}codeGenerator.init (IRfolderName + "\_" + fs.getFileName(fName), true)
-					registerCodeGenerator (codeGenerator, generators, "Generation 'ARK' failed to start")
-					
+					-- 4. Generate code for cuDsc.statements
+					--generators := initCodeGenerators (IRfolderName + "\_" + fs.getFileName(fName), true)			
+					generators := initCodeGenerators (fs.getFileName(fName), true)			
 					m := generators.count
 					if m > 0 then
 						from
@@ -202,14 +171,7 @@ end -- debug
 							end -- loop
 							i := i + 1
 						end -- loop
-						from
-							j := 1
-						until
-							j > m
-						loop
-							generators.item (j).dispose
-							j := j + 1
-						end -- loop
+						closeCodeGenerators (generators)
 						-- 5. Link !!!! How ????
 					else
 						-- No generators
@@ -217,18 +179,17 @@ end -- debug
 					end -- if
 				end -- if
 			else
-				wasError := True
+				Result := True
 				-- Allready printed!
 				--	-- AST not loaded !!!
 				--	o.putNL ("Error: unable to load compiled module from file `" + fileName + "`")
 			end -- if
 		else
-			wasError := True
+			Result := True
 			o.putNL ("Error: SLang folder with artefacts `" + IRfolderName + "` not found")
 		end -- if
-		Result := wasError
 	end -- build_script_based_program_failed
-	
+
 	build_from_system_description_failed (sysDsc: SystemDescriptor): Boolean is
 	require
 		non_void_sd: sysDsc /= Void
@@ -236,11 +197,11 @@ end -- debug
 		folderName: String -- name of the folder where object files be stored
 	do
 		folderName := "_$"
---		if sysDsc.name.is_equal ("*") then
---			folderName.append_string ("_OBJ")
---		else
+		if sysDsc.name.is_equal ("*") then
+			folderName.append_string ("_OBJ")
+		else
 			folderName.append_string ("$" + sysDsc.name)
---		end -- if
+		end -- if
 		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
 			-- Build the system
 			-- All 'from' sources are to be parsed 
@@ -249,14 +210,16 @@ end -- debug
 				-- Library
 				o.putNL ("Building library `" + sysDsc.name + "`")
 				Result := library_build_failed (sysDsc)	
---			elseif sysDsc.name.is_equal ("*") then
---				-- Set of object files from all units and routines of the current folder
---				o.putNL ("Building all files")
+			elseif sysDsc.name.is_equal ("*") then
+				-- Set of object files from all units and routines of the current folder
+				o.putNL ("Build for all source files")
+				Result := obj_files_build_failed (sysDsc)
 --not_implemented_yet ("Building all files")
 			else
 				-- Executable with the entry point
 				o.putNL ("Building executable `" + sysDsc.name + "`")
-not_implemented_yet ("Building executable `" + sysDsc.name + "`")
+				Result := executable_build_failed (sysDsc)
+--not_implemented_yet ("Building executable `" + sysDsc.name + "`")
 			end -- if
 		else
 			Result := True
@@ -266,42 +229,128 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "`")
 
 feature {None}
 
+	initCodeGenerators (outputFileName: String; buildExecutable: Boolean): Array [CodeGenerator] is
+	require
+		non_void_file_name: outputFileName /= Void
+	local
+		codeGenerator: CodeGenerator	
+	do
+		create Result.make (1, 0)		
+		-- LLVM Windows generation activation
+		if buildExecutable then
+			create {LLVM_CodeGenerator}codeGenerator.init (outputFileName + ".exe", "x86_64-pc-windows-msvc", buildExecutable)
+		else
+			create {LLVM_CodeGenerator}codeGenerator.init (outputFileName + ".lib", "x86_64-pc-windows-msvc", buildExecutable)
+			-- not_implemented_yet .dll !!!
+		end -- if
+		registerCodeGenerator (codeGenerator, Result, "Generation 'LLVM - x86_64-pc-windows-msvc' failed to start")
+		-- LLVM Linux generation activation
+		create {LLVM_CodeGenerator}codeGenerator.init (outputFileName, "x86_64-pc-linux-gnu", buildExecutable)
+		registerCodeGenerator (codeGenerator, Result, "Generation 'LLVM - x86_64-pc-linux-gnu' failed to start")
+		-- MSIL generation activation
+		create {MSIL_CodeGenerator}codeGenerator.init (outputFileName + ".msil", buildExecutable)
+		registerCodeGenerator (codeGenerator, Result, "Generation 'MSIL' failed to start")
+		-- JVM generation activation
+		create {JVM_CodeGenerator}codeGenerator.init (outputFileName + ".class", buildExecutable)
+		registerCodeGenerator (codeGenerator, Result, "Generation 'JVM' failed to start")
+		-- ARK generation activation
+		create {ARK_CodeGenerator}codeGenerator.init (outputFileName + ".abc", buildExecutable)
+		registerCodeGenerator (codeGenerator, Result, "Generation 'ARK' failed to start")
+	ensure
+		non_void_list_of_code_generators: Result /= Void
+	end -- initCodeGenerators
+	
+	closeCodeGenerators (generators: Array [CodeGenerator]) is
+	require
+		non_void_list_of_code_generators: generators /= Void
+	local
+		j, m: Integer
+	do
+		from
+			j := 1
+		until
+			j > m
+		loop
+			generators.item (j).dispose
+			j := j + 1
+		end -- loop
+	end -- closeCodeGenerators
+
+	obj_files_build_failed (sysDsc: SystemDescriptor): Boolean is
+	require
+		non_void_system_dsc: sysDsc /= Void
+		is_executable: (sysDsc.entry /= Void and then sysDsc.entry.item (1) = '*') and sysDsc.from_paths = Void
+	local
+	do
+		not_implemented_yet ("Building all files")
+	end -- obj_files_build_failed
+
+	executable_build_failed (sysDsc: SystemDescriptor): Boolean is
+	require
+		non_void_system_dsc: sysDsc /= Void
+		is_executable: sysDsc.entry /= Void and sysDsc.from_paths = Void
+	local
+	do
+		not_implemented_yet ("Building executable `" + sysDsc.name + "`")
+	end -- executable_build_failed
+	
 	library_build_failed (sysDsc: SystemDescriptor): Boolean is
 	require
 		non_void_system_dsc: sysDsc /= Void
 		is_library: sysDsc.entry = Void and sysDsc.from_paths /= Void
 	local
+		folderName: String -- name of the folder where object files be stored
 		from_paths: Sorted_Array [String] -- List of paths to build the library from
+		generators: Array [CodeGenerator]
 		i, n: Integer
 	do
-		from_paths := sysDsc.from_paths -- List of paths to build the library from
-		from
-			i := 1
-			n := from_paths.count
-		until
-			i > n
-		loop
-			if unitsBuildFailed (sysDsc, from_paths.item (i)) then
-				Result := True
-			end -- if
-			i := i + 1
-		end -- loop
---not_implemented_yet ("Building library `" + sysDsc.name + "`")
+		folderName := "_$"
+		if sysDsc.name.is_equal ("*") then
+			folderName.append_string ("_OBJ")
+		else
+			folderName.append_string ("$" + sysDsc.name)
+		end -- if
+		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
+			generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
+			from_paths := sysDsc.from_paths -- List of paths to build the library from
+			from
+				i := 1
+				n := from_paths.count
+				check
+					non_empty_list_of_paths: n > 0
+				end -- check
+			until
+				i > n
+			loop
+				if unitsBuildFailed (sysDsc, from_paths.item (i), generators) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop
+			closeCodeGenerators (generators)
+		else
+			Result := True
+			o.putNL ("Error: Not able to create SLang folder with artefacts  `" + folderName + "`")
+		end -- if
 	end -- library_build_failed
 
-	unitsBuildFailed (sysDsc: SystemDescriptor; path: String): Boolean is
+	unitsBuildFailed (sysDsc: SystemDescriptor; path: String; generators: Array [CodeGenerator]): Boolean is
 	require
 		non_void_sd: sysDsc /= Void
 		non_void_path: path /= Void
+		non_void_list_of_code_generators: generators /= Void
 	local
 		ir_path: String
 		ast_files: Array [Fsys_Dat]
 		fileDsc: Fsys_Dat
 		unitDsc: CompilationUnitUnit
 		rtnsDsc: CompilationUnitStandaloneRoutines
+		routines: Sorted_Array [StandaloneRoutineDescriptor]
 		i, n: Integer
+		j, m: Integer
+		k, l: Integer
 	do
-		ir_path := path + "/" + IRfolderName
+		ir_path := path + fs.separator + IRfolderName
 		if fs.folderExists (ir_path) then
 debug
 --	trace ("Load units from `" + ir_path + "`")
@@ -317,14 +366,29 @@ end -- debug
 				if fileDsc.name.has_substring (UnitSuffix) then
 					create unitDsc.make 
 					if unitDsc.UnitIR_Loaded (fileDsc.path, o) then
+debug
+	trace ("Unit `" + unitDsc.unit.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+end -- debug
 	-- How to ignore alias code ... Or process it ....
 	--					if cuDsc.unit.name.is_equal () then
 							-- That is not alias code
 							unitDsc.attachSystemDescription (sysDsc)
-debug
-	trace ("Unit `" + unitDsc.unit.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
-end -- debug
+							if unitDsc.unit.is_invalid (unitDsc, o) then
+								Result := True
+							else
+								from
+									j := 1
+									m := generators.count
+								until
+									j > m
+								loop
+									unitDsc.unit.generate(generators.item (j))
+									j := j + 1
+								end -- loop
+							end -- if
 	--					end -- if
+					else
+						Result := True
 					end -- if				
 				elseif fileDsc.name.has_substring (RoutinesSuffix) then 
 					create rtnsDsc.make 
@@ -333,6 +397,30 @@ end -- debug
 debug
 	trace ("Standalone routines loaded from file `" + ast_files.item (i).path + "`")
 end -- debug
+						from
+							routines := rtnsDsc.routines
+							k := 1
+							l := routines.count
+						until
+							k > l
+						loop
+							if routines.item (k).is_invalid (unitDsc, o) then
+								Result := True
+							else
+								from
+									j := 1
+									m := generators.count
+								until
+									j > m
+								loop
+									routines.item (k).generate(generators.item (j))
+									j := j + 1
+								end -- loop
+							end -- if
+							k := k + 1
+						end -- loop
+					else
+						Result := True
 					end -- if				
 				end -- if
 				i := i + 1

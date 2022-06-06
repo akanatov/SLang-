@@ -16,7 +16,7 @@ feature
 	end -- genStart	
 	dispose is
 	do
-		if ready then
+		if status = 1 then -- ready then
 			status := 0
 			genEnd
 		end -- if
@@ -27,7 +27,7 @@ feature
 	end -- genStart	
 	genAssignmentToLocal () is
 	require
-		ready: ready
+		ready: status = 1 --ready
 	deferred
 	end -- genAssignmentToLocal
 	--genStaticAssignmentToAttribute () is
@@ -49,15 +49,37 @@ feature
 	init (fileName: String; buildExecutable: Boolean) is
 	require
 		file_name_not_void: fileName /= Void
+	local
+		wasError: Boolean
+		aFile: File
 	do
-		status := genStart (fileName, buildExecutable)
+		if wasError then
+			status := -1
+		else
+			status := genStart (fileName, buildExecutable)
+-- Temporary while C code gen does not work
+			if fs.file_exists (fileName) then
+				fs.remove_file (fileName)
+			end -- if
+			create aFile.make_create_read_write (fileName)
+			aFile.close
+			status := 1
+		end -- if
+	rescue
+		wasError := True
+		retry
 	end -- init
 feature 
 	status: Integer
-	ready: Boolean is
-	do
-		Result := status = 1
-	end -- ready
+	--ready: Boolean is
+	--do
+	--	Result := status = 1
+	--end -- ready
+feature {None}
+	fs: FileSystem is
+	once
+		create Result
+	end
 invariant
 	valid_generator_status: -1 <= status and then status <= 1
 end -- class CodeGenerator

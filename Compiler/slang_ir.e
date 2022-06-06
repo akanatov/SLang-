@@ -33,16 +33,43 @@ feature {Any}
 
 	checkSources(o: Output) is
 	local
+		processedFolders: Sorted_Array [String]
+		folderName: String
 		i, n: Integer
 	do
-		if from_paths /= Void then
+		if from_paths = Void then
 			from
+				i := 1
+				n := clusters.count
+			until
+				i > n
+			loop
+				parseFolder (clusters.item (i).name, o)
+				i := i + 1
+			end -- loop
+		else
+			from
+				create processedFolders.make
 				i := 1
 				n := from_paths.count
 			until
 				i > n
 			loop
-				parseFolder (from_paths.item (i), o)
+				folderName := fs.absolute_path (from_paths.item (i))
+				parseFolder (folderName, o)
+				processedFolders.add (folderName)
+				i := i + 1
+			end -- loop
+			from
+				i := 1
+				n := clusters.count
+			until
+				i > n
+			loop
+				folderName := fs.absolute_path (clusters.item (i).name)
+				if processedFolders.search (folderName) = Void then
+					parseFolder (folderName, o)
+				end -- if
 				i := i + 1
 			end -- loop
 		end -- if
@@ -122,7 +149,7 @@ feature {Any}
 		o.putLine ("Checking cluser at `" + path + "`")
 		from
 			files := safe_file_list (path)
-			markerFiles := readMarkers (path + "/" + IRfolderName)
+			markerFiles := readMarkers (path + fs.separator + IRfolderName)
 			markerCount := markerFiles.count
 			i := 1
 			n := files.count
@@ -198,7 +225,7 @@ feature {Any}
 						saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o, Void)
 						if saveErrCount = 0 then
 							-- Remove previous timestamp files and store the latest parsing timestamp !!!
-							tsfName := fs.getFilePath(fName) + "/" + IRfolderName + "/" + fs.getFileName(fName)
+							tsfName := fs.getFilePath(fName) + fs.separator + IRfolderName + fs.separator + fs.getFileName(fName)
 							fs.remove_files_with_the_same_name (tsfName)
 							tsfName.append_string ("." + scanner.timeStamp.out)
 							fs.add_file (tsfName, "r")
@@ -355,11 +382,11 @@ feature {Any}
 		if not clusterDsc.unitExcluded (unitName) then
 			path := clusterDsc.name
 			if path.item (path.count) = '\' or else path.item (path.count) = '/' then
-				fileName := path + ""
+				fileName := clone(path)
 			else
-				fileName := path + "/"
+				fileName := path + fs.separator
 			end -- if
-			fileName.append_string (IRfolderName  + "/" + clusterDsc.getRealName (unitName) + UnitSuffix + "." + INText)
+			fileName.append_string (IRfolderName  + fs.separator + clusterDsc.getRealName (unitName) + UnitSuffix + "." + INText)
 			Result := fs.file_exists (fileName)
 		end -- if
 debug
@@ -715,9 +742,9 @@ feature {Any}
 		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
 			fileName := path + ""
 		else
-			fileName := path + "\"
+			fileName := path + fs.separator
 		end -- if
-		fileName.append_string (IRfolderName  + "/" + unitExternalName + UnitSuffix + "." + INText)
+		fileName.append_string (IRfolderName  + fs.separator + unitExternalName + UnitSuffix + "." + INText)
 		create Result.make
 		if not Result.UnitIR_Loaded (fileName, o) then
 			Result := Void
@@ -798,7 +825,7 @@ feature {None}
 					saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, aScanner.timeStamp, sName, INText, o, unitOfInterest)
 					if saveErrCount = 0 then
 						-- Remove previous timestamp files and store the latest parsing timestamp !!!
-						tsfName := fs.getFilePath(fName) + "/" + IRfolderName + "/" + fs.getFileName(fName)
+						tsfName := fs.getFilePath(fName) + fs.separator + IRfolderName + fs.separator + fs.getFileName(fName)
 						fs.remove_files_with_the_same_name (tsfName)
 						tsfName.append_string ("." + aScanner.timeStamp.out)
 						fs.add_file (tsfName, "r")
@@ -986,6 +1013,29 @@ feature {Any}
 		init_pools (Void)
 		--unit := Void -- ????
 	end -- make
+
+	--isInvalid: Boolean is
+	--do
+	--	Result := unit.isInvalid(sysDsc)
+	--end -- isInvalid
+
+	--failedToGenerate (generators: Array [CodeGenerator]): Boolean is
+	--require
+	--	non_void_list_of_code_generators: generators /= Void
+	--local
+	--	j, m: Integer
+	--do
+	--	from
+	--		j := 1
+	--	until
+	--		j > m
+	--	loop
+	--		if unit.failedToGenerate(generators.item (j)) then
+	--			Result := True
+	--		end -- if
+	--		j := j + 1
+	--	end -- loop
+	--end -- if
 	
 	instantiate (generics: Array [TypeOrExpressionDescriptor]) is
 	require
@@ -1068,7 +1118,6 @@ feature {Any}
 		init_pools (Void)
 		create routines.make
 	end -- init
-
 
 	RoutinesIR_Loaded (fileName: String; o: Output): Boolean is
 	local
@@ -1204,7 +1253,7 @@ feature {Any}
 		filePrefix: String
 		unitDsc: UnitDeclarationDescriptor
 	do
-		filePrefix := fs.getFilePath(FullSourceFileName) + "\" + IRfolderName  + "\"
+		filePrefix := fs.getFilePath(FullSourceFileName) + fs.separator + IRfolderName  + fs.separator
 		if statements.count > 0 then
 			-- Anonymous Routine IR: useConst + statements 
 			create sImg.init (FullSourceFileName, tStamp, useConst, statements, stringPool, typePool)
@@ -2728,6 +2777,19 @@ feature {Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- checkValidity
+
+	--isInvalid (sysDsc: SystemDescriptor): Boolean is
+	--do
+	--end -- isInvalid
+	
+	--failedToGenerate(generator: CodeGenerator): Boolean is
+	--require
+	--	non_void_generator: generator /= Void
+	--do
+	--end -- failedToGenerate
+		
+
+
 	
 feature {CompilationUnitCompound, SLangCompiler}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]

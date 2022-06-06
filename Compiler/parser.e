@@ -8130,7 +8130,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					scanner.token 
 				when scanner.const_token, scanner.rigid_token then
 					Result := parseConstUnitAttributes (isOverriding, isFinal)
--- ???					--if isFinal then
+-- 					--if isFinal then
 					--else
 					--	syntax_error (<<scanner.identifier_token, scanner.pure_token, scanner.safe_token>>)
 					--end -- if

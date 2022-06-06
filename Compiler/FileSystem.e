@@ -6,6 +6,8 @@ inherit
 			add_cluster as createFolder			
 	end
 feature {Any}
+	separator: String is "/"
+	dot: String is "."
 	younger (path1, path2: String): Boolean is
 		-- path1 < path2 in terms of date 
 	require
