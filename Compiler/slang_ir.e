@@ -21,10 +21,14 @@ inherit
 		redefine
 			out, is_equal
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 create
 	init_program, init_library, init_script
 feature {Any}
-	name: String -- Name of the output target
+	--name: String -- Name of the output target
 	from_paths: Sorted_Array [String] -- List of paths to build the library from
 	entry: String -- Name of class or routine to start execution of the program
 
@@ -451,7 +455,7 @@ end -- debug
 	end -- hasUnit
 	
 invariant
-	name_not_void: name /= Void
+	--name_not_void: name /= Void
 	is_program: entry /= Void implies from_paths = Void
 	is_library: entry = Void implies from_paths /= Void
 	clusters_not_void: clusters /= Void
@@ -497,10 +501,14 @@ inherit
 		redefine
 			out
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 create
 	init
 feature 
-	name: String
+	--name: String
 	excluded_list: Sorted_Array [String]
 	rename_list: Sorted_Array[RenamePair]
 	selected_list: Sorted_Array [String]
@@ -1712,27 +1720,31 @@ invariant
 end -- class InnerBlockDescriptor
 
 class StandaloneRoutineDescriptor
--- [pure|safe] 
--- Identifier [FormalGenerics] [Parameters] [":" Type] [EnclosedUseDirective]        
---       ([RequireBlock] InnerBlockDescriptor|foreign [EnsureBlock] [end] ) | ("=>"Expression )
--- Parameters    : "("ParameterDescriptor {";" ParameterDescriptor}")"
+-- [pure|safe] Identifier [FormalGenerics] [Parameters] [":" Type] [EnclosedUseDirective]
+-- [RequireBlock]
+-- (InnerBlock [EnsureBlock] BlockEnd)|(((‚Äú=>‚ÄùExpression)|foreign) [EnsureBlock BlockEnd])
 inherit
-	Comparable
-		redefine	
-			out, is_equal
-	end
+	--Comparable
+	--	redefine	
+	--		out, is_equal
+	--end
 	RoutineDescriptor
 		redefine
-			out, is_equal
+			is_equal
+		--	out, is_equal
 	end
-	BuildServer
+	NamedDescriptor
 		redefine
-			out, is_equal
+			is_equal
 	end
+	--BuildServer
+	--	redefine
+	--		out, is_equal
+	--end
 create
 	init
 feature {Any}
-	name: String
+	--name: String
 	generics: Array [FormalGenericDescriptor]
 	fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
 	
@@ -1740,9 +1752,12 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	do
-	end -- checkValidity
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	do
+--debug
+--	o.putLine ("Validity check for: " + out)
+--end -- debug
+--	end -- checkValidity
 
 	cutImplementation is
 	do
@@ -2000,8 +2015,12 @@ inherit
 		undefine
 			out, is_equal 
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 feature {Any}
-	name: String
+	--name: String
 	getExternalName: String	is
 	deferred
 	ensure
@@ -2010,13 +2029,16 @@ feature {Any}
 feature {None}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
 	end -- checkValidity
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
 	end -- generate
 invariant
-	name_not_void: name /= Void
+	--name_not_void: name /= Void
 end -- class ParameterDescriptor
 
 class NamedParameterDescriptor
@@ -2207,7 +2229,7 @@ end
 class PredicateDescriptor
 -- BooleanExpression [DocumentingComment]
 inherit	
-	Any
+	BuildServer
 		redefine
 			out
 	end
@@ -2231,9 +2253,23 @@ feature {Any}
 		expr := e
 		tag := s
 	end -- init
+	generate (cg: CodeGenerator) is
+	do
+	end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+		if expr.isInvalid (context, o) then
+			Result := True
+		else -- if type of expr is not Boolean
+		end -- if
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- is_invalid
+
 invariant
 	non_void_predicate: expr /= Void
-end
+end -- class PredicateDescriptor
 
 class UseConstBlock
 create
@@ -2280,6 +2316,10 @@ inherit
 		undefine
 			out, is_equal
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 create 
 	init
 feature {Any}
@@ -2289,7 +2329,7 @@ feature {Any}
 	isConcurrent,
 	isVirtual,
 	isExtension: Boolean
-	name: String
+	--name: String
 	aliasName: String
 	
 	formalGenerics: Array [FormalGenericDescriptor]
@@ -2771,25 +2811,57 @@ feature {Any}
 		end -- loop
 	end -- attach_use_pool
 	generate (cg: CodeGenerator) is
+	local
+		i, n: Integer
 	do
-		-- do nothing so far
+		from
+			i := 1
+			n := initMembers.count
+		until
+			i > n
+		loop
+			initMembers.item (i).generate (cg)
+			i := i + 1
+		end -- loop
+
+		from
+			i := 1
+			n := unitMembers.count
+		until
+			i > n
+		loop
+			unitMembers.item (i).generate (cg)
+			i := i + 1
+		end -- loop
 	end -- generate
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		i, n: Integer
 	do
+		from
+			i := 1
+			n := initMembers.count
+		until
+			i > n
+		loop
+			if initMembers.item (i).isInvalid (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+
+		from
+			i := 1
+			n := unitMembers.count
+		until
+			i > n
+		loop
+			if unitMembers.item (i).isInvalid (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
 	end -- checkValidity
-
-	--isInvalid (sysDsc: SystemDescriptor): Boolean is
-	--do
-	--end -- isInvalid
-	
-	--failedToGenerate(generator: CodeGenerator): Boolean is
-	--require
-	--	non_void_generator: generator /= Void
-	--do
-	--end -- failedToGenerate
-		
-
-
 	
 feature {CompilationUnitCompound, SLangCompiler}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -2820,7 +2892,7 @@ feature {None}
 		create invariantPredicates.make (1, 0)
 	end -- init
 invariant	
-	non_void_unit_name: name /= Void
+	--non_void_unit_name: name /= Void
 	consistent_extension: isExtension implies (not isFinal and then not isRef and then not isVal and then not isConcurrent and then not isVirtual)
 	consistent_final: isFinal implies (not isVirtual)
 	consistent_ref: isRef implies not isVal and then not isConcurrent
@@ -3484,7 +3556,7 @@ feature {Any}
 end -- class PrivateVisibilityDescriptor
 
 deferred class MemberDeclarationDescriptor
--- MemberDeclaration: [MemberVisibility] ([override] [final] UnitAttribiteDeclaration|UnitRoutineDeclaration) | InitDeclaration
+-- [MemberVisibility] ([override] [final] UnitAttribiteDeclaration|UnitRoutineDeclaration) | InitDeclaration
 inherit
 	SmartComparable
 		redefine
@@ -3494,6 +3566,10 @@ inherit
 		redefine
 			out, is_equal
 	end 
+	BuildServer
+		redefine
+			out, is_equal
+	end
 feature {Any}
 	visibility: MemberVisibilityDescriptor
 	isOverriding: Boolean is
@@ -3554,9 +3630,19 @@ feature {Any}
 	end -- infix "<"
 end -- class MemberDeclarationDescriptor
 
-class RoutineDescriptor
+deferred class RoutineDescriptor
 inherit
+	Comparable
+		undefine
+			out, is_equal
+	end
 	SourcePosition
+		undefine 	
+			out
+	end
+	BuildServer
+		undefine
+			out, is_equal
 	end
 feature {Any}
 	isPure: Boolean
@@ -3571,6 +3657,73 @@ feature {Any}
 	expr: ExpressionDescriptor
 	innerBlock: InnerBlockDescriptor
 	postconditions: Array [PredicateDescriptor]	
+	
+	name: String is
+	deferred
+	end -- name
+	
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		i, n: Integer
+	do
+debug
+	o.putLine ("Validity check for routine `" + name + "`")
+end -- debug
+		if parameters /= Void then
+			from
+				i := 1
+				n := parameters.count
+			until
+				i > n
+			loop
+				if parameters.item(i).isInvalid (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
+		if type /= Void and then type.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if preconditions /= Void then
+			from
+				i := 1
+				n := preconditions.count
+			until
+				i > n
+			loop
+				if preconditions.item(i).isInvalid (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
+		if innerblock = Void then
+			if expr = Void then 
+				-- none body !!!
+			elseif expr.isInvalid (context, o) then
+				Result := True
+			else -- check if type of 'expr' conforms to the type of function
+			end -- if
+		elseif innerblock.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if postconditions /= Void then
+			from
+				i := 1
+				n := postconditions.count
+			until
+				i > n
+			loop
+				if postconditions.item(i).isInvalid (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
+	end -- is_invalid	
+	
+	
 end -- class RoutineDescriptor
 
 deferred class UnitRoutineDescriptor
@@ -3583,8 +3736,8 @@ inherit
 	RoutineDescriptor
 		undefine
 			is_equal
-		redefine
-			out
+		--redefine
+		--	out
 		select	
 			out
 	end
@@ -3779,7 +3932,13 @@ feature {Any}
 				Result.append_string (expr.out)
 			end -- if
 			Result.append_character('%N')
-		elseif innerBlock /= Void then
+		elseif innerBlock = Void then
+			if Result.item (Result.count) /= '%N' then
+				Result.append_character ('%N')
+			end -- if
+			Result.append_character('%T')
+			Result.append_string ("none")
+		else
 			Result.append_string (innerBlock.out)
 		end -- if
 
@@ -3851,17 +4010,24 @@ invariant
 	is_foreign_consistent: isForeign implies innerBlock = Void	and then expr = Void
 	is_one_line_consistent: isOneLine implies innerBlock = Void and then expr /= Void
 end -- class UnitRoutineDescriptor
+
 class UnitRoutineDeclarationDescriptor
--- [pure|safe] RoutineName [final Identifier] [Parameters] [":" Type] [EnclosedUseDirective] ([RequireBlock] InnerBlock|virtual|foreign [EnsureBlock] [end]) | (ì=>îExpression )
+-- [pure|safe] RoutineName [final Identifier] [UnitRoutineParameters] [":" Type] [EnclosedUseDirective]
+-- [RequireBlock]
+-- ((InnerBlock) [EnsureBlock] BlockEnd) | ((virtual|foreign|none| (‚Äú=>‚ÄùExpression))[EnsureBlock BlockEnd])
 inherit
 	UnitRoutineDescriptor
 		redefine
 			aliasName
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 create
 	init
 feature {Any}
-	name: String
+	--name: String
 	aliasName: String
 	isVirtual: Boolean
 	isOverriding: Boolean
@@ -3891,14 +4057,26 @@ feature {Any}
 		isSafe := isS
 		expr := e
 	end -- init
+	generate (cg: CodeGenerator) is
+	do
+	end -- generate
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	do
+--debug
+--	o.putLine ("Validity check for: " + out)
+--end -- debug
+--	end -- is_invalid
+	
 invariant
-	name_not_void: name /= Void
+	--name_not_void: name /= Void
 	expr_consistency: expr /= Void implies innerBlock = Void
 	body_consistency: innerBlock /= Void implies expr = Void and then not isVirtual and then not isForeign
 end -- class UnitRoutineDeclarationDescriptor
 
 class InitDeclarationDescriptor
--- init [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
+-- UnitName [UnitRoutineParameters] [EnclosedUseDirective] 
+-- [RequireBlock] 
+-- (InnerBlock [EnsureBlock] BlockEnd)|(foreign|none [EnsureBlock BlockEnd])
 inherit
 	UnitRoutineDescriptor
 	end
@@ -3908,8 +4086,7 @@ feature {Any}
 	isVirtual: Boolean is False
 	isOverriding: Boolean is False
 	isFinal: Boolean is False
---	isNone: Boolean
-	name: String is -- "init"
+	name: String is
 	do
 		Result := unitDsc.name		
 	end -- name
@@ -3928,6 +4105,43 @@ feature {Any}
 		innerBlock := b
 		postconditions := post
 	end -- init
+	generate (cg: CodeGenerator) is
+	do
+	end -- generate
+-- class interface INITDECLARATIONDESCRIPTOR
+-- inherit UNITROUTINEDESCRIPTOR
+-- creation init
+-- feature 
+-- 
+--    col: INTEGER
+--    row: INTEGER
+-- 
+--    isVirtual: BOOLEAN
+--    isOverriding: BOOLEAN
+--    isFinal: BOOLEAN
+--    isforeign: BOOLEAN
+--    isoneline: BOOLEAN
+--    ispure: BOOLEAN
+--    issafe: BOOLEAN
+-- 
+--    unitDsc: UNITDECLARATIONDESCRIPTOR
+--    aliasname: STRING
+-- 
+-- 
+--    constants: SORTED_ARRAY [UNITTYPENAMEDESCRIPTOR]
+--    usage: SORTED_ARRAY [ENCLOSEDUSEEEMENTDESCRIPTOR]
+-- 
+--    expr: EXPRESSIONDESCRIPTOR
+-- 
+--    visibility: MEMBERVISIBILITYDESCRIPTOR
+--    parameters: ARRAY [PARAMETERDESCRIPTOR]
+--    type: TYPEDESCRIPTOR
+--    preconditions: ARRAY [PREDICATEDESCRIPTOR]
+--    innerblock: INNERBLOCKDESCRIPTOR
+--    postconditions: ARRAY [PREDICATEDESCRIPTOR]
+-- 
+-- end interface -- class INITDECLARATIONDESCRIPTOR
+
 end -- class InitDeclarationDescriptor
 
      
@@ -3942,7 +4156,7 @@ end -- class InitDeclarationDescriptor
 --end
 
 deferred class ConstObjectDescriptor
---20 ConstObject : ( Constant | (Idenitifer [ì.îinit] [ Arguments ]) [ ì..î  Constant | (Idenitifer [ì.îinit] [ Arguments ]) ] ) | (ì{î RegularExpression ì}î IntegerConstant [ì+î])
+--20 ConstObject : ( Constant | (Idenitifer [ Arguments ]) [ ì..î  Constant | (Idenitifer [ì.îinit] [ Arguments ]) ] ) | (ì{î RegularExpression ì}î IntegerConstant [ì+î])
 -- RegularExpression: Constant ({ì|îConstant}) | (ì|î î..î Constant)
 inherit	
 	SmartComparable
@@ -4191,10 +4405,14 @@ class ConstWithInitDescriptor
 inherit
 	ConstObjectDescriptor
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 create
 	init
 feature {Any}
-	name: String --ConstObjectDescriptor
+	--name: String --ConstObjectDescriptor
 	arguments: Array [ExpressionDescriptor]
 	init (n: like name; args: like arguments) is
 	require
@@ -4282,7 +4500,7 @@ feature {Any}
 		end -- if
 	end -- out
 invariant
-	name_not_void: name /= Void
+	--name_not_void: name /= Void
 	arguments_not_void: arguments /= Void
 end -- class ConstWithInitDescriptor
 
@@ -4300,7 +4518,7 @@ feature
 	end -- buildHash
 	generate (cg: CodeGenerator) is
 	deferred
-	end -- if
+	end -- generate
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	require
 		non_void_contex: context /= Void
@@ -4308,17 +4526,19 @@ feature
 	do
 		if not validityChecked then
 			Result := is_invalid (context, o)
+			isValid := not Result
 			validityChecked := True
 		end -- if
 	end -- isInvalid
 	validityChecked: Boolean
+	isValid: Boolean
 feature {None}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	require
 		non_void_contex: context /= Void
 		non_void_output: o /= Void
 	deferred
-	end -- checkValidity
+	end -- is_invalid
 end -- class BuildServer
 
 deferred class StatementDescriptor
@@ -4734,6 +4954,17 @@ invariant
 	non_void_expresssion: expr /= Void
 end -- class AssignmentStatementDescriptor
 
+deferred class NamedDescriptor
+inherit	
+	Any
+		undefine	
+			out
+	end
+feature
+	name: String
+invariant
+	non_void_name: name /= Void
+end -- class NamedDescriptor
 ---------------- Entities start -----------------
 -- UnitAttributeNamesList:
 --  [const | rigid] Identifier {","[const | rigid] Identifier}
@@ -4750,6 +4981,10 @@ inherit
 		redefine
 			out, is_equal
 	end
+	NamedDescriptor
+		redefine
+			is_equal
+	end
 feature {Any}		
 	markedVar: Boolean is
 	deferred
@@ -4760,7 +4995,7 @@ feature {Any}
 	markedConst: Boolean is
 	deferred
 	end -- isConst
-	name: String
+	--name: String
 	type: TypeDescriptor is
 	deferred
 	end -- type
@@ -4798,7 +5033,7 @@ feature {Any}
 	do
 	end -- setFlags
 invariant
-	non_void_name: name /= Void
+	--non_void_name: name /= Void
 	consistent_marked_var	: markedVar	  implies (not markedRigid and then not markedConst)
 	consistent_marked_rigid	: markedRigid implies (not markedVar   and then not markedConst)
 	consistent_marked_const	: markedConst implies (not markedVar   and then not markedRigid)
@@ -4887,6 +5122,16 @@ feature {Any}
 			assigner.cutImplementation
 		end -- if
 	end -- cutImplementation
+	generate (cg: CodeGenerator) is
+	do
+	end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- is_invalid
+
 invariant
 	type_not_void: type /= Void
 end -- class DetachedUnitAttributeDeclarationDescriptor
@@ -5108,6 +5353,9 @@ feature {Any}
 		name := aName
 	end -- init
 	cutImplementation is do end
+	generate (cg: CodeGenerator) is do end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is do end -- is_invalid
+
 end -- class TemporaryUnitAttributeDescriptor
 class AttachedUnitAttributeDeclarationDescriptor
 	-- UnitAttributeDeclaration:
@@ -5129,6 +5377,18 @@ feature {Any}
 	type: TypeDescriptor
 	expr: ExpressionDescriptor
 
+	
+	generate (cg: CodeGenerator) is
+	do
+	end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- is_invalid
+		
+	
 	cutImplementation is
 	do
 		expr := Void
@@ -5673,6 +5933,7 @@ inherit
 	ExpressionDescriptor
 	end
 end -- class EntityDescriptor
+
 class IdentifierDescriptor
 inherit
 	--CallDescriptor
@@ -5689,10 +5950,14 @@ inherit
 		undefine
 			is_equal, getExternalName
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 create
 	init
 feature {Any}	
-	name: String
+	--name: String
 
 	init (s: String) is
 	require
@@ -5956,10 +6221,14 @@ class LambdaFromRoutineExpression
 inherit
 	LambdaExpression
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 create
 	init
 feature {Any}
-	name: String
+	--name: String
 	signature: SignatureDescriptor
 	out: String is
 	do
@@ -6025,7 +6294,7 @@ end -- debug
 	end -- generate
 	
 invariant
-	name_not_void: name /= Void
+	--name_not_void: name /= Void
 end -- class LambdaFromRoutineExpression
 
 class InlineLambdaExpression
@@ -6040,6 +6309,8 @@ inherit
 			{None} unitRoutineInit
 		undefine
 			is_equal, infix "<", sameAs, lessThan
+		redefine	
+			is_invalid, generate
 	end
 create
 	init
@@ -6540,6 +6811,9 @@ feature	{Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		-- Always valid !!!
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -7299,11 +7573,15 @@ inherit
 		redefine
 			sameAs, lessThan
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 create
 	init
 feature{Any}
 	constDsc: ConstantDescriptor
-	name: String
+	--name: String
 	arguments: Array [ExpressionDescriptor]
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -7437,7 +7715,7 @@ end -- debug
 	end -- lessThan
 invariant
 	non_void_constant: constDsc /= Void
-	non_void_identifier : name /= Void
+	--non_void_identifier : name /= Void
 end -- class ConstantCallDescriptor
 
 class QualifiedCallDescriptor
@@ -8648,22 +8926,19 @@ inherit
 		undefine
 			out, is_equal
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 feature
-	name: String
+	--name: String
 	getExternalName: String is
 	do
 		Result := clone (name)
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
-	generate (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	do
-	end -- checkValidity
 invariant
-	not_void_name: name /= Void
+	--not_void_name: name /= Void
 end -- class MemberDescriptionDescriptor
 class RoutineDescriptionDescriptor
 inherit	
@@ -8685,6 +8960,17 @@ feature {Any}
 	do
 		Result := name + " " + signature.out
 	end -- out
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- checkValidity
+
 feature {MemberDescriptionDescriptor}
 	sameAs (other: like Current): Boolean is
 	do
@@ -8721,6 +9007,17 @@ feature {Any}
 	do
 		Result := name + ": " + type.out
 	end -- out
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- checkValidity
+
 feature {MemberDescriptionDescriptor}
 	sameAs (other: like Current): Boolean is
 	do
@@ -10205,6 +10502,9 @@ feature
 	end -- generate
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
 	end -- checkValidity
 invariant
 	non_void_type: type /= Void
@@ -10248,10 +10548,14 @@ class NamedTupleFieldDescriptor
 inherit
 	TupleFieldDescriptor
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 create
 	init
 feature {Any}
-	name: String
+	--name: String
 	out: String is
 	do
 		Result := "" + name
@@ -10286,7 +10590,7 @@ feature {Any}
 		name := n
 	end -- init
 invariant
-	non_void_name: name /= Void
+	--non_void_name: name /= Void
 end -- class NamedTupleFieldDescriptor
 
 class UnitTypeDescriptor
@@ -10362,8 +10666,12 @@ inherit
 		undefine
 			is_equal, infix "<", getExternalName, getFactualGenericExternalName
 	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
 feature {Any}
-	name: String
+	--name: String
 end -- class NamedTypeDescriptor
 
 deferred class UnitTypeCommonDescriptor

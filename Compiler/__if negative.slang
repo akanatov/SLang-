@@ -14,6 +14,6 @@ if argument is
 			else 3
 		
 	else
-		putString (argument.ToString)
+		putString (argument.toString)
 end
 

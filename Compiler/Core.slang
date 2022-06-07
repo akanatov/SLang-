@@ -438,13 +438,13 @@ val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
 
 	Cardinal (other: Integer [bitsCount])
 	require
-		other > - 1 /// Integer must be not less than 0 to be converted into Cardinal
+		other >= 0 /// Integer must be not less than 0 to be converted into Cardinal
 	do
 		data is other.data
 	end // Cardinal
 	:= (other: Integer [bitsCount])
 	require
-		other > - 1 /// Integer must be not less than 0 to be converted into Cardinal
+		other >= 0 /// Integer must be not less than 0 to be converted into Cardinal
 	do
 		data := other.data
 	end // :=

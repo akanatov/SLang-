@@ -19,7 +19,7 @@ unit StandardIO alias io
 				Boolean:
 					putBoolean (argument)
 				else
-					putString (argument.ToString)
+					putString (argument.toString)
 			end
 		end
 	end // put

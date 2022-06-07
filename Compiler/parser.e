@@ -89,6 +89,9 @@ feature {Any}
 				end -- if
 			else
 				scanner.disableSystemMode
+debug
+--	trace ("Start .... ")
+end
 				inspect
 					scanner.token
 				when scanner.use_token then
@@ -256,7 +259,7 @@ feature {Any}
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.colon_token then
+					when scanner.colon_token, scanner.implies_token then
 						-- ident: function defintion or local attribute !!!
 						parseFunctionOrLocalAttribute (name)
 					when scanner.left_paranthesis_token then
@@ -292,7 +295,7 @@ feature {Any}
 						-- Standalone routine start
 --trace (">>#6")
 						ast.start_standalone_routine_parsing
-						rtnDsc := parseStandAloneRoutine1 (False, False, name)
+						rtnDsc := parseStandAloneRoutine1 (False, False, name, Void)
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 							validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 						end -- if					
@@ -305,7 +308,7 @@ feature {Any}
 							-- Standalone routine start
 --trace (">>#5")
 							ast.start_standalone_routine_parsing
-							rtnDsc := parseStandAloneRoutine1 (False, False, name)
+							rtnDsc := parseStandAloneRoutine1 (False, False, name, Void)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 								validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 							end -- if					
@@ -319,7 +322,7 @@ feature {Any}
 -- foo [Integer] (arguments)
 -- Headache to parse !!!
 							ast.start_standalone_routine_parsing
-							rtnDsc := parseStandAloneRoutine1 (False, False, name)
+							rtnDsc := parseStandAloneRoutine1 (False, False, name, Void)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 								validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 							end -- if					
@@ -658,7 +661,7 @@ feature {None}
 	parseFunctionOrLocalAttribute (name: String) is
 		-- ident: function defintion or local attribute !!!
 	require
-		valid_token: validToken (<<scanner.colon_token>>)
+		valid_token: validToken (<<scanner.colon_token, scanner.implies_token>>)
 		name_not_void: name /= Void
 	local
 		type: TypeDescriptor
@@ -667,14 +670,58 @@ feature {None}
 		localDsc: LocalAttrDeclarationDescriptor
 		expr: ExpressionDescriptor
 		rtnDsc: StandaloneRoutineDescriptor
+		isFunction: Boolean
 	do
+		isFunction := scanner.token = scanner.implies_token
 		scanner.nextToken
---trace ("parseFunctionOrLocalAttribute " + name + ": ")
+debug
+	--trace ("parseFunctionOrLocalAttribute " + name + ": ")
+end -- debug
 		type := parseTypeDescriptor
 		if type = Void then
---trace ("parseFunctionOrLocalAttribute " + name + ": (Void) !!!!")
+debug
+	--trace ("parseFunctionOrLocalAttribute " + name + ": (Void) !!!!")
+end -- debug
 			--validity_error( "Type of `" + name + "` is not recognized which starts from " +  scanner.tokenString) -- + " in file `" + scanner.sourceFileName + "`")
 			--scanner.nextToken			
+		elseif isFunction then
+			inspect
+				scanner.token
+			when scanner.require_token, scanner.foreign_token, scanner.use_token then -- , scanner.none_token
+				-- function
+debug
+--trace (">>#4")
+end -- debug
+				ast.start_standalone_routine_parsing
+				rtnDsc := parseStandAloneRoutine1 (False, False, name, type)
+				if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
+					validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
+				end -- if					
+				ast.stop_standalone_routine_parsing
+			else
+				if scanner.blockStart then
+					-- function
+debug
+--trace (">>#3")
+end -- debug
+					ast.start_standalone_routine_parsing
+					rtnDsc := parseStandAloneRoutine1 (False, False, name, type)
+					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
+						validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
+					end -- if					
+					ast.stop_standalone_routine_parsing
+				elseif scanner.Cmode then
+					syntax_error (<<
+						scanner.require_token, scanner.foreign_token, scanner.use_token,
+						scanner.left_curly_bracket_token
+					>>)
+				else
+					syntax_error (<<
+						scanner.require_token, scanner.foreign_token, scanner.use_token,
+						scanner.do_token
+					>>)			
+				end -- if
+			end -- inspect			
 		else
 --trace (">>> parseFunctionOrLocalAttribute - " + name + ": " + type.out)
 			inspect
@@ -702,7 +749,7 @@ feature {None}
 				-- function
 --trace (">>#4")
 				ast.start_standalone_routine_parsing
-				rtnDsc := parseStandAloneRoutine1 (False, False, name)
+				rtnDsc := parseStandAloneRoutine1 (False, False, name, type)
 				if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 					validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 				end -- if					
@@ -712,7 +759,7 @@ feature {None}
 					-- function
 --trace (">>#3")
 					ast.start_standalone_routine_parsing
-					rtnDsc := parseStandAloneRoutine1 (False, False, name)
+					rtnDsc := parseStandAloneRoutine1 (False, False, name, type)
 					if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
 						validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 					end -- if					
@@ -4065,28 +4112,28 @@ feature {None}
 		inspect	
 			scanner.token
 		when --scanner.final_token, scanner.alias_token, 
-			scanner.colon_token, scanner.left_paranthesis_token,
+			scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token,
 			scanner.require_token, scanner.one_line_function_token, scanner.use_token, scanner.foreign_token
 		then
 			-- Standalone routine start
 --trace (">>#2")
-			Result := parseStandAloneRoutine1 (is_pure, is_safe, name)
+			Result := parseStandAloneRoutine1 (is_pure, is_safe, name, Void)
 		else
 			if scanner.Cmode and then ( scanner.token = scanner.less_token or else scanner.token = scanner.left_curly_bracket_token)
 				or else (scanner.token = scanner.left_square_bracket_token or else scanner.token = scanner.do_token)
 			then
 				-- Standalone routine start
 --trace (">>#1")
-				Result := parseStandAloneRoutine1 (is_pure, is_safe, name)
+				Result := parseStandAloneRoutine1 (is_pure, is_safe, name, Void)
 			elseif scanner.Cmode then
 				syntax_error (<< --scanner.final_token, scanner.alias_token, 
-					scanner.colon_token, scanner.left_paranthesis_token,
+					scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token,
 					scanner.left_curly_bracket_token,
 					scanner.require_token, scanner.one_line_function_token, scanner.less_token, scanner.use_token, scanner.foreign_token
 				>>)
 			else
 				syntax_error (<< -- scanner.final_token, scanner.alias_token, 
-					scanner.colon_token, scanner.left_paranthesis_token,
+					scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token,
 					scanner.do_token,
 					scanner.require_token, scanner.one_line_function_token, scanner.left_square_bracket_token, scanner.use_token, scanner.foreign_token
 				>>)
@@ -4136,9 +4183,9 @@ feature {None}
 		Result ?= parseAnyRoutine (isOverriding, isFinal, is_pure, is_safe, name, aliasName, Void, False, False, Void, checkSemicolonAfter)
 	end -- parseUnitRoutine
 
-	parseStandAloneRoutine1(is_pure, is_safe: Boolean; name: String): StandaloneRoutineDescriptor is
+	parseStandAloneRoutine1(is_pure, is_safe: Boolean; name: String; type: TypeDescriptor): StandaloneRoutineDescriptor is
 	do
-		Result ?= parseAnyRoutine (False, False, is_pure, is_safe, name, Void, Void, True, False, Void, False)
+		Result ?= parseAnyRoutine (False, False, is_pure, is_safe, name, Void, type, True, False, Void, False)
 	end -- parseStandAloneRoutine1
 
 	parseAnyRoutine(
@@ -4199,7 +4246,9 @@ feature {None}
 				end -- if
 			end -- if
 		elseif type = Void then
---trace ("routine " + name)
+debug
+	--trace ("routine " + name)
+end
 			if scanner.token = scanner.final_token and then not isLambda then
 				scanner.nextToken
 				if scanner.token = scanner.identifier_token then
