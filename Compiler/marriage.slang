@@ -1,6 +1,6 @@
 unit Person
-	var name: STRING
-	var spouse: ? as this {} := (aSpouse: as spouse) do // Setter is visible only for this unit and its descendants
+	name: STRING
+	spouse: ? as this {} := (aSpouse: as spouse) do // Setter is visible only for this unit and its descendants
 		spouse := aSpouse
 	end
 	{} clearSpouse // This routine is available only for unit Person and its descendants
@@ -11,7 +11,7 @@ unit Person
 	ensure
 		not isMarried
 	end
-	pure isMarried(): Boolean => spouse is Person
+	pure isMarried: Boolean => spouse is Person
 	marry (other: as this) 
 		/// merry Mary marry me :-)
 	require

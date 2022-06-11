@@ -1,3 +1,38 @@
+deferred class Identation
+inherit
+	Any
+		undefine 
+			out
+	end
+feature {None}
+	ident: Integer_Ref is
+	once
+		create Result
+	end -- ident
+	incIdent is
+	do
+		ident.set_item (ident.item + 1)
+	end -- incIdent
+	decIdent is
+	do
+		ident.set_item (ident.item - 1)
+	end -- decIdent
+	getIdent: String is
+	local
+		i: Integer
+	do
+		from
+			Result := ""
+			i := 1
+		until
+			i > ident.item
+		loop
+			Result.append_character ('%T')
+			i := i + 1
+		end -- loop
+	end -- getIdent
+end -- class Identation
+
 class SystemDescriptor
 -- Context: system (Identifier| StringConstant) 
 -- [init Identifier]
@@ -541,7 +576,6 @@ feature
 			Result := rnmPair.newName
 		end -- if
 	end -- getRealName
-
 
 	out: String is
 	local
@@ -1427,6 +1461,10 @@ inherit
 		redefine
 			out
 	end
+	Identation
+		undefine
+			is_equal
+	end
 create
 	init
 feature {Any}
@@ -1459,16 +1497,18 @@ feature {Any}
 		from
 			i := 1
 			n := statements.count
+			incIdent
 		until
 			i > n
 		loop
-			Result.append_character('%T')
-			Result.append_string (statements.item (i).out)
+			--Result.append_character('%T')
+			Result.append_string (getIdent + statements.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
+		decIdent
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -1522,6 +1562,10 @@ class InnerBlockDescriptor
 inherit	
 	StatementDescriptor
 	end
+	Identation
+		undefine
+			is_equal
+	end
 create
 	init
 feature {Any}
@@ -1549,9 +1593,9 @@ feature {Any}
 			i > n
 		loop
 			i := i + 1
-			if False then -- invariantOffList.item (i) is not foudn or visible here
-				Result := True
-			end -- if
+			--if invariantOffList.item (i) then -- is the valid and visible name of the entity
+			--	Result := True
+			--end -- if
 		end -- loop
 		-- Check that all 'statements' are valid 
 		from
@@ -1639,9 +1683,9 @@ end -- debug
 		i, n: Integer
 	do
 		if statements.count = 0 and then whenClauses.count = 0 and then whenElseClause.count = 0 then
-			Result := "%Tdo%N"
+			Result := getIdent + "do%N"
 		else
-			Result := "%Tdo"			
+			Result := getIdent + "do"			
 			-- invariantOffList
 			n := invariantOffList.count
 			if n > 0 then
@@ -1659,56 +1703,62 @@ end -- debug
 					i := i + 1
 				end -- loop
 				Result.append_character ('}')
-			end -- if
-			
+			end -- if			
 			Result.append_character('%N')
+			
 			from
 				i := 1
 				n := statements.count
+				incIdent
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_character('%T')
-				Result.append_string (statements.item (i).out)
+				--Result.append_character('%T')
+				--Result.append_character('%T')
+				Result.append_string (getIdent + statements.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
+			decIdent
 			from
 				i := 1
 				n := whenClauses.count
+				incIdent
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_character('%T')
-				Result.append_string (whenClauses.item (i).out)
+				--Result.append_character('%T')
+				--Result.append_character('%T')
+				Result.append_string (getIdent + whenClauses.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
+			decIdent
 			n := whenElseClause.count
 			if n > 0 then
 				from
-					Result.append_character('%T')
-					Result.append_character('%T')
-					Result.append_string ("else%N")
+					--Result.append_character('%T')
+					--Result.append_character('%T')
+					Result.append_string (getIdent + "else%N")
+					incIdent
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_character('%T')
-					Result.append_character('%T')
-					Result.append_character('%T')
-					Result.append_string (whenElseClause.item (i).out)
+					--Result.append_character('%T')
+					--Result.append_character('%T')
+					--Result.append_character('%T')
+					Result.append_string (getIdent + whenElseClause.item (i).out)
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
 					end -- if
 					i := i + 1
 				end -- loop
+				decIdent
 			end -- if
 		end -- if
 	end -- out
@@ -1741,6 +1791,10 @@ inherit
 	--	redefine
 	--		out, is_equal
 	--end
+	Identation
+		undefine
+			is_equal
+	end
 create
 	init
 feature {Any}
@@ -1892,64 +1946,68 @@ feature {Any}
 			if n > 0 then
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
-				end -- if			
-				Result.append_character('%T')
-				Result.append_string ("require%N")	
+				end -- if
+				--Result.append_character('%T')
+				Result.append_string (getIdent + "require%N")
+				incIdent
 				from
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_character('%T')
-					Result.append_character('%T')
-					Result.append_string (preconditions.item (i).out)	
+					--Result.append_character('%T')
+					--Result.append_character('%T')
+					Result.append_string (getIdent + preconditions.item (i).out)	
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
 					end -- if
 					i := i + 1
-				end
+				end -- loop
+				decIdent
 			end -- if
 			if isForeign then
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				Result.append_character('%T')
-				Result.append_string ("foreign%N")	
+				--Result.append_character('%T')
+				Result.append_string (getIdent + "foreign%N")	
 			elseif innerBlock = Void then
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				Result.append_character('%T')
-				Result.append_string ("none%N")
+				--Result.append_character('%T')
+				Result.append_string (getIdent + "none%N")
 			else
-				Result.append_character('%T')
-				Result.append_string (innerBlock.out)	
+				--Result.append_character('%T')
+				Result.append_string (getIdent + innerBlock.out)	
 			end -- if
 			n := postconditions.count 
 			if n > 0 then
 				--Result.append_character (' ')
-				Result.append_character('%T')
-				Result.append_string ("ensure%N")	
+				--Result.append_character('%T')
+				Result.append_string (getIdent + "ensure%N")	
+				incIdent
 				from
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_character('%T')
-					Result.append_character('%T')
-					Result.append_string (postconditions.item (i).out)	
+					--Result.append_character('%T')
+					--Result.append_character('%T')
+					Result.append_string (getIdent + postconditions.item (i).out)	
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
 					end -- if
 					i := i + 1
-				end
+				end -- loop
+				decIdent
 			end -- if
 			if not (isForeign and then n = 0) then
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				Result.append_character('%T')
-				Result.append_string ("end // " + name)	
+				--Result.append_character('%T')
+				Result.append_string (getIdent +  "end // " + name)	
 			end -- if
 		end -- if
 	end
@@ -2320,6 +2378,10 @@ inherit
 		undefine
 			is_equal
 	end
+	Identation
+		undefine
+			is_equal
+	end
 create 
 	init
 feature {Any}
@@ -2335,12 +2397,12 @@ feature {Any}
 	formalGenerics: Array [FormalGenericDescriptor]
 		--  "["" FormalGenericDescriptor {"," FormalGenericDescriptor}"]" 
 	fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
-	hasFormalGnericParameter (ident: String): Boolean is
+	hasFormalGnericParameter (aName: String): Boolean is
 	local
 		fgtDsc: FormalGenericTypeNameDescriptor
 	do
 		if fgTypes /= Void then
-			create fgtDsc.init (ident)
+			create fgtDsc.init (aName)
 			Result := fgTypes.seek (fgtDsc) > 0 
 		end -- if
 	end -- hasFormalGnericParameter
@@ -2396,7 +2458,7 @@ feature {Any}
 		if parDsc /= Void then
 			Result := parDsc.parent
 		end -- i f
-	end -- hasParent
+	end -- findParent
 
 	usage: Sorted_Array [EnclosedUseEementDescriptor]
 	constants: Sorted_Array [UnitTypeNameDescriptor] --FullUnitNameDescriptor]
@@ -2590,7 +2652,8 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string ("select ")
+				incIdent
+				Result.append_string (getIdent + "select ")
 				i := 1
 			until
 				i > n
@@ -2601,6 +2664,7 @@ feature {Any}
 				end -- if
 				i := i + 1
 			end -- loop
+			decIdent
 			Result.append_character ('%N')
 		end -- if
 
@@ -2610,7 +2674,8 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string ("override ")
+				incIdent
+				Result.append_string (getIdent + "override ")
 				i := 1
 			until
 				i > n
@@ -2621,6 +2686,7 @@ feature {Any}
 				end
 				i := i + 1
 			end -- loop
+			decIdent
 			Result.append_character ('%N')
 		end -- if
 
@@ -2630,7 +2696,8 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string ("init ")
+				incIdent
+				Result.append_string (getIdent + "new ")				
 				i := 1
 			until
 				i > n
@@ -2641,6 +2708,7 @@ feature {Any}
 				end
 				i := i + 1
 			end -- loop
+			decIdent
 			Result.append_character ('%N')
 		end -- if
 
@@ -2650,7 +2718,10 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string ("%Tconst:%N%T%T")
+				incIdent
+				Result.append_string (getIdent + "const:%N")
+				incIdent
+				Result.append_string (getIdent)
 				i := 1
 			until
 				i > n
@@ -2661,7 +2732,10 @@ feature {Any}
 				end -- if
 				i := i + 1
 			end -- loop
-			Result.append_string ("%N%Tend%N")
+			decIdent
+			decIdent
+			Result.append_character('%N')
+			Result.append_string(getIdent + "end%N")
 		end -- if
 
 		n := initMembers.count
@@ -2671,17 +2745,19 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string ("// " + n.out + " unit initializer(s)%N")
+				Result.append_string (getIdent + "// " + n.out + " unit initializer(s)%N")
+				incIdent
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_string (initMembers.item (i).out)
+				--Result.append_character('%T')
+				Result.append_string (getIdent + initMembers.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
+			decIdent
 		end -- if
 
 		n := unitMembers.count
@@ -2691,17 +2767,19 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string ("// " + n.out + " unit member(s)%N")
+				Result.append_string (getIdent + "// " + n.out + " unit member(s)%N")
+				incIdent
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_string (unitMembers.item (i).out)
+				--Result.append_character('%T')
+				Result.append_string (getIdent + unitMembers.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
+			decIdent
 		end -- if
 
 		n := invariantPredicates.count
@@ -2709,24 +2787,26 @@ feature {Any}
 			from
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
-				end -- if
-				Result.append_string ("require%N")
+				end -- if				
+				Result.append_string (getIdent + "require%N")
+				incIdent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_string (invariantPredicates.item (i).out)
+				--Result.append_character('%T')
+				Result.append_string (getIdent + invariantPredicates.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
+			decIdent
 		end -- if
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		Result.append_string ("end // unit " + name + "%N")
+		Result.append_string (getIdent + "end // unit " + name + "%N")
 	end -- out
 	setAliasName (aName: String) is
 	do
@@ -3736,10 +3816,12 @@ inherit
 	RoutineDescriptor
 		undefine
 			is_equal
-		--redefine
-		--	out
 		select	
 			out
+	end
+	Identation
+		undefine
+			is_equal
 	end
 feature {Any}
 
@@ -3893,22 +3975,24 @@ feature {Any}
 			if n > 0 then
 				from
 					if Result.item (Result.count) /= '%N' then
-						Result.append_string ("%N")
+						Result.append_character ('%N')
 					end -- if
-					Result.append_character('%T')
-					Result.append_string ("require%N")
+					--Result.append_character('%T')
+					Result.append_string (getIdent + "require%N")
+					incIdent
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_character('%T')
-					Result.append_character('%T')
-					Result.append_string (preconditions.item (i).out)
+					--Result.append_character('%T')
+					--Result.append_character('%T')
+					Result.append_string (getIdent + preconditions.item (i).out)
 					if Result.item (Result.count) /= '%N' then
-						Result.append_string ("%N")
+						Result.append_character ('%N')
 					end -- if
 					i := i + 1
 				end -- loop
+				decIdent
 			end -- if
 		end -- if
 
@@ -3916,14 +4000,14 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			Result.append_character('%T')
-			Result.append_string ("virtual%N")
+			--Result.append_character('%T')
+			Result.append_string (getIdent + "virtual%N")
 		elseif isForeign then
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			Result.append_character('%T')
-			Result.append_string ("foreign%N")
+			--Result.append_character('%T')
+			Result.append_string (getIdent + "foreign%N")
 		elseif isOneLine then
 			Result.append_string (" => ")
 			if expr = Void then
@@ -3936,10 +4020,10 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			Result.append_character('%T')
-			Result.append_string ("none")
+			--Result.append_character('%T')
+			Result.append_string (getIdent + "none")
 		else
-			Result.append_string (innerBlock.out)
+			Result.append_string (getIdent + innerBlock.out)
 		end -- if
 
 		if postconditions /= Void then
@@ -3949,28 +4033,30 @@ feature {Any}
 					if Result.item (Result.count) /= '%N' then
 						Result.append_string ("%N")
 					end -- if
-					Result.append_character('%T')
-					Result.append_string ("ensure%N")
+					--Result.append_character('%T')
+					Result.append_string (getIdent + "ensure%N")
+					incIdent
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_character('%T')
-					Result.append_character('%T')
-					Result.append_string (postconditions.item (i).out)
+					--Result.append_character('%T')
+					--Result.append_character('%T')
+					Result.append_string (getIdent + postconditions.item (i).out)
 					if Result.item (Result.count) /= '%N' then
 						Result.append_string ("%N")
 					end -- if
 					i := i + 1
 				end -- loop
+				decIdent
 			end -- if
 		end -- if
 		if not ((isVirtual or else isForeign or else isOneLine) and then (postconditions = Void or else postconditions.count = 0)) then
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			Result.append_character('%T')
-			Result.append_string ("end // " + name + "%N")	
+			--Result.append_character('%T')
+			Result.append_string (getIdent + "end // " + name + "%N")	
 		end -- if
 	end -- out
 	cutImplementation is
@@ -4745,8 +4831,14 @@ inherit
 	InnerBlockDescriptor
 		rename
 			init as InnerBlockInit
-		export {None} InnerBlockInit
-		redefine out
+		export
+			{None} InnerBlockInit
+		redefine
+			out
+	end
+	Identation
+		undefine
+			is_equal
 	end
 create
 	init
@@ -4761,18 +4853,20 @@ feature {Any}
 		n := requireClause.count
 		if n > 0 then
 			from
-				Result.append_string ("require%N")
+				Result.append_string (getIdent + "require%N")
+				incIdent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_string (requireClause.item(i).out)
+				--Result.append_character('%T')
+				Result.append_string (getIdent + requireClause.item(i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i +1 
 			end
+			decIdent
 		--else
 		--	Result.append_character('%N')
 		end -- if
@@ -4780,24 +4874,26 @@ feature {Any}
 		n := ensureClause.count
 		if n > 0 then
 			from
-				Result.append_string ("ensure%N")
+				Result.append_string (getIdent + "ensure%N")
+				incIdent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_string (ensureClause.item(i).out)
+				--Result.append_character('%T')
+				Result.append_string (getIdent + ensureClause.item(i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end --if
 				i := i +1 
-			end
+			end -- loop
+			decIdent
 		end -- if
-		if Result.item (Result.count) /= '%N' then
-			Result.append_character ('%N')
-		end -- if
-		Result.append_character('%T')
-		Result.append_string ("end // block%N")
+		--if Result.item (Result.count) /= '%N' then
+		--	Result.append_character ('%N')
+		--end -- if
+		--Result.append_character('%T')
+		Result.append_string (getIdent + "end // block%N")
 	end -- out
 	init (rc: like requireClause; invOff: like invariantOffList; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
 	do
@@ -5570,6 +5666,7 @@ feature {Any}
 invariant
 	non_void_expression: expDsc /= Void
 end -- class TypeOfExpressionDescriptor
+
 class IsDetachedDescriptor
 inherit
 	TypeOfExpressionDescriptor
@@ -5585,7 +5682,7 @@ feature {Any}
 	end -- init
 	out: String is
 	do
-		Result := expDsc.out + "is ?"
+		Result := expDsc.out + " is ?"
 	end -- out
 	sameAs (other: like Current): Boolean is
 	do
@@ -5597,18 +5694,19 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
-		-- do nothing so far
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
+		if expdsc.isInvalid (context, o) then
+			Result := True
+		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -5618,15 +5716,14 @@ end -- debug
 end -- class IsDetachedDescriptor
 class IsAttachedDescriptor
 inherit
-	IsDetachedDescriptor
-		rename
-			init as detached_init
-		export
-			{None} detached_init
-		redefine
-			out, 
-			--weight,
-			sameAs, lessThan
+	TypeOfExpressionDescriptor
+	--IsDetachedDescriptor
+		--rename
+		--	init as detached_init
+		--export
+		--	{None} detached_init
+		--redefine
+		--	out, sameAs, lessThan
 	end
 create
 	init
@@ -5636,7 +5733,8 @@ feature {Any}
 	require
 		non_void_expression: e /= Void
 	do
-		detached_init (e)
+		-- detached_init (e)
+		expDsc := e
 		typeDsc := t
 	end -- init
 	out: String is
@@ -5654,9 +5752,33 @@ feature {Any}
 			Result := typeDsc < other.typeDsc
 		end -- if
 	end -- theSame
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+		if expdsc.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if typeDsc.isInvalid (context, o) then
+			Result := True
+		end -- if
+	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 invariant
 	non_void_type: typeDsc /= Void
 end -- class IsAttachedDescriptor
+
 class ForcedExpressionDescriptor
 inherit
 	ExpressionDescriptor
@@ -5909,14 +6031,14 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
 		-- notValid: Boolean
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
 		-- do nothing so far
 debug
 	o.putLine ("Validity check for: " + out)
@@ -5994,6 +6116,9 @@ feature {Any}
 		-- notValid: Boolean
 		pos: Integer
 	do
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
 	--useConst := context.useConst
 	stringPool := context.stringPool
 	--typePool := context.typePool
@@ -6002,9 +6127,6 @@ feature {Any}
 		check
 			identifer_name_not_registered_in_the_pool: pos > 0
 		end -- check
-debug
-	o.putLine ("Validity check for: " + out)
-end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -6448,8 +6570,17 @@ feature {Any}
 	end -- init
 	sameAs (other: like Current): Boolean is
 	do
-		Result := left.is_equal (other.left) and then right.is_equal (other.right) and then 
-		(operator = Void and then other.operator = Void or else operator /= Void and then other.operator /= Void implies expr.is_equal (other.expr))
+		--Result := left.is_equal (other.left) and then right.is_equal (other.right) and then 
+		--(operator = Void and then other.operator = Void or else operator /= Void and then other.operator /= Void implies expr.is_equal (other.expr))
+		Result := left.is_equal (other.left) and then right.is_equal (other.right)
+		if Result then
+			if operator = Void and then other.operator = Void then
+			elseif operator /= Void and then other.operator /= Void then
+				Result := expr.is_equal (other.expr)
+			else
+				Result := False
+			end -- if
+		end -- if
 	end -- sameAs
 	lessThan (other: like Current): Boolean is
 	do
@@ -7750,6 +7881,9 @@ feature{Any}
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
 		if target.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -7781,9 +7915,6 @@ feature{Any}
 		end -- if
 		if not Result then
 			-- Need to check that target.identifier(arguments).classChain combination is valid
-debug
-	o.putLine ("Validity check for: " + out)
-end -- debug
 		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -8372,12 +8503,16 @@ end -- class NewExpressionDescriptor
 
 class IfStatementDescriptor
 -- IfCase:
--- if Expression (is Alternatives)|(BlockStart StatementsList)
--- {elsif Expression (is Alternatives)|(BlockStart StatementsList)}
+-- if Expression (case Alternatives)|(BlockStart StatementsList)
+-- {elsif Expression (case Alternatives)|(BlockStart StatementsList)}
 -- [else [StatementsList]]
 -- BlockEnd
 inherit
 	StatementDescriptor
+	end
+	Identation
+		undefine
+			is_equal
 	end
 create
 	init
@@ -8387,17 +8522,44 @@ feature {Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+		i, n: Integer
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
 		-- do nothing so far
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
+	--ifParts: Array [IfLineDecsriptor]
+	--elsePart: Array [StatementDescriptor]
+		from
+			i := ifParts.lower
+			n := ifParts.upper
+		until
+			i > n
+		loop
+			if ifParts.item (i).isInvalid (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+		if elsePart /= Void then
+			from
+				i := elsePart.lower
+				n := elsePart.upper
+			until
+				i > n
+			loop
+				if elsePart.item (i).isInvalid (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -8416,51 +8578,53 @@ end -- debug
 	local
 		i, n: Integer
 	do
-		Result := "if" + ifParts.item (1).out + "%N"
+		Result := "if " + ifParts.item (1).out + "%N"
 		from
 			i := 2
 			n := ifParts.count
 		until
 			i > n
 		loop
-			Result.append_character('%T')
-			Result.append_string ("elsif " + ifParts.item (i).out)
+			--Result.append_character('%T')
+			Result.append_string (getIdent + "elsif " + ifParts.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
 		if elsePart /= Void then
-			Result.append_character('%T')
-			Result.append_string ("else%N")
+			--Result.append_character('%T')
+			Result.append_string (getIdent + "else%N")
+			incIdent
 			from
 				i := 1
 				n := elsePart.count
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_string (elsePart.item (i).out)
+				-- Result.append_character('%T')
+				Result.append_string (getIdent + elsePart.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
+			decIdent
 		end -- if
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		Result.append_character('%T')
-		Result.append_string("end // if%N")
+		--Result.append_character('%T')
+		Result.append_string(getIdent + "end // if%N")
 	end -- out		
 invariant
 	consistent_if: ifParts /= Void and then ifParts.count > 0
 end -- class IfStatementDescriptor
 
 deferred class IfLineDecsriptor
--- if Expression (is Alternatives)|(BlockStart StatementsList)
+-- if Expression (case Alternatives)|(BlockStart StatementsList)
 -- or
--- {elsif Expression (is Alternatives)|(BlockStart StatementsList)}
+-- {elsif Expression (case Alternatives)|(BlockStart StatementsList)}
 
 inherit
 	Comparable
@@ -8468,6 +8632,10 @@ inherit
 			out
 		redefine
 			is_equal
+	end
+	BuildServer
+		undefine 
+			is_equal, out
 	end
 feature {Any}
 	expr: ExpressionDescriptor
@@ -8484,13 +8652,17 @@ invariant
 end -- class IfLineDecsriptor
 
 class IfIsLineDecsriptor
--- if Expression is Alternatives
+-- if Expression case Alternatives
 -- or
--- elsif Expression is Alternatives
+-- elsif Expression case Alternatives
 inherit
 	IfLineDecsriptor
 		redefine
 			is_equal, infix "<"
+	end
+	Identation
+		undefine
+			is_equal
 	end
 create
 	init 
@@ -8498,7 +8670,6 @@ feature {Any}
 
 --	alternatives: Array [IfStatementAlternative]
 	alternatives: Array [AlternativeDescriptor]
-	
 
 	init (e: like expr; a: like alternatives) is
 	require
@@ -8513,23 +8684,44 @@ feature {Any}
 		--end -- if
 	end -- init
 
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- do nothing so far
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- is_invalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
 	out: String is
 	local
 		i, n: Integer
 	do
-		Result := " " + expr.out + " is%N"
+		Result := expr.out + "%N"
+		incIdent
 		from
 			i := 1
 			n := alternatives.count
 		until
 			i > n
 		loop
-			Result.append_string (alternatives.item (i).out)
+			Result.append_string (getIdent + "case " + alternatives.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
+		decIdent
 	end -- out
 
 	is_equal (other: like Current): Boolean is
@@ -8596,6 +8788,10 @@ inherit
 		redefine
 			is_equal, infix "<"
 	end
+	Identation
+		undefine
+			is_equal
+	end
 create
 	init 
 feature {Any}
@@ -8611,23 +8807,46 @@ feature {Any}
 			statements := s
 		end -- if
 	end -- init
+
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		-- do nothing so far
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- is_invalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
+
 	out: String is
 	local
 		i, n: Integer
 	do
-		Result := " " + expr.out + " do%N"
+		Result := expr.out + " do%N"
+		incIdent
 		from
 			i := 1
 			n := statements.count
 		until
 			i > n
 		loop
-			Result.append_string (statements.item (i).out)
+			Result.append_string (getIdent + statements.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
+		decIdent
 	end -- out
 	is_equal (other: like Current): Boolean is
 	local
@@ -8749,7 +8968,7 @@ feature {AlternativeDescriptor}
 	local
 		i, n: Integer
 	do
-		Result := ":"
+		Result := ""
 		from
 			i := 1
 			n := alternativeTags.count
@@ -8762,6 +8981,7 @@ feature {AlternativeDescriptor}
 			Result.append_string (alternativeTags.item (i).out)
 			i := i + 1
 		end -- loop		
+		Result.append_string (" do")
 	end -- out_alternatives
 	alternativeTagsValid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -8787,10 +9007,14 @@ invariant
 end -- class AlternativeDescriptor
 
 class IfStatementAlternative
--- ":"ValueAlternative {"," ValueAlternative} ":" StatementsList
+-- ValueAlternative {"," ValueAlternative} "do" StatementsList
 -- AlternativeTags StatementsList
 inherit
 	AlternativeDescriptor
+	end
+	Identation
+		undefine
+			is_equal
 	end
 create
 	init
@@ -8815,27 +9039,28 @@ feature {Any}
 		i, n: Integer
 	do		
 		Result := out_alternatives
-		Result.append_character (' ')
 		Result.append_character ('%N')
+		incIdent
 		from
 			i := 1
 			n := statements.count
 		until
 			i > n
 		loop
-			Result.append_string (statements.item (i).out)
+			Result.append_string (getIdent + statements.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
+		decIdent
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
-		-- i, n: Integer
+		i, n: Integer
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
@@ -8843,6 +9068,17 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
+		from
+			i := 1
+			n := statements.count
+		until
+			i > n
+		loop
+			if statements.item (i).isInvalid (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
 	end -- is_invalid
 
 	generate (cg: CodeGenerator) is
@@ -8855,7 +9091,7 @@ invariant
 end -- class IfStatementAlternative
 
 class IfExpressionAlternative
--- ":"ValueAlternative {"," ValueAlternative} ":" Expression
+-- "case" ValueAlternative {"," ValueAlternative} "do" Expression
 -- AlternativeTags Expression
 inherit
 	AlternativeDescriptor
@@ -8880,6 +9116,7 @@ feature {Any}
 		Result := out_alternatives
 		Result.append_character (' ')
 		Result.append_string (expr.out)
+		Result.append_character (' ')
 	end -- out
 	generate (cg: CodeGenerator) is
 	do
@@ -9068,6 +9305,7 @@ feature {Any}
 	local	
 		i, n: Integer
 	do
+		--incIdent
 		if isWhileLoop then
 			Result := "while " + whileExpr.out + "%N"
 		else	
@@ -9077,53 +9315,60 @@ feature {Any}
 		n := requireClause.count
 		if n > 0 then
 			from
-				Result.append_character('%T')
-				Result.append_string ("require%N")
+				--Result.append_character('%T')
+				Result.append_string (getIdent + "require%N")
+				incIdent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_string (requireClause.item (i).out)
+				--Result.append_character('%T')
+				Result.append_string (getident + requireClause.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
 				i := i + 1
 			end -- loop
+			decIdent
 		end -- if
 
-		Result.append_character('%T')
+		--Result.append_character('%T')
 		Result.append_string (Precursor)
-		Result.append_character('%N')
+		if Result.item (Result.count) /= '%N' then
+			Result.append_character ('%N')
+		end -- if
 
 		if not isWhileLoop then
-			Result.append_character('%T')
-			Result.append_string ("while " + whileExpr.out)
+			--Result.append_character('%T')
+			Result.append_string (getIdent + "while " + whileExpr.out)
 		end -- if
 
 		n := ensureClause.count
 		if n > 0 then
 			from
-				Result.append_character('%T')
-				Result.append_string ("ensure%N")
+				--Result.append_character('%T')
+				Result.append_string (getIdent + "ensure%N")
+				incIdent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_character('%T')
-				Result.append_string (ensureClause.item (i).out)
+				--Result.append_character('%T')
+				Result.append_string (getIdent + ensureClause.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
 				i := i + 1
 			end -- loop
+			decIdent
 		end -- if
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		Result.append_character('%T')
-		Result.append_character('%T')
-		Result.append_string ("end // loop%N")
+		--Result.append_character('%T')
+		--Result.append_character('%T')
+		Result.append_string (getIdent + "end // loop%N")
+		--decIdent
 	end
 	init (ioff: like invariantOffList; isWL: Boolean; w: like whileExpr; rc: like requireClause; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
 	require
@@ -9299,6 +9544,10 @@ class AnonymousUnitTypeDescriptor
 inherit	
 	AttachedTypeDescriptor
 	end
+	Identation
+		undefine
+			is_equal
+	end
 create	
 	init
 feature {Any}	
@@ -9334,23 +9583,27 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := "unit "
+		Result := getIdent + "unit "
 		from
 			i := 1
 			n := members.count
+			incIdent
+			Result.append_string(getIdent)
 		until
 			i > n
 		loop
 			Result.append_string (members.item (i).out)
 			if i \\ 4 = 0 then
 				Result.append_character ('%N')
-				Result.append_character ('%T')
+				--Result.append_character ('%T')
+				Result.append_string (getIdent)
 			else
 				Result.append_character (' ')
 			end -- if
 			i := i + 1
 		end -- loop
-		Result.append_string ("end")
+		decIdent
+		Result.append_string (getIdent + "end")
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -10891,18 +11144,19 @@ end -- class UnitTypeNameDescriptor
 
 -----------------------------------------------------------------
 class IfExpressionDescriptor
--- if Expression (is ExpressionAlternatives)|( BlockStart Expression)
--- {elsif Expression (is ExpressionAlternatives)|( BlockStart Expression)}
+-- if Expression (case ExpressionAlternatives)|( BlockStart Expression)
+-- {elsif Expression (case ExpressionAlternatives)|( BlockStart Expression)}
 -- else Expression “}”Cmod
 --
---ExpressionAlternatives: “:”AlternativeTags Expression {“:”AlternativeTags Expression}
+--ExpressionAlternatives: “case” AlternativeTags "do" Expression {“case” AlternativeTags "do" Expression}
 inherit
 	ExpressionDescriptor
-	end
+	end	
 create 
 	init
 feature {Any}
-	ifExprLines: Array [IfExprLineDescriptor]
+	ifExprLines: Array [IfLineDecsriptor]
+	--ifExprLines: Array [IfExprLineDescriptor]
 	elseExpr: ExpressionDescriptor
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -11030,28 +11284,23 @@ invariant
 	consistent_if: ifExprLines /= Void and then ifExprLines.count > 0
 end -- class IfExpressionDescriptor
 
-deferred class IfExprLineDescriptor
--- (if | elsif Expression) (is IfBodyExpression)|(do Expression)
-inherit
-	IfLineDecsriptor
-	end
-	BuildServer
-		undefine 
-			is_equal, out
-	end
-feature
-	--is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	--require	
-	--	non_void_context: context /= Void
-	--	non_void_output: o /= Void		
-	--deferred
-	--end -- isInvalid
-end -- class IfExprLineDescriptor
+--deferred class IfExprLineDescriptor
+---- (if | elsif Expression) (case IfBodyExpression)|(do Expression)
+--inherit
+--	IfLineDecsriptor
+--	end
+--feature
+--end -- class IfExprLineDescriptor
 
 class IfIsExprLineDescriptor
--- (if | elsif Expression) is IfBodyExpression
+-- (if | elsif Expression) case IfBodyExpression
 inherit
-	IfExprLineDescriptor
+	--IfExprLineDescriptor
+	IfLineDecsriptor
+	end
+	Identation
+		undefine
+			is_equal
 	end
 create
 	init
@@ -11070,19 +11319,21 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := expr.out + " is "
+		Result := expr.out + "%N"
+		incIdent
 		from
 			i := 1
 			n := alternatives.count
 		until
 			i > n
 		loop
-			Result.append_string (alternatives.item (i).out)
+			Result.append_string (getIdent + "case " + alternatives.item (i).out)
 			if i < n then
 				Result.append_character(' ')
 			end -- if
 			i := i + 1
 		end -- loop
+		decIdent
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -11127,7 +11378,8 @@ end -- class IfIsExprLineDescriptor
 class IfDoExprLineDescriptor
 -- (if | elsif Expression) do Expression
 inherit
-	IfExprLineDescriptor
+	--IfExprLineDescriptor
+	IfLineDecsriptor
 	end
 create
 	init
@@ -11239,36 +11491,43 @@ invariant
 	expression_not_void: expr /= Void
 end -- class AlternativeTagDescriptor
 
--- class UnitTypeAlternative
--- -- UnitType
--- inherit
--- 	AlternativeTagDescriptor
--- 	end
--- create
--- 	init
--- feature {Any}
--- 	unitTypeDsc: UnitTypeCommonDescriptor
--- 	init (t: like unitTypeDsc) is
--- 	require
--- 		unit_type_not_void: t /= Void 
--- 	do
--- 		unitTypeDsc := t
--- 	end -- init
--- 	sameAs (other: like Current): Boolean is
--- 	do
--- 		Result := unitTypeDsc.sameAs (other.unitTypeDsc)
--- 	end -- sameAs
--- 	lessThan (other: like Current): Boolean is
--- 	do
--- 		Result := unitTypeDsc < other.unitTypeDsc
--- 	end -- lessThan
--- 	out: String is
--- 	do
--- 		Result := unitTypeDsc.out
--- 	end -- out
--- invariant
--- 	unit_type_not_void: unitTypeDsc /= Void 
--- end -- class UnitTypeAlternative
+class UnitTypeAlternative
+ -- UnitType
+ inherit
+ 	AlternativeTagDescriptor
+		rename 
+			init as non_used_init
+		export {None} non_used_init
+		redefine	
+			out, sameAs, lessThan
+ 	end
+	ExpressionDescriptor
+	end
+ create
+ 	init
+ feature {Any}
+ 	unitTypeDsc: NamedTypeDescriptor -- UnitTypeCommonDescriptor
+ 	init (t: like unitTypeDsc) is
+ 	require
+ 		unit_type_not_void: t /= Void 
+ 	do
+ 		unitTypeDsc := t
+ 	end -- init
+ 	sameAs (other: like Current): Boolean is
+ 	do
+ 		Result := unitTypeDsc.sameAs (other.unitTypeDsc)
+ 	end -- sameAs
+ 	lessThan (other: like Current): Boolean is
+ 	do
+ 		Result := unitTypeDsc < other.unitTypeDsc
+ 	end -- lessThan
+ 	out: String is
+ 	do
+ 		Result := unitTypeDsc.out
+	end -- out
+invariant
+	unit_type_not_void: unitTypeDsc /= Void 
+end -- class UnitTypeAlternative
 
 class RangeAlternative
 -- Expression ["|"OperatorName ConstantExpression] ".." Expression

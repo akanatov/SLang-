@@ -170,7 +170,7 @@ feature
 	--external "C" alias "msil_genAssignmentToLocal"
 	end -- genAssignmentToLocal
 end -- class MSIL_CodeGenerator
-class Ark_CodeGenerator
+class ARK_CodeGenerator
 inherit
 	CodeGenerator
 	end
@@ -187,4 +187,22 @@ feature
 	do
 	--external "C" alias "ark_genAssignmentToLocal"
 	end -- genAssignmentToLocal
-end -- class Ark_CodeGenerator
+end -- class ARK_CodeGenerator
+class C_CodeGenerator
+inherit
+	CodeGenerator
+	end
+create
+	init
+feature
+	genStart (fileName: String; buildExecutable: Boolean): Integer is
+	external "C" alias "C_genStart" 	
+	end -- genStart	
+	genEnd is
+	external "C" alias "C_genEnd"
+	end -- genEnd
+	genAssignmentToLocal () is
+	do
+	--external "C" alias "C_genAssignmentToLocal"
+	end -- genAssignmentToLocal
+end -- class C_CodeGenerator

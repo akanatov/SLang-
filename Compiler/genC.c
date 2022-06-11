@@ -1,0 +1,19 @@
+// C generation primitives
+//#include <stdio.h>
+//FILE *handle;
+
+/*	genStart (fileName: String; buildExecutable: Boolean): Boolean is
+	-- fileName refers to the name of the file which is to be created by code generator
+	-- fileName has no extension it is to be added by the code generator
+	-- if sucsesfull 1 is to be returned and -1 if error and 0 if code gneerator is not enabled yet
+	-- if buildExecutable is false then dynamic and static libraries are to be created
+	*/
+int C_genStart (char* fileName, char buildExecutable) {
+//	handle = fopen (fileName, "a");
+	return 0;
+}
+void C_genEnd () {
+//	if (handle != -1) 
+//		flcose (handle);
+}
+// fputs (aString, handle);
