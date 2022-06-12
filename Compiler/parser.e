@@ -3767,6 +3767,7 @@ end -- debug
 		lower: ExpressionDescriptor
 		operator: String
 		upper: ExpressionDescriptor
+		utDsc: UnitTypeAlternative
 	do
 --trace ("%TParse alternative expression started")
 		if isOptionalAlternative then
@@ -3814,7 +3815,12 @@ end -- debug
 					syntax_error (<<scanner.identifier_token>>)
 				end -- if
 			else
-				create {AlternativeTagDescriptor} Result.init (exprDsc) -- It is just an expression			
+				utDsc ?= exprDsc
+				if utDsc = Void then
+					create {ExpressionAlternative} Result.init (exprDsc) -- It is just an expression
+				else
+					Result := utDsc -- It is just a UnitType
+				end -- if
 			end -- inspect
 		end -- if
 		if Result /= Void then

@@ -1,4 +1,4 @@
-use StandardIO as io
+use StandardIO as IO
 virtual unit Output
 
 	final put (obj: Any)
@@ -162,7 +162,7 @@ unit FileOutput extend Output
 end // unit FileOutput
 unit ScreenAndFileOutput extend ScreenOutput, FileOutput
 	override ScreenOutput.put_spaces, FileOutput.close
-	init FileOutput
+	new FileOutput
 {}:
 	override put_string (s: STRING)
 	do

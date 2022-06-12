@@ -230,9 +230,14 @@ feature {Any}
 		if slangFileCount < n then
 			files.resize (1, slangFileCount)
 		end -- if
-		if actualFilesCount > 0 then 
+		inspect
+			actualFilesCount
+		when 0 then
+		when 1 then
+			o.putLine ("File is actual ...")
+		else
 			o.putLine (actualFilesCount.out + " files are actual ...")
-		end -- if
+		end -- inspect
 		n := slangFileCount
 		from 
 			if n > 0 then
@@ -2406,6 +2411,17 @@ feature {Any}
 			Result := fgTypes.seek (fgtDsc) > 0 
 		end -- if
 	end -- hasFormalGnericParameter
+
+	getUnitTypeDescriptor: UnitTypeCommonDescriptor is
+	do
+		create {UnitTypeNameDescriptor}Result.init (name, Void)
+		-- Expected generics: Array [TypeOrExpressionDescriptor]
+		-- Here generics: 	formalGenerics: Array [FormalGenericDescriptor]
+		if formalGenerics /= Void and then formalGenerics.count > 0 then
+			print ("%NNOT_IMPLEMENTED_YET: generics!!!%N")
+-- not_implemened_yet
+		end --if
+	end -- getUnitTypeDescriptor
 	
 	getAliasExternalName: String is
 	do
@@ -11006,15 +11022,15 @@ feature {Any}
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
 		typePool := context.typePool
 		-- do nothing so far
 		pos := typePool.seek (Current)
 		check
 			unit_registered : pos > 0
 		end -- check
-debug
-	o.putLine ("Validity check for: " + out)
-end -- debug
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -11057,6 +11073,7 @@ end -- debug
 				Result := True
 			elseif toRegister then				
 				-- Regsiter the 'interface' in the pool
+				typePool.add (interface.unit.getUnitTypeDescriptor) -- unit: UnitDeclarationDescriptor
 			end -- if
 		end -- if
 	end -- isNotLoaded
@@ -11428,78 +11445,24 @@ invariant
 	do_expr_not_void: doExpr /= Void
 end -- class IfDoExprLineDescriptor
 	
-class AlternativeTagDescriptor
--- Expression [[GroupStart OperatorName ConstantExpression GroupEnd] “..”Expression ]
-
+deferred class AlternativeTagDescriptor
+-- Expression [[GroupStart OperatorName ConstantExpression GroupEnd] “..”Expression ] | UnitType
 inherit
 	SmartComparable
-		redefine
+		undefine
 			out
 	end
 	BuildServer
 		undefine
-			is_equal
-		redefine 
-			out
+			is_equal, out
 	end
-creation
-	init
 feature {Any}
-	expr: ExpressionDescriptor
-	init (e: like expr) is
-	require
-		expression_not_void: e /= Void
-	do
-		expr := e
-	end -- init
-	out: String is
-	do
-		Result := expr.out
-	end -- out
-	sameAs (other: like Current): Boolean is
-	do
-		Result := expr.is_equal (other.expr)
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	do
-		Result := expr < other.expr
-	end -- lessThan
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
-	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		if expr.isInvalid (context, o) then
-			Result := True
-		else
-debug
-	o.putLine ("Validity check for: " + out)
-end -- debug
-			-- expr should be either Type or value ....
-			-- not_implemented_yet
-		end -- if
-	end -- isInvalid
-	generate (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate
-invariant
-	expression_not_void: expr /= Void
 end -- class AlternativeTagDescriptor
 
 class UnitTypeAlternative
  -- UnitType
  inherit
  	AlternativeTagDescriptor
-		rename 
-			init as non_used_init
-		export {None} non_used_init
-		redefine	
-			out, sameAs, lessThan
  	end
 	ExpressionDescriptor
 	end
@@ -11525,20 +11488,97 @@ class UnitTypeAlternative
  	do
  		Result := unitTypeDsc.out
 	end -- out
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		if unitTypeDsc.isInvalid (context, o) then
+			Result := True
+		else
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+			-- expr should be either Type or value ....
+			-- not_implemented_yet
+		end -- if
+	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate	
 invariant
 	unit_type_not_void: unitTypeDsc /= Void 
 end -- class UnitTypeAlternative
 
+class ExpressionAlternative
+-- Expression
+inherit
+	AlternativeTagDescriptor
+	end
+create
+	init
+feature {Any}
+	expression: ExpressionDescriptor
+	init (e: like expression) is
+	require
+		non_void_expression: e /= Void
+	do
+		expression := e
+	end -- init
+	sameAs (other: like Current): Boolean is
+	do
+		Result := expression.is_equal (other.expression)
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
+	do
+		Result := expression < other.expression
+	end -- lessThan
+	out: String is
+	do
+		Result := expression.out
+	end -- out
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		if expression.isInvalid (context, o) then
+			Result := True
+		else
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+			-- expr should be either Type or value ....
+			-- not_implemented_yet
+		end -- if
+	end -- is_invalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+invariant
+	non_void_expression: expression /= Void
+end -- class ExpressionAlternative
+
 class RangeAlternative
 -- Expression ["|"OperatorName ConstantExpression] ".." Expression
 inherit
-	AlternativeTagDescriptor
+	ExpressionAlternative
 		rename 
-			expr as lower,
+			expression as lower,
 			init as non_used_init
 		export {None} non_used_init
 		redefine	
-			out, sameAs, lessThan
+			out, sameAs, lessThan, is_invalid, generate
 	end
 create
 	init
@@ -11573,7 +11613,10 @@ feature {Any}
 		if not Result and then lower.is_equal (other.lower) then
 			Result := upper < other.upper			
 			if not Result and then upper.is_equal (other.upper) then
-				
+				Result := operator < other.operator
+				if not Result and then operator.is_equal (other.operator) then
+					Result := constExpr < other.constExpr
+				end -- if
 			end -- if
 		end -- if
 	end -- lessThan
@@ -11590,6 +11633,38 @@ feature {Any}
 		Result.append_string (" .. ")
 		Result.append_string (upper.out)
 	end -- out
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
+	do
+	--useConst := context.useConst
+	--stringPool := context.stringPool
+	--typePool := context.typePool
+		if lower.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if upper.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if operator /= Void then
+			if constExpr.isInvalid (context, o) then
+				Result := True
+			else
+				-- applicatiopn of operator with constExpr is to be valid
+			end -- if
+		end -- if
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+			-- expr should be either Type or value ....
+			-- not_implemented_yet
+	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
 invariant
 	non_void_upper: upper /= Void
 	consistent_reg_exp: operator /= Void implies constExpr /= Void

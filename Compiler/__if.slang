@@ -3,7 +3,7 @@ if expr is ? do
 elseif expr is T1 do
  	expr := expr
 elseif expr  
-	case T1, T2, t3 do
+	case T1, T2, T3 do
 		expr := expr
 elseif expr  	
 	case value do

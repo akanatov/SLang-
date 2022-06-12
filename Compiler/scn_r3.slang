@@ -1,6 +1,6 @@
 val unit Real 
-	{} RealMinMantissa is 0.000001 // TBD
-	{} RealMaxOrder is 2 ^ Platform.RealOderBitsCount - 1
+	{} realMinMantissa is 0.000001 // TBD
+	{} realMaxOrder is 2 ^ Platform.realOderBitsCount - 1
 end
 
 

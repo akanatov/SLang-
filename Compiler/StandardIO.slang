@@ -1,4 +1,4 @@
-unit StandardIO alias io
+unit StandardIO alias IO
 	readInt: Integer foreign
 	readReal: Real foreign
 	readBoolean: Boolean foreign
@@ -7,16 +7,16 @@ unit StandardIO alias io
 	// Init procedure is missed or how to set the output is missed !!!!
 	pure put (arguments: ()) do
 		while argument in arguments do
-			if argument is
-				Integer:
+			if argument 
+				case Integer do
 					putInteger (argument)
-				Character:
+				case Character do
 					putCharacter (argument)
-				String:
+				case String do
 					putString (argument)
-				Real:
+				case Real do
 					putReal (argument)
-				Boolean:
+				case Boolean do
 					putBoolean (argument)
 				else
 					putString (argument.toString)

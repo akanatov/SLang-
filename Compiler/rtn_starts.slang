@@ -1,2 +1,2 @@
-foo ( var a, b, c: Type) do
+foo (a, b, c: Type) do
 end

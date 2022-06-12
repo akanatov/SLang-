@@ -9,7 +9,7 @@ foo1   foreign
 unit A
 	foo (a: A) foreign
 	goo 
-	do : label {a, b, c} 
+	do {a, b, c} 
 		a is 5
 	end
 end
