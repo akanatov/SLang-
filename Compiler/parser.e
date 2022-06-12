@@ -2718,40 +2718,44 @@ end -- debug
 					end -- if
 				when scanner.is_token then
 					toExit := True
-					scanner.push
+					--scanner.push
 					scanner.nextToken
 					inspect 
 						scanner.token
 					when scanner.detach_token then
-						-- expr is ? do
+						-- expr is ? 
 						--		   ^
-						scanner.flush
+						--scanner.flush
 						scanner.nextToken
 						create {IsDetachedDescriptor} Result.init (Result)
 					when scanner.type_name_token, scanner.ref_token, scanner.val_token then
 						-- expr is Type
 						--		   ^
 						utnDsc := parseUnitType2 (checkSemicolonAfter)
-						if utnDsc = Void then
-							-- Not sure if Void is to be returned in case of error parsing the type
-							-- Result := Void
-						else
-							inspect 
-								scanner.token
-							when scanner.do_token then
-								scanner.flush
-								-- expr is Type do
-								--		        ^
-								create {IsAttachedDescriptor} Result.init (Result, utnDsc)
-							else
-								-- may be the tag start
-								-- expr is Type {"," Type} :
-								scanner.revert
-							end -- inspect
+						if utnDsc /= Void then
+							create {IsAttachedDescriptor} Result.init (Result, utnDsc)
 						end -- if
+						--if utnDsc = Void then
+						--	-- Not sure if Void is to be returned in case of error parsing the type
+						--	-- Result := Void
+						--else
+						--	inspect 
+						--		scanner.token
+						--	when scanner.do_token then
+						--		scanner.flush
+						--		-- expr is Type do
+						--		--		        ^
+						--		create {IsAttachedDescriptor} Result.init (Result, utnDsc)
+						--	else
+						--		-- may be the tag start
+						--		-- expr is Type {"," Type} :
+						--		scanner.revert
+						--	end -- inspect
+						--end -- if
 					else
+						syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.detach_token>>)
 						-- expr is expr :
-						scanner.revert
+						--scanner.revert
 					end -- inspect
 					
 --					if scanner.token = scanner.colon_token then
@@ -3819,13 +3823,15 @@ end -- debug
 				if utDsc = Void then
 					create {ExpressionAlternative} Result.init (exprDsc) -- It is just an expression
 				else
-					Result := utDsc -- It is just a UnitType
+					Result := utDsc -- It is just a UnitType alternative
 				end -- if
 			end -- inspect
 		end -- if
-		if Result /= Void then
+debug
+--		if Result /= Void then
 --trace ("%TAlternative expression: " +  Result.out)
-		end -- if
+--		end -- if
+end
 	end -- parseAlternativeTag
 	
 	parseModuleCall: StatementDescriptor is
@@ -4450,9 +4456,17 @@ end
 					scanner.nextToken
 				end -- if
 			when scanner.one_line_function_token then
-				--  expr
-				scanner.nextToken
-				expr := parseExpressionWithSemicolon
+				if returnType = Void then
+					validity_error ("procedure `" + name + "` cannot have function body with just one expression")
+					wasError := True
+				else
+					--  expr				
+	debug
+		--trace ("Function: " + name + ": " + returnType.out + " => ")
+	end -- debug
+					scanner.nextToken
+					expr := parseExpressionWithSemicolon
+				end -- if
 			when scanner.none_token then
 				-- no body - no action. InnerBlock is Void
 				scanner.nextToken
@@ -6388,9 +6402,11 @@ end -- debug
 				--	commaFound := False
 					scanner.nextToken
 					if scanner.token = scanner.type_name_token then
-						if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGnericParameter (scanner.tokenString) then
+						if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 							-- attempt to override a member of generic parameter
-							validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent unit")
+							validity_error(
+								"Generic parameter name `" + scanner.tokenString + "` can not be used as a non-conformant parent unit `" + currentUnitDsc.fullUnitName + "`"
+							)
 							scanner.nextToken
 							toLeave := True
 						else
@@ -6431,9 +6447,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			when scanner.type_name_token then
 				--if commaFound or else unitDsc.parents.count = 0 then
 				--	commaFound := False					
-					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGnericParameter (scanner.tokenString) then
+					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 						-- attempt to override a member of generic parameter
-						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent unit")
+						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent unit `" + currentUnitDsc.fullUnitName + "`")
 						scanner.nextToken
 						toLeave := True
 					else
@@ -6527,9 +6543,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					end -- if
 				when scanner.type_name_token then
 					commaFound := False
-					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGnericParameter (scanner.tokenString) then
+					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 						-- attempt to override a member of generic parameter
-						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used in the use clause")
+						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used in the use clause in unit `" + currentUnitDsc.fullUnitName + "`")
 						scanner.nextToken
 						toLeave := True
 						wasError := True
@@ -6557,9 +6573,12 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							when scanner.as_token then
 								scanner.nextToken
 								if scanner.token = scanner.type_name_token then
-									if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGnericParameter (scanner.tokenString) then
+									if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 										-- attempt to override a member of generic parameter
-										validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as new name for renaming")
+										validity_error(
+											"Generic parameter name `" + scanner.tokenString + "` can not be used as new name for renaming in unit `" +
+											currentUnitDsc.fullUnitName + "`"
+										)
 										scanner.nextToken
 										toLeave := True
 										wasError := True
@@ -6681,9 +6700,12 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				when scanner.type_name_token then
 					if commaFound or else svDsc.clients.count = 0 then
 						commaFound := False
-						if unitDsc.hasFormalGnericParameter (scanner.tokenString) then
+						if unitDsc.hasFormalGenericParameter (scanner.tokenString) then
 							-- attempt to override a member of generic parameter
-							validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be listed in clients list")
+							validity_error(
+								"Generic parameter name `" + scanner.tokenString + "` can not be listed in clients list in unit `" + 
+								unitDsc.fullUnitName + "`"
+							)
 							scanner.nextToken
 							toLeave := True
 						else
@@ -6863,9 +6885,11 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						if commaFound then 
 							-- UnitTypeName”.”Identifier[Signature]
 							commaFound := False
-							if unitDsc.hasFormalGnericParameter (scanner.tokenString) then
+							if unitDsc.hasFormalGenericParameter (scanner.tokenString) then
 								-- attempt to override a member of generic parameter
-								validity_error( "Member of the generic parameter `" + scanner.tokenString + "` can not override. Only unit type members can override")
+								validity_error(
+									"Member of the generic parameter `" + scanner.tokenString + "` can not be overrided. Only unit type members can be overrided"
+								)
 								scanner.nextToken
 								toLeave := True
 							else
@@ -6950,9 +6974,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		when scanner.type_name_token then
 			ident := scanner.tokenString
 			scanner.nextToken
-			if unitDsc.hasFormalGnericParameter (ident) then
+			if unitDsc.hasFormalGenericParameter (ident) then
 				-- attempt to override a member of generic parameter
-				validity_error( "Member of the generic parameter `" + ident + "` can not override. Only unit type members can override")
+				validity_error( "Member of the generic parameter `" + ident + "` can not be overrided. Only unit type members can be overrided")
 			else
 				inspect
 					scanner.token
@@ -8276,7 +8300,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				when scanner.identifier_token then
 					Result := parseUnitRoutineOrAttribute (unitDsc, isOverriding, isFinal)
 				when
-					scanner.operator_token, -- scanner.minus_token,
+					scanner.operator_token,
 					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
 					scanner.assignment_token, scanner.left_paranthesis_token
 				then
@@ -9054,11 +9078,17 @@ feature {None}
 		if errorsCount = 0 then
 			o.newLine
 		end -- if
-		errorsCount := errorsCount + 1
+		errorsCount := errorsCount + 1		
 		if srcp.col = 0 then
-			o.putNL ("+Error at line " + srcp.row.out + " - " + message)
+			if srcp.row > 0 then
+				o.putNL ("Error at line " + srcp.row.out + " - " + message)
+			else
+				o.putNL ("Error - " + message)
+			end -- if
+		elseif srcp.row > 0 then
+			o.putNL ("Error at " + srcp.row.out + ":" + srcp.col.out + " - " + message)
 		else
-			o.putNL ("+Error at " + srcp.row.out + ":" + srcp.col.out + " - " + message)
+			o.putNL ("Error - " + message)
 		end -- if
 	end -- validityError
 	

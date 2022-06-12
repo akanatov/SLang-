@@ -9,7 +9,7 @@ select	b, foo(as this, rtn):rtn (as this), c
 
 override A.f, B[as this].moo, A.foo (as this, rtn):rtn (as this)
 
-init M(as this, rtn (as this): as anchor), B, C
+new M(as this, rtn (as this): as anchor), B, C
 
 /*enum
 end*/

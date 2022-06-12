@@ -304,10 +304,10 @@ feature {Any}
 		end -- loop
 	end -- parseFolder
 		
-	is_script: Boolean is
-	do
-		Result := name.is_equal ("*")
-	end 
+	--is_script: Boolean is
+	--do
+	--	Result := entry /= Void and then entry.is_equal ("*")
+	--end -- is_script
 	
 	init_script (n : String; c: like clusters; l: like libraries) is 
 	do
@@ -329,6 +329,7 @@ feature {Any}
 		name_not_void: n /= Void
 	do
 		name:= n
+		entry := Void
 		if fp = Void then
 			create from_paths.make
 		else
@@ -363,9 +364,9 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := "build %"" + name + "%"%N"
+		Result := "build " + name
 		if entry /= Void then
-			Result.append_string ("%T=> " + entry + "%N")
+			Result.append_string (" => " + entry + "%N")
 		else
 			check
 				invariant_check: from_paths /= Void
@@ -373,7 +374,7 @@ feature {Any}
 			n := from_paths.count
 			if n > 0 then 
 				from
-					Result.append_string ("%T:")
+					Result.append_string (" :")
 					i := 1
 				until
 					i > n
@@ -383,6 +384,7 @@ feature {Any}
 					i := i + 1
 				end -- loop
 			end -- if
+			Result.append_character ('%N')
 		end -- if
 		n := clusters.count
 		if n > 0 then
@@ -415,6 +417,26 @@ feature {Any}
 		Result.append_string ("end%N")
 	end -- out
 
+	clusterHasRoutine (clusterDsc: ClusterDescriptor; rtnName: String): Boolean is
+	require
+		non_void_routine_name: rtnName /= Void
+		non_void_cluster_dsc: clusterDsc /= Void
+	local	
+		path: String
+		fileName: String
+	do
+		if not clusterDsc.unitOrRoutineExcluded (rtnName) then
+			path := clusterDsc.name
+			if path.item (path.count) = '\' or else path.item (path.count) = '/' then
+				fileName := clone(path)
+			else
+				fileName := path + fs.separator
+			end -- if
+			fileName.append_string (IRfolderName + fs.separator + clusterDsc.getNameAfterRenaming (rtnName) + RoutinesSuffix + "." + INText)
+			Result := fs.file_exists (fileName)
+		end -- if
+	end -- clusterHasRoutine
+
 	clusterHasUnit (clusterDsc: ClusterDescriptor; unitName: String): Boolean is
 	require
 		non_void_unit_name: unitName /= Void
@@ -423,14 +445,14 @@ feature {Any}
 		path: String
 		fileName: String
 	do
-		if not clusterDsc.unitExcluded (unitName) then
+		if not clusterDsc.unitOrRoutineExcluded (unitName) then
 			path := clusterDsc.name
 			if path.item (path.count) = '\' or else path.item (path.count) = '/' then
 				fileName := clone(path)
 			else
 				fileName := path + fs.separator
 			end -- if
-			fileName.append_string (IRfolderName  + fs.separator + clusterDsc.getRealName (unitName) + UnitSuffix + "." + INText)
+			fileName.append_string (IRfolderName  + fs.separator + clusterDsc.getNameAfterRenaming (unitName) + UnitSuffix + "." + INText)
 			Result := fs.file_exists (fileName)
 		end -- if
 debug
@@ -442,6 +464,58 @@ debug
 end -- debug
 	end -- clusterHasUnit
 	
+	hasStandAloneRoutine(rtnName: String): Array [ClusterDescriptor] is
+		-- returns list of clusters where such routine exists
+	require
+		non_void_routine_name: rtnName /= Void
+	local
+		i, n: Integer
+		clusterDsc: ClusterDescriptor
+		selected: Array [Integer]
+		temp: Array [ClusterDescriptor]
+	do
+		if clusters /= Void then
+			from
+				n := clusters.count
+				i := 1
+				create Result.make (1, 0)
+				create selected.make (1, 0)
+			until
+				i > n
+			loop
+				clusterDsc := clusters.item (i)
+				if clusterHasRoutine (clusterDsc, rtnName) then
+					Result.force (clusterDsc, Result.count + 1)
+					if clusterDsc.unitOrRoutineSelected (rtnName) then
+						selected.force (Result.count, selected.count + 1)
+					end -- if
+				end -- if
+				i := i + 1
+			end -- loop
+			n := selected.count 
+			inspect
+				n
+			when 0 then
+				-- no selected - just return Result
+			when 1 then
+				-- Oh! There is only one cluster !!!
+				Result := <<Result.item (selected.item (1))>>
+			else 
+				-- we have several (n) clusters having rtnName selected - error situation
+				create temp.make (1, n)
+				from
+					i := 1
+				until
+					i > n
+				loop
+					temp.put (Result.item (selected.item (i)), i)
+					i := i + 1
+				end -- loop
+				Result := temp
+			end -- inspect
+		end -- if
+	end -- hasStandAloneRoutine
+
 	hasUnit(unitName: String): Array [ClusterDescriptor] is
 		-- returns list of clusters where such unit exists
 	require
@@ -464,7 +538,7 @@ end -- debug
 				clusterDsc := clusters.item (i)
 				if clusterHasUnit (clusterDsc, unitName) then
 					Result.force (clusterDsc, Result.count + 1)
-					if clusterDsc.unitSelected(unitName) then
+					if clusterDsc.unitOrRoutineSelected(unitName) then
 						selected.force (Result.count, selected.count + 1)
 					end -- if
 				end -- if
@@ -553,35 +627,35 @@ feature
 	rename_list: Sorted_Array[RenamePair]
 	selected_list: Sorted_Array [String]
 
-	unitExcluded (unitName: String): Boolean is
+	unitOrRoutineExcluded (unitOrRtnName: String): Boolean is
 	require
-		unitName_not_void: unitName /= Void
+		unit_or_routine_name_not_void: unitOrRtnName /= Void
 	do
-		Result := excluded_list.seek (unitName) > 0
-	end -- unitExcluded
+		Result := excluded_list.seek (unitOrRtnName) > 0
+	end -- unitOrRoutineExcluded
 
-	unitSelected (unitName: String): Boolean is
+	unitOrRoutineSelected (unitOrRtnName: String): Boolean is
 	require
-		unitName_not_void: unitName /= Void
+		unit_or_routine_name_not_void: unitOrRtnName /= Void
 	do
-		Result := selected_list.seek (getRealName(unitName)) > 0
-	end -- unitSelected
+		Result := selected_list.seek (getNameAfterRenaming(unitOrRtnName)) > 0
+	end -- unitOrRoutineSelected
 	
-	getRealName (unitName: String): String is
+	getNameAfterRenaming (unitOrRtnName: String): String is
 	require
-		unitName_not_void: unitName /= Void
+		unit_or_routine_name_not_void: unitOrRtnName /= Void
 	local
 		rnmPair: RenamePair
 	do
-		create rnmPair.init (unitName, "")
+		create rnmPair.init (unitOrRtnName, "")
 		rnmPair := rename_list.search (rnmPair)
 		if rnmPair = Void then
-			Result := unitName
+			Result := unitOrRtnName
 		else
 			Result := rnmPair.newName
 		end -- if
-	end -- getRealName
-
+	end -- getNameAfterRenaming
+	
 	out: String is
 	local
 		i, n, m, k: Integer
@@ -1145,34 +1219,36 @@ feature {None}
 
 end -- class CompilationUnitUnit
 
-class CompilationUnitStandaloneRoutines
+class CompilationUnitStandaloneRoutine -- s
 inherit
 	CompilationUnitCommon
 	end
 create	
 	init, make
 feature {Any}
-	routines: Sorted_Array [StandaloneRoutineDescriptor]
+	--routines: Sorted_Array [StandaloneRoutineDescriptor]
+	routine: StandaloneRoutineDescriptor
 
 	init(scn: like scanner) is
 	do
 		init_pools (scn)
-		create routines.make
+		--create routines.make
 	end -- init
 
 	make is
 	do
 		init_pools (Void)
-		create routines.make
+		--create routines.make
 	end -- init
 
-	RoutinesIR_Loaded (fileName: String; o: Output): Boolean is
+	RoutineIR_Loaded (fileName: String; o: Output): Boolean is
 	local
-		rImage: RoutinesImage 
+		--rImage: RoutinesImage 
+		rImage: RoutineImage 
 	do
-		rImage := loadRoutinesIR (fileName, o)
+		rImage := loadRoutineIR (fileName, o)
 		if rImage /= Void then
-			routines 	:= rImage.routines
+			routine 	:= rImage.routine
 			useConst	:= rImage.useConst	
 			stringPool	:= rImage.stringPool	
 			typePool	:= rImage.typePool	
@@ -1180,11 +1256,12 @@ feature {Any}
 			timeStamp	:= rImage.timeStamp
 			Result := True
 		end -- if
-	end -- RoutinesIR_Loaded
+	end -- RoutineIR_Loaded
 
 feature {None}	
 	
-	loadRoutinesIR (fileName: String; o: Output): RoutinesImage is
+	--loadRoutinesIR (fileName: String; o: Output): RoutinesImage is
+	loadRoutineIR (fileName: String; o: Output): RoutineImage is
 	require
 		file_name_not_void: fileName /= Void
 	local
@@ -1192,7 +1269,7 @@ feature {None}
 		wasError: Boolean
 	do
 		if wasError then
-			o.putNL ("Consistency error: unable to load standalone routines code from file `" + fileName + "`")
+			o.putNL ("Consistency error: unable to load standalone routine code from file `" + fileName + "`")
 			Result := Void
 		else
 			create aFile.make_open_read (fileName)
@@ -1200,17 +1277,17 @@ feature {None}
 			Result ?= Result.retrieved (aFile)
 			aFile.close
 			if Result = Void then
-				o.putNL ("Consistency error: file `" + fileName + "` does not contain standalone routines code")
+				o.putNL ("Consistency error: file `" + fileName + "` does not contain standalone routine code")
 			end -- if
 		end -- if
 	rescue
 		wasError := True
 		retry
-	end -- loadUnitIR
+	end -- loadRoutineIR
 
-invariant
-	non_void_routines: routines /= Void
-end -- class CompilationUnitStandaloneRoutines
+--invariant
+--	non_void_routines: routines /= Void
+end -- class CompilationUnitStandaloneRoutine
 
 
 class CompilationUnitCompound
@@ -1220,10 +1297,10 @@ inherit
 		rename 
 			init as anonymous_routine_init
 	end
-	CompilationUnitStandaloneRoutines
-		rename
-			init as standalone_routines_init
-	end
+	--CompilationUnitStandaloneRoutine --s
+	--	rename
+	--		init as standalone_routines_init
+	--end
 	SLangConstants
 	end
 create	
@@ -1231,6 +1308,7 @@ create
 feature {Any}
 
 	units: Sorted_Array [UnitDeclarationDescriptor]
+	routines: Sorted_Array [StandaloneRoutineDescriptor]
 	
 	attach_usage_pool_to_units_and_standalone_routines is
 	local
@@ -1294,7 +1372,7 @@ feature {Any}
 	local
 		sImg: AnonymousRoutineImage
 		uImg: UnitImage
-		rImg: RoutinesImage
+		rImg: RoutineImage -- s
 		i, n: Integer
 		fName: String
 		filePrefix: String
@@ -1311,19 +1389,35 @@ feature {Any}
 			end -- if
 		end -- if
 
-		if routines.count > 0 then
-			-- Standalone routines: useConst + routines
-			create rImg.init (FullSourceFileName, tStamp, useConst, routines, rtn_stringPool, rtn_typePool)
-			fName := filePrefix  + "_" + SourceFileName + RoutinesSuffix + "." + irFileExtension
+		from
+			i := routines.lower
+			n := routines.upper
+		until
+			i > n
+		loop
+			-- Per standalone routine: useConst + routine
+			create rImg.init (FullSourceFileName, tStamp, useConst, routines.item (i), rtn_stringPool, rtn_typePool)
+			fName := filePrefix  + routines.item (i).name + RoutinesSuffix + "." + irFileExtension
 			if not IRstored (fName, rImg) then
-				o.putNL ("File open/create/write/close error: unable to store standalone routines IR into file `" + fName + "`")
+				o.putNL ("File open/create/write/close error: unable to store standalone routine IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
-		end -- if
+			i := i + 1
+		end -- loop
+
+		--if routines.count > 0 then
+		--	-- Standalone routines: useConst + routines
+		--	create rImg.init (FullSourceFileName, tStamp, useConst, routines, rtn_stringPool, rtn_typePool)
+		--	fName := filePrefix  + "_" + SourceFileName + RoutinesSuffix + "." + irFileExtension
+		--	if not IRstored (fName, rImg) then
+		--		o.putNL ("File open/create/write/close error: unable to store standalone routines IR into file `" + fName + "`")
+		--		Result := Result + 1
+		--	end -- if
+		--end -- if
 
 		from
-			i := 1
-			n := units.count
+			i := units.lower
+			n := units.upper
 		until
 			i > n
 		loop
@@ -1376,11 +1470,13 @@ feature {None}
 	init (scn: like scanner) is
 	do
 		anonymous_routine_init (scn)
-		standalone_routines_init (scn)
+		--standalone_routines_init (scn)
+		create routines.make
 		create units.make 
 	end -- init
 invariant
 	non_void_units: units /= Void
+	non_void_routines: routines /= Void
 end -- class CompilationUnitCompound
 
 class IR_Storage
@@ -1425,21 +1521,37 @@ feature {CompilationUnitCommon}
 	end -- init
 end -- class AnonymousRoutineImage
 
-class RoutinesImage
--- local class to store standalone routines IR
+class RoutineImage
+-- local class to store standalone routine IR
 inherit
 	IR_Storage
 	end
 create	
 	init, init_empty
 feature {CompilationUnitCommon}
-	routines: Sorted_Array [StandaloneRoutineDescriptor]
-	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; r: like routines; sp: like stringPool; tp: like typePool) is
+	routine: StandaloneRoutineDescriptor
+	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; r: like routine; sp: like stringPool; tp: like typePool) is
 	do
-		routines	:= r
+		routine	:= r
 		init_storage (fn, ts, uc, sp, tp)
 	end -- init
-end -- class RoutinesImage
+end -- class RoutineImage
+
+--class RoutinesImage
+---- local class to store standalone routines IR
+--inherit
+--	IR_Storage
+--	end
+--create	
+--	init, init_empty
+--feature {CompilationUnitCommon}
+--	routines: Sorted_Array [StandaloneRoutineDescriptor]
+--	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; r: like routines; sp: like stringPool; tp: like typePool) is
+--	do
+--		routines	:= r
+--		init_storage (fn, ts, uc, sp, tp)
+--	end -- init
+--end -- class RoutinesImage
 
 class UnitImage
 -- local class to store unit IR
@@ -1881,7 +1993,7 @@ feature {Any}
 			n := generics.count
 			if n > 0 then
 				from
-					Result.append_character(' ')
+					--Result.append_character(' ')
 					Result.append_character('[')
 					i := 1
 				until
@@ -1938,14 +2050,14 @@ feature {Any}
 		end -- if
 		if isOneLine then
 			Result.append_string (" => ")	
-			if expr = Void then
-				Result.append_string ("<expression>%N")	
-			else 
+			--if expr = Void then
+			--	Result.append_string ("<expression>%N")	
+			--else 
 				Result.append_string (expr.out)	
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if			
-			end -- if
+			--end -- if
 		else
 			n := preconditions.count 
 			if n > 0 then
@@ -1984,6 +2096,9 @@ feature {Any}
 				Result.append_string (getIdent + "none%N")
 			else
 				--Result.append_character('%T')
+				if Result.item (Result.count) /= '%N' then
+					Result.append_character ('%N')
+				end -- if
 				Result.append_string (getIdent + innerBlock.out)	
 			end -- if
 			n := postconditions.count 
@@ -2027,7 +2142,7 @@ feature {Any}
 	init (
 		isP, isS, isF: Boolean; aName: like name; fg: like generics; fgt: like fgTypes;
 		params: like parameters; aType: like type; u: like usage; icf: like constants;
-		pre: like preconditions; ib: like innerBlock; anexpr: like expr; post: like postconditions
+		pre: like preconditions; ib: like innerBlock; anExpr: like expr; post: like postconditions
 	) is
 	require
 		name_not_void: aName /= Void
@@ -2053,7 +2168,7 @@ feature {Any}
 		isPure := isP
 		isSafe := isS
 		isForeign := isF
-		isOneLine:= anExpr /= Void
+		--isOneLine := anExpr /= Void
 		type:= aType
 		usage := u
 		constants := icf
@@ -2402,7 +2517,7 @@ feature {Any}
 	formalGenerics: Array [FormalGenericDescriptor]
 		--  "["" FormalGenericDescriptor {"," FormalGenericDescriptor}"]" 
 	fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
-	hasFormalGnericParameter (aName: String): Boolean is
+	hasFormalGenericParameter (aName: String): Boolean is
 	local
 		fgtDsc: FormalGenericTypeNameDescriptor
 	do
@@ -2410,7 +2525,7 @@ feature {Any}
 			create fgtDsc.init (aName)
 			Result := fgTypes.seek (fgtDsc) > 0 
 		end -- if
-	end -- hasFormalGnericParameter
+	end -- hasFormalGenericParameter
 
 	getUnitTypeDescriptor: UnitTypeCommonDescriptor is
 	do
@@ -3749,7 +3864,9 @@ feature {Any}
 	constants: Sorted_Array [UnitTypeNameDescriptor] -- FullUnitNameDescriptor]
 	preconditions: Array [PredicateDescriptor]
 	isForeign: Boolean
-	isOneLine: Boolean
+	isOneLine: Boolean is do
+		Result := expr /= Void -- and then innerBlock = Void
+	end -- isOneLine
 	expr: ExpressionDescriptor
 	innerBlock: InnerBlockDescriptor
 	postconditions: Array [PredicateDescriptor]	
@@ -4026,11 +4143,11 @@ feature {Any}
 			Result.append_string (getIdent + "foreign%N")
 		elseif isOneLine then
 			Result.append_string (" => ")
-			if expr = Void then
-				Result.append_string ("none")
-			else
+			--if expr = Void then
+			--	Result.append_string ("none")
+			--else
 				Result.append_string (expr.out)
-			end -- if
+			--end -- if
 			Result.append_character('%N')
 		elseif innerBlock = Void then
 			if Result.item (Result.count) /= '%N' then
@@ -4039,6 +4156,9 @@ feature {Any}
 			--Result.append_character('%T')
 			Result.append_string (getIdent + "none")
 		else
+			if Result.item (Result.count) /= '%N' then
+				Result.append_character ('%N')
+			end -- if
 			Result.append_string (getIdent + innerBlock.out)
 		end -- if
 
@@ -4103,14 +4223,14 @@ feature {None}
 					end -- if
 					i := i + 1
 				end -- loop
+				aResult.append_character('%N')
 			end -- if
 		end -- if
-		aResult.append_character('%N')
 	end -- outConstants
 invariant
 	is_virtual_consistent: isVirtual implies innerBlock = Void	and then expr = Void
 	is_foreign_consistent: isForeign implies innerBlock = Void	and then expr = Void
-	is_one_line_consistent: isOneLine implies innerBlock = Void and then expr /= Void
+	is_one_line_consistent: isOneLine implies innerBlock = Void --and then expr /= Void
 end -- class UnitRoutineDescriptor
 
 class UnitRoutineDeclarationDescriptor
@@ -6436,7 +6556,7 @@ invariant
 end -- class LambdaFromRoutineExpression
 
 class InlineLambdaExpression
--- [pure|safe] rtn [Parameters] [“:” Type] ( [RequireBlock] InnerBlockDescriptor | foreign [EnsureBlock] [end] )|(“=>”Expression )
+-- [pure|safe] rtn [Parameters] [":" Type] ( [RequireBlock] InnerBlockDescriptor | foreign [EnsureBlock] [end] )|("=>" Expression )
 inherit
 	LambdaExpression
 	end

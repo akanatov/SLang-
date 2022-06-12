@@ -12,8 +12,8 @@ feature {Any}
 	col: Integer
 	set_rc (r, c: Integer) is
 	require
-		valid_row: r > 0
-		valid_column: c > 0
+		valid_row: r >= 0
+		valid_column: c >= 0
 	do
 		row := r
 		col := c

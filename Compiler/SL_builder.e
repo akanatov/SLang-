@@ -284,7 +284,7 @@ feature {None}
 		is_executable: (sysDsc.entry /= Void and then sysDsc.entry.item (1) = '*') and sysDsc.from_paths = Void
 	local
 	do
-		not_implemented_yet ("Building all files")
+		Result := library_build_failed(sysDsc)
 	end -- obj_files_build_failed
 
 	executable_build_failed (sysDsc: SystemDescriptor): Boolean is
@@ -292,8 +292,43 @@ feature {None}
 		non_void_system_dsc: sysDsc /= Void
 		is_executable: sysDsc.entry /= Void and sysDsc.from_paths = Void
 	local
+		entryPointName: String
+		clusters: Array [ClusterDescriptor]
 	do
-		not_implemented_yet ("Building executable `" + sysDsc.name + "`")
+		-- Find entry point.
+		entryPointName := sysDsc.entry
+		if entryPointName.item (1) = entryPointName.item (1).as_upper then
+			-- Entry point is the unit name!
+			clusters := sysDsc.hasUnit (entryPointName)
+			if clusters = Void or else clusters.count = 0 then
+				-- Such unit is not found in the search universe !!!
+				o.putNL ("Error: root unit `" + entryPointName + "` is not found in the provided universe")
+			elseif clusters.count > 1 then
+				-- More than one unit is found in the search universe !!!
+				o.putNL ("Error: " + clusters.count.out + " versions of the root unit `" + entryPointName + "` found in the provided universe. Select only one to be used")
+			else
+not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "`")
+				-- Load it
+--				o.putLine ("Loading interface of the root `" + entryPointName + "`")
+--				Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
+--				if Result = Void then
+--					-- There was a problem to load unit interface 
+--					o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
+--				elseif fs.file_exists(Result.srcFileName) then
+--					-- Check if the unit source file was changed after unit IR was created. If necessary run the parser. 
+--					if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
+--						-- Ensure source file parsed
+--						Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
+--					end -- if
+--				else
+--					o.putNL ("Warning: source file for the root unit `" + unitPrintableName + "` is no longer in place")
+--				end -- if
+			end -- if	
+		else
+not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "`")
+			-- Entry point is the standaloe procedure name!
+			--sysDsc. findStandAloneRoutine
+		end -- if
 	end -- executable_build_failed
 	
 	library_build_failed (sysDsc: SystemDescriptor): Boolean is
@@ -308,8 +343,10 @@ feature {None}
 	do
 		folderName := "_$"
 		if sysDsc.name.is_equal ("*") then
+			-- Just set of object files to be built
 			folderName.append_string ("_OBJ")
 		else
+			-- All object files are to be put into the library one
 			folderName.append_string ("$" + sysDsc.name)
 		end -- if
 		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
@@ -324,7 +361,7 @@ feature {None}
 			until
 				i > n
 			loop
-				if unitsBuildFailed (sysDsc, from_paths.item (i), generators) then
+				if libraryBuildFailed (sysDsc, from_paths.item (i), generators) then
 					Result := True
 				end -- if
 				i := i + 1
@@ -336,7 +373,7 @@ feature {None}
 		end -- if
 	end -- library_build_failed
 
-	unitsBuildFailed (sysDsc: SystemDescriptor; path: String; generators: Array [CodeGenerator]): Boolean is
+	libraryBuildFailed (sysDsc: SystemDescriptor; path: String; generators: Array [CodeGenerator]): Boolean is
 	require
 		non_void_sd: sysDsc /= Void
 		non_void_path: path /= Void
@@ -346,11 +383,12 @@ feature {None}
 		ast_files: Array [Fsys_Dat]
 		fileDsc: Fsys_Dat
 		unitDsc: CompilationUnitUnit
-		rtnsDsc: CompilationUnitStandaloneRoutines
-		routines: Sorted_Array [StandaloneRoutineDescriptor]
+		rtnDsc: CompilationUnitStandaloneRoutine
+		--rtnsDsc: CompilationUnitStandaloneRoutines
+		--routines: Sorted_Array [StandaloneRoutineDescriptor]
 		i, n: Integer
 		j, m: Integer
-		k, l: Integer
+		--k, l: Integer
 	do
 		ir_path := path + fs.separator + IRfolderName
 		if fs.folderExists (ir_path) then
@@ -375,7 +413,7 @@ end -- debug
 	--					if cuDsc.unit.name.is_equal () then
 							-- That is not alias code
 							unitDsc.attachSystemDescription (sysDsc)
-							if unitDsc.unit.is_invalid (unitDsc, o) then
+							if unitDsc.unit.isInvalid (unitDsc, o) then
 								Result := True
 							else
 								from
@@ -393,34 +431,48 @@ end -- debug
 						Result := True
 					end -- if				
 				elseif fileDsc.name.has_substring (RoutinesSuffix) then 
-					create rtnsDsc.make 
-					if rtnsDsc.RoutinesIR_Loaded (fileDsc.path, o) then
-						rtnsDsc.attachSystemDescription (sysDsc)
+					create rtnDsc.make 
+					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
+						rtnDsc.attachSystemDescription (sysDsc)
 debug
-	trace ("Standalone routines loaded from file `" + ast_files.item (i).path + "`")
+	trace ("Standalone routine loaded from file `" + ast_files.item (i).path + "`")
 end -- debug
-						from
-							routines := rtnsDsc.routines
-							k := 1
-							l := routines.count
-						until
-							k > l
-						loop
-							if routines.item (k).is_invalid (unitDsc, o) then
-								Result := True
-							else
-								from
-									j := 1
-									m := generators.count
-								until
-									j > m
-								loop
-									routines.item (k).generate(generators.item (j))
-									j := j + 1
-								end -- loop
-							end -- if
-							k := k + 1
-						end -- loop
+						if rtnDsc.routine.isInvalid (rtnDsc, o) then
+							Result := True
+						else
+							from
+								j := 1
+								m := generators.count
+							until
+								j > m
+							loop
+								rtnDsc.routine.generate(generators.item (j))
+								j := j + 1
+							end -- loop
+						end -- if
+
+						--from
+						--	routines := rtnsDsc.routines
+						--	k := 1
+						--	l := routines.count
+						--until
+						--	k > l
+						--loop
+						--	if routines.item (k).is_invalid (unitDsc, o) then
+						--		Result := True
+						--	else
+						--		from
+						--			j := 1
+						--			m := generators.count
+						--		until
+						--			j > m
+						--		loop
+						--			routines.item (k).generate(generators.item (j))
+						--			j := j + 1
+						--		end -- loop
+						--	end -- if
+						--	k := k + 1
+						--end -- loop
 					else
 						Result := True
 					end -- if				
@@ -428,7 +480,7 @@ end -- debug
 				i := i + 1
 			end -- loop
 		end -- if
-	end -- unitsBuildFailed
+	end -- libraryBuildFailed
 
 trace (message: String ) is
 do
