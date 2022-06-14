@@ -9994,7 +9994,7 @@ feature {Any}
 				from
 					i := 1
 				until
-					i < n
+					i > n
 				loop
 					if parameters.item (i).is_equal (other.parameters.item (i)) then
 						i := i + 1
@@ -10009,21 +10009,36 @@ feature {Any}
 	infix "<"(other: like Current): Boolean is
 	local	
 		i, n, m: Integer
+		checkParameters: Boolean
 	do
-		if returnType /= Void and then other.returnType /= Void then
-			Result := returnType < other.returnType
-		else
-			Result := returnType = Void and then other.returnType /= Void
-		end -- if
-		if Result then
+		if returnType = Void then
+			if other.returnType = Void then
+				checkParameters := True
+			else
+				Result := True
+			end -- if
+		elseif other.returnType /= Void then
+			if returnType < other.returnType then
+				Result := True
+			elseif returnType.is_equal (other.returnType) then
+				checkParameters := True
+			end -- if
+		end -- if		
+
+		--if returnType /= Void and then other.returnType /= Void then
+		--	Result := returnType < other.returnType
+		--else
+		--	Result := returnType = Void and then other.returnType /= Void
+		--end -- if
+		
+		if checkParameters then
 			n := parameters.count
 			m := other.parameters.count
-			Result := n < m
-			if not Result and then n = m then
+			if n = m then
 				from
 					i := 1
 				until
-					i < n
+					i > n
 				loop
 					if parameters.item (i) < other.parameters.item (i) then
 						Result := True
@@ -10034,6 +10049,8 @@ feature {Any}
 						i := n + 1
 					end -- if
 				end -- loop
+			else
+				Result := n < m
 			end -- if
 		end -- if
 	end -- infix <

@@ -51,19 +51,19 @@ feature
 		file_name_not_void: fileName /= Void
 	local
 		wasError: Boolean
-		aFile: File
+		--aFile: File
 	do
 		if wasError then
 			status := -1
 		else
 			status := genStart (fileName, buildExecutable)
 -- Temporary while C code gen does not work
-			if fs.file_exists (fileName) then
-				fs.remove_file (fileName)
-			end -- if
-			create aFile.make_create_read_write (fileName)
-			aFile.close
-			status := 1
+			--if fs.file_exists (fileName) then
+			--	fs.remove_file (fileName)
+			--end -- if
+			--create aFile.make_create_read_write (fileName)
+			--aFile.close
+			--status := 1
 		end -- if
 	rescue
 		wasError := True

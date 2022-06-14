@@ -1,6 +1,6 @@
-val unit Real extend Float [Platform.RealBitsCount]
-	epsilon: Real is RealMinMantissa * 10 ** -RealMaxOrder
-	{} RealMaxMantissa is 2 ** Platform.RealMantissaBitsCount - 1
-	{} RealMinMantissa is 0.000001 /// TBD
-	{} RealMaxOrder is 2 ** Platform.RealOderBitsCount - 1
+val unit Real //extend Float [Platform.realBitsCount]
+//	epsilon: Real is realMinMantissa * 10 ** -realMaxOrder
+	{} realMaxMantissa is 2 ** Platform.realMantissaBitsCount - 1
+	{} realMinMantissa is 0.000001
+	{} realMaxOrder is 2 ** Platform.realOderBitsCount - 1
 end

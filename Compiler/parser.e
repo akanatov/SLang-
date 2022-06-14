@@ -5066,6 +5066,9 @@ end
 		--	-- syntax_error (<<scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token>>)
 		--	-- create Result.init (Void, Void)
 		end -- inspect
+		debug
+			--trace ("Signature: " + Result.out)
+		end -- debug
 	end -- parseSignature1
 	
 	parseAnchorType (checkSemicolonAfter: Boolean): AnchoredCommonDescriptor is
@@ -5689,7 +5692,7 @@ end
 	-- type_name          as                   identifier          (         identifier|constant rtn
 	local
 		nmdDsc: NamedTypeDescriptor 
-		typeDsc: UnitTypeCommonDescriptor
+		unitTypeDsc: UnitTypeCommonDescriptor
 --pos: Integer
 	do
 debug
@@ -5712,25 +5715,25 @@ end
 					-- ConstantExpression [“{”OperatorName ConstantExpression"}"] “..” ConstantExpression
 -- Need to think about the new verison of RangeType
 					-- It could be RangeType when all identifiers are in fact constants!!!
-					typeDsc ?= nmdDsc
-					if typeDsc = Void then
+					unitTypeDsc ?= nmdDsc
+					if unitTypeDsc = Void then
 						-- G | - incorrect multi-type
 						validity_error( "Multi-type should not contain formal genric parameter `" + nmdDsc.name + "`") 
 					else
-						Result := parseMultiType (typeDsc, checkSemicolonAfter)
+						Result := parseMultiType (unitTypeDsc, checkSemicolonAfter)
 					end -- if
 				when scanner.period_token then
 					-- RangeType: 
 					-- 	(ConstantExpression “..”ConstantExpression)
 					-- 	|
 					-- 	(ConstantExpression {“|” ConstantExpression})
-					typeDsc ?= nmdDsc
-					if typeDsc = Void then
+					unitTypeDsc ?= nmdDsc
+					if unitTypeDsc = Void then
 						validity_error( "Range-type should not contain formal genric parameter `" + nmdDsc.name + "`") 
-					elseif typeDsc.generics.count = 0 then
-						Result := parseRangeType1 (typeDsc, checkSemicolonAfter)
+					elseif unitTypeDsc.generics.count = 0 then
+						Result := parseRangeType1 (unitTypeDsc, checkSemicolonAfter)
 					else
-						Result := typeDsc
+						Result := unitTypeDsc
 						-- Let it be found at next step
 						--syntax_error ( <<>>)
 					end -- if
@@ -5786,11 +5789,11 @@ end
 --if pos <=  0 then
 --trace ("#3 To add `" + Result.out + "` after pos " + (-pos).out)
 --end -- if
-			typeDsc ?= Result
-			if typeDsc = Void then
+			unitTypeDsc ?= Result
+			if unitTypeDsc = Void then
 				Result ?= register_type (Result)
 			else
-				Result ?= register_named_type (typeDsc)
+				Result ?= register_named_type (unitTypeDsc)
 			end -- if
 			check
 				type_registred: Result /= Void
@@ -6174,6 +6177,9 @@ end -- debug
 		non_void_type: aType /= Void
 	do
 		Result := ast.typePool.add_it (aType)
+debug
+	--trace ("Registering type: " + Result.out)
+end
 	ensure
 		non_void_registered_type: Result /= Void		
 	end -- register_type
@@ -6437,7 +6443,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							end -- if
 						end -- if
 					else
-						syntax_error (<<scanner.identifier_token>>)
+						syntax_error (<<scanner.type_name_token>>)
 						toLeave := True
 					end -- if
 				--else
@@ -6596,7 +6602,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 										commaFound := False
 									end -- if
 								else
-									syntax_error (<<scanner.identifier_token>>)
+									syntax_error (<<scanner.type_name_token>>)
 									toLeave := True
 									wasError := True
 								end -- if
@@ -6725,7 +6731,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					end -- if
 				when scanner.comma_token then 
 					if commaFound then
-						syntax_error (<<scanner.identifier_token>>)
+						syntax_error (<<scanner.type_name_token>>)
 					else
 						scanner.nextToken
 						commaFound := True
@@ -6733,7 +6739,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				else
 					if scanner.visibilityEnd then
 						if commaFound then
-							syntax_error (<<scanner.identifier_token>>)
+							syntax_error (<<scanner.type_name_token>>)
 						else
 							scanner.nextToken
 							Result := svDsc
@@ -6742,9 +6748,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					else
 						if commaFound then
 							if scanner.Cmode then
-								syntax_error (<<scanner.identifier_token, scanner.right_square_bracket_token>>)
+								syntax_error (<<scanner.type_name_token, scanner.right_square_bracket_token>>)
 							else
-								syntax_error (<<scanner.identifier_token, scanner.right_curly_bracket_token>>)
+								syntax_error (<<scanner.type_name_token, scanner.right_curly_bracket_token>>)
 							end -- if
 						else
 							syntax_error (<<scanner.comma_token>>)
@@ -6762,9 +6768,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				Result := noneDsc
 				scanner.nextToken
 			elseif scanner.Cmode then
-				syntax_error (<<scanner.identifier_token, scanner.right_square_bracket_token, scanner.this_token>>)
+				syntax_error (<<scanner.type_name_token, scanner.right_square_bracket_token, scanner.this_token>>)
 			else
-				syntax_error (<<scanner.identifier_token, scanner.right_curly_bracket_token, scanner.this_token>>)
+				syntax_error (<<scanner.type_name_token, scanner.right_curly_bracket_token, scanner.this_token>>)
 			end -- if
 		end -- inspect
 	end -- parseMemberVisibility
@@ -6984,6 +6990,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					-- parse "override UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]"
 					create utnDsc.init (ident, Void)
 					utnDsc ?= register_type (utnDsc)
+					check
+						unit_type_registered: utnDsc /= Void
+					end -- check
 					parseInheritedOverrideTail (utnDsc, unitDsc)
 				else
 					if scanner.genericsStart then
@@ -7155,6 +7164,9 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 								else
 									utnDsc := utnDsc1
 								end -- if
+debug
+	--trace ("new " + utnDsc.out + " ?")
+end -- debug								
 								inspect	
 									scanner.token
 								-- when scanner.colon_token, scanner.left_paranthesis_token then
@@ -7266,7 +7278,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				scanner.nextToken
 				inspect
 					scanner.token
-				when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+				when scanner.identifier_token, scanner.operator_token,
 					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
 				then
 					operator := scanner.tokenString
@@ -7285,7 +7297,10 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						end -- if
 					end -- if
 				else
-					syntax_error (<<scanner.identifier_token>>)
+					syntax_error (<<
+						scanner.identifier_token, scanner.operator_token, scanner.implies_token, scanner.less_token,
+						scanner.greater_token, scanner.bar_token, scanner.tilda_token
+					>>)
 					wasError := True
 				end -- inspect
 			else
@@ -7337,7 +7352,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					scanner.nextToken
 					inspect
 						scanner.token
-					when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+					when scanner.identifier_token, scanner.operator_token,
 						scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
 					then
 						operator := scanner.tokenString
