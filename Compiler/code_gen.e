@@ -75,11 +75,11 @@ feature
 	--do
 	--	Result := status = 1
 	--end -- ready
-feature {None}
-	fs: FileSystem is
-	once
-		create Result
-	end
+--feature {None}
+--	fs: FileSystem is
+--	once
+--		create Result
+--	end -- fs
 invariant
 	valid_generator_status: -1 <= status and then status <= 1
 end -- class CodeGenerator

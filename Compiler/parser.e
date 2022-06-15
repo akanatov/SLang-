@@ -6130,14 +6130,25 @@ end
 					Result := nmdDsc
 				else
 					utd ?= nmdDsc
-					check
-						valid_type: utd /= Void
-					end -- check
-					create {UnitTypeDescriptor} Result.init (isRef, isVal, isConcurrent, utd.name, utd.generics)
-					Result ?= register_type (Result)
-					check
-						type_registred: Result /= Void
-					end -- check
+					--check
+					--	valid_type: utd /= Void
+					--end -- check
+					if utd = Void then
+						-- ref|val|concurrent FormalGenericName
+						if isRef then
+							validity_error ("Formal generic parameter cannot be used as `ref " + nmdDsc.name + "`")
+						elseif isVal then
+							validity_error ("Formal generic parameter cannot be used as `val " + nmdDsc.name + "`")
+						else -- isConcurrent
+							validity_error ("Formal generic parameter cannot be used as `concurrent " + nmdDsc.name + "`")
+						end -- if
+					else
+						create {UnitTypeDescriptor} Result.init (isRef, isVal, isConcurrent, utd.name, utd.generics)
+						Result ?= register_type (Result)
+						check
+							type_registred: Result /= Void
+						end -- check
+					end -- if
 				end -- if
 			end -- if
 		else
@@ -6151,10 +6162,10 @@ end
 		non_void_type: nmdType /= Void
 	local
 		fgtDsc: FormalGenericTypeNameDescriptor
-		commonDsc: UnitTypeCommonDescriptor
+		unitTypeDsc: UnitTypeCommonDescriptor
 	do
-		commonDsc ?= nmdType
-		if ast.fgTypes /= Void and then commonDsc /= Void and then commonDsc.generics.count = 0 then
+		unitTypeDsc ?= nmdType
+		if ast.fgTypes /= Void and then unitTypeDsc /= Void and then unitTypeDsc.generics.count = 0 then
 			create fgtDsc.init (nmdType.name)
 			fgtDsc ?= ast.typePool.search (fgtDsc)
 			if fgtDsc = Void then
