@@ -27,6 +27,10 @@ feature {Any}
 	do
 		Result.set_rc (row, col)
 	end -- toSourcePosition
+	isClear: Boolean is
+	do
+		Result := row = 0 and then col = 0
+	end -- isClear
 invariant
 	valid_column: col >= 0
 end -- class SourcePosition
@@ -39,6 +43,7 @@ feature {Any}
 	tokenRow: Integer -- current token row
 	tokenCol: Integer -- current token column
 	buffer: String
+
 	init (t, r, c: Integer; b: String) is
 	do
 		token:= t

@@ -6122,6 +6122,7 @@ end
 			justType := True
 		end -- inspect
 		if scanner.token = scanner.type_name_token then
+			setConstructionStart
 			nmdDsc := parseUnitTypeName2(checkSemicolonAfter)
 			--utd := parseUnitTypeName2(checkSemicolonAfter)
 			if nmdDsc /= Void then
@@ -6151,6 +6152,7 @@ end
 					end -- if
 				end -- if
 			end -- if
+			clearConstructionStart			
 		else
 			syntax_error (<<scanner.type_name_token>>)
 		end -- if
@@ -7765,7 +7767,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					if scanner.token = scanner.identifier_token then
 						create tmpDsc.init (False, True, scanner.tokenString)
 						if not aResult.added (tmpDsc) then
+							setConstructionStart
 							validity_error( "Duplicated attribute declaration `" + attrDsc.name + "`") 
+							clearConstructionStart
 							wasError := True
 						end -- if
 						scanner.nextToken							
@@ -7786,7 +7790,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					if scanner.token = scanner.identifier_token then
 						create tmpDsc.init (True, False, scanner.tokenString)
 						if not aResult.added (tmpDsc) then
+							setConstructionStart
 							validity_error( "Duplicated attribute declaration `" + attrDsc.name + "`") 
+							clearConstructionStart
 							wasError := True
 						end -- if
 						scanner.nextToken							
@@ -7805,7 +7811,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					commaFound := False
 					create tmpDsc.init (False, False, scanner.tokenString)
 					if not aResult.added (tmpDsc) then
+						setConstructionStart
 						validity_error( "Duplicated attribute declaration `" + attrDsc.name + "`") 
+						clearConstructionStart
 						wasError := True
 					end -- if
 					scanner.nextToken							
@@ -9092,6 +9100,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		ast.setFGpool (Void)
 		currentUnitDsc := Void
 	end -- parseUnit
+
 	
 feature {None}
 
@@ -9118,6 +9127,18 @@ feature {None}
 		end -- if
 	end -- validityError
 	
+	constructionStart: expanded SourcePosition
+	
+	setConstructionStart is
+	do
+		constructionStart := scanner.source_position
+	end -- setConstructionStart
+	
+	clearConstructionStart is
+	do
+		constructionStart.set_rc(0, 0)
+	end -- clearConstructionStart
+	
 	validity_error (message: String) is
 	require
 		message_not_void: message /= Void		
@@ -9126,9 +9147,13 @@ feature {None}
 			o.newLine
 		end -- if
 		errorsCount := errorsCount + 1
-		--o.putNL ("Error at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - " + message)
-		o.putNL ("Error at line " + scanner.tokenRow.out + " - " + message)
+		if constructionStart.isClear then
+			o.putNL ("Error at line " + scanner.tokenRow.out + " - " + message)
+		else
+			o.putNL ("Error at " + constructionStart.row.out + ":" + constructionStart.col.out + " - " + message)
+		end -- if
 	end -- validity_error
+
 	validity_warning (message: String) is
 	require
 		message_not_void: message /= Void
@@ -9137,8 +9162,11 @@ feature {None}
 			o.newLine
 		end -- if
 		warningsCount := warningsCount + 1
-		-- o.putNL ("Warning at " + scanner.tokenRow.out.out + ":" + scanner.tokenCol.out + " - " + message)
-		o.putNL ("Warning at line " + scanner.tokenRow.out.out + " - " + message)
+		if constructionStart.isClear then
+			o.putNL ("Warning at line " + scanner.tokenRow.out + " - " + message)
+		else
+			o.putNL ("Warning at " + constructionStart.row.out + ":" + constructionStart.col.out + " - " + message)
+		end -- if
 	end -- validity_warning
 	
 	syntax_error (tokens_expected: Array [Integer]) is
