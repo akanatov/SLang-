@@ -1,5 +1,5 @@
-unit A[G]
-	attr: val G
+unit A[G] // Negative test
+/*	attr: val G
 	attr: ref G
-	attr: concurrent G
+	attr: concurrent G */
 end

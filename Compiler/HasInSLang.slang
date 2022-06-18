@@ -38,7 +38,7 @@ end
 while animal in (Duck, Sparrow, Whale) do
 	animal.fly
 end
-// type of animal is Duck|Sparrow|Whale - no need to look for the neart common ancestor - find among types tops in terms fcomfrmnace and build of them multitype !!!
+// type of animal is Duck|Sparrow|Whale - no need to look for the nearest common ancestor - find among types tops in terms of conformance and build of them multitype !!!
 
 /*
 unit Duck

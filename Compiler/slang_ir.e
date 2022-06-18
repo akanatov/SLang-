@@ -3327,7 +3327,11 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
-	end -- isInvalid
+		if typeConstraint /= Void and then typeConstraint.isInvalid (context, o) then
+			Result := True
+		end -- if
+	end -- is_invalid
+	
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -3409,6 +3413,9 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
+		if type.isInvalid (context, o) then
+			Result := True
+		end -- if		
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -3427,6 +3434,9 @@ end -- debug
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+		if type.isNotLoaded (context, o) then
+			Result := True
+		end -- if		
 	end -- isNotLoaded
 
 
@@ -9639,7 +9649,11 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
-	end -- isInvalid
+		if realType.isInvalid (context, o) then
+			Result := True
+		end -- if
+	end -- is_invalid
+	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -9652,6 +9666,9 @@ end -- debug
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
+		if realType.isNotLoaded (context, o) then
+			Result := True
+		end -- if
 	end -- isNotLoaded
 	
 invariant
@@ -9878,7 +9895,7 @@ end -- debug
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
-		-- There is nothign to load for routine type
+		-- There is nothing to load for the routine type - really ?		
 	end -- isNotLoaded
 	
 	sameAs (other: like Current): Boolean is
@@ -10297,6 +10314,7 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
+		-- Values should be of the same common ancestor type ... ?
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -10472,7 +10490,8 @@ end -- debug
 	end -- generate
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	do
+	do	
+		-- do nothing so far. Or we need to have signature types loaded ...
 	end -- isNotLoaded
 
 	sameAs (other: like Current): Boolean is
@@ -10564,7 +10583,7 @@ feature {Any}
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
 		--notValid: Boolean
-		--i, n: Integer
+		i, n: Integer
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
@@ -10573,7 +10592,18 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
-	end -- isInvalid
+		from
+			i := 1
+			n := types.count
+		until
+			i > n
+		loop
+			if types.item(i).isInvalid (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -10714,7 +10744,9 @@ end -- debug
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
-		Result := type.isNotLoaded (context, o)
+		if type.isNotLoaded (context, o) then
+			Result := True
+		end -- if
 	end -- isNotLoaded
 
 invariant
@@ -10837,7 +10869,7 @@ feature {Any}
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
 		--notValid: Boolean
-		--i, n: Integer
+		i, n: Integer
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
@@ -10846,7 +10878,18 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
-	end -- isInvalid
+		from
+			i := 1
+			n := fields.count
+		until
+			i > n
+		loop
+			if fields.item (i).isInvalid (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop		
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -10900,7 +10943,9 @@ feature
 	type: NamedTypeDescriptor -- UnitTypeCommonDescriptor
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
-		Result := type.isNotLoaded (context, o)
+		if type.isNotLoaded (context, o) then
+			Result := True
+		end -- if
 	end -- isNotLoaded
 	generate (cg: CodeGenerator) is
 	do
@@ -10911,6 +10956,9 @@ feature
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
+		if type.IsInvalid (context, o) then
+			Result := True
+		end -- if
 	end -- checkValidity
 invariant
 	non_void_type: type /= Void
