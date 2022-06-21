@@ -1096,7 +1096,7 @@ end -- debug
 						validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 					end -- if					
 				else
-					parameters := parseParameters1 -- (False)
+					parameters := parseParameters1 (True)
 					if parameters /= Void then
 						rtnDsc ?= parseAnyRoutine (False, False, False, False, name, Void, Void, True, False, parameters, False)			
 						if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
@@ -4388,7 +4388,7 @@ end
 --			end -- if
 			if scanner.token = scanner.left_paranthesis_token then
 				-- scanner.nextToken
-				parameters := parseParameters
+				parameters := parseParameters (isStandAlone)
 			end -- if
 			inspect
 				scanner.token
@@ -4647,7 +4647,7 @@ end
 		end -- if
 	end -- parseMultiVarParameter
 
-	parseParameterBlock: Array [ParameterDescriptor] is
+	parseParameterBlock (isStandAlone: Boolean): Array [ParameterDescriptor] is
 	-- Parameter: ([[rigid] Identifier{“,” [rigid] Identifier} “:” Type)|(Identifier “is” Expression|(“:=” [Identifier]))
 	-- Just put them all into array!!!
 	require
@@ -4660,8 +4660,8 @@ end
 		name: String
 	do
 debug
---	trace (">> parseParameterBlock")
-end
+	--trace (">> parseParameterBlock")
+end -- debug
 		inspect
 			scanner.token
 		when scanner.identifier_token then
@@ -4681,12 +4681,14 @@ end
 			when scanner.colon_token then
 				-- ident : Type
 				if initialisedParFound then
-					validity_error( "Initialised parameter should not be followed by the non-initilized one `" + name + "`")
+					validity_error( "Initialised parameter should not be followed by the non-initilized one called `" + name + "`")
 				end -- if
 				scanner.nextToken
 				typeDsc := parseTypeDescriptorWithSemicolon
 				if typeDsc /= Void then
---trace ("Parameter: " + name + ": " + typeDsc.out)
+debug
+	--trace ("Parameter: " + name + ": " + typeDsc.out)
+end -- debug
 					create namedParDsc.init (False, name, typeDsc)
 					Result := <<namedParDsc>>
 				end -- if
@@ -4694,7 +4696,7 @@ end
 				-- ident , ....
 				--         ^
 				if initialisedParFound then
-					validity_error( "Initialised parameter should not be followed by the non-initilized one `" + name + "`")
+					validity_error( "Initialised parameter should not be followed by the non-initilized one called `" + name + "`")
 				end -- if
 				create namedParDsc.init (False, name, asThisType)
 				scanner.nextToken
@@ -4709,12 +4711,14 @@ end
 			-- ^
 			Result := parseMultiVarParameter (<<>>)
 		end -- inspect
---trace ("parameter block parsed")
+debug
+	--trace ("parameter block parsed")
+end -- debug
 	end -- parseParameterBlock
 	
 	initialisedParFound: Boolean
 	
-	parseParameters: Array [ParameterDescriptor] is
+	parseParameters (isStandAlone: Boolean): Array [ParameterDescriptor] is
 	-- Parameters: “(”[Parameter{”;””|”,” Parameter}]“)”
 	--              ^
 	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(":=" [Identifier]))
@@ -4727,7 +4731,7 @@ end
 		inspect 
 			scanner.token
 		when scanner.var_token, scanner.identifier_token, scanner.assignment_token then
-			Result := parseParameters1
+			Result := parseParameters1 (isStandAlone)
 		when scanner.right_paranthesis_token then
 			scanner.nextToken
 			Result := <<>>
@@ -4738,7 +4742,7 @@ end
 		end -- if
 	end -- parseParameters
 
-	parseParameters1: Array [ParameterDescriptor] is
+	parseParameters1 (isStandAlone: Boolean): Array [ParameterDescriptor] is
 	-- Parameters: Parameter{”;””|”,” Parameter}“)”
 	--             ^
 	-- Parameter: ([[var] Identifier{“,” [var] Identifier} “:” Type)|(Identifier “is” Expression|(“:=” [Identifier]))
@@ -4762,17 +4766,26 @@ end
 		until
 			toLeave
 		loop
+debug
+	if Result.count > 0 then
+		--trace (">> parseParameter: " + Result.item (Result.count).out)
+	end -- if
+end -- debug
 			inspect 
 				scanner.token 
 			when scanner.assignment_token then 
-				parFound := True
-				scanner.nextToken
+				parFound := True				
+				scanner.nextWithSemicolon (True)
 				if scanner.token = scanner.identifier_token then
 					name := scanner.tokenString
 					if not pars.added (name) then
-						validity_error( "Duplicated parameter declaration ':= " + name + "`")
+						validity_error( "Duplicated parameter declaration `:= " + name + "`")
 						wasError := True
 					end -- if							
+					if isStandAlone then
+						validity_error( "Standalone rotuine should not have parameter declaration in the form of `:= " + name + "`")
+						wasError := True
+					end -- if
 					create {AssignAttributeParameterDescriptor} parDsc.init (name) --, genAssignment)
 					Result.force (parDsc, Result.count + 1)
 					scanner.nextWithSemicolon (True)
@@ -4780,13 +4793,17 @@ end
 					validity_error( "Duplicated parameter declaration ':='")
 					wasError := True
 				else
+					if isStandAlone then
+						validity_error( "Standalone rotuine should not have parameter declaration in the form of `:=`")
+						wasError := True
+					end -- if
 					assignSingleFound := True
 					create {AssignAttributeParameterDescriptor} parDsc.init ("") 
 					Result.force (parDsc, Result.count + 1)
 				end -- if
 			when scanner.identifier_token, scanner.rigid_token then 
 				parFound := True
-				parBlock := parseParameterBlock
+				parBlock := parseParameterBlock (isStandAlone)
 				if parBlock = Void then
 					toLeave := True
 					wasError := True
@@ -4831,7 +4848,9 @@ end
 		if wasError then
 			Result := Void
 		end -- if
--- trace ("<< parseParameters1")
+debug
+	-- trace ("<< parseParameters1")
+end -- debug
 	end -- parseParameters1
 
 	parseUseConst: Sorted_Array[UnitTypeNameDescriptor] is
@@ -7089,7 +7108,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		scanner.nextToken
 		if scanner.token = scanner.left_paranthesis_token then
 			-- scanner.nextToken
-			parameters := parseParameters
+			parameters := parseParameters (False)
 		end -- if
 		if scanner.token = scanner.use_token then
 			ucb := parseEnclosedUseDirective
@@ -7719,7 +7738,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			scanner.token
 		when scanner.left_paranthesis_token then
 			-- Parameters HyperBlock
-			parameters := parseParameters
+			parameters := parseParameters (False)
 			inspect
 				scanner.token
 			when scanner.require_token then

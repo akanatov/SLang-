@@ -1,4 +1,4 @@
-unit Real  extend Float [Platform.RealBitsCount] 
+unit Real  extend Float [Platform.realBitsCount] 
 foo do end
 	//minReal: Real is -RealMaxMantissa * 10 ** RealMaxOrder
 end
