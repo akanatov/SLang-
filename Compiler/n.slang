@@ -1,4 +1,6 @@
-1
-0xFF
-0o77
-0b100
+decimal is 1
+hex is 0xFF
+octa is 0o77
+binary is 0b100
+
+

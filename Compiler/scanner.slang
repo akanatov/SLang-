@@ -662,7 +662,7 @@ unit SLang_Scanner
 					else
 						setTokenNoRead (dot_token)
 					end
-				: '"' do // start of String constant
+				: '"' // start of String constant
 					toLeave := false
 					while pos <= size and then not toLeave do
 						getNextChar
@@ -841,7 +841,7 @@ unit SLang_Scanner
 					while pos <= size and then not toLeave do
 						getNextChar
 						if ch
-						: 'A'..'Z', 'a'..'z', '0'..'9', '_' do
+						: 'A'..'Z', 'a'..'z', '0'..'9', '_'
 							buffer.append_character (ch)
 						else
 							toRead := false						 
