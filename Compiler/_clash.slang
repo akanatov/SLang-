@@ -6,5 +6,5 @@ end
 unit B extend A
 end
 
-A: B do
-end
+/*A: B do
+end */

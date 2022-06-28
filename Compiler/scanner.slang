@@ -26,15 +26,15 @@ unit SLang_Scanner
 	tokenValue: ?Any // current token value, Void if not manifest constant
 	do
 		if token
-		case integer_const_token do
-			return integer_value
-		case real_const_token do
-			return buffer.to_real
-		case string_const_token do
-			return buffer 
-		case char_const_token do
-			return buffer (1)
-		else
+			:integer_const_token
+				return integer_value
+			:real_const_token
+				return buffer.to_real
+			:string_const_token
+				return buffer 
+			:char_const_token
+				return buffer (1)
+			else
 		end // if		
 	ensure
 		(return is Any) implies (
@@ -347,22 +347,22 @@ unit SLang_Scanner
 				setTokenNoRead (eof_token)
 			else
 				if ch 
-				case ';' do
+				: ';'
 					if returnSemicolon do
 						setToken (semicolon_token)
 						returnSemicolon := false
 					end // if
-				case '(' do
+				: '('
 					setToken (left_paranthesis_token)
-				case ')' do
+				: ')'
 					setToken (right_paranthesis_token)
-				case '?' do
+				: '?'
 					setToken (detach_token)				
-				case '|' do
+				: '|'
 					setToken (bar_token)
-				case ',' do
+				: ','
 					setToken (comma_token)
-				case '{' do
+				: '{'
 					//if styleC do
 					//	// C P
 					//	// { do
@@ -370,7 +370,7 @@ unit SLang_Scanner
 					//else
 						setToken (left_curly_bracket_token)
 					//end // if
-				case '}' do
+				: '}'
 					//if styleC do
 					//	// C P
 					//	// } end
@@ -378,7 +378,7 @@ unit SLang_Scanner
 					//else
 						setToken (right_curly_bracket_token)
 					//end // if
-				case '[' do
+				: '['
 					//if styleC do
 					//	// C P
 					//	// [ {
@@ -386,7 +386,7 @@ unit SLang_Scanner
 					//else
 						setToken (left_square_bracket_token)
 					//end // if
-				case ']' do
+				: ']'
 					//if styleC do
 					//	// C P
 					//	// ] }
@@ -394,11 +394,11 @@ unit SLang_Scanner
 					//else
 						setToken (right_square_bracket_token)
 					//end // if
-				case '~' do
+				: '~'
 					setToken (tilda_token)
-				case '-' do
+				: '-'
 					setToken (minus_token)
-				case 'A'..'Z', 'a'..'z' do // Bug in parser !!!
+				: 'A'..'Z', 'a'..'z' 
 					if toRead do
 						tokenRow := row
 						tokenCol := col
@@ -409,7 +409,7 @@ unit SLang_Scanner
 						setCharBuff (ch)
 						token := identifier_token
 					end // if
-				case '0' .. '9' do
+				: '0' .. '9'
 					if toRead do
 						tokenRow := row
 						tokenCol := col
@@ -442,7 +442,7 @@ unit SLang_Scanner
 			else
 				// Bug in parser
 				if ch 
-				 case '\t', ' ', ';' do
+				 : '\t', ' ', ';'
 					if buffer.count > 0 do
 						clear_buffer
 					end
@@ -459,12 +459,12 @@ unit SLang_Scanner
 				tokenCol := col
 				tokenRow := row
 				if ch 
-				case ' ' do // just skip
-				case '\r' do // step back the col counter
+				: ' ' // just skip
+				: '\r' // step back the col counter
 					col := col - 1
-				case '\t' do // just skip
+				: '\t' // just skip
 					col := col + tabSize - 1
-				case '\n' do
+				: '\n' 
 					row := row + 1
 					col := 0
 					if returnSemicolon do // newline is treated as separator as well where necessary
@@ -472,12 +472,12 @@ unit SLang_Scanner
 						ch := ';'
 						returnSemicolon := false
 					end // if
-				case ';' do
+				: ';' 
 					if returnSemicolon do
 						setToken (semicolon_token)
 						returnSemicolon := false
 					end // if
-				case ':' do
+				: ':' 
 					if pos <= size do
 						getNextChar
 						if ch = '=' do
@@ -488,7 +488,7 @@ unit SLang_Scanner
 					else
 						setTokenNoRead (colon_token)
 					end
-				case '/' do // may be a comment as well !!!
+				: '/'  // may be a comment as well !!!
 					if pos > size do
 						token := operator_token
 						setCharBuff ('/')
@@ -496,7 +496,7 @@ unit SLang_Scanner
 					else
 						getNextChar
 						if ch 
-						case '*' do // Multi-line comment start
+						: '*'  // Multi-line comment start
 							if buffer.count > 0 do
 								clear_buffer
 							end
@@ -506,7 +506,7 @@ unit SLang_Scanner
 							while pos <= size and then not toLeave do
 								getNextChar
 								if ch 
-								case '/' do
+								: '/'
 									if pos <= size do
 										getNextChar
 										if ch = '*' do
@@ -517,7 +517,7 @@ unit SLang_Scanner
 									else
 										buffer.append_character (ch)
 									end // if
-								case '*' do
+								: '*' 
 									if pos <= size do
 										getNextChar
 										if ch = '/' do
@@ -543,11 +543,11 @@ unit SLang_Scanner
 										toRead := false
 										toLeave := true
 									end	// if					
-								case '\n' do
+								: '\n' 
 									buffer.append_character ('\n')
 									row := row + 1
 									col := 0
-								case '\r' do
+								: '\r' 
 									buffer.append_character ('\r')
 								else
 									buffer.append_character (ch)
@@ -557,7 +557,7 @@ unit SLang_Scanner
 								token := illegal_token
 								toRead := false
 							end
-						case '/' do // One line comment
+						: '/'  // One line comment
 							token := comment_token
 							if buffer.count > 0 do
 								clear_buffer
@@ -566,8 +566,8 @@ unit SLang_Scanner
 							while pos <= size and then not toLeave do
 								getNextChar
 								if ch 
-								case '\r' do // just skip
-								case '\n' do // end of comemnt line
+								: '\r'  // just skip
+								: '\n'  // end of comemnt line
 									row := row + 1
 									col := 0
 									toLeave := true
@@ -584,8 +584,7 @@ unit SLang_Scanner
 									token := no_token_assigned							
 								end // if
 							end // if
-						// Bug in parser
-						case '=', '<', '>', '+', '-', '\', '^', '&', '|', '~' do
+						: '=', '<', '>', '+', '-', '\', '^', '&', '|', '~'
 							token := operator_token
 							setCharBuff ('/')
 							buffer.append_character (ch)
@@ -595,13 +594,13 @@ unit SLang_Scanner
 							toRead := false
 						end // if
 					end
-				case '=' , '<', '>', '+', '-', '*', '\', '^', '&' do // Bug in Parser
+				: '=' , '<', '>', '+', '-', '*', '\', '^', '&' 
 					token := operator_token
 					setCharBuff (ch)
 					if pos <= size do
 						getNextChar
 						if ch 
-						case '=' , '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' do // Bug in Parser
+						: '=' , '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|'
 							buffer.append_character (ch)
 							if buffer.item (1) = '=' and then buffer.item (2) = '>' do
 								token := one_line_function_token
@@ -611,15 +610,15 @@ unit SLang_Scanner
 						else	
 							//if styleC do
 								if buffer.item (1)
-								case '<' do
+								: '<'
 									// C P
 									// < [
 									setToken (less_token)
-								case '>' do
+								: '>'
 									// C P
 									// > ]
 									setToken (greater_token)
-								case '-' do
+								: '-'
 									setToken (minus_token)
 								else
 								end // if
@@ -629,18 +628,18 @@ unit SLang_Scanner
 					else
 						toRead := false
 					end
-				case '(' do
+				: '('
 					setToken (left_paranthesis_token)
-				case ')' do
+				: ')' 
 					setToken (right_paranthesis_token)
-				case '?' do
+				: '?' 
 					setToken (detach_token)				
-				case '|' do
+				: '|' 
 					setCharBuff (ch)
 					if pos <= size do
 						getNextChar
 						if ch 
-						case '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' do // Bug in parser
+						: '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' 
 							buffer.append_character (ch)
 							token := operator_token
 						else	
@@ -651,11 +650,11 @@ unit SLang_Scanner
 						setToken (bar_token)
 						toRead := false
 					end // if
-				case '.' do
+				: '.'
 					if pos <= size do
 						getNextChar
 						if ch
-						case '.' do
+						: '.'
 							setToken (period_token)
 						else	
 							setTokenNoRead (dot_token)
@@ -663,27 +662,27 @@ unit SLang_Scanner
 					else
 						setTokenNoRead (dot_token)
 					end
-				case '"' do // start of String constant
+				: '"' do // start of String constant
 					toLeave := false
 					while pos <= size and then not toLeave do
 						getNextChar
 						if ch 
-						case '"' do
+						: '"' 
 							token := string_const_token
 							toLeave := true
-						case '\'  do // process control Characters in Slang source mode // Bug in parser
+						: '\'  // process control Characters in Slang source mode 
 							if systemMode do
 								buffer.append_character ('\')
 							elsif pos <= size do
 								getNextChar
 								if ch 
-								case 'n', 'N' do
+								: 'n', 'N'
 									buffer.append_character ('\n')
-								case 'r', 'R' do
+								: 'r', 'R' 
 									buffer.append_character ('\r')
-								case 't', 'T' do
+								: 't', 'T' 
 									buffer.append_character ('\t')
-								case '\' do
+								: '\' 
 									buffer.append_character ('\')
 								else	
 									token := illegal_token
@@ -705,18 +704,18 @@ unit SLang_Scanner
 						token := illegal_token
 						toRead := false
 					end
-				case '%' do // start of char constant
+				: '%'  // start of char constant
 					if pos <= size do
 						token := char_const_token
 						getNextChar
 						if ch
-						case '%' do
+						: '%' 
 							buffer := ""
-						case '\'  do // process control Characters!!!
+						: '\'  // process control Characters!!!
 							if pos <= size do
 								getNextChar
 								if ch 
-								case 'n', 'N' do
+								: 'n', 'N' 
 									buffer := "\n"
 									getNextChar
 									if ch /= '\' do
@@ -724,7 +723,7 @@ unit SLang_Scanner
 										token := illegal_token
 										toRead := false
 									end // if
-								case 'r', 'R' do
+								: 'r', 'R'
 									buffer := "\r"
 									getNextChar
 									if ch /= '\' do
@@ -732,7 +731,7 @@ unit SLang_Scanner
 										token := illegal_token
 										toRead := false
 									end // if
-								case 't', 'T' do
+								: 't', 'T'
 									buffer := "\t"
 									getNextChar
 									if ch /= '\' do
@@ -740,7 +739,7 @@ unit SLang_Scanner
 										token := illegal_token
 										toRead := false
 									end // if
-								case '\' do
+								: '\'
 									buffer := "\\"
 									getNextChar
 									if ch /= '\' do
@@ -748,7 +747,7 @@ unit SLang_Scanner
 										token := illegal_token
 										toRead := false
 									end // if
-								case '%' do
+								: '%' 
 									buffer := "\\"
 								else	
 									token := illegal_token
@@ -785,9 +784,9 @@ unit SLang_Scanner
 						buffer := "\\"
 						toRead := false
 					end	// if
-				case ',' do
+				: ','
 					setToken (comma_token)
-				case '{' do
+				: '{'
 					//if styleC do
 					//	// C P
 					//	// { do
@@ -795,7 +794,7 @@ unit SLang_Scanner
 					//else
 						setToken (left_curly_bracket_token)
 					//end // if
-				case '}' do
+				: '}' 
 					//if styleC do
 					//	// C P
 					//	// } end
@@ -803,7 +802,7 @@ unit SLang_Scanner
 					//else
 						setToken (right_curly_bracket_token)
 					//end // if
-				case '[' do
+				: '[' 
 					//if styleC do
 					//	// C P
 					//	// [ {
@@ -811,7 +810,7 @@ unit SLang_Scanner
 					//else
 						setToken (left_square_bracket_token)
 					//end // if
-				case ']' do
+				: ']' 
 					//if styleC do
 					//	// C P
 					//	// ] }
@@ -819,12 +818,12 @@ unit SLang_Scanner
 					//else
 						setToken (right_square_bracket_token)
 					//end // if
-				case '~' do
+				: '~' 
 					setCharBuff (ch)
 					if pos <= size do
 						getNextChar
 						if ch 
-						case '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' do
+						: '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' 
 							buffer.append_character (ch)
 							token := operator_token
 						else	
@@ -835,28 +834,28 @@ unit SLang_Scanner
 						setToken (tilda_token)
 						toRead := false
 					end // if
-				case 'A' .. 'Z', 'g', 'h', 'j', 'k', 'l', 'm', 'q', 'x', 'y', 'z' do // start of identifier
+				: 'A' .. 'Z', 'g', 'h', 'j', 'k', 'l', 'm', 'q', 'x', 'y', 'z' // start of identifier
 					token := identifier_token
 					setCharBuff (ch)
 					toLeave := false
 					while pos <= size and then not toLeave do
 						getNextChar
 						if ch
-						case 'A'..'Z', 'a'..'z', '0'..'9', '_' do
+						: 'A'..'Z', 'a'..'z', '0'..'9', '_' do
 							buffer.append_character (ch)
 						else
 							toRead := false						 
 							toLeave := true
 						end
 					end
-				case 'a' .. 'f', 'i', 'n', 'o', 'p', 'r'..'w' do // start of keyword or identifier
+				: 'a' .. 'f', 'i', 'n', 'o', 'p', 'r'..'w' // start of keyword or identifier
 					// or hex constant in form of ffffh which is not supported!
 					setCharBuff (ch)
 					toLeave := false
 					while pos <= size and then not toLeave do
 						getNextChar
 						if ch 
-						case 'A'..'Z', 'a'..'z', '0'..'9', '_' do
+						: 'A'..'Z', 'a'..'z', '0'..'9', '_'
 							buffer.append_character (ch)
 						else
 							toRead := false
@@ -864,7 +863,7 @@ unit SLang_Scanner
 						end
 					end // while
 					token := getKeywordPos
-				case '0' do // start of number constant
+				: '0'  // start of number constant
 					// 0x/X hex_number  example: 0xFFF51 
 					// 0b/B bit_number  example: 0b00001 
 					// 0o/O octa_number example: 0o77777
@@ -878,7 +877,7 @@ unit SLang_Scanner
 					if pos <= size do
 						getNextChar
 						if ch 
-						case 'x', 'X' do // hex constant
+						: 'x', 'X' // hex constant
 							toLeave := false
 							// setCharBuff ('0')
 							// buffer.append_character (ch)
@@ -887,7 +886,7 @@ unit SLang_Scanner
 							while pos <= size and then not toLeave do
 								getNextChar
 								if ch 
-								case '0'..'9', 'A'..'F', 'a'..'f' do
+								: '0'..'9', 'A'..'F', 'a'..'f'
 									buffer.append_character (ch)
 								else
 									token := integer_const_token
@@ -903,7 +902,7 @@ unit SLang_Scanner
 							elsif buffer.count = 0 do
 								token := illegal_token
 							end
-						case 'b', 'B' do // bit constant
+						: 'b', 'B' // bit constant
 							toLeave := false
 							// setCharBuff ('0')
 							// buffer.append_character (ch)
@@ -912,7 +911,7 @@ unit SLang_Scanner
 							while pos <= size and then not toLeave do
 								getNextChar
 								if ch 
-								case '0', '1' do
+								: '0', '1'
 									buffer.append_character (ch)
 								else
 									token := integer_const_token
@@ -928,7 +927,7 @@ unit SLang_Scanner
 							elsif buffer.count = 0 do
 								token := illegal_token
 							end
-						case 'o', 'O' do // octa constant
+						: 'o', 'O'  // octa constant
 							toLeave := false
 							// setCharBuff ('0')
 							// buffer.append_character (ch)
@@ -937,7 +936,7 @@ unit SLang_Scanner
 							while pos <= size and then not toLeave do
 								getNextChar
 								if ch 
-								case '0'..'7' do
+								: '0'..'7'
 									buffer.append_character (ch)
 								else
 									token := integer_const_token
@@ -962,18 +961,18 @@ unit SLang_Scanner
 							// 0any
 							setCharBuff ('0')
 							if	ch
-							case '0'..'9' do
+							: '0'..'9'
 								scan_number_constant 
-							case '.' do
+							: '.'
 								if pos <= size do
 									getNextChar
 									if ch 
-									case '.' do
+									: '.'
 										token := integer_const_token
 										integer_value := buffer.to_integer										
 										setdoextToken (period_token)
 										toRead := true
-									case '0'..'9' do // Real constant 0.digits
+									: '0'..'9' // Real constant 0.digits
 										token := real_const_token
 										foundE := false
 										foundEsign := false
@@ -983,9 +982,9 @@ unit SLang_Scanner
 										while pos <= size and then not toLeave do
 											getNextChar
 											if ch
-											case '0'..'9' do
+											: '0'..'9'
 												buffer.append_character (ch)
-											case 'e', 'E' do // not tested !!!
+											: 'e', 'E' // not tested !!!
 												if foundE do
 													toRead := false
 													toLeave := true
@@ -993,7 +992,7 @@ unit SLang_Scanner
 													buffer.append_character ('E')
 													foundE := true
 												end // if
-											case '+', '-' do
+											: '+', '-'
 												if foundE do
 													// one more bool flag is required ... to prevent 0.3E++//
 													if foundEsign do
@@ -1037,7 +1036,7 @@ unit SLang_Scanner
 						integer_value := buffer.to_integer
 						toRead := false
 					end
-				case '1' .. '9' do // start of number constant
+				: '1' .. '9' // start of number constant
 					scan_number_constant
 				else
 					buffer.append_character (ch)
@@ -1062,35 +1061,35 @@ unit SLang_Scanner
 		i is buffer.count
 		while i > 0 do
 			if buffer(i)
-			case '1' do
+			: '1'
 				integer_value := integer_value +  1 * factor
-			case '2' do
+			: '2'
 				integer_value := integer_value +  2 * factor
-			case '3' do
+			: '3'
 				integer_value := integer_value +  3 * factor
-			case '4' do
+			: '4'
 				integer_value := integer_value +  4 * factor
-			case '5' do
+			: '5'
 				integer_value := integer_value +  5 * factor
-			case '6' do
+			: '6'
 				integer_value := integer_value +  6 * factor
-			case '7' do
+			: '7'
 				integer_value := integer_value +  7 * factor
-			case '8' do
+			: '8'
 				integer_value := integer_value +  8 * factor
-			case '9' do
+			: '9'
 				integer_value := integer_value +  9 * factor
-			case 'A', 'a' do
+			: 'A', 'a'
 				integer_value := integer_value +  10 * factor
-			case 'B', 'b' do
+			: 'B', 'b'
 				integer_value := integer_value +  11 * factor
-			case 'C', 'c' do
+			: 'C', 'c'
 				integer_value := integer_value +  12 * factor
-			case 'D', 'd' do
+			: 'D', 'd'
 				integer_value := integer_value +  13 * factor
-			case 'E', 'e' do
+			: 'E', 'e'
 				integer_value := integer_value +  14 * factor
-			case 'F', 'f' do
+			: 'F', 'f'
 				integer_value := integer_value +  15 * factor
 			end // if
 			i := i - 1
@@ -1104,19 +1103,19 @@ unit SLang_Scanner
 		i is buffer.count
 		while i > 0 do
 			if buffer (i)
-			case '1' do
+			: '1'
 				integer_value := integer_value +  1 * factor
-			case '2' do
+			: '2'
 				integer_value := integer_value +  2 * factor
-			case '3' do
+			: '3'
 				integer_value := integer_value +  3 * factor
-			case '4' do
+			: '4'
 				integer_value := integer_value +  4 * factor
-			case '5' do
+			: '5'
 				integer_value := integer_value +  5 * factor
-			case '6' do
+			: '6'
 				integer_value := integer_value +  6 * factor
-			case '7' do
+			: '7'
 				integer_value := integer_value +  7 * factor
 			end // if
 			i := i - 1
@@ -1170,17 +1169,17 @@ unit SLang_Scanner
 		while pos <= size and then not toLeave do
 			getNextChar
 			if ch
-			case '0', '1' do
+			: '0', '1'
 				buffer.append_character (ch)
-			case '2'..'7' do
+			: '2'..'7'
 				isBitConst := false
 				buffer.append_character (ch)
-			case '8'..'9' do
+			: '8'..'9'
 				isBitConst := false
 				isOctaConst := false
 				buffer.append_character (ch)
 			////////////////////
-			case 'e', 'E' do// not tested !!!
+			: 'e', 'E' // not tested !!!
 				if foundE do
 					toRead := false
 					toLeave := true
@@ -1188,7 +1187,7 @@ unit SLang_Scanner
 					buffer.append_character ('E')
 					foundE := true
 				end // if
-			case '+', '-' do
+			: '+', '-'
 				if foundE do
 					// one more bool flag is required ... to prevent 0.3E++//
 					if foundEsign do
@@ -1203,15 +1202,15 @@ unit SLang_Scanner
 					toLeave := true
 				end // if
 			//////////////////////
-			case '.' do // Real or period or syntax error 
+			: '.' // Real or period or syntax error 
 				if pos <= size do
 					getNextChar
 					if ch
-					case '.' do
+					: '.'
 						setdoextToken (period_token)
 						toLeave := true
 						toRead := true
-					case '0'..'9' do // fractional part
+					: '0'..'9' // fractional part
 						isRealConst := true
 						isBitConst := false
 						isOctaConst := false
@@ -1276,15 +1275,15 @@ unit SLang_Scanner
 		first_ch is buffer (1)
 		buff_len is buffer.count
 		if first_ch 
-		case 'a' do // "alias", "as"
+		: 'a'  // "alias", "as"
 			if buff_len
-			case 2 do
+			: 2 
 				if buffer (2) = 's' do
 					return as_token
 				else
 					return identifier_token
 				end
-			case 5 do
+			: 5 
 				if buffer.is_equal (keywords (alias_token)) do
 					return alias_token
 				else
@@ -1293,15 +1292,15 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 'c' do // "concurrent", "const"
+		: 'c'  // "concurrent", "const"
 			if buff_len
-			case 5 do
+			: 5 
 				if buffer.is_equal (keywords (const_token)) do
 					return const_token
 				else
 					return identifier_token
 				end
-			case 10 do
+			: 10 
 				if buffer.is_equal (keywords (concurrent_token)) do
 					return concurrent_token
 				else
@@ -1310,7 +1309,7 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 'd' do // "do"
+		: 'd'  // "do"
 			if buff_len = 2 and then buffer (2) = 'o' do
 				if styleC do
 					return illegal_token // identifier_token
@@ -1320,9 +1319,9 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 'e' do // "else" 4, "elsif" -5, "end" - 3, "ensure" 6, "extend" - 6
+		: 'e'  // "else" 4, "elsif" -5, "end" - 3, "ensure" 6, "extend" - 6
 			if buff_len 
-			case 3 do // end
+			: 3 // end
 				if buffer (2) = 'n' and then buffer (3) = 'd' do
 					if styleC do
 						return illegal_token // identifier_token
@@ -1332,19 +1331,19 @@ unit SLang_Scanner
 				else
 					return identifier_token
 				end
-			case 4 do // else
+			: 4 // else
 				if buffer.is_equal (keywords (else_token)) do
 					return else_token
 				else
 					return identifier_token
 				end
-			case 5 do // elsif
+			: 5 // elsif
 				if buffer.is_equal (keywords (elsif_token)) do
 					return elsif_token
 				else
 					return identifier_token
 				end
-			case 6 do // "ensure", "extend"
+			: 6 // "ensure", "extend"
 				if buffer (2) = 'n' and then buffer.is_equal (keywords (ensure_token)) do
 					return ensure_token
 				elsif buffer (2) = 'x' and then buffer.is_equal (keywords (extend_token)) do
@@ -1355,15 +1354,15 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 'f' do // "final" - 5, "foreign" - 7
+		: 'f' // "final" - 5, "foreign" - 7
 			if buff_len
-			case 5 do
+			: 5 
 				if buffer.is_equal (keywords (final_token)) do
 					return final_token
 				else
 					return identifier_token
 				end
-			case 7 do
+			: 7 
 				if buffer.is_equal (keywords (foreign_token)) do
 					return foreign_token
 				else
@@ -1372,9 +1371,9 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 'i' do // "if", "in", "init", "is"
+		: 'i'  // "if", "in", "init", "is"
 			if buff_len
-			case 2 do
+			: 2 
 				if buffer (2) = 's' do
 					return is_token
 				elsif buffer (2) = 'f' do
@@ -1384,7 +1383,7 @@ unit SLang_Scanner
 				else
 					return identifier_token
 				end
-			case 4 do
+			: 4 
 				if buffer.is_equal (keywords (init_token)) do
 					return init_token
 				else
@@ -1393,21 +1392,21 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 'n' do // "new"
+		: 'n'  // "new"
 			if buff_len = 3 and then buffer (2) = 'e' and then buffer (3) = 'w' do
 				return new_token
 			else
 				return identifier_token
 			end
-		case 'o' do // "old", "override"
+		: 'o'  // "old", "override"
 			if buff_len
-			case 3 do
+			: 3 
 				if buffer (2) = 'l' and then buffer (3) = 'd' do
 					return old_token
 				else
 					return identifier_token
 				end
-			case 8 do
+			: 8 
 				if buffer.is_equal (keywords (override_token)) do
 					return override_token
 				else
@@ -1416,15 +1415,15 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 'p' do // "pure"
+		: 'p' // "pure"
 			if buff_len = 4 and then buffer (2) = 'u' and then buffer (3) = 'r' and then buffer (4) = 'e' do
 				return pure_token
 			else
 				return identifier_token
 			end
-		case 'r' do // "raise" - 5, "ref" - 3, "rename" - 6, "require" - 7, "return" - 6, "rigid" - 5, "rtn" - 3
+		: 'r' // "raise" - 5, "ref" - 3, "rename" - 6, "require" - 7, "return" - 6, "rigid" - 5, "rtn" - 3
 			if buff_len
-			case 3 do // ref rtn
+			: 3 // ref rtn
 				if buffer (2) = 'e' and then buffer (3) = 'f' do
 					return ref_token
 				elsif buffer (2) = 't' and then buffer (3) = 'n' do
@@ -1432,7 +1431,7 @@ unit SLang_Scanner
 				else
 					return identifier_token
 				end
-			case 5 do // raise rigid
+			: 5 // raise rigid
 				if buffer.is_equal (keywords (rigid_token)) do
 					return rigid_token
 				elsif buffer.is_equal (keywords (raise_token)) do
@@ -1440,13 +1439,13 @@ unit SLang_Scanner
 				else
 					return identifier_token
 				end
-			case 6 do // return
+			: 6 // return
 				if buffer.is_equal (keywords (return_token)) do
 					return return_token
 				else
 					return identifier_token
 				end
-			case 7 do // "require"
+			: 7 // "require"
 				if buffer.is_equal (keywords (require_token)) do
 					return require_token
 				else
@@ -1455,15 +1454,15 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 's' do // "safe", "select", "system"
+		: 's' // "safe", "select", "system"
 			if buff_len 
-			case 4 do
+			: 4 
 				if buffer (2) = 'a' and then buffer (3) = 'f' and then buffer (4) = 'e' do
 					return safe_token
 				else
 					return identifier_token
 				end
-			case 6 do
+			: 6 
 				if buffer.is_equal (keywords (select_token)) do
 					return select_token
 				elsif systemMode and then buffer.is_equal (keywords (system_token)) do
@@ -1474,21 +1473,21 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end			
-		case 't' do // "this"
+		: 't' // "this"
 			if buff_len = 4 and then buffer (2) = 'h' and then buffer (3) = 'i' and then buffer (4) = 's' do
 				return this_token
 			else
 				return identifier_token
 			end
-		case 'u' do // "unit", "use"
+		: 'u' // "unit", "use"
 			if buff_len
-			case 3 do
+			: 3 
 				if buffer (2) = 's' and then buffer (3) = 'e' do
 					return use_token
 				else
 					return identifier_token
 				end
-			case 4 do
+			: 4 
 				if buffer (2) = 'n' and then buffer (3) = 'i'  and then buffer (4) = 't' do
 					return unit_token
 				else
@@ -1497,9 +1496,9 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 'v' do // "val", "var", "virtual"
+		: 'v'  // "val", "var", "virtual"
 			if buff_len
-			case 3 do
+			: 3 
 				if buffer (2) = 'a' and then buffer (3) = 'r' do
 					return var_token
 				elsif buffer (2) = 'a' and then buffer (3) = 'l' do
@@ -1507,7 +1506,7 @@ unit SLang_Scanner
 				else
 					return identifier_token
 				end
-			case 7 do
+			: 7 
 				if buffer.is_equal (keywords (virtual_token)) do
 					return virtual_token
 				else
@@ -1516,15 +1515,15 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case 'w' do // "when", "while"
+		: 'w'  // "when", "while"
 			if buff_len
-			case 4 do
+			: 4
 				if buffer (2) = 'h' and then buffer (3) = 'e' and then buffer (4) = 'n' do
 					return when_token
 				else
 					return identifier_token
 				end
-			case 5 do
+			: 5 
 				if buffer.is_equal (keywords (while_token)) do
 					return while_token
 				else

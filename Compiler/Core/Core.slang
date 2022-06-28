@@ -1091,17 +1091,17 @@ unit StandardIO alias IO
 	pure put (arguments: ()) do
 		while argument in arguments do
 			if argument 
-				case Integer do
+				:Integer
 					putInteger (argument)
-				case Cardinal do
+				:Cardinal
 					putCardinal (argument)
-				case Character do
+				:Character
 					putCharacter (argument)
-				case String do
+				:String
 					putString (argument)
-				case Real do
+				:Real
 					putReal (argument)
-				case Boolean do
+				:Boolean
 					putBoolean (argument)
 				else
 					putString (argument.toString)

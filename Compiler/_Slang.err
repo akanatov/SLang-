@@ -1,0 +1,60 @@
+Parsing file `marriage.slang`
+Parsing unit `Person`
+Error at 18:23 - `)` is found, but expected: `if new old rtn pure safe ( ref <identifier> this return <integer_const> <real_const> <string_const> <char_const>`
+Error at line 73 - `<EOF>` is found, but expected: `do foreign => virtual none`
+Error at line 73 - `<EOF>` is found, but expected: `override final pure safe <identifier> <type name> <operator> -> ~ | { :=`
+Error at 73:1 - `<EOF>` is found, but expected: `end // unit`
+File `marriage.slang` parsed with 4 errors!
+
+Parsing file `minus.slang`
+Error at 1:1 - Start of compilation unit expected: `<operator>` is found, but expected: `build use final ref val concurrent virtual extend unit pure safe <identifier> <type name> if while new ? raise return ( var require rigid do`
+File `minus.slang` parsed with 1 error!
+
+Parsing file `n.slang`
+Error at 1:1 - Start of compilation unit expected: `<integer_const>` is found, but expected: `build use final ref val concurrent virtual extend unit pure safe <identifier> <type name> if while new ? raise return ( var require rigid do`
+File `n.slang` parsed with 1 error!
+
+Parsing file `new Type.slang`
+Error at 3:10 - `,` is found, but expected: `<identifier> <type name> ref val concurrent <type name>`
+File `new Type.slang` parsed with 1 error!
+
+Parsing file `new_statement.slang`
+Error at 1:9 - Start of compilation unit expected: `.` is found, but expected: `build use final ref val concurrent virtual extend unit pure safe <identifier> <type name> if while new ? raise return ( var require rigid do`
+File `new_statement.slang` parsed with 1 error!
+
+Parsing file `r2.slang`
+Parsing unit `Real`
+Error at 4:6 - `}` is found, but expected: `<identifier> <operator> -> < > | ~`
+Error at 6:3 - `<EOF>` is found, but expected: `override final pure safe <identifier> <type name> <operator> -> ~ | { :=`
+Error at 6:3 - `<EOF>` is found, but expected: `end // unit`
+File `r2.slang` parsed with 3 errors!
+
+Parsing file `scanner.slang`
+Parsing unit `TokenDescriptor`
+Parsing unit `SLang_Scanner`
+Error at 707:17 - `:` is found, but expected: `end // routine`
+Error at line 1589 - `<EOF>` is found, but expected: `end // if`
+Error at line 1589 - `<EOF>` is found, but expected: `end // loop`
+Error at 1589:1 - `<EOF>` is found, but expected: `end // if`
+Error at 1589:1 - `<EOF>` is found, but expected: `end // routine`
+Error at 1589:1 - `<EOF>` is found, but expected: `override final pure safe <identifier> <type name> <operator> -> ~ | { :=`
+Error at 1589:1 - `<EOF>` is found, but expected: `end // unit`
+File `scanner.slang` parsed with 7 errors!
+
+Parsing file `_gen_func_call.slang`
+Error at 7:8 - `<integer_const>` is found, but expected: `var <identifier> := )`
+Error at line 10 - `<EOF>` is found, but expected: `do foreign => virtual none`
+File `_gen_func_call.slang` parsed with 2 errors!
+
+Parsing file `_qual_const.slang`
+Parsing unit `Cardinal`
+Error at 5:10 - `<type name>` is found, but expected: `<identifier> <integer_const> <real_const> <string_const> <char_const> <operator> -> < > ~`
+Error at line 8 - `<EOF>` is found, but expected: `override final pure safe <identifier> <type name> <operator> -> ~ | { :=`
+Error at line 8 - `<EOF>` is found, but expected: `end // unit`
+File `_qual_const.slang` parsed with 3 errors!
+
+Parsing file `__t.slang`
+Error at 3:7 - `<identifier>` is found, but expected: `<type name> ref val concurrent as rtn ( unit <integer_const> <real_const> <string_const> <char_const>`
+Error at line 31 - `<EOF>` is found, but expected: `end // if`
+File `__t.slang` parsed with 2 errors!
+

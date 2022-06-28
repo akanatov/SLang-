@@ -1,5 +1,5 @@
 unit Real 
-enum
+const :
 	minReal {+epsilon} .. maxReal
 end
 end

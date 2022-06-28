@@ -8861,7 +8861,7 @@ end -- debug
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + "case " + alternatives.item (i).out)
+			Result.append_string (getIdent + ": " + alternatives.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
@@ -9126,8 +9126,9 @@ feature {AlternativeDescriptor}
 			end -- if
 			Result.append_string (alternativeTags.item (i).out)
 			i := i + 1
-		end -- loop		
-		Result.append_string (" do")
+		end -- loop
+		Result.append_character (' ')
+		--Result.append_string (" do")
 	end -- out_alternatives
 	alternativeTagsValid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -9153,7 +9154,7 @@ invariant
 end -- class AlternativeDescriptor
 
 class IfStatementAlternative
--- ValueAlternative {"," ValueAlternative} "do" StatementsList
+-- ValueAlternative {"," ValueAlternative}  StatementsList  -- "do"
 -- AlternativeTags StatementsList
 inherit
 	AlternativeDescriptor
@@ -11529,7 +11530,7 @@ feature {Any}
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + "case " + alternatives.item (i).out)
+			Result.append_string (getIdent + ": " + alternatives.item (i).out)
 			if i < n then
 				Result.append_character(' ')
 			end -- if

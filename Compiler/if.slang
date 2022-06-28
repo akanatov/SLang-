@@ -2,7 +2,7 @@ if x is Type do
 //elsif x is unit end do
 //elsif x is unit Type do
 //elsif x do
-//elsif x is
+//elsif x
 //	x:
 //	x, c, f:
 //	x, c, f:
@@ -20,11 +20,11 @@ elsif b do
 else
 end
 
-if a is
+if a
    :1
    :2 
 elsif b do
-elsif c is
+elsif c
    :3
    :4
 else

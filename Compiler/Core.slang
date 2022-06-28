@@ -396,7 +396,7 @@ val unit Pointer
 	{} data : Bit [Platform.pointerBitsCount]
 	Pointer (address: Cardinal) 
 	require
-		validPointer (address) /// Pointer should be valid from the OS point of view
+		validPointer (address) /// Pointer should be valid from the OS point of view: allocated if it is heap
 	do
 		data is address.data
 	end
@@ -405,6 +405,21 @@ val unit Pointer
 require
 	validPointer (this) /// Any pointer must be valid in terms of underlying OS to provide acess to data
 end // Pointer
+
+val unit Region
+	address: Pointer
+	size: Cardinal
+	safe isAllocated: Boolean => size > 0
+	allocate (aSize: Cardinal) 
+	do
+		//address := malloc (aSize)
+	end // allocate
+	/*{} final malloc (aSize: Cardinal): ???
+	require
+		aSize > 0 /// size to allocate should be gerater than 0
+	foreign
+	end // malloc */
+end // Region
 
 val unit Cardinal alias Uint extend Cardinal [Platform.cardinalBitsCount]
 	new Cardinal[Platform.cardinalBitsCount]( as this ), Cardinal[Platform.cardinalBitsCount]
@@ -1066,10 +1081,10 @@ end // Array
 	{} numberOfElementsInLinearArray: Integer do
 		var result is 0
 		while dim in dimentions do
-			if dim is 
-				:Integer:
+			if dim
+				:Integer
 					result := result + dim
-				:Integer .. Integer:
+				:Integer .. Integer
 					result := result + dim.last - dim.first + 1
 			else
 				raise "Bad array"
@@ -1091,17 +1106,17 @@ unit StandardIO alias IO
 	pure put (arguments: ()) do
 		while argument in arguments do
 			if argument 
-				case Integer do
+				: Integer
 					putInteger (argument)
-				case Cardinal do
+				: Cardinal
 					putCardinal (argument)
-				case Character do
+				: Character
 					putCharacter (argument)
-				case String do
+				: String
 					putString (argument)
-				case Real do
+				: Real
 					putReal (argument)
-				case Boolean do
+				: Boolean
 					putBoolean (argument)
 				else
 					putString (argument.toString)

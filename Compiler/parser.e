@@ -3658,7 +3658,8 @@ end
 	-- 	AlternativeTags: AlternativeTag {“,” AlternativeTag}
 
 	require	
-		valid_alternative_start_token: validToken (<<scanner.case_token>>)
+		-- valid_alternative_start_token: validToken (<<scanner.case_token>>)
+		valid_alternative_start_token: validToken (<<scanner.colon_token>>)
 	local
 		curTagsList: Sorted_Array [AlternativeTagDescriptor]
 		tagsList: Sorted_Array [AlternativeTagDescriptor]
@@ -3683,7 +3684,8 @@ end
 				isOptionalAlternative := True
 				create altDsc.init (curTagsList, parseStatements (False))
 				Result.force (altDsc, Result.count + 1)
-				if scanner.token = scanner.case_token then
+				-- if scanner.token = scanner.case_token then
+				if scanner.token = scanner.colon_token then
 					scanner.nextToken
 					-- parse next alternative
 				else
@@ -3700,7 +3702,8 @@ end
 	parseIfExprAlternatives: Array [IfExpressionAlternative] is
 	-- ExpressionAlternatives: “case” AlternativeTags Expression {“case” AlternativeTags Expression}
 	require	
-		valid_alternative_start_token: validToken (<<scanner.case_token>>)
+		--valid_alternative_start_token: validToken (<<scanner.case_token>>)
+		valid_alternative_start_token: validToken (<<scanner.colon_token>>)
 	local
 		curTagsList: Sorted_Array [AlternativeTagDescriptor]
 		tagsList: Sorted_Array [AlternativeTagDescriptor]
@@ -3722,7 +3725,8 @@ end
 				isOptionalAlternative := True
 				create altDsc.init (curTagsList, parseOptionalExpression)
 				Result.force (altDsc, Result.count + 1)
-				if scanner.token = scanner.case_token then
+				-- if scanner.token = scanner.case_token then
+				if scanner.token = scanner.colon_token then
 					scanner.nextToken
 					-- parse next alternative
 				else
@@ -3766,18 +3770,18 @@ end
 		end -- loop
 		if Result.count = 0 or else wasError then
 			Result := Void
-		elseif not wasError then
-			if scanner.Cmode then
-				if scanner.token = scanner.left_curly_bracket_token then
-					scanner.nextToken
-				else
-					syntax_error (<<scanner.left_curly_bracket_token>>)
-				end -- if
-			elseif scanner.token = scanner.do_token then
-				scanner.nextToken
-			else
-				syntax_error (<<scanner.do_token>>)
-			end -- if
+--		elseif not wasError then
+--			if scanner.Cmode then
+--				if scanner.token = scanner.left_curly_bracket_token then
+--					scanner.nextToken
+--				else
+--					syntax_error (<<scanner.left_curly_bracket_token>>)
+--				end -- if
+--			elseif scanner.token = scanner.do_token then
+--				scanner.nextToken
+--			else
+--				syntax_error (<<scanner.do_token>>)
+--			end -- if
 		end -- if
 	end -- parseAlternativeTags	
 
@@ -3956,13 +3960,14 @@ debug
 end -- debug
 			inspect	
 				scanner.token
-			when scanner.case_token then
+			--  when scanner.case_token then
+			when scanner.colon_token then
 			-- when scanner.is_token then
 				-- if with alternatives				
 				--scanner.nextToken
 				caseFound := True
 				if isStatement then
-					alternatives := parseIfStatementAlternatives
+					alternatives := parseIfStatementAlternatives 
 					if alternatives = Void then
 						wasError := True
 					end -- if
@@ -4002,9 +4007,11 @@ end -- debug
 				else
 					wasError := True
 					if scanner.Cmode then
-						syntax_error (<<scanner.is_token, scanner.left_curly_bracket_token>>)
+						syntax_error (<<scanner.colon_token, scanner.left_curly_bracket_token>>)
+						--syntax_error (<<scanner.case_token, scanner.left_curly_bracket_token>>)
 					else
-						syntax_error (<<scanner.is_token, scanner.do_token>>)
+						syntax_error (<<scanner.colon_token, scanner.do_token>>)
+						--syntax_error (<<scanner.case_token, scanner.do_token>>)
 					end -- if
 				end -- if
 			end -- if				
@@ -4037,7 +4044,8 @@ end -- debug
 							inspect	
 								scanner.token
 							--when scanner.is_token then
-							when scanner.case_token then
+							--when scanner.case_token then
+							when scanner.colon_token then
 								--scanner.nextToken
 								caseFound := True
 								if isStatement then
@@ -4086,9 +4094,11 @@ end -- debug
 									wasError := True
 									toLeave := True
 									if scanner.Cmode then
-										syntax_error (<<scanner.case_token, scanner.left_curly_bracket_token>>)
+										syntax_error (<<scanner.colon_token, scanner.left_curly_bracket_token>>)
+										--syntax_error (<<scanner.case_token, scanner.left_curly_bracket_token>>)
 									else
-										syntax_error (<<scanner.case_token, scanner.do_token>>)
+										syntax_error (<<scanner.colon_token, scanner.do_token>>)
+										--syntax_error (<<scanner.case_token, scanner.do_token>>)
 									end -- if
 								end -- if
 							end -- if				

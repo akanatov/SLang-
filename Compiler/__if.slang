@@ -3,14 +3,14 @@ if expr is ? do
 elseif expr is T1 do
  	expr := expr
 elseif expr  
-	case T1, T2, T3 do
+	:T1, T2, T3
 		expr := expr
 elseif expr  	
-	case value do
+	:value
 		expr := expr
-	case value1 .. value2 do
+	:value1 .. value2
 		expr := expr
-	case value3, value11 .. value22 do
+	:value3, value11 .. value22
 		expr := expr
 else
 	expr := expr 

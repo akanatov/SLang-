@@ -11,14 +11,14 @@ unit SLang_Scanner
 	
 	tokenValue: ?Any // current token value, Void if not manifest constant
 	do
-		if token is
-		:integer_const_token:
+		if token
+		: integer_const_token 
 			return integer_value
-		:real_const_token:
+		: real_const_token 
 			return buffer.to_real
-		:string_const_token:
+		: string_const_token 
 			return buffer 
-		:char_const_token:
+		: char_const_token
 			return buffer (1)
 		else
 		end // if		
