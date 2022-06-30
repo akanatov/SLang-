@@ -1926,7 +1926,9 @@ end -- debug
 		assignDsc: AssignmentStatementDescriptor
 		initCallDsc: InitCallDescriptor
 	do
---trace (">>>parseStatement1")
+debug
+	--trace (">>>parseStatement1")
+end
 		inspect
 			scanner.token
 		when scanner.identifier_token then
@@ -2166,7 +2168,9 @@ end -- debug
 			end --if
 			-- it is not a statement
 		end -- inspect
---trace ("<<<parseStatement1")
+debug
+	--trace ("<<<parseStatement1")
+end
 	end -- parseStatement1
 	
 	parseExpressionWithSemicolon: ExpressionDescriptor is
@@ -3658,8 +3662,7 @@ end
 	-- 	AlternativeTags: AlternativeTag {“,” AlternativeTag}
 
 	require	
-		-- valid_alternative_start_token: validToken (<<scanner.case_token>>)
-		valid_alternative_start_token: validToken (<<scanner.colon_token>>)
+		valid_alternative_start_token: validToken (<<scanner.case_token>>)
 	local
 		curTagsList: Sorted_Array [AlternativeTagDescriptor]
 		tagsList: Sorted_Array [AlternativeTagDescriptor]
@@ -3684,8 +3687,7 @@ end
 				isOptionalAlternative := True
 				create altDsc.init (curTagsList, parseStatements (False))
 				Result.force (altDsc, Result.count + 1)
-				-- if scanner.token = scanner.case_token then
-				if scanner.token = scanner.colon_token then
+				if scanner.token = scanner.case_token then
 					scanner.nextToken
 					-- parse next alternative
 				else
@@ -3696,14 +3698,15 @@ end
 		if Result.count = 0 then
 			Result := Void
 		end -- if
---trace ("<<<parseIfStatementAlternatives")
+debug
+	--trace ("<<<parseIfStatementAlternatives")
+end
 	end -- parseIfStatementAlternatives
 
 	parseIfExprAlternatives: Array [IfExpressionAlternative] is
 	-- ExpressionAlternatives: “case” AlternativeTags Expression {“case” AlternativeTags Expression}
 	require	
-		--valid_alternative_start_token: validToken (<<scanner.case_token>>)
-		valid_alternative_start_token: validToken (<<scanner.colon_token>>)
+		valid_alternative_start_token: validToken (<<scanner.case_token>>)
 	local
 		curTagsList: Sorted_Array [AlternativeTagDescriptor]
 		tagsList: Sorted_Array [AlternativeTagDescriptor]
@@ -3725,8 +3728,7 @@ end
 				isOptionalAlternative := True
 				create altDsc.init (curTagsList, parseOptionalExpression)
 				Result.force (altDsc, Result.count + 1)
-				-- if scanner.token = scanner.case_token then
-				if scanner.token = scanner.colon_token then
+				if scanner.token = scanner.case_token then
 					scanner.nextToken
 					-- parse next alternative
 				else
@@ -3960,8 +3962,8 @@ debug
 end -- debug
 			inspect	
 				scanner.token
-			--  when scanner.case_token then
-			when scanner.colon_token then
+			when scanner.case_token then
+			--when scanner.colon_token then
 			-- when scanner.is_token then
 				-- if with alternatives				
 				--scanner.nextToken
@@ -4007,11 +4009,9 @@ end -- debug
 				else
 					wasError := True
 					if scanner.Cmode then
-						syntax_error (<<scanner.colon_token, scanner.left_curly_bracket_token>>)
-						--syntax_error (<<scanner.case_token, scanner.left_curly_bracket_token>>)
+						syntax_error (<<scanner.case_token, scanner.left_curly_bracket_token>>)
 					else
-						syntax_error (<<scanner.colon_token, scanner.do_token>>)
-						--syntax_error (<<scanner.case_token, scanner.do_token>>)
+						syntax_error (<<scanner.case_token, scanner.do_token>>)
 					end -- if
 				end -- if
 			end -- if				
@@ -4044,8 +4044,7 @@ end -- debug
 							inspect	
 								scanner.token
 							--when scanner.is_token then
-							--when scanner.case_token then
-							when scanner.colon_token then
+							when scanner.case_token then
 								--scanner.nextToken
 								caseFound := True
 								if isStatement then
@@ -4159,7 +4158,9 @@ end -- debug
 				end -- if
 			end -- if
 		end -- if
---trace ("<<<parse_if")
+debug
+	--trace ("<<<parse_if")
+end -- debug
 	end -- parseIfStatementOrExpression
 	
 	parseWhileStatement (checkForRepeatWhile: Boolean): LoopStatementDescriptor is

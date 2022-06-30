@@ -3,7 +3,7 @@
 			object.call ("foo", 1,2,3)
 			result is object.call ("goo", true, false, "xyz")
 			if result 
-				:Integer
+				case Integer
 					StandardIO.put ("Recieved Integer from loaded code ", result)
 				else
 					StandardIO.put ("Received nothing from loaded code")

@@ -1,16 +1,16 @@
 if argument 
-	: Integer 
+	case  Integer 
 		putInteger (argument)
-	: Character 
+	case  Character 
 		putCharacter (argument)
-	: String 
+	case  String 
 		putString (argument)
-	: T1, T2, T3 
-	:  T4, T5 
+	case  T1, T2, T3 
+	case   T4, T5 
 		do_action
 		a := if a
-			: T1 1
-			: T2 2
+			case  T1 1
+			case  T2 2
 			else 3
 		
 	else

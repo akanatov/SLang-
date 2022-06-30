@@ -3,10 +3,10 @@ if x is Type do
 //elsif x is unit Type do
 //elsif x do
 //elsif x
-//	x:
-//	x, c, f:
-//	x, c, f:
-//	a .. b:
+//	case x
+//	case x, c, f
+//	case x, c, f
+//	case a .. b
 else	
 end
 
@@ -21,12 +21,12 @@ else
 end
 
 if a
-   :1
-   :2 
+   case 1
+   case 2 
 elsif b do
 elsif c
-   :3
-   :4
+   case 3
+   case 4
 else
 end
 
@@ -37,3 +37,4 @@ a := if a do 5 else 6
 
 
   */
+unit Type end

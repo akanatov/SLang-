@@ -3,36 +3,36 @@ if expr is ? do
 elseif expr is T1 do
  	expr := expr
 elseif expr  
-	:T1, T2, T3
+	case T1, T2, T3
 		expr := expr
 elseif expr  	
-	:value
+	case value
 		expr := expr
-	:value1 .. value2
+	case value1 .. value2
 		expr := expr
-	:value3, value11 .. value22
+	case value3, value11 .. value22
 		expr := expr
 else
 	expr := expr 
 end
 
-/*if argument is
-	Integer:
+/*if argument
+	case Integer
 		putInteger (argument)
-	Character:
+	case Character
 		putCharacter (argument)
-	String:
+	case String
 		putString (argument)
-	 T1, T2, T3:
-	 T4, T5, T6 .. T7
+	 case T1, T2, T3
+	 case T4, T5, T6 .. T7
 		do_action
-		a := if a is 
-			T1: 1
-			T2: 2
+		a := if a
+			case T1 1
+			case T2 2
 			else 3
 		
-	T7:
-//	T2: // CTE
+	case T7
+//	case T2 // CTE
 	else
 		putString (argument.toString)
 end

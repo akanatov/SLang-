@@ -235,7 +235,7 @@ feature {Any}
 				"alias",
 				"as",
 				"build",
-				--"case",
+				"case",
 				"concurrent",
 				"const",
 				"do",
@@ -330,7 +330,7 @@ feature {Any}
 	alias_token,	
 	as_token,	
 	build_token,
-	--case_token,
+	case_token,
 	concurrent_token,
 	const_token,	
 	do_token,		
@@ -1567,15 +1567,15 @@ feature {None}
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- if
-		when 'c' then -- "concurrent", "const"     -- "case", 
+		when 'c' then -- "case", "concurrent", "const"
 			inspect
 				buff_len
-			--when 4 then
-			--	if buffer.is_equal (keywords.item (case_token)) then
-			--		Result := case_token
-			--	else
-			--		Result := register_buffer_and_return_identifier_token
-			--	end
+			when 4 then
+				if buffer.is_equal (keywords.item (case_token)) then
+					Result := case_token
+				else
+					Result := register_buffer_and_return_identifier_token
+				end
 			when 5 then
 				if buffer.is_equal (keywords.item (const_token)) then
 					Result := const_token

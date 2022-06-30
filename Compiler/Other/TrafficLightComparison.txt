@@ -13,7 +13,7 @@ unit TrafficLight use const Color
 	require
 		light /= Off /// Traffic light malfunction
 	do
-		if light is
+		if light
 			:Red
 				light := Yellow
 			:Yellow
@@ -44,7 +44,7 @@ unit TrafficLight use const Color
 	require
 		light /= Off /// Traffic light malfunction
 	{
-		if light is
+		if light
 			:Red
 				light := Yellow
 			:Yellow

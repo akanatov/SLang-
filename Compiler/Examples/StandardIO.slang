@@ -8,15 +8,15 @@ unit StandardIO alias IO
 	pure put (arguments: ()) do
 		while argument in arguments do
 			if argument 
-				: Integer 
+				case  Integer 
 					putInteger (argument)
-				: Character 
+				case  Character 
 					putCharacter (argument)
-				: String 
+				case  String 
 					putString (argument)
-				: Real
+				case  Real
 					putReal (argument)
-				: Boolean
+				case  Boolean
 					putBoolean (argument)
 				else
 					putString (argument.toString)

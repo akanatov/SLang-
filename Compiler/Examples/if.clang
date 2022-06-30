@@ -8,12 +8,12 @@ else
 }
 
 if a 
-   :1 
-   :2
+   case 1 
+   case 2
 elsif b {
 elsif c
-   :3 
-   :4
+   case 3 
+   case 4
 else
 }
 a := if a { 5 else 6 }
