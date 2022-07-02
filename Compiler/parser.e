@@ -2354,6 +2354,7 @@ end
 		--exprCall1: ExpressionCallDescriptor
 		cceDsc: CallChainElement 
 		--cceDsc1: CallChainElement
+		callDsc: CallDescriptor
 	do
 --trace (">>>parseUnaryExpression")
 		inspect
@@ -2361,16 +2362,52 @@ end
 		when scanner.identifier_token then 
 			create identDsc.init (scanner.tokenString)
 			scanner.nextWithSemicolon (checkSemicolonAfter)
-			create {CallChainElement} cceDsc.init (operator, Void)
-			create {ExpressionCallDescriptor} Result.init (identDsc, <<cceDsc>>)
+			inspect
+				scanner.token
+			when scanner.dot_token, scanner.left_paranthesis_token then
+				-- operator identifer (arguments)
+				callDsc := parseWritableCall (identDsc)
+				if callDsc /= Void then
+					create {CallChainElement} cceDsc.init (operator, Void)
+					create {ExpressionCallDescriptor} Result.init (callDsc, <<cceDsc>>)
+				end -- if
+			else
+				-- operator identifer
+				create {CallChainElement} cceDsc.init (operator, Void)
+				create {ExpressionCallDescriptor} Result.init (identDsc, <<cceDsc>>)
+			end -- inspect
 		when scanner.this_token then
 			scanner.nextWithSemicolon (checkSemicolonAfter)
-			create {CallChainElement} cceDsc.init (operator, Void)
-			create {ExpressionCallDescriptor} Result.init (thisDsc, <<cceDsc>>)
+			inspect
+				scanner.token
+			when scanner.dot_token, scanner.left_paranthesis_token then
+				-- operator identifer (arguments)
+				callDsc := parseWritableCall (thisDsc)
+				if callDsc /= Void then
+					create {CallChainElement} cceDsc.init (operator, Void)
+					create {ExpressionCallDescriptor} Result.init (callDsc, <<cceDsc>>)
+				end -- if
+			else
+				-- operator this
+				create {CallChainElement} cceDsc.init (operator, Void)
+				create {ExpressionCallDescriptor} Result.init (thisDsc, <<cceDsc>>)
+			end -- inspect
 		when scanner.return_token then
 			scanner.nextWithSemicolon (checkSemicolonAfter)
-			create {CallChainElement} cceDsc.init (operator, Void)
-			create {ExpressionCallDescriptor} Result.init (returnDsc, <<cceDsc>>)
+			inspect
+				scanner.token
+			when scanner.dot_token, scanner.left_paranthesis_token then
+				-- operator identifer (arguments)
+				callDsc := parseWritableCall (returnDsc)
+				if callDsc /= Void then
+					create {CallChainElement} cceDsc.init (operator, Void)
+					create {ExpressionCallDescriptor} Result.init (callDsc, <<cceDsc>>)
+				end -- if
+			else
+				-- operator this
+				create {CallChainElement} cceDsc.init (operator, Void)
+				create {ExpressionCallDescriptor} Result.init (returnDsc, <<cceDsc>>)
+			end -- inspect
 		when scanner.integer_const_token, scanner.real_const_token then
 			if operator.is_equal ("+") then
 				-- ignore plus sign
@@ -2480,11 +2517,13 @@ end
 			-- operator Expression
 			operator := scanner.tokenString
 debug
---	trace ("#1:Unary operator " + Result.out)
+	--trace ("#1:Unary operator " + Result.out)
 end -- debug
 			scanner.nextToken
 			Result := parseUnaryExpression (operator, checkForCommentAfter, checkSemicolonAfter)
---trace ("#1:Unary operator " + Result.out)
+debug
+	--trace ("#1:Unary operator " + Result.out)
+end -- debug
 		when scanner.left_paranthesis_token then
 			-- “(”Expression“)” or tuple “(”Expression {", "Expression}“)” {CallChain}
 			scanner.nextToken
@@ -2590,7 +2629,11 @@ end -- debug
 				-- operator Expression
 				scanner.nextToken
 				Result := parseUnaryExpression (name, checkForCommentAfter, checkSemicolonAfter)
---trace ("#2:Unary operator " + operator)
+debug
+	if Result /= Void then
+		--trace ("#2:Unary operator " + Result.out)
+	end -- if
+end -- debug
 			else
 				create identDsc.init (name)
 				scanner.nextWithSemicolon (checkSemicolonAfter)

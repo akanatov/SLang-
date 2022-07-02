@@ -5266,6 +5266,10 @@ feature {Any}
 			Result.append_character (' ')
 			Result.append_string (type.out)
 		end -- if
+		if expr /= Void then
+			Result.append_string (" is ")
+			Result.append_string (expr.out)
+		end -- if
 	end -- out
 	is_equal (other: like Current): Boolean is
 	do
@@ -5391,10 +5395,10 @@ end -- debug
 		--	Result.append_string (" is ")
 		--	Result.append_string (expr.out)
 		--end -- if
-		--if assigner /= Void then
-		--	Result.append_character (' ')
-		--	Result.append_string (assigner.out)
-		--end -- if
+		if assigner /= Void then
+			Result.append_character (' ')
+			Result.append_string (assigner.out)
+		end -- if
 	end -- out
 
 end -- class UnitAttributeDeclarationDescriptor
@@ -5532,7 +5536,8 @@ class LocalAttrDeclarationDescriptor
 inherit
 	EntityDeclarationDescriptor
 		redefine
-			out, setFlags
+			--out, 
+			setFlags
 	end
 	StatementDescriptor
 		undefine
@@ -5591,27 +5596,27 @@ end -- debug
 		expr:= ie
 	end -- init
 
-	out: String is
-	do
-		Result := Precursor
-		--Result := ""
-		--if markedVar then
-		--	Result.append_string ("var ")		
-		--end -- if
-		--if markedRigid then
-		--	Result.append_string ("rigid ")
-		--end -- if
-		--Result.append_string (name)
-		--if type /= Void then
-		--	Result.append_character (':')
-		--	Result.append_character (' ')
-		--	Result.append_string (type.out)
-		--end -- if
-		--if expr /= Void then
-		--	Result.append_string (" is ")
-		--	Result.append_string (expr.out)
-		--end -- if
-	end -- out
+	--out: String is
+	--do
+	--	Result := Precursor
+	--	--Result := ""
+	--	--if markedVar then
+	--	--	Result.append_string ("var ")		
+	--	--end -- if
+	--	--if markedRigid then
+	--	--	Result.append_string ("rigid ")
+	--	--end -- if
+	--	--Result.append_string (name)
+	--	--if type /= Void then
+	--	--	Result.append_character (':')
+	--	--	Result.append_character (' ')
+	--	--	Result.append_string (type.out)
+	--	--end -- if
+	--	--if expr /= Void then
+	--	--	Result.append_string (" is ")
+	--	--	Result.append_string (expr.out)
+	--	--end -- if
+	--end -- out
 --invariant
 --	consistent: not (type = Void and expr = Void)
 end -- class LocalAttrDeclarationDescriptor
