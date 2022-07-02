@@ -1589,11 +1589,25 @@ inherit
 			is_equal
 	end
 create
-	init
+	init, make
 feature {Any}
 	identifier: String
 	unitType: UnitTypeCommonDescriptor
+	exprDsc: ExpressionDescriptor
 	statements: Array [StatementDescriptor]
+	
+	make (e: like exprDsc; stmts: like statements) is
+	require
+		non_void_expression: e /= Void	
+	do
+		exprDsc := e
+		if stmts = Void then
+			create statements.make (1, 0)
+		else
+			statements := stmts
+		end -- if
+	end -- make
+
 	init (id: like identifier; ut: like unitType; stmts: like statements) is
 	require
 		non_void_unitType: ut /= Void	
@@ -1611,11 +1625,15 @@ feature {Any}
 		i, n: Integer
 	do
 		Result := "when "
-		if identifier /= Void then
-			Result.append_string (identifier)
-			Result.append_string (": ")
-		end -- if
-		Result.append_string (unitType.out)
+		if exprDsc = Void then
+			if identifier /= Void then
+				Result.append_string (identifier)
+				Result.append_string (": ")
+			end -- if
+			Result.append_string (unitType.out)
+		else
+			Result.append_string (exprDsc.out)			
+		end -- if		
 		Result.append_string (" do%N")
 		from
 			i := 1
@@ -1676,7 +1694,7 @@ end -- debug
 	end -- generate
 	
 invariant
-	non_void_unitType: unitType /= Void
+	consistent: unitType /= Void or else exprDsc /= Void
 	non_void_statements: statements /= Void
 end -- class WhenClauseDescriptor
 
@@ -1848,7 +1866,7 @@ end -- debug
 			from
 				i := 1
 				n := whenClauses.count
-				incIdent
+				--incIdent
 			until
 				i > n
 			loop
@@ -1860,7 +1878,7 @@ end -- debug
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
+			--decIdent
 			n := whenElseClause.count
 			if n > 0 then
 				from
@@ -2105,7 +2123,7 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				Result.append_string (getIdent + innerBlock.out)	
+				Result.append_string (innerBlock.out)	
 			end -- if
 			n := postconditions.count 
 			if n > 0 then
@@ -4175,7 +4193,7 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			Result.append_string (getIdent + innerBlock.out)
+			Result.append_string (innerBlock.out)
 		end -- if
 
 		if postconditions /= Void then
@@ -4207,7 +4225,6 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			--Result.append_character('%T')
 			Result.append_string (getIdent + "end // " + name + "%N")	
 		end -- if
 	end -- out
@@ -5011,7 +5028,6 @@ feature {Any}
 			until
 				i > n
 			loop
-				--Result.append_character('%T')
 				Result.append_string (getIdent + requireClause.item(i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
@@ -5032,7 +5048,6 @@ feature {Any}
 			until
 				i > n
 			loop
-				--Result.append_character('%T')
 				Result.append_string (getIdent + ensureClause.item(i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
@@ -5041,10 +5056,6 @@ feature {Any}
 			end -- loop
 			decIdent
 		end -- if
-		--if Result.item (Result.count) /= '%N' then
-		--	Result.append_character ('%N')
-		--end -- if
-		--Result.append_character('%T')
 		Result.append_string (getIdent + "end // block%N")
 	end -- out
 	init (rc: like requireClause; invOff: like invariantOffList; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
@@ -8844,7 +8855,6 @@ end -- debug
 		until
 			i > n
 		loop
-			--Result.append_character('%T')
 			Result.append_string (getIdent + "elsif " + ifParts.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
@@ -8852,7 +8862,6 @@ end -- debug
 			i := i + 1
 		end -- loop
 		if elsePart /= Void then
-			--Result.append_character('%T')
 			Result.append_string (getIdent + "else%N")
 			incIdent
 			from
@@ -8861,7 +8870,7 @@ end -- debug
 			until
 				i > n
 			loop
-				-- Result.append_character('%T')
+				-- 
 				Result.append_string (getIdent + elsePart.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
@@ -8873,7 +8882,6 @@ end -- debug
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		--Result.append_character('%T')
 		Result.append_string(getIdent + "end // if%N")
 	end -- out		
 invariant
@@ -9575,14 +9583,12 @@ feature {Any}
 		n := requireClause.count
 		if n > 0 then
 			from
-				--Result.append_character('%T')
 				Result.append_string (getIdent + "require%N")
 				incIdent
 				i := 1
 			until
 				i > n
 			loop
-				--Result.append_character('%T')
 				Result.append_string (getident + requireClause.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
@@ -9592,28 +9598,24 @@ feature {Any}
 			decIdent
 		end -- if
 
-		--Result.append_character('%T')
 		Result.append_string (Precursor)
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
 
 		if not isWhileLoop then
-			--Result.append_character('%T')
 			Result.append_string (getIdent + "while " + whileExpr.out)
 		end -- if
 
 		n := ensureClause.count
 		if n > 0 then
 			from
-				--Result.append_character('%T')
 				Result.append_string (getIdent + "ensure%N")
 				incIdent
 				i := 1
 			until
 				i > n
 			loop
-				--Result.append_character('%T')
 				Result.append_string (getIdent + ensureClause.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
@@ -9625,8 +9627,6 @@ feature {Any}
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		--Result.append_character('%T')
-		--Result.append_character('%T')
 		Result.append_string (getIdent + "end // loop%N")
 		--decIdent
 	end

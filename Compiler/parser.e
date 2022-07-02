@@ -1750,35 +1750,38 @@ end -- debug
 	end -- parseInnerBlock
 
 	parseWhenClause: WhenClauseDescriptor is
-	-- when [Identifier:] UnitType do StatementsList
+	-- when ([Identifier:] UnitType)| Expression do StatementsList
 	--      ^
+	-- Expression is NOT_IMPLEMENTED_YET !!!
 	local
 		identifier: String
 		nmdDsc: NamedTypeDescriptor
 		unitType: UnitTypeCommonDescriptor
+		exprDsc: ExpressionDescriptor
+		identDsc: IdentifierDescriptor
 		wasError: Boolean
 	do
 		inspect
 			scanner.token
-		when scanner.identifier_token then
-			identifier := scanner.tokenString
-			scanner.nextToken
-			if scanner.token = scanner.colon_token then
-				scanner.nextToken
-				nmdDsc := parseUnitType
-				if nmdDsc = Void then
-					wasError := True
-				else
-					unitType ?= nmdDsc
-					if unitType = Void then
-						wasError := True
-						validity_error ("Formal generic parameter `" + nmdDsc.name + "` canot be used in when clause")
-					end -- if
-				end -- if
-			else
-				wasError := True
-				syntax_error (<<scanner.colon_token>>)
-			end -- if
+		--when scanner.identifier_token then
+		--	identifier := scanner.tokenString
+		--	scanner.nextToken
+		--	if scanner.token = scanner.colon_token then
+		--		scanner.nextToken
+		--		nmdDsc := parseUnitType
+		--		if nmdDsc = Void then
+		--			wasError := True
+		--		else
+		--			unitType ?= nmdDsc
+		--			if unitType = Void then
+		--				wasError := True
+		--				validity_error ("Formal generic parameter `" + nmdDsc.name + "` canot be used in when clause")
+		--			end -- if
+		--		end -- if
+		--	else
+		--		wasError := True
+		--		syntax_error (<<scanner.colon_token>>)
+		--	end -- if
 		when scanner.type_name_token then
 			identifier := scanner.tokenString
 			scanner.nextToken
@@ -1786,7 +1789,7 @@ end -- debug
 			if nmdDsc = Void then
 				wasError := True
 			else
-				identifier := Void
+				--identifier := Void
 				unitType ?= nmdDsc
 				if unitType = Void then
 					wasError := True
@@ -1794,13 +1797,45 @@ end -- debug
 				end -- if				
 			end -- if
 		else
-			syntax_error (<<scanner.identifier_token, scanner.type_name_token>>)
-			wasError := True
+			exprDsc := parseExpression
+			if exprDsc = Void then			
+				--syntax_error (<<scanner.identifier_token, scanner.type_name_token>>)
+				wasError := True
+			else
+				identDsc ?= exprDsc
+				if identDsc = Void then
+					-- when expr do
+				elseif scanner.token = scanner.colon_token then
+					scanner.nextToken
+					nmdDsc := parseUnitType
+					if nmdDsc = Void then
+						wasError := True
+					else
+						unitType ?= nmdDsc
+						if unitType = Void then
+							wasError := True
+							validity_error ("Formal generic parameter `" + nmdDsc.name + "` canot be used in when clause")
+						end -- if
+					end -- if
+				else
+					-- when identifer do  -> expression case
+					--wasError := True
+					--syntax_error (<<scanner.colon_token>>)
+				end -- if
+			end -- if
 		end -- if
 		if not wasError then
 			if scanner.blockStart then
 				scanner.nextToken
-				create Result.init (identifier, unitType, parseStatements (False))
+				if exprDsc = Void then
+					if identDsc = Void then
+						create Result.init (Void, unitType, parseStatements (False)) -- identifier
+					else
+						create Result.init (identDsc.name, unitType, parseStatements (False)) -- identifier
+					end -- if
+				else
+					create Result.make (exprDsc, parseStatements (False))
+				end -- if
 			else
 				if scanner.Cmode then
 					syntax_error (<<scanner.left_curly_bracket_token>>)
