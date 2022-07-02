@@ -876,7 +876,8 @@ end -- debug
 		target_not_void: name /= Void
 		valid_token: validToken (<<
 			scanner.operator_token,
-			scanner.bar_token, scanner.tilda_token, scanner.identifier_token, scanner.type_name_token
+			scanner.bar_token, scanner.tilda_token, scanner.identifier_token, scanner.type_name_token,
+			scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
 		>>)
 	local
 		callChain: Array [CallChainElement]
@@ -911,6 +912,7 @@ end -- debug
 	-- name (id.			>> unqualified call or assignment
 	-- name (id operator 	>> unqualified call or assignment
 	-- name ( nextName ) 	>> unqualified call or assignment
+	-- name (const)			>> unqualified call or assignment
 	-- name (id, id, ... 	>> scan further
 	-- 		name (id,..., var			>> routine declaration
 	-- 		name (id,..., id:			>> routine declaration
@@ -947,6 +949,9 @@ end -- debug
 			isRtnDecl := True
 		when scanner.operator_token, scanner.implies_token, scanner.bar_token, scanner.tilda_token then
 			-- name ( operator		>> unqualified call or assignment ().x or ().x := expr
+			--        ^
+		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+			-- name ( const		>> unqualified call or assignment ().x or ().x := expr
 			--        ^
 		when scanner.right_paranthesis_token then 
 			-- name ( )		>> unqualified call or routine declaration
@@ -1160,7 +1165,8 @@ end -- debug
 		else
 			syntax_error (<<
 				scanner.rigid_token, scanner.operator_token,
-				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.identifier_token
+				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.identifier_token,  scanner.type_name_token,
+				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
 			>>)
 			wasError := True
 		end -- inspect
@@ -2804,6 +2810,9 @@ end -- debug
 				Result := thisDsc
 			end -- inspect
 		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+debug
+	--trace ("Expr: const")
+end -- debug
 			constDsc := parseConstant (checkSemicolonAfter)
 			check
 				non_void_constant_dsc: constDsc /= Void
