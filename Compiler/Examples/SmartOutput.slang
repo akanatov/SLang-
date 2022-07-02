@@ -1,5 +1,5 @@
 use StandardIO as IO
-virtual unit Output
+abstract unit Output
 
 	final put (obj: Any)
 	do
@@ -64,7 +64,7 @@ virtual unit Output
 		end // loop
 	end // putArray
 
-	close virtual
+	close abstract
 	
 	setSeparator (s: String)
 	do
@@ -72,19 +72,19 @@ virtual unit Output
 	end // setSeparator
 	
 {}:
-	reset_line virtual
+	reset_line abstract
 	
-	put_new_line virtual
+	put_new_line abstract
 
 	put_spaces (spacesToPad: Integer)
 	require
 		spacesToPad > 0 /// spaces to pad <= 0 
-	virtual
+	abstract
 
 	final lastLength is 0
 	final separator is ""
 	
-	put_string (s: STRING) virtual
+	put_string (s: STRING) abstract
 	
 require
 	lastLength >= 0 /// invalid length of last string

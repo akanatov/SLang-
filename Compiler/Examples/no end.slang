@@ -1,3 +1,3 @@
 unit A
-    foo virtual
+    foo abstract
 end

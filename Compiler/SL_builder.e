@@ -49,7 +49,8 @@ feature {Any}
 		typePool: Sorted_Array[TypeDescriptor]
 		typeDsc: TypeDescriptor
 		aliasTypes: Sorted_Array [AliasedTypeDescriptor]
-		unitTypeDsc: UnitTypeNameDescriptor
+		attachedTypeDsc: AttachedTypeDescriptor
+		--unitTypeDsc: UnitTypeNameDescriptor
 		aliasTypeDsc: AliasedTypeDescriptor
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
@@ -99,15 +100,14 @@ end -- debug
 						end -- debug
 						Result := True
 					elseif typeDsc.aliasName /= Void then
-						unitTypeDsc ?= typeDsc
-						check
-							non_void_unit_type: unitTypeDsc /= Void
-						end -- check
-						create aliasTypeDsc.init (typeDsc.aliasName, unitTypeDsc)
-						if not aliasTypes.added (aliasTypeDsc) then
--- not_implemented_yet: It should be a validity error !!!
-							o.putNL ("Error: at least two unit types has the same alias `" + typeDsc.aliasName + "`")
-							Result := True
+						attachedTypeDsc ?= typeDsc
+						if attachedTypeDsc /= Void then
+							create aliasTypeDsc.init (typeDsc.aliasName, attachedTypeDsc)
+							if not aliasTypes.added (aliasTypeDsc) then
+	-- not_implemented_yet: It should be a validity error !!!
+								o.putNL ("Error: at least two unit types has the same alias `" + typeDsc.aliasName + "`")
+								Result := True
+							end -- if
 						end -- if
 					end -- if
 					i := i + 1

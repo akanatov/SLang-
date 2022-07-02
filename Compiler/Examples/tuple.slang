@@ -1,4 +1,4 @@
-virtual unit () // That is tuple unit
+abstract unit () // That is tuple unit
 
 () (pos: Integer; value: Any)
 	/// It puts element into tuple at position, put by position

@@ -366,7 +366,7 @@ feature {Any}
 	do
 		Result := "build " + name
 		if entry /= Void then
-			Result.append_string (" => " + entry + "%N")
+			Result.append_string (" entry " + entry + "%N")
 		else
 			check
 				invariant_check: from_paths /= Void
@@ -374,7 +374,7 @@ feature {Any}
 			n := from_paths.count
 			if n > 0 then 
 				from
-					Result.append_string (" :")
+					Result.append_string (" from ")
 					i := 1
 				until
 					i > n
@@ -390,7 +390,7 @@ feature {Any}
 		if n > 0 then
 			from
 				i := 1
-				Result.append_string ("%Tuse")
+				Result.append_string ("%Tcluster")
 			until
 				i > n
 			loop
@@ -659,17 +659,19 @@ feature
 	out: String is
 	local
 		i, n, m, k: Integer
+		addEnd: Boolean
 	do
 		Result := clone (name)
 		n := excluded_list.count
 		m := rename_list.count
 		k := selected_list.count
 		if n > 0 or else m > 0 or else k > 0 then
-			Result.append_character(':')
+			--Result.append_character(':')
 			if n > 0 then
 				from
+					addEnd := True
 					Result.append_character('%N')
-					Result.append_character('~')
+					Result.append_string("hide")
 					i := 1
 				until
 					i > n
@@ -682,9 +684,9 @@ feature
 			end -- if
 			if m > 0 then
 				from
+					addEnd := True
 					Result.append_character('%N')
-					Result.append_character('-')
-					Result.append_character('>')
+					Result.append_string("use")
 					i := 1
 				until
 					i > m
@@ -699,6 +701,7 @@ feature
 			end -- if
 			if k > 0 then
 				from
+					addEnd := True
 					Result.append_character('%N')
 					Result.append_string("select ")
 					i := 1
@@ -710,6 +713,9 @@ feature
 					i := i + 1
 				end -- loop
 				Result.append_character('%N')
+			end -- if
+			if addEnd then
+				Result.append_string("%Tend%N")
 			end -- if
 		end -- if		
 	end -- out
@@ -1048,7 +1054,7 @@ feature {Any}
 		non_void_statement: stmtDsc /= Void
 	do
 		Result := locals.added (stmtDsc)
-		if Result then
+		if Result then	
 			addStatement (stmtDsc)
 		end -- if
 	end -- addStatement
@@ -2476,7 +2482,7 @@ invariant
 end -- class UseConstBlock
 
 class UnitDeclarationDescriptor
--- UnitDeclaration: ([final] [ref|val|concurrent])|[virtual]|[extend]
+-- UnitDeclaration: ([final] [ref|val|concurrent])|[abstract]|[extend]
 -- unit Identifier [AliasName] [FormalGenerics] [InheritDirective] [EnclosedUseDirective]
 -- [MemberSelection]
 -- [InheritedMemberOverriding]
@@ -2687,7 +2693,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		-- ([final] [ref|val|concurrent])|[virtual]|[extend]
+		-- ([final] [ref|val|concurrent])|[abstract]|[extend]
 		if isExtension then
 			Result := "extend "
 		else
@@ -2695,7 +2701,7 @@ feature {Any}
 			if isFinal then
 				Result.append_string ("final ")
 			elseif isVirtual then
-				Result.append_string ("virtual ")
+				Result.append_string ("abstract ")
 			end -- if
 			if isRef then
 				Result.append_string ("ref ")
@@ -2939,7 +2945,7 @@ feature {Any}
 		end -- if
 		Result.append_string (getIdent + "end // unit " + name + "%N")
 	end -- out
-	setAliasName (aName: String) is
+	setAliasName (aName: like aliasName) is
 	do
 		aliasName := aName
 	end -- setAliasName
@@ -3389,11 +3395,10 @@ feature {Any}
 		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 	
-	init (aName: String; ut: TypeDescriptor) is
+	init (aName: String; ut: like type) is
 	require
 		name_not_void: aName /= Void
 		type_not_void: ut /= Void
-	local
 	do
 		name := aName
 		type := ut
@@ -3755,10 +3760,10 @@ inherit
 	MemberVisibilityDescriptor
 	end
 feature {Any}
-	out: String is do Result := "{} " end
-	--do
-	--	Result := "{} "
-	--end
+	out: String is 
+	do
+		Result := "{} "
+	end -- out
 	canAccess (client: UnitTypeNameDescriptor): Boolean is
 	once
 		-- Result := False
@@ -3769,7 +3774,10 @@ inherit
 	MemberVisibilityDescriptor
 	end
 feature {Any}
-	out: String is do Result := "{this} " end
+	out: String is
+	do
+		Result := "{this} "
+	end -- out
 	canAccess (client: UnitTypeNameDescriptor): Boolean is
 	once
 		-- Result := False
@@ -3802,7 +3810,7 @@ feature {Any}
 	out: String is
 	do
 		if visibility = Void then
-			Result := "" -- equvalent to {Any}
+			Result := "{Any} "
 		else
 			Result := visibility.out
 		end -- if
@@ -4036,9 +4044,7 @@ feature {Any}
 		end -- if
 	end -- lessThan
 
-	aliasName: String is
-	do
-	end -- aliasName
+	aliasName: String is do end -- aliasName
 	
 	out: String is
 	local
@@ -4144,7 +4150,7 @@ feature {Any}
 				Result.append_character ('%N')
 			end -- if
 			--Result.append_character('%T')
-			Result.append_string (getIdent + "virtual%N")
+			Result.append_string (getIdent + "abstract%N")
 		elseif isForeign then
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
@@ -4246,7 +4252,7 @@ end -- class UnitRoutineDescriptor
 class UnitRoutineDeclarationDescriptor
 -- [pure|safe] RoutineName [final Identifier] [UnitRoutineParameters] [":" Type] [EnclosedUseDirective]
 -- [RequireBlock]
--- ((InnerBlock) [EnsureBlock] BlockEnd) | ((virtual|foreign|none| (“=>”Expression))[EnsureBlock BlockEnd])
+-- ((InnerBlock) [EnsureBlock] BlockEnd) | ((abstract|foreign|none| (“=>”Expression))[EnsureBlock BlockEnd])
 inherit
 	UnitRoutineDescriptor
 		redefine
@@ -5238,9 +5244,11 @@ feature {Any}
 	deferred
 	end -- isConst
 	--name: String
-	type: TypeDescriptor is
-	deferred
-	end -- type
+	type: TypeDescriptor
+	expr: ExpressionDescriptor
+	--type: TypeDescriptor is
+	--deferred
+	--end -- type
 	out: String is
 	do
 		if markedVar then
@@ -5253,6 +5261,11 @@ feature {Any}
 			Result := ""
 		end -- if
 		Result.append_string (name)
+		if type /= Void then
+			Result.append_character (':')
+			Result.append_character (' ')
+			Result.append_string (type.out)
+		end -- if
 	end -- out
 	is_equal (other: like Current): Boolean is
 	do
@@ -5262,14 +5275,16 @@ feature {Any}
 	do
 		Result := name < other.name
 	end -- infix "<"
-	setName (tmpDsc: TemporaryLocalAttributeDescriptor) is
+	--setName (tmpDsc: TemporaryLocalAttributeDescriptor) is
+	setName (tmpDsc: LocalAttrDeclarationDescriptor) is
 	require
 		non_void_tmpDsc: tmpDsc /= Void
 	do
 		name := tmpDsc.name
 		setFlags (tmpdsc)
-	end -- setName
-	setFlags (tmpDsc: TemporaryLocalAttributeDescriptor) is
+	end -- setName	
+	--setFlags (tmpDsc: TemporaryLocalAttributeDescriptor) is
+	setFlags (tmpDsc: LocalAttrDeclarationDescriptor) is
 	require
 		non_void_tmpDsc: tmpDsc /= Void
 	do
@@ -5281,11 +5296,14 @@ invariant
 	consistent_marked_const	: markedConst implies (not markedVar   and then not markedRigid)
 end -- class EntityDeclarationDescriptor
 
-deferred class UnitAttrDescriptor
+--deferred 
+class UnitAttributeDeclarationDescriptor
 inherit
 	EntityDeclarationDescriptor
 		undefine
 			is_equal, infix "<"
+		redefine
+			out
 		select
 			out
 	end
@@ -5296,11 +5314,18 @@ inherit
 --		undefine
 --			is_equal, infix "<"
 	end
+create
+	init, init_for_search
 feature {Any}
 	isFinal: Boolean
 	isOverriding: Boolean
 	assigner: AttributeAssignerDescriptor
 	markedVar: Boolean is False
+	markedConst: Boolean
+	markedRigid: Boolean
+	--type: TypeDescriptor
+	--expr: ExpressionDescriptor
+
 	sameAs (other: like Current): Boolean is
 	do
 		Result := name.is_equal (other.name)
@@ -5309,316 +5334,6 @@ feature {Any}
 	do
 		Result := name < other.name
 	end -- lessThan
-
-end -- class UnitAttrDescriptor
-
-deferred class LocalAttrDeclarationDescriptor
-inherit
-	EntityDeclarationDescriptor
-	end
-	StatementDescriptor
-		undefine
-			is_equal, infix "<"
-	end
-feature {Any}
-	markedConst : Boolean is False
-end -- class LocalAttrDeclarationDescriptor
-
-class DetachedUnitAttributeDeclarationDescriptor
-inherit
-	UnitAttrDescriptor
-		redefine
-			out
-	end
-create
-	init
-feature {Any}		
-	markedRigid: Boolean is False
-	markedConst: Boolean is False
-	type: AttachedTypeDescriptor
-	init (isO, isF: Boolean; aName: like name; aType: like type; anAssigner: like assigner) is
-	require
-		name_not_void: aName /= Void
-		type_not_void: aType /= Void
-	do
-		isOverriding := isO
-		isFinal := isF
-		name := aName
-		type := aType
-		assigner := anAssigner
-	end -- init
-	out: String is
-	do
-		Result := memberOut
-		Result.append_string (Precursor)
-		--Result.append_string (name + ": ?" + type.out)
-		Result.append_string (": ?" + type.out)
-		if assigner /= Void then
-			Result.append_character (' ')
-			Result.append_string (assigner.out)
-		end -- if
-	end -- out
-	cutImplementation is
-	do
-		if assigner /= Void then
-			assigner.cutImplementation
-		end -- if
-	end -- cutImplementation
-	generate (cg: CodeGenerator) is
-	do
-	end -- generate
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	do
-debug
-	o.putLine ("Validity check for: " + out)
-end -- debug
-	end -- is_invalid
-
-invariant
-	type_not_void: type /= Void
-end -- class DetachedUnitAttributeDeclarationDescriptor
-
-class DetachedLocalAttributeDeclarationDescriptor
-	-- LocalAttributeCreation  => LocalAttributeNamesList ":" "?" UnitTypeDescriptor
-	-- LocalAttributeNamesList => [var | rigid] Identifier {","[var | rigid] Identifier}
-inherit
-	LocalAttrDeclarationDescriptor
-		redefine
-			out
-	end
-create
-	init
-feature {Any}		
-	markedRigid: Boolean is False
-	markedVar: Boolean is False
-	--type: AttachedTypeDescriptor
-	type: DetachableTypeDescriptor
-
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
-		-- do nothing so far
-debug
-	o.putLine ("Validity check for: " + out)
-end -- debug
-	end -- isInvalid
-	generate (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate
-
-	init (aName: like name; aType: like type) is
-	require
-	do
-		name := aName
-		type := aType
-	end -- init
-	out: String is
-	do
-		Result := Precursor
-		-- Result.append_string (name + ": " + type.out)
-		Result.append_string (": " + type.out)
-	end -- out
-end -- class DetachedLocalAttributeDeclarationDescriptor
-
-class AttachedLocalAttributeDeclarationDescriptor
--- LocalAttributeCreation:
---(LocalAttributeNamesList ([“:” Type] is Expression [NewLine])|(“:” “?” AttachedType))
---|
---(“(“ LocalAttributeNamesList “)” is Expression  [NewLine])
---|
---(LocalAttributeNamesList“:”AttachedType)
--- LocalAttributeNamesList: [var|rigid] Identifier {“,”[var|rigid] Identifier}
-
-inherit
-	LocalAttrDeclarationDescriptor
-		redefine
-			out, setFlags
-	end
-create
-	init
-feature {Any}		
-	markedVar: Boolean
-	markedRigid: Boolean
-	type: AttachedTypeDescriptor
-	expr: ExpressionDescriptor -- if expr is Void then type should have no init or init with no parameters
-
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
-		-- do nothing so far
-debug
-	o.putLine ("Validity check for: " + out)
-end -- debug
-	end -- isInvalid
-	generate (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate
-
-	setFlags (tmpDsc: TemporaryLocalAttributeDescriptor) is
-	do
-		markedVar:= tmpDsc.markedVar
-		markedRigid:= tmpDsc.markedRigid
-	end -- setFlags
-
-	init (mv, mr: Boolean; aName: String; aType: like type; ie: like expr) is
-	require
-		non_void_name: aName /= Void
-		--non_void_expression: ie /= Void
-		consistent_expr_and_type : ie = Void implies aType /= Void
-		consistent_flags: mv implies not mr and then mr implies not mv
-	do
-		markedVar := mv
-		markedRigid	:= mr
-		name	:= aName
-		type	:= aType
-		expr:= ie
-	end -- init
-
-	out: String is
-	do
-		Result := Precursor
-		--Result.append_string (name)
-		if type /= Void then
-			Result.append_character (':')
-			Result.append_character (' ')
-			Result.append_string (type.out)
-		end -- if
-		if expr /= Void then
-			Result.append_string (" is ")
-			Result.append_string (expr.out)
-		end -- if
-	end -- out
-invariant
-	--expr_not_void: expr /= Void
-end -- class AttachedLocalAttributeDeclarationDescriptor
-
-class TemporaryLocalAttributeDescriptor
-inherit
-	LocalAttrDeclarationDescriptor
-		redefine
-			out
-	end
-create
-	init
-feature {Any}
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-	--	useConst: Sorted_Array [UnitTypeNameDescriptor]
-	--	stringPool: Sorted_Array [String]
-	--	typePool: Sorted_Array[TypeDescriptor]	
-	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- do nothing so far
-debug
-	o.putLine ("Validity check for: " + out)
-end -- debug
-	end -- isInvalid
-	generate (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate
-
-	out: String is
-	do
-		Result := Precursor
-		--if markedVar then
-		--	Result := "var " + name
-		--elseif markedRigid then
-		--	Result := "rigid " + name
-		--else
-		--	Result := "" + name
-		--end -- if
-		Result.append_string (": <Type>")
-	end -- out
-	type: TypeDescriptor is do end
-	expr: ExpressionDescriptor is do end
-	markedVar: Boolean
-	markedRigid: Boolean
-
-	init (isV, isR: Boolean; aName: like name) is
-	require
-		name_not_void: aName /= Void
-	do
-		markedVar := isV
-		markedRigid := isR
-		name := aName
-	end -- init
-end -- class TemporaryLocalAttributeDescriptor
-
-class TemporaryUnitAttributeDescriptor						
-inherit
-	UnitAttrDescriptor
-		redefine
-			out
-	end
-create
-	init
-feature {Any}
-	out: String is
-	do
-		Result := Precursor
-		--if markedConst then
-		--	Result := "const " + name
-		--elseif markedRigid then
-		--	Result := "rigid " + name
-		--else
-		--	Result := "" + name
-		--end -- if
-		Result.append_string (": <Type>")
-	end -- out
-	type: TypeDescriptor is do end
-	expr: ExpressionDescriptor is do end
-	markedConst: Boolean
-	markedRigid: Boolean
-	init (isC, isR: Boolean; aName: like name) is
-	require
-		name_not_void: aName /= Void
-	do
-		markedConst := isC
-		markedRigid := isR
-		name := aName
-	end -- init
-	cutImplementation is do end
-	generate (cg: CodeGenerator) is do end -- generate
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is do end -- is_invalid
-
-end -- class TemporaryUnitAttributeDescriptor
-class AttachedUnitAttributeDeclarationDescriptor
-	-- UnitAttributeDeclaration:
-	-- ( [const|rigid] Identifier {"," [const|rigid] Identifier} ":" Type)
-	-- |
-	-- ( [const|rigid] Identifier [":" AttachedType] is ConstantExpression) 
-	-- |
-	-- (Identifier ":" Type rtn ":=" [[ Parameters] HyperBlock ] )
-inherit
-	UnitAttrDescriptor
-		redefine
-			out
-	end
-create
-	init
-feature {Any}	
-	markedConst: Boolean
-	markedRigid: Boolean
-	type: TypeDescriptor
-	expr: ExpressionDescriptor
-
 	
 	generate (cg: CodeGenerator) is
 	do
@@ -5628,8 +5343,7 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
-	end -- is_invalid
-		
+	end -- is_invalid		
 	
 	cutImplementation is
 	do
@@ -5639,6 +5353,14 @@ end -- debug
 		end -- if
 	end -- cutImplementation
 	
+	init_for_search (isC, isR: Boolean; aName: like name) is
+	require
+		name_not_void: aName /= Void
+	do
+		markedConst := isC
+		markedRigid := isR
+		name := aName
+	end -- init_for_search
 	init (isO, isF, mc, mr: Boolean; aName: String; aType: like type; a: like assigner; ie: like expr) is
 	require
 		non_void_name: aName /= Void
@@ -5654,28 +5376,417 @@ end -- debug
 		assigner:= a
 		expr:= ie
 	end -- init
+
 	out: String is
 	do
 		Result := memberOut
 		Result.append_string (Precursor)
 		-- Result.append_string (name)
-		if type /= Void then
-			Result.append_character (':')
-			Result.append_character (' ')
-			Result.append_string (type.out)
-		end -- if
-		if expr /= Void then
-			Result.append_string (" is ")
-			Result.append_string (expr.out)
-		end -- if
-		if assigner /= Void then
-			Result.append_character (' ')
-			Result.append_string (assigner.out)
-		end -- if
+		--if type /= Void then
+		--	Result.append_character (':')
+		--	Result.append_character (' ')
+		--	Result.append_string (type.out)
+		--end -- if
+		--if expr /= Void then
+		--	Result.append_string (" is ")
+		--	Result.append_string (expr.out)
+		--end -- if
+		--if assigner /= Void then
+		--	Result.append_character (' ')
+		--	Result.append_string (assigner.out)
+		--end -- if
 	end -- out
-invariant
-	-- consistent_expr_and_type: expr = Void implies type /= Void -- cutImplementation may violate it
-end -- class AttachedUnitAttributeDeclarationDescriptor
+
+end -- class UnitAttributeDeclarationDescriptor
+
+--deferred class LocalAttrDeclarationDescriptor
+--inherit
+--	EntityDeclarationDescriptor
+--	end
+--	StatementDescriptor
+--		undefine
+--			is_equal, infix "<"
+--	end
+--feature {Any}
+--	markedConst : Boolean is False
+--end -- class LocalAttrDeclarationDescriptor
+
+--class DetachedUnitAttributeDeclarationDescriptor
+--inherit
+--	UnitAttrDescriptor
+--		redefine
+--			out
+--	end
+--create
+--	init
+--feature {Any}		
+--	markedRigid: Boolean is False
+--	markedConst: Boolean is False
+--	type: AttachedTypeDescriptor
+--	init (isO, isF: Boolean; aName: like name; aType: like type; anAssigner: like assigner) is
+--	require
+--		name_not_void: aName /= Void
+--		type_not_void: aType /= Void
+--	do
+--		isOverriding := isO
+--		isFinal := isF
+--		name := aName
+--		type := aType
+--		assigner := anAssigner
+--	end -- init
+--	out: String is
+--	do
+--		Result := memberOut
+--		Result.append_string (Precursor)
+--		--Result.append_string (name + ": ?" + type.out)
+--		Result.append_string (": ?" + type.out)
+--		if assigner /= Void then
+--			Result.append_character (' ')
+--			Result.append_string (assigner.out)
+--		end -- if
+--	end -- out
+--	cutImplementation is
+--	do
+--		if assigner /= Void then
+--			assigner.cutImplementation
+--		end -- if
+--	end -- cutImplementation
+--	generate (cg: CodeGenerator) is
+--	do
+--	end -- generate
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	do
+--debug
+--	o.putLine ("Validity check for: " + out)
+--end -- debug
+--	end -- is_invalid
+--
+--invariant
+--	type_not_void: type /= Void
+--end -- class DetachedUnitAttributeDeclarationDescriptor
+
+--class DetachedLocalAttributeDeclarationDescriptor
+--	-- LocalAttributeCreation  => LocalAttributeNamesList ":" "?" UnitTypeDescriptor
+--	-- LocalAttributeNamesList => [var | rigid] Identifier {","[var | rigid] Identifier}
+--inherit
+--	LocalAttrDeclarationDescriptor
+--		redefine
+--			out
+--	end
+--create
+--	init
+--feature {Any}		
+--	markedRigid: Boolean is False
+--	markedVar: Boolean is False
+--	--type: AttachedTypeDescriptor
+--	type: DetachableTypeDescriptor
+--
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	local
+--		useConst: Sorted_Array [UnitTypeNameDescriptor]
+--		stringPool: Sorted_Array [String]
+--		typePool: Sorted_Array[TypeDescriptor]	
+--	do
+--	useConst := context.useConst
+--	stringPool := context.stringPool
+--	typePool := context.typePool
+--		-- do nothing so far
+--debug
+--	o.putLine ("Validity check for: " + out)
+--end -- debug
+--	end -- isInvalid
+--	generate (cg: CodeGenerator) is
+--	do
+--		-- do nothing so far
+--	end -- generate
+--
+--	init (aName: like name; aType: like type) is
+--	require
+--	do
+--		name := aName
+--		type := aType
+--	end -- init
+--	out: String is
+--	do
+--		Result := Precursor
+--		-- Result.append_string (name + ": " + type.out)
+--		Result.append_string (": " + type.out)
+--	end -- out
+--end -- class DetachedLocalAttributeDeclarationDescriptor
+
+--class AttachedLocalAttributeDeclarationDescriptor
+---- LocalAttributeCreation:
+----(LocalAttributeNamesList ([“:” Type] is Expression [NewLine])|(“:” “?” AttachedType))
+----|
+----(“(“ LocalAttributeNamesList “)” is Expression  [NewLine])
+----|
+----(LocalAttributeNamesList“:”AttachedType)
+---- LocalAttributeNamesList: [var|rigid] Identifier {“,”[var|rigid] Identifier}
+--
+--inherit
+--	LocalAttrDeclarationDescriptor
+--		redefine
+--			out, setFlags
+--	end
+class LocalAttrDeclarationDescriptor
+inherit
+	EntityDeclarationDescriptor
+		redefine
+			out, setFlags
+	end
+	StatementDescriptor
+		undefine
+			is_equal, infix "<"
+	end
+create
+	init, init_for_search
+feature {Any}		
+	markedConst : Boolean is False
+	markedVar: Boolean
+	markedRigid: Boolean
+	--type: TypeDescriptor -- AttachedTypeDescriptor
+	--expr: ExpressionDescriptor -- if expr is Void then type should have no init or init with no parameters
+
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		useConst: Sorted_Array [UnitTypeNameDescriptor]
+		stringPool: Sorted_Array [String]
+		typePool: Sorted_Array[TypeDescriptor]	
+	do
+	useConst := context.useConst
+	stringPool := context.stringPool
+	typePool := context.typePool
+		-- do nothing so far
+debug
+	o.putLine ("Validity check for: " + out)
+end -- debug
+	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
+	--setFlags (tmpDsc: TemporaryLocalAttributeDescriptor) is
+	setFlags (tmpDsc: like Current) is
+	do
+		markedVar:= tmpDsc.markedVar
+		markedRigid:= tmpDsc.markedRigid
+	end -- setFlags
+
+	init_for_search (mv, mr: Boolean; aName: like name) is
+	do
+		init (mv, mr, aName, Void, Void)
+	end -- init_for_search
+	
+	init (mv, mr: Boolean; aName: like name; aType: like type; ie: like expr) is
+	require
+		non_void_name: aName /= Void
+		--consistent_expr_and_type : ie = Void implies aType /= Void
+		consistent_flags: mv implies not mr and then mr implies not mv
+	do
+		markedVar := mv
+		markedRigid	:= mr
+		name	:= aName
+		type	:= aType
+		expr:= ie
+	end -- init
+
+	out: String is
+	do
+		Result := Precursor
+		--Result := ""
+		--if markedVar then
+		--	Result.append_string ("var ")		
+		--end -- if
+		--if markedRigid then
+		--	Result.append_string ("rigid ")
+		--end -- if
+		--Result.append_string (name)
+		--if type /= Void then
+		--	Result.append_character (':')
+		--	Result.append_character (' ')
+		--	Result.append_string (type.out)
+		--end -- if
+		--if expr /= Void then
+		--	Result.append_string (" is ")
+		--	Result.append_string (expr.out)
+		--end -- if
+	end -- out
+--invariant
+--	consistent: not (type = Void and expr = Void)
+end -- class LocalAttrDeclarationDescriptor
+--end -- class AttachedLocalAttributeDeclarationDescriptor
+
+--class TemporaryLocalAttributeDescriptor
+--inherit
+--	LocalAttrDeclarationDescriptor
+--		redefine
+--			out
+--	end
+--create
+--	init
+--feature {Any}
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	local
+--	--	useConst: Sorted_Array [UnitTypeNameDescriptor]
+--	--	stringPool: Sorted_Array [String]
+--	--	typePool: Sorted_Array[TypeDescriptor]	
+--	do
+--	--useConst := context.useConst
+--	--stringPool := context.stringPool
+--	--typePool := context.typePool
+--		-- do nothing so far
+--debug
+--	o.putLine ("Validity check for: " + out)
+--end -- debug
+--	end -- isInvalid
+--	generate (cg: CodeGenerator) is
+--	do
+--		-- do nothing so far
+--	end -- generate
+--
+--	out: String is
+--	do
+--		Result := Precursor
+--		--if markedVar then
+--		--	Result := "var " + name
+--		--elseif markedRigid then
+--		--	Result := "rigid " + name
+--		--else
+--		--	Result := "" + name
+--		--end -- if
+--		Result.append_string (": <Type>")
+--	end -- out
+--	type: TypeDescriptor is do end
+--	expr: ExpressionDescriptor is do end
+--	markedVar: Boolean
+--	markedRigid: Boolean
+--
+--	init (isV, isR: Boolean; aName: like name) is
+--	require
+--		name_not_void: aName /= Void
+--	do
+--		markedVar := isV
+--		markedRigid := isR
+--		name := aName
+--	end -- init
+--end -- class TemporaryLocalAttributeDescriptor
+
+--class TemporaryUnitAttributeDescriptor						
+--inherit
+--	UnitAttrDescriptor
+--		redefine
+--			out
+--	end
+--create
+--	init
+--feature {Any}
+--	out: String is
+--	do
+--		Result := Precursor
+--		--if markedConst then
+--		--	Result := "const " + name
+--		--elseif markedRigid then
+--		--	Result := "rigid " + name
+--		--else
+--		--	Result := "" + name
+--		--end -- if
+--		Result.append_string (": <Type>")
+--	end -- out
+--	type: TypeDescriptor is do end
+--	expr: ExpressionDescriptor is do end
+--	markedConst: Boolean
+--	markedRigid: Boolean
+--	init (isC, isR: Boolean; aName: like name) is
+--	require
+--		name_not_void: aName /= Void
+--	do
+--		markedConst := isC
+--		markedRigid := isR
+--		name := aName
+--	end -- init
+--	cutImplementation is do end
+--	generate (cg: CodeGenerator) is do end -- generate
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is do end -- is_invalid
+--
+--end -- class TemporaryUnitAttributeDescriptor
+--class AttachedUnitAttributeDeclarationDescriptor
+--	-- UnitAttributeDeclaration:
+--	-- ( [const|rigid] Identifier {"," [const|rigid] Identifier} ":" Type)
+--	-- |
+--	-- ( [const|rigid] Identifier [":" AttachedType] is ConstantExpression) 
+--	-- |
+--	-- (Identifier ":" Type rtn ":=" [[ Parameters] HyperBlock ] )
+--inherit
+--	UnitAttrDescriptor
+--		redefine
+--			out
+--	end
+--create
+--	init
+--feature {Any}	
+--	markedConst: Boolean
+--	markedRigid: Boolean
+--	type: TypeDescriptor
+--	expr: ExpressionDescriptor
+--
+--	
+--	generate (cg: CodeGenerator) is
+--	do
+--	end -- generate
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	do
+--debug
+--	o.putLine ("Validity check for: " + out)
+--end -- debug
+--	end -- is_invalid
+--		
+--	
+--	cutImplementation is
+--	do
+--		expr := Void
+--		if assigner /= Void then
+--			assigner.cutImplementation
+--		end -- if
+--	end -- cutImplementation
+--	
+--	init (isO, isF, mc, mr: Boolean; aName: String; aType: like type; a: like assigner; ie: like expr) is
+--	require
+--		non_void_name: aName /= Void
+--		consistent_expr_and_type : ie = Void implies aType /= Void
+--		consistent_flags: mc implies not mr and then mr implies not mc
+--	do
+--		isOverriding := isO
+--		isFinal := isF
+--		markedConst := mc
+--		markedRigid	:= mr
+--		name	:= aName
+--		type	:= aType
+--		assigner:= a
+--		expr:= ie
+--	end -- init
+--	out: String is
+--	do
+--		Result := memberOut
+--		Result.append_string (Precursor)
+--		-- Result.append_string (name)
+--		if type /= Void then
+--			Result.append_character (':')
+--			Result.append_character (' ')
+--			Result.append_string (type.out)
+--		end -- if
+--		if expr /= Void then
+--			Result.append_string (" is ")
+--			Result.append_string (expr.out)
+--		end -- if
+--		if assigner /= Void then
+--			Result.append_character (' ')
+--			Result.append_string (assigner.out)
+--		end -- if
+--	end -- out
+--invariant
+--	-- consistent_expr_and_type: expr = Void implies type /= Void -- cutImplementation may violate it
+--end -- class AttachedUnitAttributeDeclarationDescriptor
 
 -------------- Assigners --------------------
 deferred class AttributeAssignerDescriptor
@@ -8676,12 +8787,9 @@ feature {Any}
 	--useConst := context.useConst
 	--stringPool := context.stringPool
 	--typePool := context.typePool
-		-- do nothing so far
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
-	--ifParts: Array [IfLineDecsriptor]
-	--elsePart: Array [StatementDescriptor]
 		from
 			i := ifParts.lower
 			n := ifParts.upper
@@ -8861,7 +8969,7 @@ end -- debug
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + ": " + alternatives.item (i).out)
+			Result.append_string (getIdent + "case " + alternatives.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
@@ -9601,21 +9709,27 @@ inherit
 			aliasName
 	end
 create
-	init
+	init, make
 feature {Any}
 	aliasName: String
-	realType: AttachedTypeDescriptor
-	init (aName: like aliasName; aType: like realType) is
+	actualType: AttachedTypeDescriptor
+	init (aName: like aliasName; aType: like actualType) is
 	require
 		non_void_alias_name: aName /= Void
 		non_void_real_type: aType /= Void
 	do
-		aliasName:= aName
-		realType:= aType
+		aliasName := aName
+		actualType := aType
 	end -- init
+	make (aName: like aliasName) is
+	require
+		non_void_alias_name: aName /= Void
+	do
+		aliasName := aName
+	end -- make
 	out: String is
 	do
-		Result := realType.out
+		Result := aliasName + " alias for " + actualType.out
 	end -- out
 	sameAs (other: like Current) : Boolean is
 	do
@@ -9628,7 +9742,7 @@ feature {Any}
 
 	getExternalName: String is
 	do
-		Result := realType.getExternalName
+		Result := actualType.getExternalName
 	end -- getExternalName
 	generate (cg: CodeGenerator) is
 	do
@@ -9650,7 +9764,7 @@ feature {Any}
 debug
 	o.putLine ("Validity check for: " + out)
 end -- debug
-		if realType.isInvalid (context, o) then
+		if actualType.isInvalid (context, o) then
 			Result := True
 		end -- if
 	end -- is_invalid
@@ -9667,14 +9781,14 @@ end -- debug
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- not_implemened_yet
-		if realType.isNotLoaded (context, o) then
+		if actualType.isNotLoaded (context, o) then
 			Result := True
 		end -- if
 	end -- isNotLoaded
 	
 invariant
 	non_void_alias_name: aliasName /= Void
-	non_void_real_type: realType /= Void
+	-- non_void_actual_type: actualType /= Void
 end -- class AliasedTypeDescriptor
 
 deferred class AttachedTypeDescriptor
@@ -9859,10 +9973,10 @@ feature {Any}
 	out: String is 
 	do
 		Result := "rtn " + signature.out
-		if aliasName /= Void then
-			Result.append_string (" alias ")
-			Result.append_string (aliasName)
-		end -- if
+		--if aliasName /= Void then
+		--	Result.append_string (" alias ")
+		--	Result.append_string (aliasName)
+		--end -- if
 	end -- out
 	getExternalName: String is
 	do
@@ -10184,10 +10298,10 @@ feature {Any}
 		end -- if
 		Result.append_string (" .. ")
 		Result.append_string (right.out)
-		if aliasName /= Void then
-			Result.append_string (" alias ")
-			Result.append_string (aliasName)
-		end -- if
+		--if aliasName /= Void then
+		--	Result.append_string (" alias ")
+		--	Result.append_string (aliasName)
+		--end -- if
 	end -- out
 	getExternalName: String is
 	do
@@ -10573,10 +10687,10 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
-		if aliasName /= Void then
-			Result.append_string (" alias ")
-			Result.append_string (aliasName)
-		end -- if
+		--if aliasName /= Void then
+		--	Result.append_string (" alias ")
+		--	Result.append_string (aliasName)
+		--end -- if
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -10838,10 +10952,10 @@ feature {Any}
 			i := i + 1
 		end -- loop
 		Result.append_character (')')
-		if aliasName /= Void then
-			Result.append_string (" alias ")
-			Result.append_string (aliasName)
-		end -- if
+		--if aliasName /= Void then
+		--	Result.append_string (" alias ")
+		--	Result.append_string (aliasName)
+		--end -- if
 	end -- out
 	getExternalName: String is
 	local
@@ -11170,10 +11284,10 @@ feature {Any}
 			end -- loop
 			Result.append_character (']')
 		end -- if
-		if aliasName /= Void then
-			Result.append_string (" alias ")
-			Result.append_string (aliasName)
-		end -- if
+		--if aliasName /= Void then
+		--	Result.append_string (" alias ")
+		--	Result.append_string (aliasName)
+		--end -- if
 	end -- out
 	getExternalName: String is
 	local
@@ -11260,6 +11374,11 @@ end -- debug
 			elseif toRegister then				
 				-- Regsiter the 'interface' in the pool
 				typePool.add (interface.unit.getUnitTypeDescriptor) -- unit: UnitDeclarationDescriptor
+			end -- if
+			if not Result and then aliasName /= Void then
+				-- Register alias if set in the pool
+				-- Not_implemented_yet !!!
+				-- unit A alias B end  unit C alias B end  to be detected !!!
 			end -- if
 		end -- if
 	end -- isNotLoaded
@@ -11487,14 +11606,6 @@ invariant
 	consistent_if: ifExprLines /= Void and then ifExprLines.count > 0
 end -- class IfExpressionDescriptor
 
---deferred class IfExprLineDescriptor
----- (if | elsif Expression) (case IfBodyExpression)|(do Expression)
---inherit
---	IfLineDecsriptor
---	end
---feature
---end -- class IfExprLineDescriptor
-
 class IfIsExprLineDescriptor
 -- (if | elsif Expression) case IfBodyExpression
 inherit
@@ -11530,7 +11641,7 @@ feature {Any}
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + ": " + alternatives.item (i).out)
+			Result.append_string (getIdent + "case " + alternatives.item (i).out)
 			if i < n then
 				Result.append_character(' ')
 			end -- if

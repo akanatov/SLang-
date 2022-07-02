@@ -1,6 +1,6 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.08 May 13th 2022
-build Kernel:"." // Kernel library is to be built from all SLang files from the current folder
+// Version 0.99.12 July 2nd 2022
+build Kernel from "." // Kernel library is to be built from all SLang files from the current folder
 end
 
 val unit Bit
@@ -37,7 +37,7 @@ val unit Bit
 	end // -
 end // Bit
 
-virtual unit () extend Enumeration // That is a tuple unit
+abstract unit () extend Enumeration // That is a tuple unit
 	
 	() (pos: Cardinal; value: Any)
 	/// It puts element into tuple at position, put by position
@@ -228,7 +228,7 @@ require
 	bitsCount > 0 /// Number of Bits is greater than zero
 end // Bit [N]
 
-virtual unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.maxCardinal]
+abstract unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.maxCardinal]
 	// Adding all constant objects from basic units allows to use these constants without respective unit name prefix.
 
 
@@ -283,31 +283,31 @@ require
 	realBitsCount = realMantissaBitsCount + realOrderBitsCount + 1
 end // Platform
 
-virtual unit Numeric
-	pure one: as this virtual
+abstract unit Numeric
+	pure one: as this abstract
 		/// Definition of One
-	pure zero: as this virtual
+	pure zero: as this abstract
 		/// Definition of Zero
-	pure + (other: as this): as this virtual
+	pure + (other: as this): as this abstract
 		/// Definition of addition
 	ensure
 		this - other = old this
 	end // +
-	pure - (other: as this): as this virtual
+	pure - (other: as this): as this abstract
 		/// Definition of subtraction 
 	ensure
 		this + other = old this		
 	end // -
-	pure - : as this virtual
+	pure - : as this abstract
 		/// Definition of negation
 	ensure
 		- old this = this
 	end
-	pure / (other: as this): as this virtual
+	pure / (other: as this): as this abstract
 		/// Definition of division
-	pure * (other: as this): as this virtual
+	pure * (other: as this): as this abstract
 		/// Definition of multiplication
-	pure ^ (other: Numeric): as this virtual
+	pure ^ (other: Numeric): as this abstract
 		/// Definition of power
 require
 	this = this * one	/// Multiplication constituent 1
@@ -321,8 +321,8 @@ require
 	one = this / this	/// Division constituent
 end // Numeric
 
-virtual unit Comparable 
-	safe < (other: as this ): Boolean virtual
+abstract unit Comparable 
+	safe < (other: as this ): Boolean abstract
 	override pure = (other: as this ): Boolean => not (this < other) and not (other < this)
 	final safe > (other: as this ): Boolean => other < this
 	final safe <= (other: as this ): Boolean => not (other < this)
@@ -334,12 +334,12 @@ require
 	not ( this < this ) /// Irreflexive comparison
 end // Comparable
 
-virtual unit Enumeration
+abstract unit Enumeration
 	safe succ: as this 
 	/// successor of the current object
 	require
 		not (this = last)
-	virtual
+	abstract
 	ensure
 		this.ord = return.ord - 1 /// Order number of this is order number of its successor minus one
 	end
@@ -348,7 +348,7 @@ virtual unit Enumeration
 	/// predecessor of the current object
 	require	
 		not (this = first)
-	virtual
+	abstract
 	ensure
 		this.ord = return.ord + 1 /// Order number of this is order number of its predecessor plus one
 	end
@@ -357,23 +357,23 @@ virtual unit Enumeration
 	/// first element of enumeration
 	require
 		count > 0
-	virtual
+	abstract
 	
 	safe last: as this 
 	/// last element of enumeration
 	require
 		count > 0
-	virtual
+	abstract
 	
 	safe count: Cardinal
 	/// number of elements in the enumeration
-	virtual
+	abstract
 	
 	safe ord: Cardinal
 	/// order number of the current object in the enumeration
 	require
 		count > 0
-	virtual
+	abstract
 
 require 
 	count > 0 implies first.ord <= last.ord
@@ -623,7 +623,7 @@ val unit Byte
 	{} data: Bit [Platform.bitsInByteCount]	
 end // Byte
 
-virtual unit Rational extend Numeric, Comparable
+abstract unit Rational extend Numeric, Comparable
 	numerator: Integer
 	denominator: Integer
 	pure toReal: Real => numerator / denominator
@@ -632,15 +632,15 @@ require
 	denominator /= 0 /// denominator must not be zero
 end // Rational
 
-virtual unit Fixed extend Numeric, Comparable
+abstract unit Fixed extend Numeric, Comparable
 	value: Integer
 	scaleFactor: Integer // if scaleFactor is negative do scale is 1/-scaleFactor otherwise scaleFactor is scaleFactor :-)
 	pure toReal: Real => if scaleFactor < 0 do value / - scaleFactor else value * scaleFactor
 	// TBD!!!
 end // Fixed
 
-virtual unit Float [nBits: Integer] extend Numeric, Comparable
-	toReal: Real virtual
+abstract unit Float [nBits: Integer] extend Numeric, Comparable
+	toReal: Real abstract
 	// TBD!!!
 end // Float
 
@@ -835,7 +835,7 @@ end // Boolean
 
 // UTF-8, Unicode etc - need to think more 
 
-virtual unit AString extend Comparable
+abstract unit AString extend Comparable
 	/// virtualization of String
 	{} data: Array [Bit [8]] // Byte array of data
 end // unit Astring
@@ -916,33 +916,33 @@ unit String extend AString
 	{} data: Array [Character] // Dynamic empty array of characters
 end // String
 
-virtual unit AnArray [G]
+abstract unit AnArray [G]
 	///   General one dimensional array  
 	() (pos: Integer): G 
 		/// Get array element at position pos
 		require 
 			count > 0 /// Array is not empty
 			lower <= pos and then pos <= upper /// Valid element index
-		virtual
+		abstract
 	() (pos: Integer; value: G) 
 		/// Set array element at position pos with value
 		require 
 			count > 0 /// Array is not empty
 			lower <= pos and then pos <= upper /// Valid element index 
-		virtual
+		abstract
 	final safe count: Cardinal => upper - lower + 1
 		/// Number of elelments in the array
 		
-	lower: Integer virtual
+	lower: Integer abstract
 		/// Lower index value
-	upper: Integer virtual
+	upper: Integer abstract
 		/// Upper index value
 	safe () (from, to: Integer): as this  // get subarray
 	require
 		from <= to /// subarray not empty		
 		lower <= from /// from is greater or equal than lower
 		to <= upper /// to is less or equal than upper
-	virtual
+	abstract
 	ensure
 		return.count = to - from + 1 /// resulting subarray has valid number of elements 
 	end
@@ -960,7 +960,7 @@ require
 	lower <= upper - 1 /// Consistent  array range – lower index is not greater than upper when array is not empty. Array is empty when lower = upper - 1
 end // AnArray [G]
 
-virtual unit OneDimentionalArray [G new ()] extend AnArray [G]
+abstract unit OneDimentionalArray [G new ()] extend AnArray [G]
 	override safe () (pos: Integer): G none
 	override () (pos: Integer; value: G) none
 	override safe () (from, to: Integer): Array [G]
@@ -1196,11 +1196,11 @@ unit DynamicObject
 	
 end // DynamicObject
 
-virtual unit MemberDescriptor
+abstract unit MemberDescriptor
 	final name: String
 end // MemberDescriptor
 
-virtual unit RoutineDescriptor extend MemberDescriptor
+abstract unit RoutineDescriptor extend MemberDescriptor
 	final arguments: Array [ArgumentDescriptor]
 end // RoutineDescriptor
 
@@ -1217,7 +1217,7 @@ final unit FunctionDescriptor extend RoutineDescriptor
 	FunctionDescriptor (:= name; := arguments; := type) none
 end // Function [Arguments -> (), Result]
 
-virtual unit AttributeDescriptor extend MemberDescriptor
+abstract unit AttributeDescriptor extend MemberDescriptor
 	value: Any
 	type: TypeDescriptor
 end // AttributeDescriptor

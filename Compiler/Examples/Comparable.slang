@@ -1,5 +1,5 @@
-virtual unit Comparable 
-	pure < (other: as this ): Boolean virtual
+abstract unit Comparable 
+	pure < (other: as this ): Boolean abstract
 	override pure = (other: as this ): Boolean => not (this < other) and not (other < this)
 	pure > (other: as this ): Boolean => other < this
 	pure <= (other: as this ): Boolean => not (other < this)
