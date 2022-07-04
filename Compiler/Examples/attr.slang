@@ -1,4 +1,4 @@
-unit A
+type A
 
 	final a: T rtn :=
 

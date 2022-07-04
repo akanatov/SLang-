@@ -517,7 +517,7 @@ end -- debug
 	end -- hasStandAloneRoutine
 
 	hasUnit(unitName: String): Array [ClusterDescriptor] is
-		-- returns list of clusters where such unit exists
+		-- returns list of clusters where such type exists
 	require
 		non_void_unit_name: unitName /= Void
 	local
@@ -893,27 +893,27 @@ debug
 end	-- debug
 		clusters := sysDsc.hasUnit(unitExternalName)
 		if clusters = Void or else clusters.count = 0 then
-			-- Such unit is not found in the search universe !!!
-			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided universe")
+			-- Such type is not found in the search universe !!!
+			o.putNL ("Error: type `" + unitPrintableName + "` is not found in the provided universe")
 			-- Let's parse all sources across all clusters!
 		elseif clusters.count > 1 then
-			-- More than one unit is found in the search universe !!!
-			o.putNL ("Error: " + clusters.count.out + " versions of unit `" + unitPrintableName + "` found in the provided universe. Select only one to be used")
+			-- More than one type is found in the search universe !!!
+			o.putNL ("Error: " + clusters.count.out + " versions of type `" + unitPrintableName + "` found in the provided universe. Select only one to be used")
 		else
 			-- Load it
 			o.putLine ("Loading interface of `" + unitPrintableName + "`")
 			Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
 			if Result = Void then
-				-- There was a problem to load unit interface 
-				o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
+				-- There was a problem to load type interface 
+				o.putNL ("Error: type `" + unitPrintableName + "` was not loaded correctly")
 			elseif fs.file_exists(Result.srcFileName) then
-				-- Check if the unit source file was changed after unit IR was created. If necessary run the parser. 
+				-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
 				if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
 					-- Ensure source file parsed
 					Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
 				end -- if
 			else
-				o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place")
+				o.putNL ("Warning: source file for the type `" + unitPrintableName + "` is no longer in place")
 			end -- if
 		end -- if
 	end -- loadUnitInterface
@@ -1004,7 +1004,7 @@ feature {None}
 	
 feature {Any}	
 
-	-- Parsing unit
+	-- Parsing type
 	unit_stringPool: Sorted_Array [String]
 	unit_typePool: Sorted_Array[TypeDescriptor]
 
@@ -1127,23 +1127,23 @@ inherit
 create	
 	init, make
 feature {Any}
-	unit: UnitDeclarationDescriptor
+	type: UnitDeclarationDescriptor
 
 	init (scn: like scanner) is
 	do
 		init_pools (scn)
-		unit := Void -- ????
+		type := Void -- ????
 	end -- init
 	
 	make is
 	do
 		init_pools (Void)
-		--unit := Void -- ????
+		--type := Void -- ????
 	end -- make
 
 	--isInvalid: Boolean is
 	--do
-	--	Result := unit.isInvalid(sysDsc)
+	--	Result := type.isInvalid(sysDsc)
 	--end -- isInvalid
 
 	--failedToGenerate (generators: Array [CodeGenerator]): Boolean is
@@ -1157,7 +1157,7 @@ feature {Any}
 	--	until
 	--		j > m
 	--	loop
-	--		if unit.failedToGenerate(generators.item (j)) then
+	--		if type.failedToGenerate(generators.item (j)) then
 	--			Result := True
 	--		end -- if
 	--		j := j + 1
@@ -1176,8 +1176,8 @@ feature {Any}
 	require
 		non_void_unitDsc: unitDsc /= Void
 	do
-		if unit.is_equal (unitDsc) then
-			unit := unitDsc
+		if type.is_equal (unitDsc) then
+			type := unitDsc
 		end -- if
 	end -- sameUnitFill
 	
@@ -1187,7 +1187,7 @@ feature {Any}
 	do
 		uImage := loadUnitIR (fileName, o)
 		if uImage /= Void then
-			unit 		:= uImage.unit
+			type 		:= uImage.type
 			useConst	:= uImage.useConst	
 			stringPool	:= uImage.stringPool	
 			typePool	:= uImage.typePool	
@@ -1207,7 +1207,7 @@ feature {None}
 		wasError: Boolean
 	do
 		if wasError then
-			o.putNL ("Consistency error: unable to load unit code from file `" + fileName + "`")
+			o.putNL ("Consistency error: unable to load type code from file `" + fileName + "`")
 			Result := Void
 		else
 			create aFile.make_open_read (fileName)
@@ -1215,7 +1215,7 @@ feature {None}
 			Result ?= Result.retrieved (aFile)
 			aFile.close
 			if Result = Void then
-				o.putNL ("Consistency error: file `" + fileName + "` does not contain unit code")
+				o.putNL ("Consistency error: file `" + fileName + "` does not contain type code")
 			end -- if
 		end -- if
 	rescue
@@ -1427,7 +1427,7 @@ feature {Any}
 		until
 			i > n
 		loop
-			-- per unit: useConst + unit
+			-- per type: useConst + type
 			unitDsc := units.item(i)
 			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc, unitDsc.stringPool, unitDsc.typePool)
 			fName := filePrefix  + unitDsc.getExternalName + UnitSuffix + "." + irFileExtension
@@ -1436,15 +1436,15 @@ feature {Any}
 					-- Straightforward decision to store the full copy of IR for the alias name ... May be optimized
 					fName := filePrefix  + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
 					if not IRstored (fName, uImg) then
-						o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
+						o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
 						Result := Result + 1
 					end -- if
 				end -- if
 				if unitOfInterest /= Void then
-					unitOfInterest.sameUnitFill (uImg.unit)
+					unitOfInterest.sameUnitFill (uImg.type)
 				end -- if
 			else
-				o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
+				o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
 			i := i + 1
@@ -1560,17 +1560,17 @@ end -- class RoutineImage
 --end -- class RoutinesImage
 
 class UnitImage
--- local class to store unit IR
+-- local class to store type IR
 inherit
 	IR_Storage
 	end
 create	
 	init, init_empty
 feature {CompilationUnitCommon}
-	unit: UnitDeclarationDescriptor
-	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; u: like unit; sp: like stringPool; tp: like typePool) is
+	type: UnitDeclarationDescriptor
+	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; u: like type; sp: like stringPool; tp: like typePool) is
 	do
-		unit 	:= u
+		type 	:= u
 		init_storage (fn, ts, uc, sp, tp)
 	end -- init
 end -- class UnitImage
@@ -1642,7 +1642,6 @@ feature {Any}
 		until
 			i > n
 		loop
-			--Result.append_character('%T')
 			Result.append_string (getIdent + statements.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
@@ -1854,8 +1853,6 @@ end -- debug
 			until
 				i > n
 			loop
-				--Result.append_character('%T')
-				--Result.append_character('%T')
 				Result.append_string (getIdent + statements.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
@@ -1870,8 +1867,6 @@ end -- debug
 			until
 				i > n
 			loop
-				--Result.append_character('%T')
-				--Result.append_character('%T')
 				Result.append_string (getIdent + whenClauses.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
@@ -1882,17 +1877,12 @@ end -- debug
 			n := whenElseClause.count
 			if n > 0 then
 				from
-					--Result.append_character('%T')
-					--Result.append_character('%T')
 					Result.append_string (getIdent + "else%N")
 					incIdent
 					i := 1
 				until
 					i > n
 				loop
-					--Result.append_character('%T')
-					--Result.append_character('%T')
-					--Result.append_character('%T')
 					Result.append_string (getIdent + whenElseClause.item (i).out)
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
@@ -2088,7 +2078,6 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				--Result.append_character('%T')
 				Result.append_string (getIdent + "require%N")
 				incIdent
 				from
@@ -2096,8 +2085,6 @@ feature {Any}
 				until
 					i > n
 				loop
-					--Result.append_character('%T')
-					--Result.append_character('%T')
 					Result.append_string (getIdent + preconditions.item (i).out)	
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
@@ -2110,16 +2097,13 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				--Result.append_character('%T')
 				Result.append_string (getIdent + "foreign%N")	
 			elseif innerBlock = Void then
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				--Result.append_character('%T')
 				Result.append_string (getIdent + "none%N")
 			else
-				--Result.append_character('%T')
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
@@ -2127,8 +2111,6 @@ feature {Any}
 			end -- if
 			n := postconditions.count 
 			if n > 0 then
-				--Result.append_character (' ')
-				--Result.append_character('%T')
 				Result.append_string (getIdent + "ensure%N")	
 				incIdent
 				from
@@ -2136,8 +2118,6 @@ feature {Any}
 				until
 					i > n
 				loop
-					--Result.append_character('%T')
-					--Result.append_character('%T')
 					Result.append_string (getIdent + postconditions.item (i).out)	
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
@@ -2150,7 +2130,6 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				--Result.append_character('%T')
 				Result.append_string (getIdent +  "end // " + name)	
 			end -- if
 		end -- if
@@ -2501,7 +2480,7 @@ end -- class UseConstBlock
 
 class UnitDeclarationDescriptor
 -- UnitDeclaration: ([final] [ref|val|concurrent])|[abstract]|[extend]
--- unit Identifier [AliasName] [FormalGenerics] [InheritDirective] [EnclosedUseDirective]
+-- type Identifier [AliasName] [FormalGenerics] [InheritDirective] [EnclosedUseDirective]
 -- [MemberSelection]
 -- [InheritedMemberOverriding]
 -- [InitProcedureInheritance]
@@ -2729,7 +2708,7 @@ feature {Any}
 				Result.append_string ("concurrent ")
 			end -- if
 		end -- if
-		Result.append_string ("unit " + name)
+		Result.append_string ("type " + name)
 		if aliasName /= Void then
 			Result.append_string (" alias " + aliasName)
 		end
@@ -2900,12 +2879,11 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string (getIdent + "// " + n.out + " unit initializer(s)%N")
+				Result.append_string (getIdent + "// " + n.out + " type initializer(s)%N")
 				incIdent
 			until
 				i > n
 			loop
-				--Result.append_character('%T')
 				Result.append_string (getIdent + initMembers.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
@@ -2922,12 +2900,11 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string (getIdent + "// " + n.out + " unit member(s)%N")
+				Result.append_string (getIdent + "// " + n.out + " type member(s)%N")
 				incIdent
 			until
 				i > n
 			loop
-				--Result.append_character('%T')
 				Result.append_string (getIdent + unitMembers.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
@@ -2949,7 +2926,6 @@ feature {Any}
 			until
 				i > n
 			loop
-				--Result.append_character('%T')
 				Result.append_string (getIdent + invariantPredicates.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
@@ -2961,7 +2937,7 @@ feature {Any}
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		Result.append_string (getIdent + "end // unit " + name + "%N")
+		Result.append_string (getIdent + "end // type " + name + "%N")
 	end -- out
 	setAliasName (aName: like aliasName) is
 	do
@@ -3002,7 +2978,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		-- One source must have only one unit extension for the particular unit as < can not be defined for extension to the same unit.
+		-- One source must have only one type extension for the particular type as < can not be defined for extension to the same type.
 		Result := name.is_equal (other.name) and then isExtension = other.isExtension
 		if Result then
 			n := formalGenerics.count
@@ -4144,15 +4120,12 @@ feature {Any}
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
 					end -- if
-					--Result.append_character('%T')
 					Result.append_string (getIdent + "require%N")
 					incIdent
 					i := 1
 				until
 					i > n
 				loop
-					--Result.append_character('%T')
-					--Result.append_character('%T')
 					Result.append_string (getIdent + preconditions.item (i).out)
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
@@ -4167,13 +4140,11 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			--Result.append_character('%T')
 			Result.append_string (getIdent + "abstract%N")
 		elseif isForeign then
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			--Result.append_character('%T')
 			Result.append_string (getIdent + "foreign%N")
 		elseif isOneLine then
 			Result.append_string (" => ")
@@ -4187,7 +4158,6 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			--Result.append_character('%T')
 			Result.append_string (getIdent + "none")
 		else
 			if Result.item (Result.count) /= '%N' then
@@ -4203,15 +4173,12 @@ feature {Any}
 					if Result.item (Result.count) /= '%N' then
 						Result.append_string ("%N")
 					end -- if
-					--Result.append_character('%T')
 					Result.append_string (getIdent + "ensure%N")
 					incIdent
 					i := 1
 				until
 					i > n
 				loop
-					--Result.append_character('%T')
-					--Result.append_character('%T')
 					Result.append_string (getIdent + postconditions.item (i).out)
 					if Result.item (Result.count) /= '%N' then
 						Result.append_string ("%N")
@@ -6332,7 +6299,8 @@ end -- class EntityDescriptor
 class IdentifierDescriptor
 inherit
 	--CallDescriptor
-	ConstExpressionDescriptor -- ExpressionDescriptor
+	--ConstExpressionDescriptor
+	ExpressionDescriptor
 		redefine
 			getExternalName
 		--	sameAs, lessThan
@@ -7142,7 +7110,8 @@ inherit
 	--CallDescriptor
 	--	redefine
 	--		sameAs, lessThan
-	ConstExpressionDescriptor --ExpressionDescriptor
+	--ConstExpressionDescriptor
+	ExpressionDescriptor
 	end
 create
 	init
@@ -7488,7 +7457,8 @@ inherit
 		undefine
 			is_equal, infix "<"
 	end
-	ConstExpressionDescriptor --ExpressionDescriptor
+	--ConstExpressionDescriptor
+	ExpressionDescriptor
 	end
 feature {Any}
 	callChain: Array [CallChainElement]	
@@ -9812,7 +9782,7 @@ feature {Any}
 end -- class AttachedTypeDescriptor
 
 class AnonymousUnitTypeDescriptor
--- AnonymousUnitType "unit" MemberDesciption {[";"] MemberDesciption} "end"
+-- AnonymousUnitType "type" MemberDesciption {[";"] MemberDesciption} "end"
 -- MemberDescription: ([rtn] RoutineName[Signature])|(Idenitifer{","Idenitifer} ":" UnitType)
 inherit	
 	AttachedTypeDescriptor
@@ -9838,7 +9808,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := "unit"
+		Result := "type"
 		from
 			i := 1
 			n := members.count
@@ -9856,7 +9826,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := getIdent + "unit "
+		Result := getIdent + "type "
 		from
 			i := 1
 			n := members.count
@@ -9868,7 +9838,6 @@ feature {Any}
 			Result.append_string (members.item (i).out)
 			if i \\ 4 = 0 then
 				Result.append_character ('%N')
-				--Result.append_character ('%T')
 				Result.append_string (getIdent)
 			else
 				Result.append_character (' ')
@@ -10262,9 +10231,11 @@ inherit
 create
 	init
 feature {Any}
-	left, right: ConstExpressionDescriptor -- ExpressionDescriptor
+	--left, right: ConstExpressionDescriptor
+	left, right: ExpressionDescriptor
 	operator: String
-	expr: ConstExpressionDescriptor -- ExpressionDescriptor
+	--expr: ConstExpressionDescriptor -- ExpressionDescriptor
+	expr: ExpressionDescriptor
 	init (l: like left; o: like operator; e: like expr; r: like right) is
 	require
 		non_void_left: l /= Void
@@ -10365,14 +10336,15 @@ invariant
 end -- class FixedRangeTypeDescriptor
 
 class EnumeratedRangeTypeDescriptor
--- 	(ConstantExpression {"|" ConstantExpression})
+-- 	(ConstantExpression {"," ConstantExpression})
 inherit
 	RangeTypeDescriptor
 	end
 create
 	init
 feature {Any}
-	values: Array [ConstExpressionDescriptor] -- ExpressionDescriptor]
+	--values: Array [ConstExpressionDescriptor]
+	values: Array [ExpressionDescriptor]
 	init (v: like values) is
 	require
 		values_not_void: v /= Void
@@ -10413,7 +10385,7 @@ feature {Any}
 		loop
 			Result.append_string (values.item (i).out)
 			if i < n then
-				Result.append_string (" | ")
+				Result.append_string (", ")
 			end -- if
 			i := i + 1
 		end -- loop
@@ -11350,7 +11322,7 @@ end -- debug
 		if interface = Void then
 			if generics.count > 0 then
 				typePool := context.typePool
--- Need to search for the generic unit not the instantiation !!! Replace Current with the proper node!!!
+-- Need to search for the generic type not the instantiation !!! Replace Current with the proper node!!!
 				unitTypeDsc ?= typePool.search (Current)
 				if unitTypeDsc = Void then
 debug
@@ -11364,26 +11336,26 @@ end -- debug
 				end -- if
 				if interface = Void then
 					toRegister := True
-					-- ask system desciption to load unit interface 
+					-- ask system desciption to load type interface 
 					interface := context.loadUnitInterface (getExternalName, out, o, Current)
 					if interface /= Void then
 						interface.instantiate (generics)
 					end -- if
 				end -- if
 			else
-				-- ask system desciption to load unit interface 
+				-- ask system desciption to load type interface 
 				interface := context.loadUnitInterface (getExternalName, out, o, Current)
 			end -- if
 			if interface = Void then
 				Result := True
 			elseif toRegister then				
 				-- Regsiter the 'interface' in the pool
-				typePool.add (interface.unit.getUnitTypeDescriptor) -- unit: UnitDeclarationDescriptor
+				typePool.add (interface.type.getUnitTypeDescriptor) -- type: UnitDeclarationDescriptor
 			end -- if
 			if not Result and then aliasName /= Void then
 				-- Register alias if set in the pool
 				-- Not_implemented_yet !!!
-				-- unit A alias B end  unit C alias B end  to be detected !!!
+				-- type A alias B end  type C alias B end  to be detected !!!
 			end -- if
 		end -- if
 	end -- isNotLoaded

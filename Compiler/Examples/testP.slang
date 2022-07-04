@@ -1,19 +1,19 @@
-unit A
+type A
 end
 
-ref unit B
+ref type B
 end
-val unit C
+val type C
 end
-concurrent unit D
+concurrent type D
 end
-extend unit E
+extend type E
 end
-final unit A1
+final type A1
 end
-final ref unit B1
+final ref type B1
 end
-final val unit C1
+final val type C1
 end
-final concurrent unit D1
+final concurrent type D1
 end

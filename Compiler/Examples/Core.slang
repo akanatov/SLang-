@@ -1,9 +1,9 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.12 July 2nd 2022
+// Version 0.99.13 July 4th 2022
 build Kernel from "." // Kernel library is to be built from all SLang files from the current folder
 end
 
-val unit Bit
+val type Bit
     const : // Bit is just 0 or 1
          0b0, 0b1
     end
@@ -37,7 +37,7 @@ val unit Bit
 	end // -
 end // Bit
 
-abstract unit () extend Enumeration // That is a tuple unit
+abstract type () extend Enumeration // That is a tuple type
 	
 	() (pos: Cardinal; value: Any)
 	/// It puts element into tuple at position, put by position
@@ -89,9 +89,9 @@ abstract unit () extend Enumeration // That is a tuple unit
 		end // while
 	end // ord
 
-end /// unit tuple
+end /// type tuple
 
-val unit Bit [bitsCount: Cardinal]
+val type Bit [bitsCount: Cardinal]
 	const : // All Bit constants not longer than B bits in it
 	    //{Bit.0b0 | Bit.0b1}N
 	end
@@ -173,8 +173,6 @@ val unit Bit [bitsCount: Cardinal]
 		else
 			return 1
 		end
-	/*ensure
-		return in 0 .. 1 /// Valid Integer from Bit */
 	end // ()
 	pure toInteger: Integer do
 		/// Build Integer from Bit  - sign bit is not processed !!!!! Negative !!!
@@ -228,8 +226,8 @@ require
 	bitsCount > 0 /// Number of Bits is greater than zero
 end // Bit [N]
 
-abstract unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.maxCardinal]
-	// Adding all constant objects from basic units allows to use these constants without respective unit name prefix.
+abstract type Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.maxCardinal], Pointer
+	// Adding all constant objects from basic units allows to use these constants without respective type name prefix.
 
 
 	/// Shallow equality tests
@@ -259,14 +257,14 @@ abstract unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ 
 	
 end // Any
 
-final unit System
+final type System
 	pure clone (object: Any): as object foreign
 		/// Shallow version of the object clone operation
 	pure deepClone (object: Any): as object foreign
 		/// Deep version of the object clone operation
 end // System
 
-final unit Platform
+final type Platform
 
 	const
 		bitsInByteCount is 8,
@@ -283,7 +281,7 @@ require
 	realBitsCount = realMantissaBitsCount + realOrderBitsCount + 1
 end // Platform
 
-abstract unit Numeric
+abstract type Numeric
 	pure one: as this abstract
 		/// Definition of One
 	pure zero: as this abstract
@@ -321,7 +319,7 @@ require
 	one = this / this	/// Division constituent
 end // Numeric
 
-abstract unit Comparable 
+abstract type Comparable 
 	safe < (other: as this ): Boolean abstract
 	override pure = (other: as this ): Boolean => not (this < other) and not (other < this)
 	final safe > (other: as this ): Boolean => other < this
@@ -334,7 +332,7 @@ require
 	not ( this < this ) /// Irreflexive comparison
 end // Comparable
 
-abstract unit Enumeration
+abstract type Enumeration
 	safe succ: as this 
 	/// successor of the current object
 	require
@@ -382,9 +380,25 @@ require
 	count > 0 implies this.ord in 1 .. count
 end // Enumeration
 
-val unit Pointer
+type Memory
+	allocate (size: Cardinal): Pointer
+	require
+		size > 0 /// Chunk should be not empty
+	none
+	free (area: Pointer)
+	require
+		areaAllocated (area)
+	none
+	areaAllocated(area: Pointer): Boolean
+	none
+end // Memory
+
+val type Pointer
 	/// Unit Pointer allows to introduce address arithmetics in a safe way :-)
 	// WIP!!!
+	const: 
+		null (Cardinal.0)
+	end
 	override const sizeof: Cardinal is Platform.pointerBitsCount / Platform.bitsInByteCount
 	write (b: Byte) none
 	write (ab: Array [Byte]) none
@@ -406,7 +420,7 @@ require
 	validPointer (this) /// Any pointer must be valid in terms of underlying OS to provide acess to data
 end // Pointer
 
-val unit Region
+val type Region
 	address: Pointer
 	size: Cardinal
 	safe isAllocated: Boolean => size > 0
@@ -421,11 +435,11 @@ val unit Region
 	end // malloc */
 end // Region
 
-val unit Cardinal alias Uint extend Cardinal [Platform.cardinalBitsCount]
+val type Cardinal alias Uint extend Cardinal [Platform.cardinalBitsCount]
 	new Cardinal[Platform.cardinalBitsCount]( as this ), Cardinal[Platform.cardinalBitsCount]
 end // Cardinal
 
-val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
+val type Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
 	// WIP!!!!
 	// the caveat how to distingush Integer.1 from Cardinal.1 - now Cardinal constants are not imported into Any due to name clash!!! .... 
 	// Cardinal must have := (that: Integer) toi ensure we may assign Integer to Cardinal with proper precondition!!! 
@@ -465,11 +479,11 @@ val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
 	end // :=
 end // Cardinal
 
-val unit Integer extend Integer [Platform.integerBitsCount]
+val type Integer extend Integer [Platform.integerBitsCount]
 	new Integer [Platform.integerBitsCount] (Integer), Integer [Platform.integerBitsCount]
 end // Integer
 
-val unit Integer [bitsCount: Cardinal] extend Numeric, Enumeration
+val type Integer [bitsCount: Cardinal] extend Numeric, Enumeration
 	const : // That is ordered set defined as range of all Integer constant values (objects)
 		minInteger .. maxInteger
 	end
@@ -609,9 +623,9 @@ val unit Integer [bitsCount: Cardinal] extend Numeric, Enumeration
 	end
 end // Integer
 
-//val unit Byte extend Bit [Platform.bitsInByteCount] use const Bit [Platform.bitsInByteCount]
+//val type Byte extend Bit [Platform.bitsInByteCount] use const Bit [Platform.bitsInByteCount]
 //end
-val unit Byte
+val type Byte
 	// WIP - to be fully implemented
 	Byte (value: Byte) do
 		data is value.data
@@ -623,7 +637,7 @@ val unit Byte
 	{} data: Bit [Platform.bitsInByteCount]	
 end // Byte
 
-abstract unit Rational extend Numeric, Comparable
+abstract type Rational extend Numeric, Comparable
 	numerator: Integer
 	denominator: Integer
 	pure toReal: Real => numerator / denominator
@@ -632,19 +646,19 @@ require
 	denominator /= 0 /// denominator must not be zero
 end // Rational
 
-abstract unit Fixed extend Numeric, Comparable
+abstract type Fixed extend Numeric, Comparable
 	value: Integer
 	scaleFactor: Integer // if scaleFactor is negative do scale is 1/-scaleFactor otherwise scaleFactor is scaleFactor :-)
 	pure toReal: Real => if scaleFactor < 0 do value / - scaleFactor else value * scaleFactor
 	// TBD!!!
 end // Fixed
 
-abstract unit Float [nBits: Integer] extend Numeric, Comparable
+abstract type Float [nBits: Integer] extend Numeric, Comparable
 	toReal: Real abstract
 	// TBD!!!
 end // Float
 
-val unit Real extend Float [Platform.realBitsCount]
+val type Real extend Float [Platform.realBitsCount]
 	const : // All Real numbers 
 		//{minReal + epsilon} <= maxReal
 		minReal {+epsilon} .. maxReal
@@ -742,10 +756,10 @@ val unit Real extend Float [Platform.realBitsCount]
 	{} data : Bit [Platform.realBitsCount]	
 end // Real
 
-val unit Character alias Char extend Enumeration
-	const : // The set of all constant objects of unit type Character
+val type Character alias Char extend Enumeration
+	const : // The set of all constant objects of type type Character
 		minCharacter .. maxCharacter
-	end	
+	end	// const
 	const minCharacter is 0.toCharacter
 	const maxCharacter is (2 ^ Platform.characterBitsCount - 1).toCharacter
 	override safe succ: as this => (this.toInteger + one).toCharacter
@@ -772,7 +786,7 @@ val unit Character alias Char extend Enumeration
 	{} data : Bit [Platform.characterBitsCount]	
 end // Character
 
-val unit Boolean alias Bool extend Enumeration
+val type Boolean alias Bool extend Enumeration
 	const : // That is an ordered set of two constant object of type Boolean
 		false(zero), true(one)		
 	end
@@ -835,19 +849,19 @@ end // Boolean
 
 // UTF-8, Unicode etc - need to think more 
 
-abstract unit AString extend Comparable
+abstract type AString extend Comparable
 	/// virtualization of String
 	{} data: Array [Bit [8]] // Byte array of data
-end // unit Astring
+end // type Astring
 
-unit String [stringLength:Integer] extend AString, Array [Character, stringLength]
+type String [stringLength:Integer] extend AString, Array [Character, stringLength]
 	/// String with fixed length
 	const : // "" .. "Character*" - all Strings of size not more than stringLength
 		//{Character.minCharacter |.. Character.maxCharacter}stringLength
 	end
 end
 
-unit String extend AString
+type String extend AString
 	/// Variable length String
 	const : // "" .. "Character*" - all Strings are defined here
 		//{Character.minCharacter |.. Character.maxCharacter}0+		
@@ -916,7 +930,7 @@ unit String extend AString
 	{} data: Array [Character] // Dynamic empty array of characters
 end // String
 
-abstract unit AnArray [G]
+abstract type AnArray [G]
 	///   General one dimensional array  
 	() (pos: Integer): G 
 		/// Get array element at position pos
@@ -960,7 +974,7 @@ require
 	lower <= upper - 1 /// Consistent  array range – lower index is not greater than upper when array is not empty. Array is empty when lower = upper - 1
 end // AnArray [G]
 
-abstract unit OneDimentionalArray [G new ()] extend AnArray [G]
+abstract type OneDimentionalArray [G new ()] extend AnArray [G]
 	override safe () (pos: Integer): G none
 	override () (pos: Integer; value: G) none
 	override safe () (from, to: Integer): Array [G]
@@ -974,7 +988,7 @@ abstract unit OneDimentionalArray [G new ()] extend AnArray [G]
 	end
 end
 
-unit Array [G new (), arrayLength: Cardinal] extend OneDimentionalArray [G]
+type Array [G new (), arrayLength: Cardinal] extend OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a0 is Array [Integer, 5]
@@ -997,7 +1011,7 @@ unit Array [G new (), arrayLength: Cardinal] extend OneDimentionalArray [G]
 	end
 end // Array
 
-unit Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray [G]
+type Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a1 is Array [Real, (10,25)]
@@ -1019,7 +1033,7 @@ unit Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray
 end // Array
 
 
-unit Array [G new ()] extend OneDimentionalArray [G]
+type Array [G new ()] extend OneDimentionalArray [G]
 ///   Dynamic array
 // We can put info Array only objects which has constructor with empty signature !!! We are always safe - no uninitilized data!!! 
 	override safe () (pos: Integer): G none
@@ -1070,7 +1084,7 @@ unit Array [G new ()] extend OneDimentionalArray [G]
 	none
 end // Array
 
-/*unit Array [G new (), dimentions: (Integer|Integer .. Integer)] extend Array [G, numberOfElementsInLinearArray ]
+/*type Array [G new (), dimentions: (Integer|Integer .. Integer)] extend Array [G, numberOfElementsInLinearArray ]
 ///   Multi dimentional static array .... WIP!!!
 /*
 	a0 is Array [Integer, (5, 4)]
@@ -1082,9 +1096,9 @@ end // Array
 		var result is 0
 		while dim in dimentions do
 			if dim
-				:Integer
+				case Integer
 					result := result + dim
-				:Integer .. Integer
+				case Integer .. Integer
 					result := result + dim.last - dim.first + 1
 			else
 				raise "Bad array"
@@ -1094,7 +1108,7 @@ end // Array
 	end
 end // Array 
 */
-unit StandardIO alias IO
+type StandardIO alias IO
 	StandardIO do
 		// Init procedure is missed or way how to setup IO !!!!
 	end // StandardIO
@@ -1136,14 +1150,14 @@ unit StandardIO alias IO
 end // StandardIO
 
 // How to deal with dynamic objects .... WIP !!!
-unit DynamicObject
-	/* This unit allows to deal with dynamically loaded/created objects 
+type DynamicObject
+	/* This type allows to deal with dynamically loaded/created objects 
 	providing dynamic type checking.
 	*/
 	// Access members by name
 	final call (rtn_name: String; args: ()) do
 		rtn_descr is findRoutine(rtn_name)
-		if rtn_descr is ProcedureDescriptor do
+		if rtn_descr type ProcedureDescriptor do
 			call (rtn_descr, args)
 		else
 			raise "Call to non-existing procedure `" + rtn_name + "`"
@@ -1151,7 +1165,7 @@ unit DynamicObject
 	end
 	final call (rtn_name: String; args: ()): Any do
 		rtn_descr is findRoutine(rtn_name)
-		if rtn_descr is FunctionDescriptor do
+		if rtn_descr type FunctionDescriptor do
 			return call (rtn_descr, args)
 		else
 			raise "Call to non-existing function `" + rtn_name + "`"
@@ -1159,7 +1173,7 @@ unit DynamicObject
 	end
 	final get_value (attr_name: String): Any do
 		attr_descr is findAttribute (attr_name)
-		if attr_descr is AttributeDescriptor do
+		if attr_descr type AttributeDescriptor do
 			return attr_descr.value
 		else
 			raise "Access to non-existing attribute `" + attr_name + "`"
@@ -1167,7 +1181,7 @@ unit DynamicObject
 	end
 	final set_value (attr_name: String; value: Any) do
 		attr_descr is findAttribute (attr_name)
-		if attr_descr is VariableDescriptor do
+		if attr_descr type VariableDescriptor do
 			attr_descr.value := value
 		else
 			raise "Access to non-existing/writable attribute `" + attr_name + "`"
@@ -1196,42 +1210,42 @@ unit DynamicObject
 	
 end // DynamicObject
 
-abstract unit MemberDescriptor
+abstract type MemberDescriptor
 	final name: String
 end // MemberDescriptor
 
-abstract unit RoutineDescriptor extend MemberDescriptor
+abstract type RoutineDescriptor extend MemberDescriptor
 	final arguments: Array [ArgumentDescriptor]
 end // RoutineDescriptor
 
-final unit ProcedureDescriptor extend RoutineDescriptor
+final type ProcedureDescriptor extend RoutineDescriptor
 	() alias apply (args: ()) foreign
 		// That is a procedure call
 	ProcedureDescriptor (:= name; := arguments) none
 end // Procedure [Arguments -> ()]
 
-final unit FunctionDescriptor extend RoutineDescriptor
-	type: TypeDescriptor
+final type FunctionDescriptor extend RoutineDescriptor
+	fType: TypeDescriptor
 	() alias apply (args: Arguments): Any none
 		// That is a function call
-	FunctionDescriptor (:= name; := arguments; := type) none
+	FunctionDescriptor (:= name; := arguments; := fType) none
 end // Function [Arguments -> (), Result]
 
-abstract unit AttributeDescriptor extend MemberDescriptor
+abstract type AttributeDescriptor extend MemberDescriptor
 	value: Any
-	type: TypeDescriptor
+	aType: TypeDescriptor
 end // AttributeDescriptor
 
-final unit VariableDescriptor extend AttributeDescriptor 
+final type VariableDescriptor extend AttributeDescriptor 
 	override := alias set (:= value) none
-	VariableDescriptor (:= name; := type; := value) none
+	VariableDescriptor (:= name; := aType; := value) none
 end // VariableDescriptor
 
-final unit ConstantDescriptor extend AttributeDescriptor 
-	ConstantDescriptor (:= name; := type; := value) none
+final type ConstantDescriptor extend AttributeDescriptor 
+	ConstantDescriptor (:= name; := aType; := value) none
 end // ConstantDescriptor
 
-final unit TypeDescriptior
+final type TypeDescriptior
 	final name: String
 	final routines : Array [RoutineDescriptor]
 	final attributes : Array [AttributeDescriptor]

@@ -105,7 +105,7 @@ end -- debug
 							create aliasTypeDsc.init (typeDsc.aliasName, attachedTypeDsc)
 							if not aliasTypes.added (aliasTypeDsc) then
 	-- not_implemented_yet: It should be a validity error !!!
-								o.putNL ("Error: at least two unit types has the same alias `" + typeDsc.aliasName + "`")
+								o.putNL ("Error: at least two type types has the same alias `" + typeDsc.aliasName + "`")
 								Result := True
 							end -- if
 						end -- if
@@ -298,30 +298,30 @@ feature {None}
 		-- Find entry point.
 		entryPointName := sysDsc.entry
 		if entryPointName.item (1) = entryPointName.item (1).as_upper then
-			-- Entry point is the unit name!
+			-- Entry point is the type name!
 			clusters := sysDsc.hasUnit (entryPointName)
 			if clusters = Void or else clusters.count = 0 then
-				-- Such unit is not found in the search universe !!!
-				o.putNL ("Error: root unit `" + entryPointName + "` is not found in the provided universe")
+				-- Such type is not found in the search universe !!!
+				o.putNL ("Error: root type `" + entryPointName + "` is not found in the provided universe")
 			elseif clusters.count > 1 then
-				-- More than one unit is found in the search universe !!!
-				o.putNL ("Error: " + clusters.count.out + " versions of the root unit `" + entryPointName + "` found in the provided universe. Select only one to be used")
+				-- More than one type is found in the search universe !!!
+				o.putNL ("Error: " + clusters.count.out + " versions of the root type `" + entryPointName + "` found in the provided universe. Select only one to be used")
 			else
-not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "`")
+not_implemented_yet ("Building executable `" + sysDsc.name + "` from type `" + sysDsc.entry + "`")
 				-- Load it
 --				o.putLine ("Loading interface of the root `" + entryPointName + "`")
 --				Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
 --				if Result = Void then
---					-- There was a problem to load unit interface 
---					o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
+--					-- There was a problem to load type interface 
+--					o.putNL ("Error: type `" + unitPrintableName + "` was not loaded correctly")
 --				elseif fs.file_exists(Result.srcFileName) then
---					-- Check if the unit source file was changed after unit IR was created. If necessary run the parser. 
+--					-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
 --					if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
 --						-- Ensure source file parsed
 --						Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
 --					end -- if
 --				else
---					o.putNL ("Warning: source file for the root unit `" + unitPrintableName + "` is no longer in place")
+--					o.putNL ("Warning: source file for the root type `" + unitPrintableName + "` is no longer in place")
 --				end -- if
 			end -- if	
 		else
@@ -407,13 +407,13 @@ end -- debug
 					create unitDsc.make 
 					if unitDsc.UnitIR_Loaded (fileDsc.path, o) then
 debug
-	trace ("Unit `" + unitDsc.unit.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+	trace ("Unit `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
 end -- debug
 	-- How to ignore alias code ... Or process it ....
-	--					if cuDsc.unit.name.is_equal () then
+	--					if cuDsc.type.name.is_equal () then
 							-- That is not alias code
 							unitDsc.attachSystemDescription (sysDsc)
-							if unitDsc.unit.isInvalid (unitDsc, o) then
+							if unitDsc.type.isInvalid (unitDsc, o) then
 								Result := True
 							else
 								from
@@ -422,7 +422,7 @@ end -- debug
 								until
 									j > m
 								loop
-									unitDsc.unit.generate(generators.item (j))
+									unitDsc.type.generate(generators.item (j))
 									j := j + 1
 								end -- loop
 							end -- if

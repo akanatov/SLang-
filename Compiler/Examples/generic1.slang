@@ -2,15 +2,15 @@ a: A[rtn]
 
 
 
-unit A1[G]
+type A1[G]
 end
 
-unit A2[G new]
+type A2[G new]
 end
 
-unit A3[t:Type]
+type A3[t:Type]
 end
 
 
-unit A4[r:rtn ]
+type A4[r:rtn ]
 end

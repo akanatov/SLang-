@@ -1,4 +1,4 @@
-unit Person
+type Person
 	foo do
 		b is not isMarried()
 		a is not this ()

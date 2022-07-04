@@ -1,4 +1,4 @@
-unit TokenDescriptor
+type TokenDescriptor
 	token: Integer // current token
 	tokenRow: Integer // current token row
 	tokenCol: Integer // current token column
@@ -10,9 +10,9 @@ unit TokenDescriptor
 		tokenCol:= c
 		buffer:= b
 	end // init
-end // unit TokenDescriptor
+end // type TokenDescriptor
 
-unit SLang_Scanner
+type SLang_Scanner
 	token: Integer // current token
 	tokenRow: Integer // current token row
 	tokenCol: Integer // current token column
@@ -171,7 +171,7 @@ unit SLang_Scanner
 				"select",
 				"system",
 				"this",
-				"unit",
+				"type",
 				"use",
 				"val",
 				"var",
@@ -196,7 +196,7 @@ unit SLang_Scanner
 				"=>",
 				"end // if",
 				"end // block",
-				"end // unit",
+				"end // type",
 				"end // routine",
 				"end // loop",
 				"<",
@@ -1479,7 +1479,7 @@ unit SLang_Scanner
 			else
 				return identifier_token
 			end
-		case  'u' // "unit", "use"
+		case  'u' // "type", "use"
 			if buff_len
 			case  3 
 				if buffer (2) = 's' and then buffer (3) = 'e' do
@@ -1585,4 +1585,4 @@ unit SLang_Scanner
 	
 	no_token_assigned: Integer is -1
 	
-end // unit SLang_Scanner
+end // type SLang_Scanner

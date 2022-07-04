@@ -78,7 +78,7 @@ feature {Any}
 			inspect
 				scanner.token
 			when scanner.illegal_token then
-				syntaxError ("Compilation unit start expected", <<scanner.illegal_token>>, unit_folowers)
+				syntaxError ("Compilation type start expected", <<scanner.illegal_token>>, unit_folowers)
 				toExit := True
 			when scanner.eof_token then
 				toExit := True
@@ -98,122 +98,122 @@ end
 					-- parse use_const clause
 					parseUseClause
 				-- Unit start: ([final] [ref|val|concurrent])|[abstract]|[extend]
-				when scanner.final_token then -- parse final unit
+				when scanner.final_token then -- parse final type
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.ref_token then -- parse ref unit
+					when scanner.ref_token then -- parse ref type
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.unit_token then -- parse unit
+						when scanner.type_token then -- parse type
 							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 							parseUnit (True, True, False, False, False, False)
 						else
-							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+							syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
 							toExit := True
 						end
-					when scanner.val_token then -- parse val unit
+					when scanner.val_token then -- parse val type
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.unit_token then -- parse unit
+						when scanner.type_token then -- parse type
 							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 							parseUnit (True, False, True, False, False, False)
 						else
-							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+							syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
 						end
-					when scanner.concurrent_token then -- parse concurrent unit
+					when scanner.concurrent_token then -- parse concurrent type
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.unit_token then -- parse unit
+						when scanner.type_token then -- parse type
 							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 							parseUnit (True, False, False, True, False, False)
 						else
-							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+							syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
 						end
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse type
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.type_name_token then -- parse unit
+						when scanner.type_name_token then -- parse type
 							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 							parseUnit (True, False, False, False, False, False)
 						else
 							syntaxError ("Unit name expected", <<scanner.type_name_token>>,<<>>)
 						end
 					else
-						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.type_token>>, unit_folowers)
 					end -- inspect
 					ast.stop_unit_parsing
-				when scanner.ref_token then -- parse ref unit
+				when scanner.ref_token then -- parse ref type
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, True, False, False, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.val_token then -- parse val unit
+				when scanner.val_token then -- parse val type
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, True, False, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.concurrent_token then -- parse concurrent unit
+				when scanner.concurrent_token then -- parse concurrent type
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, True, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.abstract_token then -- parse abstract unit
+				when scanner.abstract_token then -- parse abstract type
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, False, True, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.extend_token then -- parse extend unit
+				when scanner.extend_token then -- parse extend type
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, False, False, True)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.unit_token then -- parse unit
+				when scanner.type_token then -- parse type
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.type_name_token then -- parse unit
+					when scanner.type_name_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, False, False, False)
 					else
@@ -254,7 +254,7 @@ end
 				when scanner.identifier_token then -- start of standalone routine or statement of the anonymous one
 -- Not sure what to do with pools !!!!
 					name := scanner.tokenString
-					create identDsc.init (name) -- scanner.tokenString)
+					create identDsc.init (name)
 					ast.add_name_to_standalone_routines_pool (name)
 					scanner.nextToken
 					inspect	
@@ -263,7 +263,7 @@ end
 						-- ident: function defintion or local attribute !!!
 						parseFunctionOrLocalAttribute (name)
 					when scanner.left_paranthesis_token then
-						-- identifier ( .... Huh .... prase further ...
+						-- identifier ( .... Huh .... parse further ...
 						parseAssignmentOrUnqualifiedCallOrRoutineStart (name)
 					when scanner.dot_token then
 						-- Anonymous routine call statement : ident.
@@ -301,9 +301,6 @@ end
 						end -- if					
 						ast.stop_standalone_routine_parsing
 					else
-						--if scanner.Cmode and then (scanner.token = scanner.less_token or else scanner.token = scanner.left_curly_bracket_token)
-						--	or else (scanner.token = scanner.left_square_bracket_token or else scanner.token = scanner.do_token)
-						--then
 						if scanner.blockStart then
 							-- Standalone routine start
 --trace (">>#5")
@@ -315,12 +312,14 @@ end
 							ast.stop_standalone_routine_parsing
 						elseif scanner.genericsStart then
 --trace (">>#5.5")
--- NOT SUPPORTED foo[T]() - call chain !!!
+-- NOT_IMPLEMENTED_YET: not  SUPPORTED foo[T]() - call chain !!!
 -- Parse generics  either declaration or instantiation foo [G] vs foo [Type] vs foo [expr] vs foo [G extend Type] vs foo [G new ...]
--- require|do|foreign|none - stanaloen routine
+-- require|do|foreign|none - standalone routine
 -- foo[Integer] - valid procedure call !!!
 -- foo [Integer] (arguments)
 -- Headache to parse !!!
+-- Temporary assume it is start of standalone rotuine declaration but not call - call will be rejected !!!
+-- How to distinguish between formal generic parameter and real type ... No idea !!!!
 							ast.start_standalone_routine_parsing
 							rtnDsc := parseStandAloneRoutine1 (False, False, name, Void)
 							if rtnDsc /= Void and then not ast.routines.added (rtnDsc) then
@@ -408,7 +407,7 @@ end
 							ast.addStatement (stmtDsc)
 						end -- if				
 					else
-						syntaxError ("Start of compilation unit expected", unit_folowers, <<>>)
+						syntaxError ("Start of compilation expected", unit_folowers, <<>>)
 					end -- if
 				end -- inspect
 			end -- inspect
@@ -449,7 +448,7 @@ feature {None}
 	do
 		Result := <<
 			 scanner.build_token, scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
-			 scanner.abstract_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
+			 scanner.abstract_token, scanner.extend_token, scanner.type_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
 			 scanner.type_name_token,
 			 scanner.if_token, scanner.while_token, scanner.new_token, scanner.detach_token, scanner.raise_token, scanner.return_token,
 			 scanner.left_paranthesis_token, scanner.var_token, scanner.require_token, scanner.rigid_token
@@ -1192,7 +1191,9 @@ end -- debug
 				ast.stop_standalone_routine_parsing
 			elseif not statementProcessed then
 				-- >> unqualified call or assignment
---trace ("Parsing analysis done OK: >> >> unqualified call or assignment")
+				debug
+					--trace ("Parsing analysis done OK: >> >> unqualified call or assignment")
+				end -- debug
 				callDsc := parseUnqalifiedCallWithFirstArgument (name)
 				if callDsc /= Void then
 					if scanner.token = scanner.assignment_token then
@@ -1990,7 +1991,7 @@ end -- debug
 				else
 					unitType ?= nmdDsc
 					if unitType = Void then
-						validity_error ("Formal genric parameter `" + nmdDsc.name + "` can not be used as a parent unit name")
+						validity_error ("Formal genric parameter `" + nmdDsc.name + "` can not be used as a parent type name")
 						wasError := True
 					end -- if
 				end -- if
@@ -2187,7 +2188,7 @@ end
 					if currentUnitDsc.name.is_equal (name) then
 						Result := <<initCallDsc>>
 					else
-						validity_error ("Initializer for unit `" + name + "` can not be called within the unit `" + currentUnitDsc.name + "`")
+						validity_error ("Initializer for type `" + name + "` can not be called within the type `" + currentUnitDsc.name + "`")
 					end -- if
 				when scanner.dot_token then
 					-- ModuleName. 
@@ -2644,6 +2645,9 @@ end -- debug
 				Result := returnDsc
 			end -- inspect
 		when scanner.type_name_token then
+			debug
+				--trace ("expr: type_name - " + scanner.tokenString)
+			end -- debug
 			name := scanner.tokenString
 			scanner.nextToken
 			utnDsc := parseUnitTypeName1 (name, False)
@@ -2721,7 +2725,9 @@ end -- debug
 				when scanner.period_token then
 					-- ident .. Expr kind of range expression
 					-- ident {ConstExpr} .. 
---trace ("<ident>: " + identDsc.out + " ..|{" )
+					debug
+						--trace ("<ident>: " + identDsc.out + " ..|{" )
+					end -- debug
 					Result := parseRangeExpression (identDsc, checkSemicolonAfter)
 				else
 					if scanner.Cmode then
@@ -2922,7 +2928,8 @@ end
 						----create  {ExprOperatorExprDescriptor} Result.init (Result, operator, exprDsc)
 						------Result := exprOpExpr
 					end -- if
-				when scanner.is_token then
+				--when scanner.is_token then
+				when scanner.type_token then
 					toExit := True
 					--scanner.push
 					scanner.nextToken
@@ -4050,7 +4057,7 @@ debug
 end
 	end -- parseAlternativeTag
 	
-	parseModuleCall: StatementDescriptor is
+	parseModuleCall: CallDescriptor is -- Statement
 	require
 		valid_start_token: validToken (<<scanner.type_name_token>>)
 	local
@@ -4079,7 +4086,7 @@ end
 				if nmdDsc /= Void then
 					unitTypeDsc ?= nmdDsc
 					if unitTypeDsc = Void then
-						validity_error ("Improper type `" + nmdDsc.out + "` used as a unit type")
+						validity_error ("Improper type `" + nmdDsc.out + "` used as a type type")
 					else
 						if scanner.token = scanner.dot_token then
 							Result := parseWritableCall (unitTypeDsc)				
@@ -4481,7 +4488,7 @@ end -- debug
 		preconditions := parsePredicates
 		if preconditions /= Void then
 			if scanner.blockEnd then
-				-- That is end of unit !!!
+				-- That is end of type !!!
 				unitDsc.setInvariant (preconditions)
 				create {UnitAttributeDeclarationDescriptor} Result.init (isOverriding, isFinal, False, False, name, returnType, Void, Void)
 				--dtDsc ?= returnType
@@ -5101,7 +5108,7 @@ end -- debug
 							validity_error ( "Importing constants from the formal generic parameter `" + nmdDsc.out + "` is not possible")
 							wasError := True
 						elseif not Result.added (astUnitDsc) then
-							validity_warning ( "Importing constants from the unit `" + astUnitDsc.out + "` more than once") -- .name 
+							validity_warning ( "Importing constants from the type `" + astUnitDsc.out + "` more than once") -- .name 
 							-- wasError := True
 						end -- if 
 						if scanner.token = scanner.comma_token then
@@ -5666,207 +5673,333 @@ end -- debug
 		end -- if
 	end -- parseTupleType
 		
-	parseConstExpression (checkSemicolonAfter: Boolean): ConstExpressionDescriptor is
-	local
-		identDsc: IdentifierDescriptor
-		constDsc: ConstantDescriptor
-		cceDsc: CallChainElement 
-		operator: String
-	do
---trace (">>> parseConstExpression")
-		inspect
-			scanner.token
-		when scanner.identifier_token then
--- not_implemented_yet ("parseConstExpression: <ident>")
-			create identDsc.init (scanner.tokenString)
-			scanner.nextWithSemicolon (checkSemicolonAfter)
-			inspect
-				scanner.token
-			when scanner.operator_token, -- scanner.minus_token,
-				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
-			then
-				-- ident operator
---trace ("<ident>: " + identDsc.out + " <operator>" )
-				Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
-			when scanner.dot_token, scanner.left_paranthesis_token then
-				-- ident. | ident( 
---trace ("<ident>: " + identDsc.out + " .|(" )
-				Result := parseWritableCall (identDsc)
---trace ("Expr: " + Result.out)
-			when scanner.semicolon_token then
-				-- Just identiifer
-				--	Keep semicolon!!! scanner.nextToken
---trace ("<ident>: " + identDsc.out + ";" )
-				Result := identDsc
---				toExit := True
-			else
---trace ("<ident>: " + identDsc.out)
-				-- Just identiifer
-				Result := identDsc
-			end -- inspect
-		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
---not_implemented_yet ("parseConstExpression: <const>")
-			constDsc := parseConstant (checkSemicolonAfter)
-			check
-				non_void_constant_dsc: constDsc /= Void
-			end
-			inspect
-				scanner.token
-			when scanner.operator_token, -- scanner.minus_token,
-				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
-			then 
-				Result := parseBinaryOperatorExpression (constDsc, checkSemicolonAfter)
-			when scanner.semicolon_token then
-				-- Just constant
-				--	Keep semicolon!!! scanner.nextToken
-				Result := constDsc
---				toExit:= True
-			else
-				-- Just constant
-				Result := constDsc
---				toExit:= True
-			end -- inspect
-		-- when scanner.left_paranthesis_token then
-			-- (ConstExpr) -- skipped sp far
-		when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
-			-- Unary expression kind of - 5 or + 6
--- not_implemented_yet ("parseConstExpression: +<const> or -<const>")
-			operator := scanner.tokenString
-			scanner.nextToken
-			inspect
-				scanner.token
-			when scanner.integer_const_token, scanner.real_const_token then
-				if operator.is_equal ("+") then
-					-- ignore plus sign
-					Result := parseConstant (checkSemicolonAfter)				
-				elseif operator.is_equal ("-") then
-					-- negate the constant 
-					constDsc := parseConstant (checkSemicolonAfter)
-					constDsc.negate
-					Result := constDsc
-				else				
-					constDsc := parseConstant (checkSemicolonAfter)
-					check
-						non_void_constant_dsc: constDsc /= Void
-					end
-					create {CallChainElement} cceDsc.init (operator, Void)
-					create {ExpressionCallDescriptor} Result.init (constDsc, <<cceDsc>>)
-				end -- if
-			else
-				syntax_error (<<
-					scanner.integer_const_token, scanner.real_const_token
-				>>)
-			end -- inspect			
-		else
-			syntax_error (<<
-				scanner.identifier_token,
-				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
-				scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
-			>>)
-		end -- inspect
---trace ("<<< parseConstExpression")
-	end -- parseConstExpression
+--	--parseConstExpression (checkSemicolonAfter: Boolean): ConstExpressionDescriptor is
+--	parseConstExpression (checkSemicolonAfter: Boolean): ExpressionDescriptor is
+--	local
+--		identDsc: IdentifierDescriptor
+--		constDsc: ConstantDescriptor
+--		cceDsc: CallChainElement 
+--		operator: String
+--		--name: String
+--		--nmdDsc: NamedTypeDescriptor
+--		--unitTypeDsc: ???
+--		callDsc: CallDescriptor
+--	do
+----trace (">>> parseConstExpression")
+--		inspect
+--			scanner.token
+--		when scanner.identifier_token then
+---- not_implemented_yet ("parseConstExpression: <ident>")
+--			create identDsc.init (scanner.tokenString)
+--			scanner.nextWithSemicolon (checkSemicolonAfter)
+--			inspect
+--				scanner.token
+--			when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+--				-- ident operator
+----trace ("<ident>: " + identDsc.out + " <operator>" )
+--				Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
+--			when scanner.left_square_bracket_token then 
+--				-- ident [
+--				-- Not sure if it will work out !!!
+--				not_implemented_yet ("Call `" + identDsc.name + "[ not suppported yet")
+---- Create proper object and call parseWritableCall
+----				Result := parseWritableCall (identDsc)
+--			when scanner.dot_token, scanner.left_paranthesis_token then
+--				-- ident. | ident( 
+----trace ("<ident>: " + identDsc.out + " .|(" )
+--				Result := parseWritableCall (identDsc)
+----trace ("Expr: " + Result.out)
+--			when scanner.semicolon_token then
+--				-- Just identiifer
+--				--	Keep semicolon!!! scanner.nextToken
+----trace ("<ident>: " + identDsc.out + ";" )
+--				Result := identDsc
+----				toExit := True
+--			else
+----trace ("<ident>: " + identDsc.out)
+--				-- Just identiifer
+--				Result := identDsc
+--			end -- inspect
+--		when scanner.type_name_token then
+--			-- name is ModuleName. ....
+--			callDsc := parseModuleCall
+--			if callDsc /= Void then
+--				Result := callDsc
+--			end -- if
+--			
+--			--name := scanner.tokenString
+--			--scanner.nextToken
+--			--if scanner.genericsStart then
+--			--	-- parse for Type [ ] 
+--			--	nmdDsc := parseUnitTypeName1 (name, False)
+--			--	if nmdDsc /= Void then
+--			--		unitTypeDsc ?= nmdDsc
+--			--	end -- if				
+--			--	--unitTypeDsc := parseUnitTypeName1 (name, False)
+--			--else
+--			--	create unitTypeDsc.init (name, Void)
+--			--	unitTypeDsc ?= register_named_type (unitTypeDsc)
+--			--	if unitTypeDsc = Void then
+--			--		validity_error ("Type `" + name + "` cannot be used as a module")
+--			--	end -- if
+--			--end -- if 
+--			--if unitTypeDsc /= Void then
+--			--	inspect
+--			--		scanner.token
+--			--	when scanner.dot_token then
+--			--		-- ModuleName. 
+--			--		--create unitTypeDsc.init (name, Void)				
+--			--		stmtDsc := parseCallWithOptionalTailAssignment (unitTypeDsc)
+--			--		if stmtDsc /= Void then
+--			--			Result := stmtDsc
+--			--		end -- if
+--			--	else
+--			--		syntax_error (<<scanner.dot_token>>)
+--			--	end -- inspect
+--			--end -- if			
+--		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+----not_implemented_yet ("parseConstExpression: <const>")
+--			constDsc := parseConstant (checkSemicolonAfter)
+--			check
+--				non_void_constant_dsc: constDsc /= Void
+--			end
+--			inspect
+--				scanner.token
+--			when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then 
+--				Result := parseBinaryOperatorExpression (constDsc, checkSemicolonAfter)
+--			when scanner.semicolon_token then
+--				-- Just constant
+--				--	Keep semicolon!!! scanner.nextToken
+--				Result := constDsc
+----				toExit:= True
+--			else
+--				-- Just constant
+--				Result := constDsc
+----				toExit:= True
+--			end -- inspect
+--		-- when scanner.left_paranthesis_token then
+--			-- (ConstExpr) -- skipped sp far
+--		when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+--			-- Unary expression kind of - 5 or + 6
+---- not_implemented_yet ("parseConstExpression: +<const> or -<const>")
+--			operator := scanner.tokenString
+--			scanner.nextToken
+--			inspect
+--				scanner.token
+--			when scanner.integer_const_token, scanner.real_const_token then
+--				if operator.is_equal ("+") then
+--					-- ignore plus sign
+--					Result := parseConstant (checkSemicolonAfter)				
+--				elseif operator.is_equal ("-") then
+--					-- negate the constant 
+--					constDsc := parseConstant (checkSemicolonAfter)
+--					constDsc.negate
+--					Result := constDsc
+--				else				
+--					constDsc := parseConstant (checkSemicolonAfter)
+--					check
+--						non_void_constant_dsc: constDsc /= Void
+--					end
+--					create {CallChainElement} cceDsc.init (operator, Void)
+--					create {ExpressionCallDescriptor} Result.init (constDsc, <<cceDsc>>)
+--				end -- if
+--			else
+--				syntax_error (<<
+--					scanner.integer_const_token, scanner.real_const_token
+--				>>)
+--			end -- inspect			
+--		else
+--			syntax_error (<<
+--				scanner.identifier_token, scanner.type_name_token, 
+--				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
+--				scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
+--			>>)
+--		end -- inspect
+----trace ("<<< parseConstExpression")
+--	end -- parseConstExpression
 
 	parseRangeType (checkSemicolonAfter: Boolean): RangeTypeDescriptor is
 	--67
 	-- RangeType: 
 	-- 	(ConstantExpression [“{”OperatorName ConstantExpression“}”] “..”ConstantExpression)
 	-- 	|
-	-- 	(ConstantExpression {“|” ConstantExpression})
+	-- 	(ConstantExpression {“,” ConstantExpression})
 	require
 		valid_token: validToken (<<
+			scanner.identifier_token,
 			scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
 			scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token			
 		>>)
 	local
-		--expr: ExpressionDescriptor
-		constExpr1: ConstExpressionDescriptor
-		constExpr2: ConstExpressionDescriptor
+		exprDsc: ExpressionDescriptor
+		rangeExprDsc: RangeExpressionDescriptor
+		--constExpr1: ConstExpressionDescriptor
+		--constExpr2: ConstExpressionDescriptor
+		--constExpr1: ExpressionDescriptor
+		constExpr2: ExpressionDescriptor
 		toLeave: Boolean
 		barFound: Boolean
 		--constDsc: ConstantDescriptor
 		cDsc: ConstantDescriptor
-		values: Array [ConstExpressionDescriptor] --ExpressionDescriptor]
+		--values: Array [ConstExpressionDescriptor]
+		values: Array [ExpressionDescriptor]
 		constants: Sorted_Array [ConstantDescriptor]
 	do
-		--constDsc := parseConstant (checkSemicolonAfter)
-		constExpr1 := parseConstExpression (checkSemicolonAfter)
-		if constExpr1 /= Void then
-			cDsc ?= constExpr1
-			if cDsc = Void then
-				create constants.make
-			else
-				create constants.fill (<<cDsc>>)
-			end -- if
-			-- create constDsc.init (Void, scanner.token, scanner.tokenValue)
-			--scanner.nextToken
-			--create constants.fill (<<constDsc>>)
-			inspect
-				scanner.token
-			when scanner.period_token then
-				scanner.nextToken
-				--expr := parseExpressionWithSemicolon1 (checkSemicolonAfter)
-				constExpr2 := parseConstExpression (checkSemicolonAfter)
-				if constExpr2 /= Void then
---trace ("range: " + constExpr1.out + " .. " + constExpr2.out + "`")
-					cDsc ?= constExpr2
-					if cDsc /= Void and then not constants.added (cDsc) then
-						validity_error( "Incorrect range type `" + constExpr1.out + " .. " + constExpr2.out + "`")
-					end -- if
-					create {FixedRangeTypeDescriptor} Result.init (constExpr1, Void, Void, constExpr2)
+		exprDsc := parseExpression
+		if exprDsc /= Void then
+			rangeExprDsc ?= exprDsc
+			if rangeExprDsc = Void then
+				-- Case: 1,2,3,6, d, a 
+				cDsc ?= exprDsc
+				if cDsc = Void then
+					create constants.make
+				else
+					create constants.fill (<<cDsc>>)
 				end -- if
-			when scanner.bar_token then
-				from
-					values := <<constExpr1>> -- constDsc>>
-					create {EnumeratedRangeTypeDescriptor} Result.init (values)
-				until
-					toLeave
-				loop
-					inspect
-						scanner.token
-					when scanner.bar_token then
-						if barFound then
-							toLeave := True
-						else
-							barFound := True
-							scanner.nextToken
+				inspect
+					scanner.token
+				when scanner.period_token then
+					scanner.nextToken
+					constExpr2 := parseExpression
+					if constExpr2 /= Void then
+						debug
+							--trace ("range: " + constExpr1.out + " .. " + constExpr2.out + "`")
+						end -- debug
+						cDsc ?= constExpr2
+						if cDsc /= Void and then not constants.added (cDsc) then
+							validity_error( "Incorrect range type `" + exprDsc.out + " .. " + constExpr2.out + "`")
 						end -- if
-					else
-						if barFound then
-							constExpr2 := parseConstExpression (checkSemicolonAfter)
-							if constExpr2 = Void then
+						create {FixedRangeTypeDescriptor} Result.init (exprDsc, Void, Void, constExpr2)
+					end -- if				
+				when scanner.comma_token then
+					from
+						values := <<exprDsc>>
+						create {EnumeratedRangeTypeDescriptor} Result.init (values)
+					until
+						toLeave
+					loop
+						inspect
+							scanner.token
+						when scanner.comma_token then
+							if barFound then
 								toLeave := True
 							else
---trace (" bar: constant expr: " + expr.out)
--- const check does not work any more!!! paredExpression parses the whole construction ce1 | ce2 | ce ....
-								cDsc ?= constExpr2 -- expr
-								if cDsc /= Void and then not constants.added (cDsc) then
-									validity_error( "Duplicated constant `" + cDsc.value.out + "` in range type ")
-									--toLeave := True
-								end -- if
-								values.force (constExpr2, values.count + 1)
-								barFound := False
+								barFound := True
+								scanner.nextToken
 							end -- if
 						else
-							toLeave := True
-						end -- if
-					end -- inspect
-				end -- loop
-				if values.count = 1 then
-					validity_error( "Multi-type should have more than one type in it")
-					Result := Void
+							if barFound then
+								--constExpr2 := parseConstExpression (checkSemicolonAfter)
+								constExpr2 := parseExpression
+								if constExpr2 = Void then
+									toLeave := True
+								else
+	--trace (" bar: constant expr: " + expr.out)
+	-- const check does not work any more!!! paredExpression parses the whole construction ce1 | ce2 | ce ....
+									cDsc ?= constExpr2 -- expr
+									if cDsc /= Void and then not constants.added (cDsc) then
+										validity_error( "Duplicated constant `" + cDsc.value.out + "` in range type ")
+										--toLeave := True
+									end -- if
+									values.force (constExpr2, values.count + 1)
+									barFound := False
+								end -- if
+							else
+								toLeave := True
+							end -- if
+						end -- inspect
+					end -- loop
+					if values.count = 1 then
+						validity_error( "Range type should have more than one value")
+						Result := Void
+					end -- if
+				else
+					syntax_error (<<scanner.period_token, scanner.comma_token>>)
 				end -- if
 			else
-				syntax_error (<<scanner.period_token, scanner.bar_token>>)
-			end -- inspect
+				-- Case: expr1 [stepping] .. expr2
+				create {FixedRangeTypeDescriptor} Result.init (rangeExprDsc.left,rangeExprDsc.operator,rangeExprDsc.expr,rangeExprDsc.right)
+			end -- if
 		end -- if
+		----constDsc := parseConstant (checkSemicolonAfter)
+		----constExpr1 := parseConstExpression (checkSemicolonAfter)
+		--constExpr1 := parseExpression
+		--if constExpr1 /= Void then
+		--	cDsc ?= constExpr1
+		--	if cDsc = Void then
+		--		create constants.make
+		--	else
+		--		create constants.fill (<<cDsc>>)
+		--	end -- if
+		--	-- create constDsc.init (Void, scanner.token, scanner.tokenValue)
+		--	--scanner.nextToken
+		--	--create constants.fill (<<constDsc>>)
+		--	inspect
+		--		scanner.token
+		--	when scanner.period_token then
+		--		scanner.nextToken
+		--		--expr := parseExpressionWithSemicolon1 (checkSemicolonAfter)
+		--		--constExpr2 := parseConstExpression (checkSemicolonAfter)
+		--		constExpr2 := parseExpression
+		--		if constExpr2 /= Void then
+		--	--trace ("range: " + constExpr1.out + " .. " + constExpr2.out + "`")
+		--			cDsc ?= constExpr2
+		--			if cDsc /= Void and then not constants.added (cDsc) then
+		--				validity_error( "Incorrect range type `" + constExpr1.out + " .. " + constExpr2.out + "`")
+		--			end -- if
+		--			create {FixedRangeTypeDescriptor} Result.init (constExpr1, Void, Void, constExpr2)
+		--		end -- if
+		--	when scanner.comma_token then
+		--		from
+		--			values := <<constExpr1>> -- constDsc>>
+		--			create {EnumeratedRangeTypeDescriptor} Result.init (values)
+		--		until
+		--			toLeave
+		--		loop
+		--			inspect
+		--				scanner.token
+		--			when scanner.comma_token then
+		--				if barFound then
+		--					toLeave := True
+		--				else
+		--					barFound := True
+		--					scanner.nextToken
+		--				end -- if
+		--			else
+		--				if barFound then
+		--					--constExpr2 := parseConstExpression (checkSemicolonAfter)
+		--					constExpr2 := parseExpression
+		--					if constExpr2 = Void then
+		--						toLeave := True
+		--					else
+		----trace (" bar: constant expr: " + expr.out)
+		---- const check does not work any more!!! paredExpression parses the whole construction ce1 | ce2 | ce ....
+		--						cDsc ?= constExpr2 -- expr
+		--						if cDsc /= Void and then not constants.added (cDsc) then
+		--							validity_error( "Duplicated constant `" + cDsc.value.out + "` in range type ")
+		--							--toLeave := True
+		--						end -- if
+		--						values.force (constExpr2, values.count + 1)
+		--						barFound := False
+		--					end -- if
+		--				else
+		--					toLeave := True
+		--				end -- if
+		--			end -- inspect
+		--		end -- loop
+		--		if values.count = 1 then
+		--			validity_error( "Multi-type should have more than one type in it")
+		--			Result := Void
+		--		end -- if
+		--	else
+		--		syntax_error (<<scanner.period_token, scanner.comma_token>>)
+		--	end -- inspect
+		--end -- if
 	end -- parseRangeType
 	
 	parseMultiType (firstDsc: UnitTypeCommonDescriptor; checkSemicolonAfter: Boolean): MultiTypeDescriptor is
 		-- ADT - sum
 		-- MultiTypeDescriptor: UnitTypeDescriptor {“|” UnitTypeDescriptor} 
-		-- not supported !!!! RangeType: ConstantExpression {“|” ConstantExpression}
-		-- It could be RangeType when all identifiers are in fact constants!!!
 	require
 		first_element_not_void: firstDsc /= Void
 		valid_token: validToken (<<scanner.bar_token>>)
@@ -5930,32 +6063,33 @@ end -- debug
 		end -- loop
 	end -- parseMultiType
 
-	parseRangeType1 (typeDsc: UnitTypeCommonDescriptor; checkSemicolonAfter: Boolean): RangeTypeDescriptor is
-		-- RangeType: 
-		-- 	(ConstantExpression “..” ConstantExpression)	
-		--                       ^
-	require
-		first_elelemnt_not_void: typeDsc /= Void and then typeDsc.generics.count = 0
-		valid_token: validToken (<<scanner.period_token>>)
-	local
-		--exprDsc: ExpressionDescriptor
-		exprDsc: ConstExpressionDescriptor
-		identDsc: IdentifierDescriptor
-	do
-		scanner.nextToken
-		--exprDsc := parseExpressionWithSemicolon1 (checkSemicolonAfter)
-		exprDsc := parseConstExpression (checkSemicolonAfter)
-		if exprDsc /= Void then
-			create identDsc.init (typeDsc.name)
-			create {FixedRangeTypeDescriptor} Result.init (identDsc, Void, Void exprDsc)
-		end -- if
-	end -- parseRangeType1
+	--parseRangeType1 (typeDsc: UnitTypeCommonDescriptor; checkSemicolonAfter: Boolean): RangeTypeDescriptor is
+	--	-- RangeType: 
+	--	-- 	(ConstantExpression “..” ConstantExpression)	
+	--	--                       ^
+	--require
+	--	first_elelemnt_not_void: typeDsc /= Void and then typeDsc.generics.count = 0
+	--	valid_token: validToken (<<scanner.period_token>>)
+	--local
+	--	exprDsc: ExpressionDescriptor
+	--	--exprDsc: ConstExpressionDescriptor
+	--	identDsc: IdentifierDescriptor
+	--do
+	--	scanner.nextToken
+	--	--exprDsc := parseExpressionWithSemicolon1 (checkSemicolonAfter)
+	--	--exprDsc := parseConstExpression (checkSemicolonAfter)
+	--	exprDsc := parseExpression
+	--	if exprDsc /= Void then
+	--		create identDsc.init (typeDsc.name)
+	--		create {FixedRangeTypeDescriptor} Result.init (identDsc, Void, Void exprDsc)
+	--	end -- if
+	--end -- parseRangeType1
 
 	parseAnonymousUnitType (checkSemicolonAfter: Boolean): AnonymousUnitTypeDescriptor is
 	-- AnonymousUnitType: “unit” MemberDesciption {[“;”] MemberDesciption} “end”
 	--                     ^
 	require
-		valid_token: validToken (<<scanner.unit_token>>)
+		valid_token: validToken (<<scanner.type_token>>)
 	local
 		members: Sorted_Array [MemberDescriptionDescriptor]
 		m1: Sorted_Array [MemberDescriptionDescriptor]
@@ -5980,7 +6114,7 @@ end -- debug
 					i > n
 				loop
 					if not members.added (m1.item (i)) then
-						validity_error( "Duplicated unit member declaration `" + m1.item (i).name + "`") 
+						validity_error( "Duplicated type member declaration `" + m1.item (i).name + "`") 
 						wasError := True
 					end -- if
 					i := i + 1
@@ -6002,8 +6136,8 @@ end -- debug
 	--parseAttachedType (checkSemicolonAfter: Boolean): AttachedTypeDescriptor is
 	parseAttachedType (checkSemicolonAfter: Boolean): TypeDescriptor is
 	-- UnitTypeDescriptor|AnchorTypeDescriptor|MultiTypeDescriptor|TupleType|RangeTypeDescriptor|RoutineTypeDescriptor
-	-- type_name          as                   identifier          (         identifier|constant rtn
-	--
+	-- type_name          as                   type_name          (          [                   rtn
+	--  was identifier|constant for range
 	-- Due to aliases it can be any type !!! Even detached !!! Even forgmal genetic parameter!!!
 	-- REDO !!!
 	local
@@ -6026,13 +6160,6 @@ end
 					scanner.token
 				when scanner.bar_token then
 					-- MultiTypeDescriptor: UnitTypeDescriptor {“|” UnitTypeDescriptor} 
-					-- RangeType: ConstantExpression {“|” ConstantExpression}
-					-- RangeType: 
-					-- (ConstantExpression {“|” ConstantExpression})
-					-- |
-					-- ConstantExpression [“{”OperatorName ConstantExpression"}"] “..” ConstantExpression
--- Need to think about the new verison of RangeType
-					-- It could be RangeType when all identifiers are in fact constants!!!
 					unitTypeDsc ?= typeDsc -- nmdDsc
 					if unitTypeDsc = Void then
 						-- G | - incorrect multi-type
@@ -6040,22 +6167,22 @@ end
 					else
 						Result := parseMultiType (unitTypeDsc, checkSemicolonAfter)
 					end -- if
-				when scanner.period_token then
-					-- RangeType: 
-					-- 	(ConstantExpression “..”ConstantExpression)
-					-- 	|
-					-- 	(ConstantExpression {“|” ConstantExpression})
-					unitTypeDsc ?= typeDsc -- nmdDsc
-					if unitTypeDsc = Void then
-						validity_error( "Range type should not contain improper type `" + typeDsc.out + "`") 
-					elseif unitTypeDsc.generics.count = 0 then
-						Result := parseRangeType1 (unitTypeDsc, checkSemicolonAfter)
-					else
-						Result := unitTypeDsc
-						validity_error ("Incorrect range type starting from `" + unitTypeDsc.out + "`")
-						-- Let it be found at next step
-						--syntax_error ( <<>>)
-					end -- if
+				--when scanner.period_token then
+				--	-- RangeType: 
+				--	-- 	(ConstantExpression “..”ConstantExpression)
+				--	-- 	|
+				--	-- 	(ConstantExpression {“|” ConstantExpression})
+				--	unitTypeDsc ?= typeDsc -- nmdDsc
+				--	if unitTypeDsc = Void then
+				--		validity_error( "Range type should not contain improper type `" + typeDsc.out + "`") 
+				--	elseif unitTypeDsc.generics.count = 0 then
+				--		Result := parseRangeType1 (unitTypeDsc, checkSemicolonAfter)
+				--	else
+				--		Result := unitTypeDsc
+				--		validity_error ("Incorrect range type starting from `" + unitTypeDsc.out + "`")
+				--		-- Let it be found at next step
+				--		--syntax_error ( <<>>)
+				--	end -- if
 				--when scanner.semicolon_token then
 				--	scanner.nextToken
 				--	Result := typeDsc
@@ -6079,30 +6206,27 @@ debug
 	--trace ("parseAttachedType: tuple type parsed " + Result.out)
 	end -- if
 end -- debug
-		when scanner.unit_token then
-			-- Anonymous unit type
+		when scanner.type_token then
+			-- Anonymous type type
 			Result := parseAnonymousUnitType (checkSemicolonAfter)
-		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
+		when
+			scanner.identifier_token, scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
 			scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token
 		then
 			-- RangeType with constants
-			-- 	(ConstantExpression “..”ConstantExpression)
-			-- 	|
-			-- 	(ConstantExpression {“|” ConstantExpression})
-					-- (ConstantExpression {“|” ConstantExpression})
-					-- |
-					-- ConstantExpression [“{”OperatorName ConstantExpression"}"] “..” ConstantExpression
--- Need to think about the new verison of RangeType
+			-- (ConstantExpression {“,” ConstantExpression})
+			-- |
+			-- ConstantExpression [“{”OperatorName ConstantExpression"}"] “..” ConstantExpression
 			Result := parseRangeType (checkSemicolonAfter)
 		else
 			-- It is not a type! Result is Void
 			syntax_error (<<
-				scanner.type_name_token, 
+				scanner.type_name_token, scanner.identifier_token,
 				scanner.ref_token, scanner.val_token, scanner.concurrent_token,
 				scanner.as_token,
 				scanner.rtn_token,
 				scanner.left_paranthesis_token,
-				scanner.unit_token,
+				scanner.type_token,
 				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token				
 			>>)
 		end -- inspect
@@ -6184,7 +6308,8 @@ end
 				when scanner.identifier_token then
 					if commaFound or else generics.count = 0 then
 						commaFound := False
-						td := parseConstExpression (False)
+						--td := parseConstExpression (False)
+						td := parseExpression
 						if td = Void then
 							toLeave := True
 						else
@@ -6206,7 +6331,7 @@ end
 							toLeave := True
 						else
 debug
---	trace (">>> parseUnitTypeName1: " + name + "[unit " + td.out)
+--	trace (">>> parseUnitTypeName1: " + name + "[type " + td.out)
 end
 							generics.force (td, generics.count + 1)
 						end -- if
@@ -6339,7 +6464,8 @@ end
 				when scanner.identifier_token then
 					if commaFound or else generics.count = 0 then
 						commaFound := False
-						td := parseConstExpression (False)
+						--td := parseConstExpression (False)
+						td := parseExpression
 						if td = Void then
 							toLeave := True
 						else
@@ -6361,7 +6487,7 @@ end
 							toLeave := True
 						else
 debug
---	trace (">>> parseUnitTypeName1: " + name + "[unit " + td.out)
+--	trace (">>> parseUnitTypeName1: " + name + "[type " + td.out)
 end
 							generics.force (td, generics.count + 1)
 						end -- if
@@ -6456,7 +6582,7 @@ end
 			if typeDsc /= Void then
 				Result ?= typeDsc
 				if Result = Void then
-					validity_error ("Improper type `" + utnDsc.out + "` is used as a unit type unfolded as `" + typeDsc.out + "`")
+					validity_error ("Improper type `" + utnDsc.out + "` is used as a type type unfolded as `" + typeDsc.out + "`")
 				end -- if
 			end -- if
 		end -- inspect
@@ -6530,7 +6656,7 @@ end -- debug
 		if nmdDsc /= Void then
 			Result ?= nmdDsc
 			if Result = Void then
-				validity_error ("Improper type `" + nmdDsc.out + "` used as a unit type")
+				validity_error ("Improper type `" + nmdDsc.out + "` used as a type type")
 			end -- if
 		end -- if		
 	end -- parseUnitTypeName
@@ -6573,7 +6699,7 @@ end -- debug
 				typeDsc := register_named_type (utnDsc)
 				utnDsc ?= typeDsc
 				if utnDsc = Void then
-					validity_error ("Improper type `" + typeDsc.out + "` is used as a unit type")
+					validity_error ("Improper type `" + typeDsc.out + "` is used as a type type")
 				else
 					Result := utnDsc
 				end -- if
@@ -6686,7 +6812,7 @@ end -- debug
 		unitTypeDsc ?= nmdType
 		if unitTypeDsc /= Void and then unitTypeDsc.generics.count = 0 then
 			-- It is just a type name
-			-- Check  use A as G unit X [G] end to avoid such case !!!
+			-- Check  use A as G type X [G] end to avoid such case !!!
 			create aliasedTypeDsc.make (unitTypeDsc.name)
 			aliasedTypeDsc ?= ast.typePool.search (aliasedTypeDsc)
 			if ast.fgTypes /= Void then
@@ -7002,7 +7128,7 @@ end
 						if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 							-- attempt to override a member of generic parameter
 							validity_error(
-								"Generic parameter name `" + scanner.tokenString + "` can not be used as a non-conformant parent unit `" + currentUnitDsc.fullUnitName + "`"
+								"Generic parameter name `" + scanner.tokenString + "` can not be used as a non-conformant parent type `" + currentUnitDsc.fullUnitName + "`"
 							)
 							scanner.nextToken
 							toLeave := True
@@ -7012,7 +7138,7 @@ end
 								toLeave := True
 							else
 								if theSameUnit1 (unitDsc, utnDsc) then
-									validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
+									validity_error( "Attempt to inherit from itself. Extending type `" + utnDsc.out + "` in type `" + unitDsc.name + "`")
 									--toLeave := True
 									-- Inheritance graph simple cycle
 								else
@@ -7021,7 +7147,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 									end -- if
 									create parentDsc.init (True, utnDsc)
 									if not unitDsc.parents.added (parentDsc) then
-										validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
+										validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + unitDsc.name + "`")
 										--toLeave := True
 										-- Repeated inheritance is prohibited
 									end -- if
@@ -7046,7 +7172,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				--	commaFound := False					
 					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 						-- attempt to override a member of generic parameter
-						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent unit `" + currentUnitDsc.fullUnitName + "`")
+						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent type `" + currentUnitDsc.fullUnitName + "`")
 						scanner.nextToken
 						toLeave := True
 					else
@@ -7055,13 +7181,13 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							toLeave := True
 						else
 							if theSameUnit1 (unitDsc, utnDsc) then
-								validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
+								validity_error( "Attempt to inherit from itself. Extending type `" + utnDsc.out + "` in type `" + unitDsc.name + "`")
 								--toLeave := True
 								-- Inheritance graph simple cycle
 							else
 								create parentDsc.init (False, utnDsc)
 								if not unitDsc.parents.added (parentDsc) then
-									validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
+									validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + unitDsc.name + "`")
 									--toLeave := True
 									-- Repeated inheritance is prohibited
 								end -- if
@@ -7142,7 +7268,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					commaFound := False
 					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 						-- attempt to override a member of generic parameter
-						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used in the use clause in unit `" + currentUnitDsc.fullUnitName + "`")
+						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used in the use clause in type `" + currentUnitDsc.fullUnitName + "`")
 						scanner.nextToken
 						toLeave := True
 						wasError := True
@@ -7160,7 +7286,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 								-- 		UnitTypeNameDescriptor [as Identifier]]
 								create eueDsc.init (utnd, Void)
 								if not usage.added (eueDsc) then
-									validity_error( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in unit `" + unitDsc.name + "`")
+									validity_error( "Duplicated import of consntants from type `" + eueDsc.out + "`") --  in type `" + unitDsc.name + "`")
 									--toLeave := True
 									wasError := True
 								else
@@ -7173,7 +7299,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 									if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 										-- attempt to override a member of generic parameter
 										validity_error(
-											"Generic parameter name `" + scanner.tokenString + "` can not be used as new name for renaming in unit `" +
+											"Generic parameter name `" + scanner.tokenString + "` can not be used as new name for renaming in type `" +
 											currentUnitDsc.fullUnitName + "`"
 										)
 										scanner.nextToken
@@ -7185,7 +7311,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 											if currentUnitDsc = Void then
 												validity_error( "Duplicated import of constants from `" + eueDsc.out + "`")
 											else
-												validity_error( "Duplicated import of constants from `" + eueDsc.out + "` in unit `" + currentUnitDsc.name + "`")
+												validity_error( "Duplicated import of constants from `" + eueDsc.out + "` in type `" + currentUnitDsc.name + "`")
 											end -- if
 											wasError := True
 										end -- if
@@ -7203,7 +7329,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 								-- 		UnitTypeNameDescriptor [as Identifier]]
 								create eueDsc.init (utnd, Void)
 								if not usage.added (eueDsc) then
-									validity_warning ( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in unit `" + unitDsc.name + "`")
+									validity_warning ( "Duplicated import of consntants from type `" + eueDsc.out + "`") --  in type `" + unitDsc.name + "`")
 									--wasError := True
 								end -- if
 								toLeave := True
@@ -7300,7 +7426,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						if unitDsc.hasFormalGenericParameter (scanner.tokenString) then
 							-- attempt to override a member of generic parameter
 							validity_error(
-								"Generic parameter name `" + scanner.tokenString + "` can not be listed in clients list in unit `" + 
+								"Generic parameter name `" + scanner.tokenString + "` can not be listed in clients list in type `" + 
 								unitDsc.fullUnitName + "`"
 							)
 							scanner.nextToken
@@ -7405,7 +7531,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				if not toLeave then
 					create sDsc.init (memberName, signatureDsc)
 					if not unitDsc.memberSelections.added (sDsc) then
-						validity_error( "Duplicated selection of `" + sDsc.out + "` in unit `" + unitDsc.name + "`")
+						validity_error( "Duplicated selection of `" + sDsc.out + "` in type `" + unitDsc.name + "`")
 					end -- if
 				end -- if
 			when scanner.comma_token then
@@ -7441,7 +7567,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		toLeave: Boolean
 	do
 		if unitDsc.findParent (uDsc) = Void then
-			validity_error( "Override refers to the unit `" + uDsc.out + "` which is not a parent of unit `" + unitDsc.name + "`")
+			validity_error( "Override refers to the type `" + uDsc.out + "` which is not a parent of type `" + unitDsc.name + "`")
 		end -- if
 		scanner.nextToken
 		if scanner.token = scanner.identifier_token then
@@ -7457,7 +7583,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			create imoDsc.init (uDsc, ident, signDsc)
 			-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
 			if not unitDsc.inheritedOverrides.added (imoDsc) then
-				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + unitDsc.name + "`")
+				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in type `" + unitDsc.name + "`")
 			end -- if
 			-- Now check for the list 
 			if scanner.token = scanner.comma_token then
@@ -7485,7 +7611,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							if unitDsc.hasFormalGenericParameter (scanner.tokenString) then
 								-- attempt to override a member of generic parameter
 								validity_error(
-									"Member of the generic parameter `" + scanner.tokenString + "` can not be overrided. Only unit type members can be overrided"
+									"Member of the generic parameter `" + scanner.tokenString + "` can not be overrided. Only type type members can be overrided"
 								)
 								scanner.nextToken
 								toLeave := True
@@ -7508,7 +7634,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 											create imoDsc.init (utnDsc, ident, signDsc)
 											-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
 											if not unitDsc.inheritedOverrides.added (imoDsc) then
-												validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + unitDsc.name + "`")
+												validity_error( "Duplicated overriding of `" + imoDsc.out + "` in type `" + unitDsc.name + "`")
 											end -- if
 										else
 											syntax_error (<<scanner.identifier_token>>)
@@ -7574,7 +7700,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			scanner.nextToken
 			if unitDsc.hasFormalGenericParameter (ident) then
 				-- attempt to override a member of generic parameter
-				validity_error( "Member of the generic parameter `" + ident + "` can not be overrided. Only unit type members can be overrided")
+				validity_error( "Member of the generic parameter `" + ident + "` can not be overrided. Only type type members can be overrided")
 			else
 				inspect
 					scanner.token
@@ -7594,7 +7720,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						if nmdDsc /= Void then
 							utnDsc ?= nmdDsc
 							if utnDsc = Void then
-								validity_error ("Incorrect type `" + nmdDsc.out + "` used as a parent unit")
+								validity_error ("Incorrect type `" + nmdDsc.out + "` used as a parent type")
 							else
 								-- override UnitTypeNameDescriptor.
 								if scanner.token = scanner.dot_token then
@@ -7757,7 +7883,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							else
 								utnDsc1 := unitDsc.findParent (utnDsc)
 								if utnDsc1 = Void then
-									validity_error( "Initialization procedure can not be inherited from the unit `" +  utnDsc.name + "` as it is not a parent of `" + unitDsc.name + "`")
+									validity_error( "Initialization procedure can not be inherited from the type `" +  utnDsc.name + "` as it is not a parent of `" + unitDsc.name + "`")
 								else
 									utnDsc := utnDsc1
 								end -- if
@@ -7773,9 +7899,9 @@ end -- debug
 									create ifpDsc.init (utnDsc, Void)
 								end -- if
 								if theSameUnit1 (unitDsc, utnDsc) then
-									validity_error( "Initialization procedure can not be inherited from the same unit `" + unitDsc.name + "`")
+									validity_error( "Initialization procedure can not be inherited from the same type `" + unitDsc.name + "`")
 								elseif not unitDsc.inhertitedInits.added (ifpDsc) then
-									validity_error( "Duplicated initialization procedure inheritance of `" + ifpDsc.out + "` in unit `" + unitDsc.name + "`")
+									validity_error( "Duplicated initialization procedure inheritance of `" + ifpDsc.out + "` in type `" + unitDsc.name + "`")
 								end -- if
 							end -- if
 						end -- if
@@ -7825,7 +7951,7 @@ end -- debug
 				toLeave := True
 			else
 				if not unitDsc.constObjects.added(cobjDsc) then
-					validity_error( "Duplicated constant declaration `" + cobjDsc.out + "` in unit `" + unitDsc.name  +"'") 
+					validity_error( "Duplicated constant declaration `" + cobjDsc.out + "` in type `" + unitDsc.name  +"'") 
 				end -- if
 				if scanner.token = scanner.comma_token then
 					scanner.nextToken
@@ -8026,25 +8152,25 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		if unitDsc.name.is_equal (rtnDsc.name) then
 			-- That should be a vlaid init procedure !!!
 			-- 
---trace ("Init found for unit " + unitDsc.name)
+--trace ("Init found for type " + unitDsc.name)
 			if rtnDsc.type /= Void then
 				-- init must be a procedure !!!
-				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not return a value, procedure expected")
+				validity_error ("Initializer of type `" + unitDsc.name + "`" + " should not return a value, procedure expected")
 				wasError := True
 			end -- if
 			if rtnDsc.isVirtual then
 				-- init must be effective !!!
-				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be abstract, do-foreign-none expected")
+				validity_error ("Initializer of type `" + unitDsc.name + "`" + " should not be abstract, do-foreign-none expected")
 				wasError := True
 			end -- if
 			if rtnDsc.isOverriding then
 				-- there is no overrding for init !!!
-				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be an overiding")
+				validity_error ("Initializer of type `" + unitDsc.name + "`" + " should not be an overiding")
 				wasError := True
 			end -- if
 			if rtnDsc.isFinal then
 				-- there is no overrding control for init !!!
-				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be marked final")
+				validity_error ("Initializer of type `" + unitDsc.name + "`" + " should not be marked final")
 				wasError := True
 			end -- if			
 			if not wasError then
@@ -8088,7 +8214,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		attrDsc: UnitAttributeDeclarationDescriptor -- UnitAttrDescriptor
 		--dtDsc: DetachableTypeDescriptor
 		typeDsc: TypeDescriptor
-		constExprDsc: ConstExpressionDescriptor
+		--constExprDsc: ConstExpressionDescriptor
+		constExprDsc: ExpressionDescriptor
 		exprDsc: ExpressionDescriptor
 	do
 		inspect
@@ -8105,7 +8232,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				-- ident is Expr
 				--       ^    attribute with initialization
 				scanner.nextToken
-				constExprDsc := parseConstExpression (False)
+				--constExprDsc := parseConstExpression (False)
+				constExprDsc := parseExpression
 --				exprDsc := parseExpressionWithSemicolon -- ConstantExpression !!!!
 				if constExprDsc /= Void then -- Identifier is ConstantExpression
 					--create {AttachedUnitAttributeDeclarationDescriptor} attrDsc.init (isOverriding, isFinal, False, False, name, Void, Void, constExprDsc)
@@ -8127,7 +8255,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					inspect
 						scanner.token
 					when scanner.require_token then 
-						-- Function or it is the last attribute with no assigner in the unit and require is invariant !!!!
+						-- Function or it is the last attribute with no assigner in the type and require is invariant !!!!
 						memDsc := parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc, isOverriding, isFinal, False, False, name, typeDsc)
 						if memDsc /= Void then
 							rtnDsc ?= memDsc 
@@ -8201,7 +8329,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 							create Result.fill (<<attrDsc>>)
 						end -- if
 					when scanner.require_token then 
-						-- Function or it is the last attribute with no assigner in the unit and require is invariant !!!!
+						-- Function or it is the last attribute with no assigner in the type and require is invariant !!!!
 						memDsc := parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc, isOverriding, isFinal, False, False, name, typeDsc)
 						if memDsc /= Void then
 							rtnDsc ?= memDsc 
@@ -9008,7 +9136,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				end -- inpsect
 			when scanner.identifier_token, scanner.const_token, scanner.rigid_token then
 				-- routine or attribute
---trace ("Unit or attribute - " + scanner.tokenString)
+				debug
+					--trace ("Unit or attribute - " + scanner.tokenString)
+				end -- debug
 				Result := parseUnitRoutineOrAttribute (unitDsc, isOverriding, isFinal)
 --trace ("NEXT!")
 			when
@@ -9105,8 +9235,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					mdDsc.setVisibility (currentVisibilityZone)
 				end -- if
 				if not unitDsc.unitMembers.added (mdDsc) then
-					--validity_error( "Duplicated declaration of member `" + mdDsc.name + "` in unit `" + unitDsc.name + "`") 
-					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in unit `" + unitDsc.name + "`") 
+					--validity_error( "Duplicated declaration of member `" + mdDsc.name + "` in type `" + unitDsc.name + "`") 
+					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in type `" + unitDsc.name + "`") 
 				end -- if
 				i := i + 1
 			end -- loop
@@ -9293,7 +9423,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	parseUnit (is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend: Boolean) is
 	--87
 	-- [final] [ref|val|concurrent|abstract|extend]
-	-- unit Identifier 
+	-- type Identifier 
 	-- alias	[AliasName]
 	-- "["		[FormalGenerics] 
 	-- extend	[InheritDirective]
@@ -9309,7 +9439,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	-- require	[InvariantBlock]
 	-- end
 	require
-		valid_token: validToken (<<scanner.type_name_token, scanner.unit_token>>)
+		valid_token: validToken (<<scanner.type_name_token, scanner.type_token>>)
 	local	
 		goToMembers: Boolean
 		mvDsc, currentVisibilityZone: MemberVisibilityDescriptor
@@ -9324,7 +9454,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		initialErrorsCount: Integer
 	do
 		initialErrorsCount := errorsCount
-		if scanner.token = scanner.unit_token then
+		if scanner.token = scanner.type_token then
 			scanner.nextToken
 			inspect
 				scanner.token 
@@ -9347,11 +9477,12 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			scanner.nextToken
 		end -- if
 		if unitName /= Void then
+			o.putLine ("Parsing type `" + unitName + "`")
 			create currentUnitDsc.init (unitName, is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend)
 			currentUnitDsc.attach_pools (ast)
 			
 			if scanner.token = scanner.alias_token then
-				-- parse alias unit name
+				-- parse alias type name
 				scanner.nextToken
 				inspect	
 					scanner.token
@@ -9369,9 +9500,10 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				formalGenerics := parseFormalGenerics (fgTypes)
 				if formalGenerics /= Void then
 					currentUnitDsc.setFormalGenercis (formalGenerics, fgTypes)
+					o.putLine ("Parsing type `" + currentUnitDsc.fullUnitName + "`")
 				end -- if
 			end -- if
-			o.putLine ("Parsing unit `" + currentUnitDsc.fullUnitName + "`")
+			--o.putLine ("Parsing type `" + currentUnitDsc.fullUnitName + "`")
 
 			if scanner.token = scanner.extend_token then
 				-- parse inheritance clause
@@ -9420,7 +9552,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				end -- if
 			end -- if
 
-			-- parse unit members
+			-- parse type members
 			from
 				toLeave := errorsCount > 0
 			until
@@ -9488,7 +9620,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						if initDsc /= Void then
 							if not currentUnitDsc.initMembers.added (initDsc) then
 								-- Duplicated init 
-								validityError (initDsc.toSourcePosition, "Duplicated declaration of unit  `" + unitName + "` initializer") 
+								validityError (initDsc.toSourcePosition, "Duplicated declaration of type  `" + unitName + "` initializer") 
 							end -- if
 						end -- if
 					else
@@ -9528,6 +9660,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					toLeave := True
 				else
 					if scanner.blockEnd then
+						-- end of type declaration
 						toLeave := True
 					elseif scanner.visibilityStart then
 						--	"{" MemberVisibility “:” {MemberDeclaration}
@@ -9556,7 +9689,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 									if initDsc /= Void then
 										if not currentUnitDsc.initMembers.added (initDsc) then
 											-- Duplicated init 
-											validityError (initDsc.toSourcePosition, "Duplicated declaration of unit  `" + unitName + "` initializer") 
+											validityError (initDsc.toSourcePosition, "Duplicated declaration of type  `" + unitName + "` initializer") 
 										end -- if
 									end -- if
 								else
@@ -9673,7 +9806,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			end -- loop
 
 			if scanner.token = scanner.require_token then -- and then errorsCount = 0 then 
-				-- parse unit invariant
+				-- parse type invariant
 				scanner.nextToken
 				invPredicates := parsePredicates
 				if invPredicates /= Void then
@@ -9682,9 +9815,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			end -- if
 
 			if scanner.blockEnd then
-				-- end of the unit
+				-- end of the type
 				if initialErrorsCount = errorsCount and then not ast.units.added (currentUnitDsc) then
-					validity_error( "More than one unit with name `" + currentUnitDsc.name + "` in the same source/compilation")
+					validity_error( "More than one type with name `" + currentUnitDsc.name + "` in the same source/compilation")
 				end -- if
 				scanner.nextToken
 			else

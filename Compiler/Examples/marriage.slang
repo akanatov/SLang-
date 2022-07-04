@@ -1,13 +1,13 @@
-abstract unit NamedPerson
+abstract type NamedPerson
 	name: String
-	{} clearSpouse // This routine is available only for unit NamedPerson and its descendants
+	{} clearSpouse () // This routine is available only for type NamedPerson and its descendants
 	require
 		isMarried /// Person should be married!!!
 	abstract
 	ensure
 		not isMarried
 	end // clearSpouse
-	safe isMarried: Boolean abstract
+	safe isMarried (): Boolean abstract
 	marry (other: as this) 
 		/// merry Mary marry me :-)
 	require
@@ -18,7 +18,7 @@ abstract unit NamedPerson
 		isMarried() /// I am married
 		other.isMarried() /// My spouse is married
 	end // marry
-	divorce
+	divorce ()
 	require
 		isMarried() /// I am married
 		other.isMarried() /// My spouse is married
@@ -29,23 +29,23 @@ abstract unit NamedPerson
 	end // divorce
 end // NamedPerson
 
-unit MonogamousPerson extend NamedPerson
-	spouse: ? as this {} := (aSpouse: as spouse) do // Setter is visible only for this unit and its descendants
+type MonogamousPerson extend NamedPerson
+	spouse: ? as this {} := (aSpouse: as spouse) do // Setter is visible only for this type and its descendants
 		spouse := aSpouse
 	end // spouse setter
-	{} override clearSpouse
+	{} override clearSpouse ()
 	do 
 		? spouse
 	end // clearSpouse
-	override safe isMarried: Boolean => spouse is Person
+	override safe isMarried (): Boolean => spouse is Person
 	override marry (other: as this) 
 	do 
 		spouse := other
 		do {other} // other is to be valid after we leave the block
 			other.spouse := this
-		end
+		end // do
 	end // marry
-	overridedivorce
+	override divorce ()
 	do 
 		spouse.clearSpouse () 
 		? spouse
@@ -55,14 +55,13 @@ require
 	isMarried() implies spouse.spouse = this
 end // MonogamousPerson
 
-unit PolygamyPerson extend NamedPerson
+type PolygamyPerson extend NamedPerson
 	spouses: Array [as this]
-	// TBD :-) WIP ! :-)
-	{} override clearSpouse
+	{} override clearSpouse ()
 	do 
 		spouses.resize (1, 0) // :-)
 	end // clearSpouse
-	override safe isMarried: Boolean => spouses.count > 0
+	override safe isMarried (): Boolean => spouses.count > 0
 	override marry (other: as this) 
 	do 
 		spouses.force (other, spouse.upper + 1)
@@ -70,7 +69,7 @@ unit PolygamyPerson extend NamedPerson
 			other.spouse := this
 		end
 	end // marry
-	override divorce
+	override divorce ()
 	do 
 		spouse.clearSpouse () 
 		spouses.resize (1, 0) // :-)
@@ -108,6 +107,6 @@ do {husband, wife}
 ensure // Now both objects are consistent
 	not husband.isMarried
 	not wife.isMarried
-end
+end // do
 
 

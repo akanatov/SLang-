@@ -14,9 +14,9 @@ a2: Z is (new A, new B, new C)
   
 
 
-unit Any end
-unit A end
-unit B end
-unit C end
-unit T1 end
-unit T2 end
+type Any end
+type A end
+type B end
+type C end
+type T1 end
+type T2 end

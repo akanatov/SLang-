@@ -1,4 +1,4 @@
-abstract unit Comparable 
+abstract type Comparable 
 	pure < (other: as this ): Boolean abstract
 	override pure = (other: as this ): Boolean => not (this < other) and not (other < this)
 	pure > (other: as this ): Boolean => other < this

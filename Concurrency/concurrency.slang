@@ -1,4 +1,4 @@
-concurrent unit Queue[G]
+concurrent type Queue[G]
 	put (e: G) do
 		if buffer.count = 0 do
 			first := 1
@@ -35,9 +35,9 @@ require
 	buffer.count = 0 implies first = 0
 end // Queue
 
-unit Data end
+type Data end
 
-concurrent unit Producer
+concurrent type Producer
 	produce do
 		while true do
 			Queue[Data].put (Data) // all calls to put are put into the call queue for the object Queue
@@ -45,7 +45,7 @@ concurrent unit Producer
 	end
 end
 
-concurrent unit Consumer
+concurrent type Consumer
 	consume do
 		while true do
 			consumeData (Queue[Data].get) // all calls to get are puit into the queue for the object Queue

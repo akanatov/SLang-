@@ -141,7 +141,7 @@ feature {Any}
 	
 	blockEnd: Boolean is
 	do
-		Result := Cmode and then token = right_curly_bracket_token	or else token = end_token 
+		Result := Cmode and then token = right_curly_bracket_token or else token = end_token 
 	end -- blockEnd
 
 	visibilityStart: Boolean is
@@ -270,7 +270,7 @@ feature {Any}
 				"select",
 				"target",
 				"this",
-				"unit",
+				"type",
 				"use",
 				"val",
 				"var",
@@ -294,7 +294,7 @@ feature {Any}
 				"=>",
 				"end // if",
 				"end // block",
-				"end // unit",
+				"end // type",
 				"end // routine",
 				"end // loop",
 				"<",
@@ -371,7 +371,7 @@ feature {Any}
 	select_token,
 	target_token,
 	this_token,
-	unit_token,
+	type_token,
 	use_token,
 	val_token,
 	var_token,
@@ -413,7 +413,7 @@ feature {Any}
 		inspect
 			first_ch
 		when 'A' .. 'Z' then
-			-- that is a unit name and a type!
+			-- that is a type name and a type!
 			Result := register_buffer_and_return_type_name_token			    
 		when 'a' then -- "abstract" - 8, "alias", "as"
 			inspect
@@ -675,15 +675,17 @@ feature {Any}
 			else
 				Result := register_buffer_and_return_identifier_token
 			end	-- inspect		
-		when 't' then -- "this", "target"
+		when 't' then -- "this", "target", "type"
 			if buff_len = 4 and then buffer.item (2) = 'h' and then buffer.item (3) = 'i' and then buffer.item (4) = 's' then
 				Result := this_token
+			elseif buff_len = 4 and then buffer.item (2) = 'y' and then buffer.item (3) = 'p' and then buffer.item (4) = 'e' then
+				Result := type_token
 			elseif systemMode and then buff_len = 6 and then buffer.is_equal (keywords.item (target_token)) then
 				Result := target_token
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- if
-		when 'u' then -- "unit", "use"
+		when 'u' then -- "use" -- "type", 
 			inspect
 				buff_len
 			when 3 then
@@ -692,12 +694,12 @@ feature {Any}
 				else
 					Result := register_buffer_and_return_identifier_token
 				end -- if
-			when 4 then
-				if buffer.item (2) = 'n' and then buffer.item (3) = 'i'  and then buffer.item (4) = 't' then
-					Result := unit_token
-				else
-					Result := register_buffer_and_return_identifier_token
-				end -- if
+			--when 4 then
+			--	if buffer.item (2) = 'n' and then buffer.item (3) = 'i'  and then buffer.item (4) = 't' then
+			--		Result := unit_token
+			--	else
+			--		Result := register_buffer_and_return_identifier_token
+			--	end -- if
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- inspect
@@ -1309,7 +1311,7 @@ feature {Any}
 						pool_set: pool /= Void
 					end -- check
 					buffer := pool.add_it (buffer)
-				when 'A' .. 'Z' then -- start of unit name/type
+				when 'A' .. 'Z' then -- start of type name/type
 					-- or hex constant in form of FFFH which is not supported!
 					token := type_name_token
 					setCharBuff (ch)

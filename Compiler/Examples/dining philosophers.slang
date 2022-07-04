@@ -14,11 +14,11 @@ eat (philosopher: Philosopher; left, right: Fork) do
    /* Procedure with 3 concurrent parameters. Every call to eat creates a critical section which is parameterized by required resources to enter it. When all resources are captured then the call is being made having all resources in the exclusive access within the procedure */
    StandardIO.put ("Philosopher '" + philosopher.name + "' is eating with forks #" + left.id + " and #" + right.id + "\n")
 end
-concurrent unit Philosopher 
+concurrent type Philosopher 
    name: String
    Philosopher (:= name) none
 end
-concurrent unit Fork
+concurrent type Fork
    id: Integer
    Fork (:= id) none
 end

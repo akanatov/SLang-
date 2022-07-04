@@ -1,9 +1,9 @@
 a1 is A
 a2 is A()
 
-unit A
+type A
 end
-unit B extend A
+type B extend A
 end
 
 /*A: B do

@@ -1,4 +1,4 @@
-final unit TypeDescriptior
+final type TypeDescriptior
 	TypeDescriptior (:= name; := parents; := routines; := attributes)
 	require
 		expr

@@ -1,4 +1,4 @@
-unit A
+type A
 	a: Array [Any]
 	foo1 do
 		a := new Array[Integer]

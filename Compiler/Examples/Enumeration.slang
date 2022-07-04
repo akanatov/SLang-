@@ -1,4 +1,4 @@
-abstract unit Enumeration extend Comparable
+abstract type Enumeration extend Comparable
 	pure succ: as this 
 	/// successor of the current object
 	require

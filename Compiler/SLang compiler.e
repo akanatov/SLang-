@@ -65,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.12 (Build <AVK July 2nd 2022>)")
+		o.putNL ("SLang compiler v0.99.13 (Build <AVK July 4th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -299,7 +299,7 @@ feature {None}
 				from
 					j := 1
 					if m = 1 then
-						dumpOutput.put ("/* 1 unit compiled successfully: ")
+						dumpOutput.put ("/* 1 type compiled successfully: ")
 					else
 						dumpOutput.put ("/* " + m.out + " units compiled successfully: ")
 					end -- if

@@ -1,6 +1,6 @@
 if x is Type do
-//elsif x is unit end do
-//elsif x is unit Type do
+//elsif x is type end do
+//elsif x is type Type do
 //elsif x do
 //elsif x
 //	case x
@@ -37,4 +37,4 @@ a := if a do 5 else 6
 
 
   */
-unit Type end
+type Type end
