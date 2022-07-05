@@ -1,4 +1,4 @@
-type StandardIO alias IO
+ unit  StandardIO alias IO
 	readInt: Integer foreign
 	readReal: Real foreign
 	readBoolean: Boolean foreign

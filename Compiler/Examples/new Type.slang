@@ -1,7 +1,7 @@
-use rtn (T1, T2) as X 	// Named routine type
-use A | B | C  as Y 	// Named multi-type
+use rtn (T1, T2) as X 	// Named routine  unit 
+use A | B | C  as Y 	// Named multi- unit 
 use (A, B, C) as Z		// Named tuple
-//use Z as T				// New type based on existing one
+//use Z as T				// New  unit  based on existing one
 
 a00: X
 
@@ -14,9 +14,9 @@ a2: Z is (new A, new B, new C)
   
 
 
-type Any end
-type A end
-type B end
-type C end
-type T1 end
-type T2 end
+ unit  Any end
+ unit  A end
+ unit  B end
+ unit  C end
+ unit  T1 end
+ unit  T2 end

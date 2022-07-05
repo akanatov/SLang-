@@ -4,5 +4,5 @@ safe goo (p: T) do
 end
 too do
 end
-type T end
-type U end
+ unit  T end
+ unit  U end

@@ -50,15 +50,10 @@ feature {Any}
 	
 	systems: Sorted_Array [SystemDescriptor]
 
-	--ast: CompilationUnitCommon
 	ast: CompilationUnitCompound
-	
-	--unitAST: CompilationUnitUnit
-	--scriptAST: CompilationUnitAnonymousRoutine
-	--routinesAST: CompilationUnitStandaloneRoutines
 
 	parseSourceFile is
-	-- parse Slang source file which can optionally start with the system description
+	-- parse SLang source file which can optionally start with the system description
 	local
 		name: String
 		toExit: Boolean
@@ -78,7 +73,7 @@ feature {Any}
 			inspect
 				scanner.token
 			when scanner.illegal_token then
-				syntaxError ("Compilation type start expected", <<scanner.illegal_token>>, unit_folowers)
+				syntaxError ("Compilation unit start expected", <<scanner.illegal_token>>, unit_folowers)
 				toExit := True
 			when scanner.eof_token then
 				toExit := True
@@ -107,34 +102,34 @@ end
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.type_token then -- parse type
+						when scanner.unit_token then -- parse type
 							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 							parseUnit (True, True, False, False, False, False)
 						else
-							syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
+							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 							toExit := True
 						end
 					when scanner.val_token then -- parse val type
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.type_token then -- parse type
+						when scanner.unit_token then -- parse type
 							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 							parseUnit (True, False, True, False, False, False)
 						else
-							syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
+							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 						end
 					when scanner.concurrent_token then -- parse concurrent type
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.type_token then -- parse type
+						when scanner.unit_token then -- parse type
 							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 							parseUnit (True, False, False, True, False, False)
 						else
-							syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
+							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 						end
-					when scanner.type_token then -- parse type
+					when scanner.unit_token then -- parse type
 						scanner.nextToken
 						inspect	
 							scanner.token
@@ -145,7 +140,7 @@ end
 							syntaxError ("Unit name expected", <<scanner.type_name_token>>,<<>>)
 						end
 					else
-						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.type_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.unit_token>>, unit_folowers)
 					end -- inspect
 					ast.stop_unit_parsing
 				when scanner.ref_token then -- parse ref type
@@ -153,11 +148,11 @@ end
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.type_token then -- parse type
+					when scanner.unit_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, True, False, False, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
 				when scanner.val_token then -- parse val type
@@ -165,11 +160,11 @@ end
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.type_token then -- parse type
+					when scanner.unit_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, True, False, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
 				when scanner.concurrent_token then -- parse concurrent type
@@ -177,11 +172,11 @@ end
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.type_token then -- parse type
+					when scanner.unit_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, True, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
 				when scanner.abstract_token then -- parse abstract type
@@ -189,11 +184,11 @@ end
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.type_token then -- parse type
+					when scanner.unit_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, False, True, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
 				when scanner.extend_token then -- parse extend type
@@ -201,14 +196,14 @@ end
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.type_token then -- parse type
+					when scanner.unit_token then -- parse type
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, False, False, True)
 					else
-						syntaxError ("Unit start expected", <<scanner.type_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.type_token then -- parse type
+				when scanner.unit_token then -- parse type
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
@@ -448,7 +443,7 @@ feature {None}
 	do
 		Result := <<
 			 scanner.build_token, scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
-			 scanner.abstract_token, scanner.extend_token, scanner.type_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
+			 scanner.abstract_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
 			 scanner.type_name_token,
 			 scanner.if_token, scanner.while_token, scanner.new_token, scanner.detach_token, scanner.raise_token, scanner.return_token,
 			 scanner.left_paranthesis_token, scanner.var_token, scanner.require_token, scanner.rigid_token
@@ -2321,7 +2316,7 @@ end
 	parseExpressionWithSemicolon: ExpressionDescriptor is
 	do
 --trace (">>>parseExpressionWithSemicolon")
-		Result := parseExpression1 (False, True, True, False)
+		Result := parseExpression1 (False, True, True, False, False)
 		if scanner.token = scanner.semicolon_token then
 			scanner.nextToken
 --trace ("<<<; removed parseExpressionWithSemicolon")
@@ -2331,19 +2326,24 @@ end
 	end -- parseExpressionWithSemicolon
 	parseExpressionWithSemicolon1 (checkSemicolonAfter: Boolean): ExpressionDescriptor is
 	do
-		Result := parseExpression1 (False, True, checkSemicolonAfter, False)
+		Result := parseExpression1 (False, True, checkSemicolonAfter, False, False)
 	end -- parseExpressionWithSemicolon1
+
+	parseExpressionWithSemicolon2 (checkSemicolonAfter: Boolean): ExpressionDescriptor is
+	do
+		Result := parseExpression1 (False, True, checkSemicolonAfter, False, True)
+	end -- parseExpressionWithSemicolon2
 
 	parseExpressionX: ExpressionDescriptor is
 	do
-		Result := parseExpression1 (False, True, False, True)
+		Result := parseExpression1 (False, True, False, True, False)
 		if scanner.token = scanner.semicolon_token then
 			scanner.nextToken
 		end -- if
 	end -- parseExpressionX
 	parseOptionalExpressionX: ExpressionDescriptor is
 	do
-		Result := parseExpression1 (False, False, False, True)
+		Result := parseExpression1 (False, False, False, True, False)
 		if scanner.token = scanner.semicolon_token then
 			scanner.nextToken
 		end -- if
@@ -2351,14 +2351,15 @@ end
 	
 	parseExpression: ExpressionDescriptor is
 	do
-		Result := parseExpression1 (False, True, False, False)
+		Result := parseExpression1 (False, True, False, False, False)
 		if scanner.token = scanner.semicolon_token then
 			scanner.nextToken
 		end -- if
 	end -- parseExpression
+
 	parseOptionalExpression: ExpressionDescriptor is
 	do
-		Result := parseExpression1 (False, False, False, False)
+		Result := parseExpression1 (False, False, False, False, False)
 		if scanner.token = scanner.semicolon_token then
 			scanner.nextToken
 		end -- if
@@ -2366,7 +2367,7 @@ end
 	parseCommentedExpression: ExpressionDescriptor is
 	-- predicates only
 	do
-		Result := parseExpression1 (True, False, False, False)
+		Result := parseExpression1 (True, False, False, False, False)
 		if scanner.token = scanner.semicolon_token then
 			scanner.nextToken
 		end -- if
@@ -2385,7 +2386,7 @@ end
 		create Result
 	end -- oldDsc
 
-	parseUnaryExpression (operator: String; checkForCommentAfter, checkSemicolonAfter: Boolean): ExpressionDescriptor is
+	parseUnaryExpression (operator: String; checkForCommentAfter, checkSemicolonAfter, parseConstExpr: Boolean): ExpressionDescriptor is
 	require
 		operator_not_void: operator /= Void
 	local
@@ -2478,7 +2479,7 @@ end
 			-- operator old ....
 			-- OldExpression
 			scanner.nextToken
-			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False)
+			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
 			if exprDsc /= Void then
 				create {OldExpressionDescriptor} Result.init (exprDsc)
 				create {CallChainElement} cceDsc.init (operator, Void)
@@ -2486,7 +2487,7 @@ end
 			end -- if
 		when scanner.left_paranthesis_token then
 			scanner.nextToken
-			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False)
+			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
 			if exprDsc /= Void then
 				if scanner.token = scanner.right_paranthesis_token then
 					scanner.nextWithSemicolon (checkSemicolonAfter)
@@ -2499,7 +2500,7 @@ end
 				end -- if
 			end -- if
 		else
-			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False)
+			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
 			if exprDsc /= Void then
 				scanner.nextWithSemicolon (checkSemicolonAfter)
 				-- (exprDsc).operator ()
@@ -2510,7 +2511,7 @@ end
 		end -- inspect
 	end -- parseUnaryExpression
 
-	parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, returnType: Boolean): ExpressionDescriptor is
+	parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, returnType, parseConstExpr: Boolean): ExpressionDescriptor is
 	--50 Expression:
 	-- 		IfExpression | MemberCall | NewExpression | Expression Operator Expression | Operator Expression | Constant | TypeOfExpression |
 	--      if             ( ident ...  new                                              operator              constant
@@ -2535,7 +2536,11 @@ end
 		order: Integer
 	do
 debug
-	--trace (">>> parseExpression1") -- with checkSemicolonAfter: + checkSemicolonAfter.out)
+	if parseConstExpr then
+		--trace (">>> parseConstExpression") -- with checkSemicolonAfter: + checkSemicolonAfter.out)
+	else
+		--trace (">>> parseExpression") -- with checkSemicolonAfter: + checkSemicolonAfter.out)
+	end -- if
 end
 		inspect
 			scanner.token
@@ -2548,7 +2553,7 @@ end
 		when scanner.old_token then
 			-- OldExpression
 			scanner.nextToken
-			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False)
+			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
 			if exprDsc /= Void then
 				create {OldExpressionDescriptor} Result.init (exprDsc)
 			end -- if
@@ -2562,14 +2567,14 @@ debug
 	--trace ("#1:Unary operator " + Result.out)
 end -- debug
 			scanner.nextToken
-			Result := parseUnaryExpression (operator, checkForCommentAfter, checkSemicolonAfter)
+			Result := parseUnaryExpression (operator, checkForCommentAfter, checkSemicolonAfter, parseConstExpr)
 debug
 	--trace ("#1:Unary operator " + Result.out)
 end -- debug
 		when scanner.left_paranthesis_token then
 			-- “(”Expression“)” or tuple “(”Expression {", "Expression}“)” {CallChain}
 			scanner.nextToken
-			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False)
+			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
 			if exprDsc /= Void then
 --trace ("#2: (Expression " + exprDsc.out)
 				inspect
@@ -2603,7 +2608,7 @@ end -- debug
 		when scanner.ref_token then
 			-- RefExpression
 			scanner.nextToken
-			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False)
+			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
 			if exprDsc /= Void then
 				create {RefExpressionDescriptor} Result.init (exprDsc)
 			end -- if
@@ -2673,7 +2678,7 @@ end -- debug
 			if name.is_equal ("not") then
 				-- operator Expression
 				scanner.nextToken
-				Result := parseUnaryExpression (name, checkForCommentAfter, checkSemicolonAfter)
+				Result := parseUnaryExpression (name, checkForCommentAfter, checkSemicolonAfter, parseConstExpr)
 debug
 	if Result /= Void then
 		--trace ("#2:Unary operator " + Result.out)
@@ -2729,6 +2734,7 @@ end -- debug
 						--trace ("<ident>: " + identDsc.out + " ..|{" )
 					end -- debug
 					Result := parseRangeExpression (identDsc, checkSemicolonAfter)
+					toExit := True 
 				else
 					if scanner.Cmode then
 						inspect
@@ -2737,6 +2743,7 @@ end -- debug
 							-- ident {ConstExpr} .. 
 --trace ("<ident>: " + identDsc.out + " ..|{" )
 							Result := parseRangeExpression (identDsc, checkSemicolonAfter)
+							toExit:= True
 						when scanner.less_token then 
 							-- ident [    like a := Bit [5].count
 --trace ("<ident>: " + identDsc.out + " [" )
@@ -2757,6 +2764,7 @@ end -- debug
 							-- ident {ConstExpr} .. 
 --trace ("<ident>: " + identDsc.out + " ..|{" )
 							Result := parseRangeExpression (identDsc, checkSemicolonAfter)
+							toExit:= True
 						when scanner.left_square_bracket_token then 
 							-- ident [    like a := Bit [5].count
 --trace ("<ident>: " + identDsc.out + " [" )
@@ -2806,6 +2814,7 @@ end -- debug
 			when scanner.period_token, scanner.left_curly_bracket_token then
 				-- this .. Expr kind of range expression
 				Result := parseRangeExpression (thisDsc, checkSemicolonAfter)
+				toExit:= True
 			when scanner.semicolon_token then
 				-- Just this
 				--	Keep semicolon!!! scanner.nextToken
@@ -2845,6 +2854,7 @@ end -- debug
 			when scanner.period_token then -- , scanner.left_curly_bracket_token then  -- conflicts with the scope start !!!!			
 				-- ident .. Expr kind of range expression
 				Result := parseRangeExpression (constDsc, checkSemicolonAfter)
+				toExit:= True
 			when scanner.dot_token then
 				-- const.callChain Huh ...
 				Result := parseMemberCallWithConstant (constDsc) -- ConstantDescriptor
@@ -2890,7 +2900,7 @@ end -- debug
 					-- Expr operator Expr
 					operator := scanner.tokenString
 					scanner.nextToken
-					exprDsc := parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, False)
+					exprDsc := parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, False, parseConstExpr)
 					if exprDsc = Void then
 						toExit := True
 					else
@@ -2928,79 +2938,80 @@ end
 						----create  {ExprOperatorExprDescriptor} Result.init (Result, operator, exprDsc)
 						------Result := exprOpExpr
 					end -- if
-				--when scanner.is_token then
-				when scanner.type_token then
+				when scanner.is_token then
 					toExit := True
-					--scanner.push
-					scanner.nextToken
-					inspect 
-						scanner.token
-					when scanner.detach_token then
-						-- expr is ? 
-						--		   ^
-						--scanner.flush
+					if not parseConstExpr then
+						--scanner.push
 						scanner.nextToken
-						create {IsDetachedDescriptor} Result.init (Result)
-					when scanner.type_name_token, scanner.ref_token, scanner.val_token then
-						-- expr is Type
-						--		   ^
-						utnDsc := parseUnitType2 (checkSemicolonAfter)
-						if utnDsc /= Void then
-							create {IsAttachedDescriptor} Result.init (Result, utnDsc)
-						end -- if
-						--if utnDsc = Void then
-						--	-- Not sure if Void is to be returned in case of error parsing the type
-						--	-- Result := Void
-						--else
-						--	inspect 
-						--		scanner.token
-						--	when scanner.do_token then
-						--		scanner.flush
-						--		-- expr is Type do
-						--		--		        ^
-						--		create {IsAttachedDescriptor} Result.init (Result, utnDsc)
-						--	else
-						--		-- may be the tag start
-						--		-- expr is Type {"," Type} :
-						--		scanner.revert
-						--	end -- inspect
-						--end -- if
-					else
-						syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.detach_token>>)
-						-- expr is expr :
-						--scanner.revert
-					end -- inspect
-					
---					if scanner.token = scanner.colon_token then
---						-- That is if is alternative:  start, end of this expression!!!
---						scanner.push
---						scanner.revert
---						debug
---							trace ("`is identifier` found !")
---						end
---						toExit := True
---					else
---						scanner.flush
---						-- That is is expression - type of expression: TypeOfExpression: Expression is (“?”| UnitType)
---						--Result := parseTypeOfExpression (Result, checkSemicolonAfter)
---						inspect
---							scanner.token
---						when scanner.detach_token then
---							-- expr is ?
---							scanner.nextToken
---							create {IsDetachedDescriptor} Result.init (Result)
---						else
---							utnDsc := parseUnitType2 (checkSemicolonAfter)
---							if utnDsc = Void then
---								-- Not sure if Void is to be retruned in case of error parsing the type
---								-- Result := Void
---							else
---								-- expr is Type
---								create {IsAttachedDescriptor} Result.init (Result, utnDsc)
---							end -- if
---						end -- inspect
---						toExit := True
---					end -- if
+						inspect 
+							scanner.token
+						when scanner.detach_token then
+							-- expr is ? 
+							--		   ^
+							--scanner.flush
+							scanner.nextToken
+							create {IsDetachedDescriptor} Result.init (Result)
+						when scanner.type_name_token, scanner.ref_token, scanner.val_token then
+							-- expr is Type
+							--		   ^
+							utnDsc := parseUnitType2 (checkSemicolonAfter)
+							if utnDsc /= Void then
+								create {IsAttachedDescriptor} Result.init (Result, utnDsc)
+							end -- if
+							--if utnDsc = Void then
+							--	-- Not sure if Void is to be returned in case of error parsing the type
+							--	-- Result := Void
+							--else
+							--	inspect 
+							--		scanner.token
+							--	when scanner.do_token then
+							--		scanner.flush
+							--		-- expr is Type do
+							--		--		        ^
+							--		create {IsAttachedDescriptor} Result.init (Result, utnDsc)
+							--	else
+							--		-- may be the tag start
+							--		-- expr is Type {"," Type} :
+							--		scanner.revert
+							--	end -- inspect
+							--end -- if
+						else
+							syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.detach_token>>)
+							-- expr is expr :
+							--scanner.revert
+						end -- inspect
+						
+	--					if scanner.token = scanner.colon_token then
+	--						-- That is if is alternative:  start, end of this expression!!!
+	--						scanner.push
+	--						scanner.revert
+	--						debug
+	--							trace ("`is identifier` found !")
+	--						end
+	--						toExit := True
+	--					else
+	--						scanner.flush
+	--						-- That is is expression - type of expression: TypeOfExpression: Expression is (“?”| UnitType)
+	--						--Result := parseTypeOfExpression (Result, checkSemicolonAfter)
+	--						inspect
+	--							scanner.token
+	--						when scanner.detach_token then
+	--							-- expr is ?
+	--							scanner.nextToken
+	--							create {IsDetachedDescriptor} Result.init (Result)
+	--						else
+	--							utnDsc := parseUnitType2 (checkSemicolonAfter)
+	--							if utnDsc = Void then
+	--								-- Not sure if Void is to be retruned in case of error parsing the type
+	--								-- Result := Void
+	--							else
+	--								-- expr is Type
+	--								create {IsAttachedDescriptor} Result.init (Result, utnDsc)
+	--							end -- if
+	--						end -- inspect
+	--						toExit := True
+	--					end -- if
+					end -- if					
 				when scanner.in_token then 
 					-- Expr in Expr1 .. Expr2
 					scanner.nextToken
@@ -3040,7 +3051,7 @@ debug
 end -- debug
 					if toParseMore then
 						toParseMore := False
-						exprDsc := parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, False)
+						exprDsc := parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, False, parseConstExpr)
 						if exprDsc = Void then
 							 toExit := True
 						else
@@ -3089,9 +3100,11 @@ end -- debug
 		end -- if
 debug
 	if Result = Void then
-		--trace ("<<< parseExpression1: <Void>")
+		--trace ("<<< parseExpression: <Void>")
+	elseif parseConstExpr then
+		--trace ("<<< parseConstExpression: " + Result.out)
 	else
-		--trace ("<<< parseExpression1: " + Result.out)
+		--trace ("<<< parseExpression: " + Result.out)
 	end -- if
 end -- debug
 	end -- parseExpression1
@@ -3166,7 +3179,7 @@ end -- debug
 	local
 		left: ExpressionDescriptor
 	do
-		left := parseExpression1 (checkForCommentAfter, True checkSemicolonAfter, False)
+		left := parseExpression1 (checkForCommentAfter, True checkSemicolonAfter, False, True)
 		if left /= Void then
 			inspect
 				scanner.token
@@ -3190,16 +3203,19 @@ end -- debug
 		exprDsc: ExpressionDescriptor	
 		wasError: Boolean
 	do
+		debug
+			--trace (">>> parseRange starting from: " + left.out)
+		end -- debug
 		if scanner.visibilityStart then
 			scanner.nextToken
 			inspect
 				scanner.token
-			when scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
+			when scanner.identifier_token, scanner.operator_token, 
 				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
 			then
 				operator := scanner.tokenString
 				scanner.nextToken
-				exprDsc := parseExpression
+				exprDsc := parseConstExpression (checkSemicolonAfter)
 				if exprDsc /= Void then
 					if scanner.visibilityEnd then
 						scanner.nextToken
@@ -3213,8 +3229,7 @@ end -- debug
 				end -- if
 			else
 				syntax_error (<<
-					scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
-					scanner.implies_token, 
+					scanner.identifier_token, scanner.operator_token, scanner.implies_token, 
 					scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
 				>>)
 				wasError := True
@@ -3223,7 +3238,7 @@ end -- debug
 		if not wasError then
 			if scanner.token = scanner.period_token then
 				scanner.nextToken
-				right := parseExpressionWithSemicolon1 (checkSemicolonAfter)
+				right := parseExpressionWithSemicolon2 (checkSemicolonAfter)
 				if right /= Void then
 					create Result.init (left, operator, exprDsc, right)
 				end -- if
@@ -3232,6 +3247,12 @@ end -- debug
 				syntax_error (<<scanner.period_token>>)
 			end -- if
 		end -- if
+		debug
+			if Result = Void then
+			else
+				--trace ("<<< parseRange: " + Result.out)
+			end -- if
+		end -- debug
 	end -- parseRangeExpression
 	
 	parseBinaryOperatorExpression (exprDsc1: ExpressionDescriptor; checkSemicolonAfter: Boolean ): ExpressionCallDescriptor is --ExprOperatorExprDescriptor is
@@ -5674,7 +5695,7 @@ end -- debug
 	end -- parseTupleType
 		
 --	--parseConstExpression (checkSemicolonAfter: Boolean): ConstExpressionDescriptor is
---	parseConstExpression (checkSemicolonAfter: Boolean): ExpressionDescriptor is
+	parseConstExpression (checkSemicolonAfter: Boolean): ExpressionDescriptor is
 --	local
 --		identDsc: IdentifierDescriptor
 --		constDsc: ConstantDescriptor
@@ -5684,7 +5705,12 @@ end -- debug
 --		--nmdDsc: NamedTypeDescriptor
 --		--unitTypeDsc: ???
 --		callDsc: CallDescriptor
---	do
+	do
+		Result := parseExpression1 (False, True, False, False, True)
+		if scanner.token = scanner.semicolon_token then
+			scanner.nextToken
+		end -- if
+
 ----trace (">>> parseConstExpression")
 --		inspect
 --			scanner.token
@@ -5816,7 +5842,7 @@ end -- debug
 --			>>)
 --		end -- inspect
 ----trace ("<<< parseConstExpression")
---	end -- parseConstExpression
+	end -- parseConstExpression
 
 	parseRangeType (checkSemicolonAfter: Boolean): RangeTypeDescriptor is
 	--67
@@ -5889,8 +5915,7 @@ end -- debug
 							end -- if
 						else
 							if barFound then
-								--constExpr2 := parseConstExpression (checkSemicolonAfter)
-								constExpr2 := parseExpression
+								constExpr2 := parseConstExpression (checkSemicolonAfter)
 								if constExpr2 = Void then
 									toLeave := True
 								else
@@ -6089,7 +6114,7 @@ end -- debug
 	-- AnonymousUnitType: “unit” MemberDesciption {[“;”] MemberDesciption} “end”
 	--                     ^
 	require
-		valid_token: validToken (<<scanner.type_token>>)
+		valid_token: validToken (<<scanner.unit_token>>)
 	local
 		members: Sorted_Array [MemberDescriptionDescriptor]
 		m1: Sorted_Array [MemberDescriptionDescriptor]
@@ -6206,7 +6231,7 @@ debug
 	--trace ("parseAttachedType: tuple type parsed " + Result.out)
 	end -- if
 end -- debug
-		when scanner.type_token then
+		when scanner.unit_token then
 			-- Anonymous type type
 			Result := parseAnonymousUnitType (checkSemicolonAfter)
 		when
@@ -6226,7 +6251,7 @@ end -- debug
 				scanner.as_token,
 				scanner.rtn_token,
 				scanner.left_paranthesis_token,
-				scanner.type_token,
+				scanner.unit_token,
 				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token				
 			>>)
 		end -- inspect
@@ -6308,8 +6333,7 @@ end
 				when scanner.identifier_token then
 					if commaFound or else generics.count = 0 then
 						commaFound := False
-						--td := parseConstExpression (False)
-						td := parseExpression
+						td := parseConstExpression (False)
 						if td = Void then
 							toLeave := True
 						else
@@ -6464,7 +6488,6 @@ end
 				when scanner.identifier_token then
 					if commaFound or else generics.count = 0 then
 						commaFound := False
-						--td := parseConstExpression (False)
 						td := parseExpression
 						if td = Void then
 							toLeave := True
@@ -8232,9 +8255,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				-- ident is Expr
 				--       ^    attribute with initialization
 				scanner.nextToken
-				--constExprDsc := parseConstExpression (False)
-				constExprDsc := parseExpression
---				exprDsc := parseExpressionWithSemicolon -- ConstantExpression !!!!
+				constExprDsc := parseConstExpression (False)
 				if constExprDsc /= Void then -- Identifier is ConstantExpression
 					--create {AttachedUnitAttributeDeclarationDescriptor} attrDsc.init (isOverriding, isFinal, False, False, name, Void, Void, constExprDsc)
 					create {UnitAttributeDeclarationDescriptor} attrDsc.init (isOverriding, isFinal, False, False, name, Void, Void, constExprDsc)
@@ -9439,7 +9460,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	-- require	[InvariantBlock]
 	-- end
 	require
-		valid_token: validToken (<<scanner.type_name_token, scanner.type_token>>)
+		valid_token: validToken (<<scanner.type_name_token, scanner.unit_token>>)
 	local	
 		goToMembers: Boolean
 		mvDsc, currentVisibilityZone: MemberVisibilityDescriptor
@@ -9454,7 +9475,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		initialErrorsCount: Integer
 	do
 		initialErrorsCount := errorsCount
-		if scanner.token = scanner.type_token then
+		if scanner.token = scanner.unit_token then
 			scanner.nextToken
 			inspect
 				scanner.token 
@@ -9477,7 +9498,6 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			scanner.nextToken
 		end -- if
 		if unitName /= Void then
-			o.putLine ("Parsing type `" + unitName + "`")
 			create currentUnitDsc.init (unitName, is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend)
 			currentUnitDsc.attach_pools (ast)
 			
@@ -9490,6 +9510,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					currentUnitDsc.setAliasName (scanner.tokenString)
 					scanner.nextToken
 				else
+					o.putLine ("Parsing unit `" + unitName + "`")
 					syntax_error (<<scanner.type_name_token>>)
 				end
 			end -- if
@@ -9500,10 +9521,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				formalGenerics := parseFormalGenerics (fgTypes)
 				if formalGenerics /= Void then
 					currentUnitDsc.setFormalGenercis (formalGenerics, fgTypes)
-					o.putLine ("Parsing type `" + currentUnitDsc.fullUnitName + "`")
 				end -- if
 			end -- if
-			--o.putLine ("Parsing type `" + currentUnitDsc.fullUnitName + "`")
+			o.putLine ("Parsing unit `" + currentUnitDsc.fullUnitName + "`")
 
 			if scanner.token = scanner.extend_token then
 				-- parse inheritance clause
@@ -9817,7 +9837,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			if scanner.blockEnd then
 				-- end of the type
 				if initialErrorsCount = errorsCount and then not ast.units.added (currentUnitDsc) then
-					validity_error( "More than one type with name `" + currentUnitDsc.name + "` in the same source/compilation")
+					validity_error( "More than one type with name `" + currentUnitDsc.name + "` in the same compilation source")
 				end -- if
 				scanner.nextToken
 			else

@@ -1,7 +1,8 @@
 unit Cardinal 
-/*	const : 
+	const : 
 		minCardinal .. maxCardinal
-	end */
+	end
 	a is Cardinal.0
 end
-//a is Cardinal.0
+a is Cardinal.0
+unit Any end

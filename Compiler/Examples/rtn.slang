@@ -6,7 +6,7 @@ end
 
 foo1   foreign
 
-type A
+ unit  A
 	foo (a: A) foreign
 	goo 
 	do {a, b, c} 

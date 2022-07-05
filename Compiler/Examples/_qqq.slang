@@ -1,4 +1,4 @@
-type SLang_Scanner
+ unit  SLang_Scanner
 	token: Integer // current token
 	tokenRow: Integer // current token row
 	tokenCol: Integer // current token column
@@ -23,7 +23,7 @@ type SLang_Scanner
 		else
 		end // if		
 	ensure
-		return type Any implies (
+		return is Any implies (
 			token = integer_const_token or else 
 			token = real_const_token or else
 			token = string_const_token or else

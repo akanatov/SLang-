@@ -893,19 +893,19 @@ debug
 end	-- debug
 		clusters := sysDsc.hasUnit(unitExternalName)
 		if clusters = Void or else clusters.count = 0 then
-			-- Such type is not found in the search universe !!!
-			o.putNL ("Error: type `" + unitPrintableName + "` is not found in the provided universe")
+			-- Such unit is not found in the search universe !!!
+			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided universe")
 			-- Let's parse all sources across all clusters!
 		elseif clusters.count > 1 then
-			-- More than one type is found in the search universe !!!
-			o.putNL ("Error: " + clusters.count.out + " versions of type `" + unitPrintableName + "` found in the provided universe. Select only one to be used")
+			-- More than one unit is found in the search universe !!!
+			o.putNL ("Error: " + clusters.count.out + " versions of unit `" + unitPrintableName + "` found in the provided universe. Select only one to be used")
 		else
 			-- Load it
 			o.putLine ("Loading interface of `" + unitPrintableName + "`")
 			Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
 			if Result = Void then
 				-- There was a problem to load type interface 
-				o.putNL ("Error: type `" + unitPrintableName + "` was not loaded correctly")
+				o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
 			elseif fs.file_exists(Result.srcFileName) then
 				-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
 				if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
@@ -913,7 +913,7 @@ end	-- debug
 					Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
 				end -- if
 			else
-				o.putNL ("Warning: source file for the type `" + unitPrintableName + "` is no longer in place")
+				o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place")
 			end -- if
 		end -- if
 	end -- loadUnitInterface
@@ -1004,7 +1004,7 @@ feature {None}
 	
 feature {Any}	
 
-	-- Parsing type
+	-- Parsing unit
 	unit_stringPool: Sorted_Array [String]
 	unit_typePool: Sorted_Array[TypeDescriptor]
 
@@ -1127,12 +1127,12 @@ inherit
 create	
 	init, make
 feature {Any}
-	type: UnitDeclarationDescriptor
+	unitDclDsc: UnitDeclarationDescriptor
 
 	init (scn: like scanner) is
 	do
 		init_pools (scn)
-		type := Void -- ????
+		unitDclDsc := Void -- ????
 	end -- init
 	
 	make is
@@ -1143,7 +1143,7 @@ feature {Any}
 
 	--isInvalid: Boolean is
 	--do
-	--	Result := type.isInvalid(sysDsc)
+	--	Result := unitDclDsc.isInvalid(sysDsc)
 	--end -- isInvalid
 
 	--failedToGenerate (generators: Array [CodeGenerator]): Boolean is
@@ -1157,7 +1157,7 @@ feature {Any}
 	--	until
 	--		j > m
 	--	loop
-	--		if type.failedToGenerate(generators.item (j)) then
+	--		if unitDclDsc.failedToGenerate(generators.item (j)) then
 	--			Result := True
 	--		end -- if
 	--		j := j + 1
@@ -1176,8 +1176,8 @@ feature {Any}
 	require
 		non_void_unitDsc: unitDsc /= Void
 	do
-		if type.is_equal (unitDsc) then
-			type := unitDsc
+		if unitDclDsc.is_equal (unitDsc) then
+			unitDclDsc := unitDsc
 		end -- if
 	end -- sameUnitFill
 	
@@ -1187,7 +1187,7 @@ feature {Any}
 	do
 		uImage := loadUnitIR (fileName, o)
 		if uImage /= Void then
-			type 		:= uImage.type
+			unitDclDsc  := uImage.unitDclDsc
 			useConst	:= uImage.useConst	
 			stringPool	:= uImage.stringPool	
 			typePool	:= uImage.typePool	
@@ -1207,7 +1207,7 @@ feature {None}
 		wasError: Boolean
 	do
 		if wasError then
-			o.putNL ("Consistency error: unable to load type code from file `" + fileName + "`")
+			o.putNL ("Consistency error: unable to load unit code from file `" + fileName + "`")
 			Result := Void
 		else
 			create aFile.make_open_read (fileName)
@@ -1215,7 +1215,7 @@ feature {None}
 			Result ?= Result.retrieved (aFile)
 			aFile.close
 			if Result = Void then
-				o.putNL ("Consistency error: file `" + fileName + "` does not contain type code")
+				o.putNL ("Consistency error: file `" + fileName + "` does not contain unit code")
 			end -- if
 		end -- if
 	rescue
@@ -1225,31 +1225,27 @@ feature {None}
 
 end -- class CompilationUnitUnit
 
-class CompilationUnitStandaloneRoutine -- s
+class CompilationUnitStandaloneRoutine
 inherit
 	CompilationUnitCommon
 	end
 create	
 	init, make
 feature {Any}
-	--routines: Sorted_Array [StandaloneRoutineDescriptor]
 	routine: StandaloneRoutineDescriptor
 
 	init(scn: like scanner) is
 	do
 		init_pools (scn)
-		--create routines.make
 	end -- init
 
 	make is
 	do
 		init_pools (Void)
-		--create routines.make
 	end -- init
 
 	RoutineIR_Loaded (fileName: String; o: Output): Boolean is
 	local
-		--rImage: RoutinesImage 
 		rImage: RoutineImage 
 	do
 		rImage := loadRoutineIR (fileName, o)
@@ -1266,7 +1262,6 @@ feature {Any}
 
 feature {None}	
 	
-	--loadRoutinesIR (fileName: String; o: Output): RoutinesImage is
 	loadRoutineIR (fileName: String; o: Output): RoutineImage is
 	require
 		file_name_not_void: fileName /= Void
@@ -1291,8 +1286,6 @@ feature {None}
 		retry
 	end -- loadRoutineIR
 
---invariant
---	non_void_routines: routines /= Void
 end -- class CompilationUnitStandaloneRoutine
 
 
@@ -1303,10 +1296,6 @@ inherit
 		rename 
 			init as anonymous_routine_init
 	end
-	--CompilationUnitStandaloneRoutine --s
-	--	rename
-	--		init as standalone_routines_init
-	--end
 	SLangConstants
 	end
 create	
@@ -1441,7 +1430,7 @@ feature {Any}
 					end -- if
 				end -- if
 				if unitOfInterest /= Void then
-					unitOfInterest.sameUnitFill (uImg.type)
+					unitOfInterest.sameUnitFill (uImg.unitDclDsc)
 				end -- if
 			else
 				o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
@@ -1567,10 +1556,10 @@ inherit
 create	
 	init, init_empty
 feature {CompilationUnitCommon}
-	type: UnitDeclarationDescriptor
-	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; u: like type; sp: like stringPool; tp: like typePool) is
+	unitDclDsc: UnitDeclarationDescriptor
+	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; u: like unitDclDsc; sp: like stringPool; tp: like typePool) is
 	do
-		type 	:= u
+		unitDclDsc := u
 		init_storage (fn, ts, uc, sp, tp)
 	end -- init
 end -- class UnitImage
@@ -11350,7 +11339,7 @@ end -- debug
 				Result := True
 			elseif toRegister then				
 				-- Regsiter the 'interface' in the pool
-				typePool.add (interface.type.getUnitTypeDescriptor) -- type: UnitDeclarationDescriptor
+				typePool.add (interface.unitDclDsc.getUnitTypeDescriptor) -- unitDclDsc: UnitDeclarationDescriptor
 			end -- if
 			if not Result and then aliasName /= Void then
 				-- Register alias if set in the pool

@@ -1,5 +1,5 @@
 //foo foreign
-type A alias XX [G] 
+ unit  A alias XX [G] 
 	extend M, B, ~C 
 	//use A as BB, B, C const A, B, C
 	select	b, foo(as this, rtn):rtn (as this), c
@@ -24,7 +24,7 @@ end*/
 end // A
 
 /*
-type AF[foo: rtn(), H init (), G extend F, N: Integer, K extend T init (as this)] 
+ unit  AF[foo: rtn(), H init (), G extend F, N: Integer, K extend T init (as this)] 
 end
 
 use const A, B, C
@@ -33,22 +33,22 @@ raise
 return
 break
 ? identifier
-final type AA
+final  unit  AA
 end
-ref type B
+ref  unit  B
 end
-val type C
+val  unit  C
 end
-concurrent type D
+concurrent  unit  D
 end
-extend type E
+extend  unit  E
 end
-final type A1
+final  unit  A1
 end
-final ref type B1
+final ref  unit  B1
 end
-final val type C1
+final val  unit  C1
 end
-final concurrent type D1
+final concurrent  unit  D1
 end
  */

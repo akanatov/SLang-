@@ -1,4 +1,4 @@
 a is A
 foo do end
-type A
+ unit  A
 end

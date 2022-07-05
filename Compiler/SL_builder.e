@@ -407,13 +407,13 @@ end -- debug
 					create unitDsc.make 
 					if unitDsc.UnitIR_Loaded (fileDsc.path, o) then
 debug
-	trace ("Unit `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+	--trace ("Type `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
 end -- debug
 	-- How to ignore alias code ... Or process it ....
 	--					if cuDsc.type.name.is_equal () then
 							-- That is not alias code
 							unitDsc.attachSystemDescription (sysDsc)
-							if unitDsc.type.isInvalid (unitDsc, o) then
+							if unitDsc.unitDclDsc.isInvalid (unitDsc, o) then
 								Result := True
 							else
 								from
@@ -422,7 +422,7 @@ end -- debug
 								until
 									j > m
 								loop
-									unitDsc.type.generate(generators.item (j))
+									unitDsc.unitDclDsc.generate(generators.item (j))
 									j := j + 1
 								end -- loop
 							end -- if
@@ -435,7 +435,7 @@ end -- debug
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
 						rtnDsc.attachSystemDescription (sysDsc)
 debug
-	trace ("Standalone routine loaded from file `" + ast_files.item (i).path + "`")
+	--trace ("Standalone routine loaded from file `" + ast_files.item (i).path + "`")
 end -- debug
 						if rtnDsc.routine.isInvalid (rtnDsc, o) then
 							Result := True

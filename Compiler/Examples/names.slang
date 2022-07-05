@@ -22,13 +22,13 @@ rtn10 (parameter: Type1) : Type2 do end
 rtn11 (parameter: Type1) : Type2 do end
 rtn12 (parameter: Type1) : Type2 do end
 use const UnitA, UnitB, UnitC
-type U
+ unit  U
 	foo: Type do end
 end
-type UnitA
+ unit  UnitA
 end
-type UnitB
+ unit  UnitB
 end
-type UnitC
+ unit  UnitC
 end
 

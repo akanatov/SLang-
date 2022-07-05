@@ -1,12 +1,12 @@
 // How to deal with dynamic objects .... WIP !!!
-type DynamicObject
-	/* This type allows to deal with dynamically loaded/created objects 
-	providing dynamic type checking.
+ unit  DynamicObject
+	/* This  unit  allows to deal with dynamically loaded/created objects 
+	providing dynamic  unit  checking.
 	*/
 	// Access members by name
 	final call (rtn_name: String; args: ()) do
 		rtn_descr is findRoutine(rtn_name)
-		if rtn_descr type ProcedureDescriptor do
+		if rtn_descr is ProcedureDescriptor do
 			call (rtn_descr, args)
 		else
 			raise "Call to non-existing procedure '" + rtn_name + "'"
@@ -14,7 +14,7 @@ type DynamicObject
 	end
 	final call (rtn_name: String; args: ()): Any do
 		rtn_descr is findRoutine(rtn_name)
-		if rtn_descr type FunctionDescriptor do
+		if rtn_descr is FunctionDescriptor do
 			return call (rtn_descr, args)
 		else
 			raise "Call to non-existing function '" + rtn_name + "'"
@@ -22,7 +22,7 @@ type DynamicObject
 	end
 	final get_value (attr_name: String): Any do
 		attr_descr is findAttribute (attr_name)
-		if attr_descr type AttributeDescriptor do
+		if attr_descr is AttributeDescriptor do
 			return attr_descr.value
 		else
 			raise "Access to non-existing attribute '" + attr_name + "'"
@@ -30,7 +30,7 @@ type DynamicObject
 	end
 	final set_value (attr_name: String; value: Any) do
 		attr_descr is findAttribute (attr_name)
-		if attr_descr type VariableDescriptor do
+		if attr_descr is  VariableDescriptor do
 			attr_descr.value := value
 		else
 			raise "Access to non-existing/writable attribute '" + attr_name + "'"
@@ -59,14 +59,14 @@ type DynamicObject
 	
 end
 
-virtual type MemberDescriptor
+virtual  unit  MemberDescriptor
 	final name: String
 end
-virtual type RoutineDescriptor extend MemberDescriptor
+virtual  unit  RoutineDescriptor extend MemberDescriptor
 	final arguments: Array [ArgumentDescriptor]
 end // RoutineDescriptor
 
-final type ProcedureDescriptor extend RoutineDescriptor
+final  unit  ProcedureDescriptor extend RoutineDescriptor
 	() alias apply (args: ()) foreign
 		// That is a procedure call
 	ProcedureDescriptor (aName: as name; args: as arguments) do
@@ -75,7 +75,7 @@ final type ProcedureDescriptor extend RoutineDescriptor
 	end
 end // Procedure [Arguments -> ()]
 
-final type FunctionDescriptor extend RoutineDescriptor
+final  unit  FunctionDescriptor extend RoutineDescriptor
 	fType: TypeDescriptor
 	() alias apply (args: Arguments): Any foreign
 		// That is a function call
@@ -86,12 +86,12 @@ final type FunctionDescriptor extend RoutineDescriptor
 	end
 end // Function [Arguments -> (), Result]*/
 
-virtual type AttributeDescriptor extend MemberDescriptor
+virtual  unit  AttributeDescriptor extend MemberDescriptor
 	value: Any
 	aType: TypeDescriptor
 end // AttributeDescriptor
 
-final type VariableDescriptor  extend AttributeDescriptor 
+final  unit  VariableDescriptor  extend AttributeDescriptor 
 	override := alias set (v: as value) do 
 		value := v
 	end
@@ -102,7 +102,7 @@ final type VariableDescriptor  extend AttributeDescriptor
 	end
 end // VariableDescriptor
 
-final type ConstantDescriptor  extend AttributeDescriptor 
+final  unit  ConstantDescriptor  extend AttributeDescriptor 
 	ConstantDescriptor (aName: as name; aType: as cType; aValue: as value) do
 		name is aName
 		cType is aType
@@ -110,7 +110,7 @@ final type ConstantDescriptor  extend AttributeDescriptor
 	end
 end // ConstantDescriptor
 
-final type TypeDescriptior
+final  unit  TypeDescriptior
 	final name: String
 	final routines : Array [RoutineDescriptor]
 	final attributes : Array [AttributeDescriptor]

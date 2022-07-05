@@ -1,4 +1,4 @@
-type A
+ unit  A
 	b do
 	end 
 end 

@@ -17,19 +17,19 @@ for animal in Duck(), Sparrow(), Whale():
 */	
 	
 // Slang 244(do-end)/226({})/21
-type Duck
+ unit  Duck
 	fly do
 		IO.put("Duck flying")
 	end
 end
 
-type Sparrow
+ unit  Sparrow
 	fly do
 		IO.put("Sparrow flying")
 	end
 end
 
-type Whale
+ unit  Whale
 	swim do
 		IO.put("Whale swimming")
 	end
@@ -38,22 +38,22 @@ end
 while animal in (Duck, Sparrow, Whale) do
 	animal.fly
 end
-// type of animal is Duck|Sparrow|Whale - no need to look for the nearest common ancestor - find among types tops in terms of conformance and build of them multitype !!!
+//  unit  of animal is Duck|Sparrow|Whale - no need to look for the nearest common ancestor - find among types tops in terms of conformance and build of them multitype !!!
 
 /*
-type Duck
+ unit  Duck
 	fly {
 		IO.put("Duck flying")
 	}
 }
 
-type Sparrow
+ unit  Sparrow
 	fly {
 		IO.put("Sparrow flying")
 	}
 }
 
-type Whale
+ unit  Whale
 	swim {
 		IO.put("Whale swimming")
 	}

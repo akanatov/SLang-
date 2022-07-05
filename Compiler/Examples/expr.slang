@@ -1,4 +1,4 @@
-type A
+ unit  A
 goo do
 a := a & b
 end

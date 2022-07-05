@@ -1,4 +1,4 @@
-type X
+ unit  X
 {this} fieldIndex (fieldNAme: String): Integer
 foreign
 ensure

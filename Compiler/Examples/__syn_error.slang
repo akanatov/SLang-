@@ -1,3 +1,3 @@
-ref type A
+ref  unit  A
 end
  

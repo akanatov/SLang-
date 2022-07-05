@@ -1,24 +1,24 @@
-type A
+ unit  A
 end
 
 /*
-type A
+ unit  A
 end
-ref type B
+ref  unit  B
 end
-val type C
+val  unit  C
 end
-concurrent type D
+concurrent  unit  D
 end
-extend type E
+extend  unit  E
 end
-final type A1
+final  unit  A1
 end
-final ref type B1
+final ref  unit  B1
 end
-final val type C1
+final val  unit  C1
 end
-final concurrent type D1
+final concurrent  unit  D1
 end
 
   */

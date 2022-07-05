@@ -1,4 +1,4 @@
-type A
+ unit  A
 const a is 1,
 	b1: Char is 'A',
 	b : Integer is 64,

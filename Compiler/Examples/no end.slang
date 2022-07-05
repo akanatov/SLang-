@@ -1,3 +1,3 @@
-type A
+ unit  A
     foo abstract
 end

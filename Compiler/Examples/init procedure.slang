@@ -1,4 +1,4 @@
-type A
+ unit  A
 	{this} init (a1: T1) do
 	end
 	{} init (a2: T2) do

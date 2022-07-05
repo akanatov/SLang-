@@ -1,4 +1,4 @@
-type Real 
+ unit  Real 
 const :
 	minReal {+epsilon} .. maxReal
 end

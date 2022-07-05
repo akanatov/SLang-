@@ -1,4 +1,4 @@
-//type X
+// unit  X
 foo (p is 1) do
 end
 //end

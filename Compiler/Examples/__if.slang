@@ -37,12 +37,12 @@ end
 		putString (argument.toString)
 end
 */
-type T1 end
-type T2 end
-type T3 end
-type T4 end
-type T5 end
-type T6 end
-type T7 end
+ unit  T1 end
+ unit  T2 end
+ unit  T3 end
+ unit  T4 end
+ unit  T5 end
+ unit  T6 end
+ unit  T7 end
 
 

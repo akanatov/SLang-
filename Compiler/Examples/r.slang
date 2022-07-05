@@ -1,4 +1,4 @@
-type A extend B, C
+ unit  A extend B, C
 new B, C
 
 foo do end

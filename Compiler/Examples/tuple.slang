@@ -1,4 +1,4 @@
-abstract type () // That is tuple type
+abstract  unit  () // That is tuple  unit 
 
 () (pos: Integer; value: Any)
 	/// It puts element into tuple at position, put by position

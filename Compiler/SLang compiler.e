@@ -65,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.13 (Build <AVK July 4th 2022>)")
+		o.putNL ("SLang compiler v0.99.13 (Build <AVK July 5th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -293,7 +293,7 @@ feature {None}
 			parser.ast.routines.count > 0 or else
 			parser.ast.units.count > 0
 		then
-			dumpOutput.putNL ("//-------------- IR dump per file start -------------------")
+			--dumpOutput.putNL ("//-------------- IR dump per file start -------------------")
 			m := parser.ast.units.count
 			if m > 0 then
 				from
@@ -301,7 +301,7 @@ feature {None}
 					if m = 1 then
 						dumpOutput.put ("/* 1 type compiled successfully: ")
 					else
-						dumpOutput.put ("/* " + m.out + " units compiled successfully: ")
+						dumpOutput.put ("/* " + m.out + " types compiled successfully: ")
 					end -- if
 				until
 					j > m
@@ -428,9 +428,9 @@ feature {None}
 			if m > 0 then
 				from
 					if m = 1 then
-						dumpOutput.putNL ("// Unit")
+						dumpOutput.putNL ("// Type")
 					else
-						dumpOutput.putNL ("// " + m.out + " units")
+						dumpOutput.putNL ("// " + m.out + " types")
 					end -- if
 					j := 1
 				until
@@ -446,9 +446,9 @@ feature {None}
 					if n > 0 then
 						from
 							if n = 1 then
-								dumpOutput.put ("/* Unit `" + parser.ast.units.item(j).fullUnitName + "` depends on 1 type: ")
+								dumpOutput.put ("/* Type `" + parser.ast.units.item(j).fullUnitName + "` depends on 1 type: ")
 							else
-								dumpOutput.put ("/* Unit `" + parser.ast.units.item(j).fullUnitName + "` depends on " + n.out + " types: ")
+								dumpOutput.put ("/* Type `" + parser.ast.units.item(j).fullUnitName + "` depends on " + n.out + " types: ")
 							end -- if
 							i := 1
 						until
@@ -470,7 +470,7 @@ feature {None}
 					j := j + 1
 				end -- loop
 			end -- if
-			dumpOutput.putNL ("//-------------- IR dump per file end ---------------------")
+			--dumpOutput.putNL ("//-------------- IR dump per file end ---------------------")
 		end -- if
 	end -- dumpAST
 	

@@ -1,4 +1,4 @@
-type Test
+ unit  Test
 	foo do end
 	attr: Test
 	{} goo do end
