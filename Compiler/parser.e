@@ -1733,7 +1733,9 @@ end -- debug
 					rwDsc ?= statements.item (statements.count)
 					if rwDsc /= Void then
 						statements.resize (1, statements.count - 1) -- get rid of last element
-						create {LoopStatementDescriptor} Result.init (invariantOffList, False, rwDsc.whileExpr, Void, statements, Void, Void, Void)
+						create {LoopStatementDescriptor} Result.init (
+							invariantOffList, False, rwDsc.whileExpressions, Void, statements, Void, Void, Void
+						)
 						-- Require and ensure are to be set at upper level !!!
 					end -- if
 				end -- if
@@ -4409,6 +4411,8 @@ end -- debug
 		valid_start_token: validToken (<<scanner.while_token>>)
 	local
 		exprDsc: ExpressionDescriptor
+		expressions: Array [ExpressionDescriptor]
+		wasError: Boolean
 		preconditions: Array [PredicateDescriptor]
 		innerBlock: InnerBlockDescriptor
 		postconditions: Array [PredicateDescriptor]
@@ -4416,14 +4420,29 @@ end -- debug
 		scanner.nextToken
 		exprDsc := parseExpression
 		if exprDsc /= Void then
+			-- Check for expression sequence in while condition
+			-- not_implemented_yet
+			from
+				expressions := <<exprDsc>>
+			until
+				scanner.token /= scanner.comma_token or else wasError
+			loop
+				scanner.nextToken
+				exprDsc := parseExpression
+				if exprDsc = Void then
+					wasError := True
+				else
+					expressions.force (exprDsc, expressions.upper + 1)
+				end -- if
+			end -- loop
 			if checkForRepeatWhile then
 				inspect
 					scanner.token
 				when scanner.ensure_token then
-					create {RepeatWhileDescriptor}Result.init (exprDsc)
+					create {RepeatWhileDescriptor}Result.init (expressions) --exprDsc)
 				else
 					if scanner.blockEnd then
-						create {RepeatWhileDescriptor}Result.init (exprDsc)
+						create {RepeatWhileDescriptor}Result.init (expressions) -- exprDsc)
 					end -- if
 				end -- inspect
 			end -- if
@@ -4439,7 +4458,8 @@ end -- debug
 							scanner.nextToken
 							postconditions := parsePredicates
 						end -- if
-						create Result.init (innerBlock.invariantOffList, True, exprDsc, preconditions, innerBlock.statements, innerBlock.whenClauses, innerBlock.whenElseClause, postconditions)
+						create Result.init (innerBlock.invariantOffList, True, expressions, preconditions, innerBlock.statements, innerBlock.whenClauses, innerBlock.whenElseClause, postconditions)
+						-- exprDsc
 						if scanner.blockEnd then
 							scanner.nextToken
 						elseif scanner.Cmode then

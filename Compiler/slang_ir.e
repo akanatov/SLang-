@@ -4879,12 +4879,13 @@ create
 	init
 feature {Any}
 	--expression: ExpressionDescriptor
-	init (e: like whileExpr) is
+	
+	init (e: like whileExpressions) is 
 	require
-		non_void_whileExpr: e /= Void
+		non_void_while_expressions: e /= Void
 	do
 		--expression := e
-		whileExpr:= e
+		whileExpressions := e
 		create requireClause.make (1, 0)
 		create ensureClause.make (1, 0)
 		create invariantOffList.make
@@ -4893,8 +4894,24 @@ feature {Any}
 		create whenElseClause.make (1, 0)		
 	end -- init
 	out: String is 
+	local	
+		i, n: Integer
 	do
-		Result := "while " + whileExpr.out
+		--Result := "while " + whileExpr.out
+		Result := getIdent + "while "
+		from
+			i := whileExpressions.lower
+			n := whileExpressions.upper
+		until
+			i > n
+		loop
+			if i > whileExpressions.lower then
+				Result.append_string(", ")
+			end -- if
+			Result.append_string(whileExpressions.item (i).out)
+			i := i + 1
+		end -- loop
+		Result.append_character ('%N')		
 	end -- out
 --invariant
 --	non_void_whileExpr: expression /= Void
@@ -9612,7 +9629,7 @@ invariant
 end -- class AttributeDescriptionDescriptor
 
 class LoopStatementDescriptor
--- [while BooleanExpression] [RequireBlock] InnerBlockDescriptor [while BooleanExpression] [EnsureBlock] end
+-- [while BooleanExpression{","BooleanExpression}] [RequireBlock] InnerBlockDescriptor [while BooleanExpression] [EnsureBlock] end
 inherit	
 	InnerBlockDescriptor
 		rename
@@ -9625,7 +9642,7 @@ create
 	init
 feature {Any}
 	isWhileLoop: Boolean
-	whileExpr: ExpressionDescriptor
+	whileExpressions: Array [ExpressionDescriptor]
 	requireClause: Array[PredicateDescriptor]
 	ensureClause: Array[PredicateDescriptor]
 	setAssertions (preconditions, postconditions: Array[PredicateDescriptor]) is
@@ -9647,7 +9664,21 @@ feature {Any}
 	do
 		--incIdent
 		if isWhileLoop then
-			Result := "while " + whileExpr.out + "%N"
+			Result := getIdent + "while "
+			from
+				i := whileExpressions.lower
+				n := whileExpressions.upper
+			until
+				i > n
+			loop
+				if i > whileExpressions.lower then
+					Result.append_string(", ")
+				end -- if
+				Result.append_string(whileExpressions.item (i).out)
+				i := i + 1
+			end -- loop
+			--whileExpr.out
+			Result.append_character ('%N')
 		else	
 			Result := ""
 		end -- if
@@ -9676,7 +9707,21 @@ feature {Any}
 		end -- if
 
 		if not isWhileLoop then
-			Result.append_string (getIdent + "while " + whileExpr.out)
+			Result.append_string (getIdent + "while ") -- + whileExpr.out)
+			from
+				i := whileExpressions.lower
+				n := whileExpressions.upper
+			until
+				i > n
+			loop
+				if i > whileExpressions.lower then
+					Result.append_string(", ")
+				end -- if
+				Result.append_string(whileExpressions.item (i).out)
+				i := i + 1
+			end -- loop
+			--whileExpr.out
+			Result.append_character ('%N')
 		end -- if
 
 		n := ensureClause.count
@@ -9702,14 +9747,14 @@ feature {Any}
 		Result.append_string (getIdent + "end // loop%N")
 		--decIdent
 	end
-	init (ioff: like invariantOffList; isWL: Boolean; w: like whileExpr; rc: like requireClause; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
+	init (ioff: like invariantOffList; isWL: Boolean; w: like whileExpressions; rc: like requireClause; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
 	require
-		non_void_while_expression: w /= Void
+		non_void_while_expressions: w /= Void
 		non_void_loop_body: stmts /= Void
 	do
 		InnerBlockInit (ioff, stmts, wc, wec)
 		isWhileLoop := isWL
-		whileExpr:= w
+		whileExpressions:= w
 		if rc = Void then
 			create requireClause.make (1, 0)
 		else
@@ -9722,7 +9767,7 @@ feature {Any}
 		end -- if
 	end
 invariant
-	non_void_while_expression: whileExpr /= Void
+	non_void_while_expressions: whileExpressions /= Void
 	non_void_requireClause: requireClause /= Void
 	non_void_ensureClause: ensureClause /= Void
 end -- class LoopStatementDescriptor
