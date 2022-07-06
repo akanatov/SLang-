@@ -1500,7 +1500,7 @@ end -- debug
 							loop
 								tmpDsc := localAttrs.item (i)
 								localDsc := clone (localDsc)
-								localdsc.setName (tmpDsc)
+								localdsc.setFromTmpDsc (tmpDsc)
 								Result.add (localDsc)
 								i := i + 1
 							end -- if
@@ -1551,7 +1551,7 @@ end -- debug
 							loop
 								tmpDsc := localAttrs.item (i)
 								localDsc := clone (localDsc)
-								localdsc.setName (tmpDsc)
+								localdsc.setFromTmpDsc (tmpDsc)
 								Result.add (localDsc)
 								i := i + 1
 							end -- if

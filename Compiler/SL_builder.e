@@ -307,7 +307,7 @@ feature {None}
 				-- More than one type is found in the search universe !!!
 				o.putNL ("Error: " + clusters.count.out + " versions of the root type `" + entryPointName + "` found in the provided universe. Select only one to be used")
 			else
-not_implemented_yet ("Building executable `" + sysDsc.name + "` from type `" + sysDsc.entry + "`")
+not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "`")
 				-- Load it
 --				o.putLine ("Loading interface of the root `" + entryPointName + "`")
 --				Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
@@ -369,7 +369,7 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 			closeCodeGenerators (generators)
 		else
 			Result := True
-			o.putNL ("Error: Not able to create SLang folder with artefacts  `" + folderName + "`")
+			o.putNL ("Error: Not able to create SLang folder `" + folderName + "` with artefacts")
 		end -- if
 	end -- library_build_failed
 
