@@ -39,7 +39,7 @@ feature {Any}
 		if lastLength > 0 then
 			aString := obj.out
 			newLength := aString.count
-			reset_line
+			-- reset_line
 			put_string (aString)
 			if lastLength - newLength > 0 then
 				put_spaces (lastLength - newLength)
@@ -48,6 +48,7 @@ feature {Any}
 		else
 			put (obj)
 		end -- if
+		reset_line
 	end -- putLine
 
 	frozen putInToLine (obj: Any) is
@@ -64,7 +65,6 @@ feature {Any}
 			put (obj)
 		end -- if
 	end -- putInToLine
-
 	
 	frozen putArray (arr: Array [Any]) is
 	require

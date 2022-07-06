@@ -273,11 +273,11 @@ feature {Any}
 							fs.remove_files_with_the_same_name (tsfName)
 							tsfName.append_string ("." + scanner.timeStamp.out)
 							fs.add_file (tsfName, "r")
-							o.putLine ("File `" + fName + "` parsed with no errors!")
+							o.putLine ("File `" + fName + "` parsed successfully")
 						else
 							o.putLine (
 								"File `" + fName + 
-								"` parsed with no errors! But some parsing results were not stored due to " + 
+								"` parsed with no errors. But some parsing results were not stored due to " + 
 								saveErrCount.out + " I/O errors!"
 							)
 							skipBuild := True
@@ -956,12 +956,12 @@ feature {None}
 						fs.remove_files_with_the_same_name (tsfName)
 						tsfName.append_string ("." + aScanner.timeStamp.out)
 						fs.add_file (tsfName, "r")
-						o.putLine ("Changed file `" + fName + "` parsed with no errors!")
+						o.putLine ("Changed file `" + fName + "` parsed successfully")
 						Result := unitOfInterest -- True
 					else
 						o.putLine (
 							"Changed file `" + fName + 
-							"` parsed with no errors! But some parsing results were not stored due to " + 
+							"` parsed with no errors. But some parsing results were not stored due to " + 
 							saveErrCount.out + " I/O errors!"
 						)
 					end -- if
@@ -5116,20 +5116,18 @@ inherit
 create	
 	init
 feature {Any}
---	writable: CallDescriptor
 	writable: ExpressionDescriptor
 	expr: ExpressionDescriptor
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		--notValid: Boolean
+		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		--stringPool: Sorted_Array [String]
+		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+		--useConst := context.useConst
+		--stringPool := context.stringPool
+		--typePool := context.typePool
 		if writable.isInvalid (context, o) then 
 			Result := True
 		end -- if
@@ -6370,6 +6368,8 @@ inherit
 	IdentifierDescriptor
 		rename init as non_actual_init
 		export {None} non_actual_init 
+		redefine
+			out
 	end
 create
 	init
@@ -6383,6 +6383,26 @@ feature
 		name := n
 		generics := g
 	end -- init
+	out: String is
+	local
+		i, n: Integer
+	do
+		Result := Precursor
+		from
+			i := generics.lower
+			n := generics.upper
+			Result.append_string (" [")
+		until
+			i > n
+		loop
+			if i > generics.lower then
+				Result.append_string (", ")
+			end -- if
+			Result.append_string (generics.item (i).out)
+			i := i + 1
+		end -- loop
+		Result.append_character (']')
+	end -- out
 end -- class GenericIdentifierDescriptor 
 
 class TupleExpressionDescriptor
@@ -9646,7 +9666,7 @@ deferred class TypeDescriptor
 --  AttachedTypeDescriptor: UnitType|AnchorType|MultiType|TupleType|RangeType|RoutineType
 
 -- UnitTypeDescriptor|AnchorTypeDescriptor|MultiTypeDescriptor|DetachableTypeDescriptor |TupleType|RangeTypeDescriptor|RoutineTypeDescriptor
--- identifier, as, ?, rtn, (
+-- type_name          as                                       ?                         (         identiifer|const    rtn
 inherit	
 	TypeOrExpressionDescriptor
 	end
@@ -9661,6 +9681,32 @@ feature {Any}
 		non_void_context: context /= Void
 	deferred
 	end -- isNotLoaded
+
+	compatibleWith (other: TypeDescriptor): Boolean is
+	require
+		other_not_void: other /= Void
+	do
+		Result := Current = other
+		if not Result then
+			Result := convertibleTo (other) or else conformsTo (other)
+		end -- if
+	end -- compatible_with
+	convertibleTo (other: TypeDescriptor): Boolean is
+	require
+		other_not_void: other /= Void
+	do
+		-- get all :=(): Type functions from the current object
+		-- if there is a Type equal to other then convertible
+	end -- convertibleTo
+	conformsTo (other: TypeDescriptor): Boolean is
+	require
+		other_not_void: other /= Void
+	do
+		Result := Current = other
+		if not Result then
+			-- if there is a conformant path in the inheritance graph from the current object to other
+		end -- if
+	end -- conformsTo
 	
 	aliasName: String is do end
 	

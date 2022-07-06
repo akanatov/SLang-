@@ -2116,6 +2116,9 @@ end
 			else
 				if scanner.genericsStart then
 					-- parse for more identifier[...].CallChain
+					debug
+						--trace ("identifier[...].CallChain")
+					end -- debug
 					factualGenerics := parseFactualGenerics
 					if factualGenerics /= Void then
 						create genIdentDsc.init (name, factualGenerics)				
@@ -2143,6 +2146,12 @@ end
 									-- Statement is the procedure call
 									Result := <<callDsc>>
 								end -- if
+								debug
+									if Result /= Void then
+										--trace ("Call: " + callDsc.out)
+									end -- if
+								end -- debug			
+
 							end -- if 
 						else
 							syntax_error (<< scanner.left_paranthesis_token, scanner.dot_token>>)

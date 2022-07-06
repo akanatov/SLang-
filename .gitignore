@@ -10,3 +10,18 @@
 *.out
 *.bak
 *.o
+*.xcp
+Docs/~$ang reference.docx
+*.o
+*.o
+Slang.Innopolis/SLang LLVM/
+Slang.Innopolis/SLang Metrics/
+Slang.Innopolis/SLang VS Plugin/
+*.dll
+*.ast
+*.int
+*.tmp
+*.abc
+*.class
+*.msil
+Compiler/HelloWorld

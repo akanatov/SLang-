@@ -65,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.13 (Build <AVK July 5th 2022>)")
+		o.putNL ("SLang compiler v0.99.13 (Build <AVK July 6th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -168,11 +168,11 @@ feature {None}
 										fs.remove_files_with_the_same_name (tsfName)
 										tsfName.append_string ("." + scanner.timeStamp.out)
 										fs.add_file (tsfName, "r")
-										o.putLine ("File `" + fName + "` parsed with no errors!")
+										o.putLine ("File `" + fName + "` parsed successfully")
 									else
 										o.putLine (
 											"File `" + fName + 
-											"` parsed with no errors! But some parsing results were not stored due to " + 
+											"` parsed with no errors. But some parsing results were not stored due to " + 
 											saveErrCount.out + " I/O errors!"
 										)
 										skipBuild := True
