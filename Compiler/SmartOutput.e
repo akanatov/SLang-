@@ -150,16 +150,19 @@ feature {None}
 	end -- 	eset_line
 	put_spaces (spacesToPad: Integer) is
 	local
-		counter: Integer
+		--counter: Integer
+		aString: String
 	do
-		from
-			counter := spacesToPad
-		until
-			counter = 0
-		loop
-			io.put_character (' ')
-			counter := counter - 1
-		end -- loop
+		create aString.make_filled (' ', spacesToPad)
+		io.put_string (aString)
+		--from
+		--	counter := spacesToPad
+		--until
+		--	counter = 0
+		--loop
+		--	io.put_character (' ')
+		--	counter := counter - 1
+		--end -- loop
 	end -- put_spaces	
 	put_new_line is
 	do

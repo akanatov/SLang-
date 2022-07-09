@@ -1705,7 +1705,7 @@ feature {Any}
 				Result := True
 			end -- if
 		end -- if
-		if unitType.isInvalid (context, o) then
+		if unitType /= Void and then unitType.isInvalid (context, o) then
 			--	unitType: UnitTypeCommonDescriptor -- should be valid
 			Result := True
 		end -- if
@@ -5963,12 +5963,8 @@ inherit
 	end
 feature{Any}
 	getOrder: Integer is
--- 0. All other
--- 1. not, ~, /=, =, ^
--- 2. *, /, \, and, &
--- 3. +, -, or, |
+	-- 0. All other, top priority
 	do
-		-- Result := 10
 	end -- getOrder
 	getExternalName: String is
 	do
@@ -7351,6 +7347,12 @@ inherit
 		redefine
 			out, is_equal
 	end
+	ServiceRoutines
+		rename
+			getOrder as ServiceRoutinesGetOrder
+		redefine
+			out, is_equal
+	end
 create
 	init
 feature {Any}
@@ -7385,40 +7387,11 @@ end -- debug
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate
-	
+	end -- generate	
 	
 	getOrder: Integer is
 	do
-		inspect
-			identifier.item (1)
-		when '~', '=', '^' then
-			Result := 1
-		when '*', '/', '\', '&' then
-			Result := 2
-		when '+', '-', '|' then
-			Result := 3
-		when 'n' then
-			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 't' then
-				Result := 1
-			end -- if
-		when 'a' then
-			if identifier.count = 3 and then identifier.item (2) = 'n'  and then identifier.item (3) = 'd' then
-				Result := 2
-			end -- if
-		when 'o' then
-			if identifier.count = 2 and then identifier.item (2) = 'r' then
-				Result := 3
-			end -- if
-		when 'x' then
-			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 'r' then
-				Result := 3
-			end -- if
-		when '>', '<' then
-			Result := 3
-		else
-			-- Result := 10
-		end -- inspect
+		Result := ServiceRoutinesGetOrder (identifier)
 	end -- getOrder
 
 	out: String is
@@ -7824,21 +7797,26 @@ end -- debug
 
 	init (expr: like expression; cc: like callChain) is
 	require
-		non_void_expression : expr /= Void
+		non_void_expression: expr /= Void
+		non_void_call_chain: cc /= Void
 	do
 		expression := expr
-		if cc = Void then
-			create callChain.make (1, 0)
-		else
+		--if cc = Void then
+		--	create callChain.make (1, 0)
+		--else
 			callChain := cc
-		end -- if	
+		--end -- if	
 	end -- init
 	getOrder: Integer is
 	do
-		if callChain.count = 0 then
-			-- Result := 10
-		else
-			Result := callChain.item (1).getOrder		
+		--if callChain.count = 0 then
+		--	-- Result := 10
+		--	Result := expression.getOrder
+		--else
+		--	Result := callChain.item (1).getOrder		
+		--end -- if
+		if callChain.count = 1 then
+			Result := callChain.item (1).getOrder
 		end -- if
 	end -- getOrder
 	out: String is 
@@ -8221,6 +8199,14 @@ inherit
 		redefine
 			out, sameAs, lessThan, getOrder, is_invalid, generate
 	end
+	ServiceRoutines
+		rename	
+			getOrder as ServiceRoutinesGetOrder
+		undefine
+			is_equal
+		redefine
+			out
+	end
 create
 	init
 feature{Any}
@@ -8282,46 +8268,13 @@ end -- debug
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
-	end -- generate
-	
-	
+	end -- generate	
 	
 	getOrder: Integer is
--- 0. All other
--- 1. not, ~, /=, =, ^
--- 2. *, /, \, and, &
--- 3. +, -, or, |
 	do
-		inspect
-			identifier.item (1)
-		when '~', '=', '^' then
-			Result := 1
-		when '*', '/', '\', '&' then
-			Result := 2
-		when '+', '-', '|' then
-			Result := 3
-		when 'n' then
-			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 't' then
-				Result := 1
-			end -- if
-		when 'a' then
-			if identifier.count = 3 and then identifier.item (2) = 'n'  and then identifier.item (3) = 'd' then
-				Result := 2
-			end -- if
-		when 'o' then
-			if identifier.count = 2 and then identifier.item (2) = 'r' then
-				Result := 3
-			end -- if
-		when 'x' then
-			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 'r' then
-				Result := 3
-			end -- if
-		when '<', '>' then
-			Result := 3
-		else
-			-- Result := 10
-		end -- inspect
+		Result := ServiceRoutinesGetOrder (identifier)
 	end -- getOrder
+	
 	out: String is
 	local
 		i, n : Integer

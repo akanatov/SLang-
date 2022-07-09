@@ -1,4 +1,64 @@
+class ServiceRoutines
+feature
+	getOrder (identifier: String): Integer is
+	-- 0. All other
+	-- 1. not, ~, /=, =, ^
+	-- 2. <, >
+	-- 3. *, /, \, and, &, and then
+	-- 4. +, -, or, |, or else, implies
+	require
+		identifier_not_void: identifier /= Void and then identifier.count > 0
+	do
+		inspect
+			identifier.item (1)
+		when '~', '=', '^' then
+			Result := 1
+		when '<', '>' then
+			Result := 2
+		when '*', '\', '&' then
+			Result := 3
+		when '/' then
+			if identifier.count = 2 and then identifier.item (2) = '='then
+				Result := 1
+			else
+				Result := 3
+			end -- if
+		when '+', '-', '|' then
+			Result := 4
+		when 'n' then
+			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 't' then
+				Result := 1
+			end -- if
+		when 'a' then
+			if identifier.count = 3 and then identifier.item (2) = 'n'  and then identifier.item (3) = 'd' then
+				Result := 3
+			elseif  identifier.is_equal ("and then") then
+				Result := 3
+			end -- if
+		when 'o' then
+			if identifier.count = 2 and then identifier.item (2) = 'r' then
+				Result := 4
+			elseif  identifier.is_equal ("or else") then
+				Result := 4
+			end -- if
+		when 'x' then
+			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 'r' then
+				Result := 4
+			end -- if
+		when 'i' then
+			if identifier.is_equal ("implies") then
+				Result := 4
+			end -- if
+		else
+			-- Result := 0 top!
+		end -- inspect
+	end -- getOrder
+end -- class ServiceRoutines
+
 class SLang_Parser
+inherit
+	ServiceRoutines
+	end
 create
 	init
 feature {None}
@@ -2404,10 +2464,7 @@ end
 		exprDsc: ExpressionDescriptor
 		constDsc: ConstantDescriptor
 		identDsc: IdentifierDescriptor
-		--exprCall: ExpressionCallDescriptor
-		--exprCall1: ExpressionCallDescriptor
 		cceDsc: CallChainElement 
-		--cceDsc1: CallChainElement
 		callDsc: CallDescriptor
 	do
 --trace (">>>parseUnaryExpression")
@@ -2534,25 +2591,19 @@ end
 		exprDsc: ExpressionDescriptor
 		constDsc: ConstantDescriptor
 		identDsc: IdentifierDescriptor
-		--exprOpExpr: ExprOperatorExprDescriptor
 		rangeDsc: ExpressionDescriptor
-		cceDsc: CallChainElement 
 		operator: String
 		toParseMore: Boolean
 		toExit: Boolean
 		utnDsc: NamedTypeDescriptor -- UnitTypeNameDescriptor
-		exprCall: ExpressionCallDescriptor
-		exprCall1: ExpressionCallDescriptor
-		cceDsc1: CallChainElement
-		order: Integer
 	do
-debug
-	if parseConstExpr then
-		--trace (">>> parseConstExpression") -- with checkSemicolonAfter: + checkSemicolonAfter.out)
-	else
-		--trace (">>> parseExpression") -- with checkSemicolonAfter: + checkSemicolonAfter.out)
-	end -- if
-end
+		debug
+			if parseConstExpr then
+				--trace (">>> parseConstExpression") -- with checkSemicolonAfter: + checkSemicolonAfter.out)
+			else
+				--trace (">>> parseExpression") -- with checkSemicolonAfter: + checkSemicolonAfter.out)
+			end -- if
+		end -- debug
 		inspect
 			scanner.token
 		when scanner.if_token then
@@ -2572,22 +2623,25 @@ end
 			-- LambdaExpression
 			Result := parseLambdaExpression (checkSemicolonAfter)
 		when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+		--when scanner.operator_token, scanner.tilda_token then
 			-- operator Expression
 			operator := scanner.tokenString
-debug
-	--trace ("#1:Unary operator " + Result.out)
-end -- debug
+			debug
+				--trace ("#1:Unary operator " + Result.out)
+			end -- debug
 			scanner.nextToken
 			Result := parseUnaryExpression (operator, checkForCommentAfter, checkSemicolonAfter, parseConstExpr)
-debug
-	--trace ("#1:Unary operator " + Result.out)
-end -- debug
+			debug
+				--trace ("#1:Unary operator " + Result.out)
+			end -- debug
 		when scanner.left_paranthesis_token then
 			-- “(”Expression“)” or tuple “(”Expression {", "Expression}“)” {CallChain}
 			scanner.nextToken
 			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
 			if exprDsc /= Void then
---trace ("#2: (Expression " + exprDsc.out)
+				debug
+					--trace ("#2: (Expression " + exprDsc.out)
+				end -- debug
 				inspect
 					scanner.token
 				when scanner.right_paranthesis_token then				
@@ -2602,7 +2656,9 @@ end -- debug
 					else
 						create {ParenthedExpressionDescriptor} Result.init (exprDsc)
 					end -- if
---trace ("#4: (Expr) " + Result.out)
+					debug
+						--trace ("#4: (Expr) " + Result.out)
+					end -- debug
 				when scanner.comma_token then
 					-- It is a turple expression !!!!
 					Result := parseTupleExpression (exprDsc)
@@ -2612,7 +2668,9 @@ end -- debug
 						end -- if
 					end -- if
 				else
---trace ("#3parseExpression1")
+					debug
+						--trace ("#3parseExpression1")
+					end -- debug
 					syntax_error (<<scanner.right_paranthesis_token>>)
 				end -- inspect
 			end -- if			
@@ -2627,7 +2685,7 @@ end -- debug
 			scanner.nextWithSemicolon (checkSemicolonAfter)
 			inspect
 				scanner.token
-			when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+			when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token then
 				-- ident operator
 				Result := parseBinaryOperatorExpression (returnDsc, checkSemicolonAfter)
 			when scanner.in_token then
@@ -2635,16 +2693,18 @@ end -- debug
 				scanner.nextToken
 				rangeDsc := parseMandatoryRangeExpression (checkForCommentAfter, checkSemicolonAfter)
 				if rangeDsc /= Void then
---trace ("#1<return>: " + returnDsc.out + " in " + rangeDsc.out)
+					debug
+						--trace ("#1<return>: " + returnDsc.out + " in " + rangeDsc.out)
+					end -- debug
 					create {InRangeExpression}Result.init (returnDsc, rangeDsc)
 				end -- if
-			when scanner.bar_token then 
---				if stopAtBar then
---					Result := returnDsc
---				else
---					Result := parseBinaryOperatorExpression (returnDsc, checkSemicolonAfter)
---				end -- if
-				Result := parseBinaryOperatorExpression (returnDsc, checkSemicolonAfter)
+--			when scanner.bar_token then 
+----				if stopAtBar then
+----					Result := returnDsc
+----				else
+----					Result := parseBinaryOperatorExpression (returnDsc, checkSemicolonAfter)
+----				end -- if
+--				Result := parseBinaryOperatorExpression (returnDsc, checkSemicolonAfter)
 			when scanner.dot_token, scanner.left_paranthesis_token then
 				-- return. | return( 
 				Result := parseWritableCall (returnDsc)
@@ -2690,43 +2750,43 @@ end -- debug
 				-- operator Expression
 				scanner.nextToken
 				Result := parseUnaryExpression (name, checkForCommentAfter, checkSemicolonAfter, parseConstExpr)
-debug
-	if Result /= Void then
-		--trace ("#2:Unary operator " + Result.out)
-	end -- if
-end -- debug
+				debug
+					if Result /= Void then
+						--trace ("#2:Unary operator " + Result.out)
+					end -- if
+				end -- debug
 			else
 				create identDsc.init (name)
 				scanner.nextWithSemicolon (checkSemicolonAfter)
-debug
-	--trace ("<ident>: " + identDsc.out)
-end -- debug
+				debug
+					--trace ("<ident>: " + identDsc.out)
+				end -- debug
 				inspect
 					scanner.token
-				when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+				when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token then
 					-- ident operator
-debug
-	--trace ("<ident>: " + identDsc.out + " <operator>" )
-end -- debug
+					debug
+						--trace ("<ident>: " + identDsc.out + " <operator>" )
+					end -- debug
 					Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
 				when scanner.in_token then
 					-- ident in Expr1 .. Expr2
---trace ("<ident>: " + identDsc.out + " in <range>" )
+						--trace ("<ident>: " + identDsc.out + " in <range>" )
 					scanner.nextToken
 					rangeDsc := parseMandatoryRangeExpression (checkForCommentAfter, checkSemicolonAfter)
 					if rangeDsc /= Void then
---trace ("#2<ident>: " + identDsc.out + " in " + rangeDsc.out)
+						--trace ("#2<ident>: " + identDsc.out + " in " + rangeDsc.out)
 						create {InRangeExpression}Result.init (identDsc, rangeDsc)
 					end -- if
-				when scanner.bar_token then 
---trace ("<ident>: " + identDsc.out + " |" )
---					if stopAtBar then
---						Result := identDsc
---						--create {IdentifierDescriptor} Result.init (name)
---					else
---						Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
---					end -- if
-					Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
+--				when scanner.bar_token then
+----trace ("<ident>: " + identDsc.out + " |" )
+----					if stopAtBar then
+----						Result := identDsc
+----						--create {IdentifierDescriptor} Result.init (name)
+----					else
+----						Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
+----					end -- if
+--					Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
 				when scanner.dot_token, scanner.left_paranthesis_token then
 					-- ident. | ident( 
 --trace ("<ident>: " + identDsc.out + " .|(" )
@@ -2799,16 +2859,16 @@ end -- debug
 --trace ("this ")
 			inspect
 				scanner.token
-			when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
+			when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token then
 				-- this operator
 				Result := parseBinaryOperatorExpression (thisDsc, checkSemicolonAfter)
-			when scanner.bar_token then 
---				if stopAtBar then
---					Result := thisDsc
---				else
---					Result := parseBinaryOperatorExpression (thisDsc, checkSemicolonAfter)
---				end -- if
-				Result := parseBinaryOperatorExpression (thisDsc, checkSemicolonAfter)
+--			when scanner.bar_token then 
+----				if stopAtBar then
+----					Result := thisDsc
+----				else
+----					Result := parseBinaryOperatorExpression (thisDsc, checkSemicolonAfter)
+----				end -- if
+--				Result := parseBinaryOperatorExpression (thisDsc, checkSemicolonAfter)
 			when scanner.in_token then
 				-- this in Expr1 .. Expr2
 				scanner.nextToken
@@ -2916,38 +2976,7 @@ end -- debug
 						toExit := True
 					else
 						-- Result.operator (exprDsc)
-debug
---trace ("#1: " + Result.out + " " + operator + "[" + getOrder (operator).out + "] " + exprDsc.out + "[" + exprDsc.getOrder.out + "]")
---trace ("#1: " + Result.out + " " + operator + exprDsc.out)
-end
-						order := exprDsc.getOrder
-						if order = 0 then
-							create {CallChainElement} cceDsc.init (operator, <<exprDsc>>)
-							create {ExpressionCallDescriptor} Result.init (Result, <<cceDsc>>)
-						elseif getOrder (operator) >= order then
-							create {CallChainElement} cceDsc.init (operator, <<exprDsc>>)
-							create {ExpressionCallDescriptor} Result.init (Result, <<cceDsc>>)
-						else
-							exprCall ?= exprDsc
-							check
-								non_void_expr_call: exprCall /= Void
-								valid_call_chain: exprCall.callChain.count > 0
-							end -- check
-							create cceDsc1.init (operator, <<exprCall.expression>>)
-							create exprCall1.init (Result, <<cceDsc1>>)
-							create {ExpressionCallDescriptor} Result.init (exprCall1, <<exprCall.callChain.item (1)>>)
---trace ("#1.1:[" + Result.getOrder.out + "]" + Result.out)
-						end -- if
---trace ("#1.2: " + Result.out)
-						--if getOrder (operator) > exprDsc.getOrder then
-						--	create {CallChainElement} cceDsc.init (operator, <<exprDsc>>)
-						--	create {ExpressionCallDescriptor} Result.init (Result, <<cceDsc>>)
-						--else
-						--	create {CallChainElement} cceDsc.init (operator, <<Result>>)
-						--	create {ExpressionCallDescriptor} Result.init (exprDsc, <<cceDsc>>)
-						--end -- if
-						----create  {ExprOperatorExprDescriptor} Result.init (Result, operator, exprDsc)
-						------Result := exprOpExpr
+						Result := adjust_priorities (Result, operator, exprDsc)
 					end -- if
 				when scanner.is_token then
 					toExit := True
@@ -3066,40 +3095,8 @@ end -- debug
 						if exprDsc = Void then
 							 toExit := True
 						else
-							-- Result.operator (exprDsc)
-debug
-	--trace ("#2: " + Result.out + " " + operator + "[" + getOrder (operator).out + "] " + exprDsc.out + "[" + exprDsc.getOrder.out + "]")
-end
-							order := exprDsc.getOrder
-							if order = 0 then
-								create {CallChainElement} cceDsc.init (operator, <<exprDsc>>)
-								create {ExpressionCallDescriptor} Result.init (Result, <<cceDsc>>)
-							elseif getOrder (operator) >= order then
-								create {CallChainElement} cceDsc.init (operator, <<exprDsc>>)
-								create {ExpressionCallDescriptor} Result.init (Result, <<cceDsc>>)
-							else
-								exprCall ?= exprDsc
-								check
-									non_void_expr_call: exprCall /= Void
-									valid_call_chain: exprCall.callChain.count > 0
-								end -- check
-								create cceDsc1.init (operator, <<exprCall.expression>>)
-								create exprCall1.init (Result, <<cceDsc1>>)
-								create {ExpressionCallDescriptor} Result.init (exprCall1, <<exprCall.callChain.item (1)>>)
---trace ("#2.1:[" + Result.getOrder.out + "]" + Result.out)
-							end -- if
-debug
-	--trace ("#2.2: " + Result.out)
-end -- debug
-							--if getOrder (operator) > exprDsc.getOrder then
-							--	create {CallChainElement} cceDsc.init (operator, <<exprDsc>>)
-							--	create {ExpressionCallDescriptor} Result.init (Result, <<cceDsc>>)
-							--else
-							--	create {CallChainElement} cceDsc.init (operator, <<Result>>)
-							--	create {ExpressionCallDescriptor} Result.init (exprDsc, <<cceDsc>>)
-							--end -- if
-							---- create {ExprOperatorExprDescriptor} Result.init (Result, operator, exprDsc)
-							------ Result := exprOpExpr
+							-- Result operator exprDsc
+							Result := adjust_priorities (Result, operator, exprDsc)
 						end -- if
 					end -- if
 				else
@@ -3120,6 +3117,48 @@ debug
 end -- debug
 	end -- parseExpression1
 
+	adjust_priorities (leftExprDsc: ExpressionDescriptor; operator: String; rightExprDsc: ExpressionDescriptor): ExpressionCallDescriptor is
+	require
+		non_void_leftExprDsc: leftExprDsc /= Void
+		non_void_: operator /= Void
+		non_void_: rightExprDsc /= Void
+	local
+		operatorOrder: Integer
+		rightOrder: Integer
+		cceDsc: CallChainElement
+		exprCall: ExpressionCallDescriptor
+		exprCall1: ExpressionCallDescriptor
+		--cceDsc1: CallChainElement
+	do							
+		operatorOrder := getOrder (operator)
+		rightOrder:= rightExprDsc.getOrder
+		debug
+			--trace ("IN: <" + leftExprDsc.out + "> " + operator + "[" + operatorOrder.out + "] (" + rightExprDsc.out + "[" + rightOrder.out + "])")
+		end -- debug
+		rightOrder := rightExprDsc.getOrder
+		if rightOrder = 0 then
+			-- rightExpr is atomic, top priority
+			create cceDsc.init (operator, <<rightExprDsc>>)
+			create Result.init (leftExprDsc, <<cceDsc>>)
+		elseif operatorOrder >= rightOrder then
+			-- operator is weaker then rightExpr
+			create cceDsc.init (operator, <<rightExprDsc>>)
+			create Result.init (leftExprDsc, <<cceDsc>>)
+		else
+			exprCall ?= rightExprDsc
+			check
+				non_void_expr_call: exprCall /= Void
+				valid_call_chain: exprCall.callChain.count > 0
+				one_element_call_chain: exprCall.callChain.count = 1
+			end -- check
+			create cceDsc.init (operator, <<exprCall.expression>>)
+			create exprCall1.init (leftExprDsc, <<cceDsc>>)
+			create Result.init (exprCall1, <<exprCall.callChain.item (1)>>)
+		end -- if
+		debug
+			--trace ("OUT: [" + Result.getOrder.out + "]" + Result.out)
+		end -- debug
+	end -- adjust_priorities
 
 	--parseTypeOfExpression (exprDsc: ExpressionDescriptor; checkSemicolonAfter: Boolean): TypeOfExpressionDescriptor is 
 	--	-- That is is expression - type of expression: TypeOfExpression: Expression is (“?”| UnitType)
@@ -3259,8 +3298,7 @@ end -- debug
 			end -- if
 		end -- if
 		debug
-			if Result = Void then
-			else
+			if Result /= Void then
 				--trace ("<<< parseRange: " + Result.out)
 			end -- if
 		end -- debug
@@ -3274,86 +3312,21 @@ end -- debug
 	local
 		exprDsc2: ExpressionDescriptor
 		operator: String
-		cceDsc: CallChainElement
-		exprCall: ExpressionCallDescriptor
-		exprCall1: ExpressionCallDescriptor
-		cceDsc1: CallChainElement
-		order: Integer
 	do
-debug
-	--trace ("+++parseBinaryOperatorExpression")
-end
+		debug
+			--trace ("+++parseBinaryOperatorExpression")
+		end -- debug
 		operator := scanner.tokenString
 		scanner.nextToken
 		exprDsc2 := parseExpressionWithSemicolon1 (checkSemicolonAfter)
 		if exprDsc2 /= Void then
-			-- exprDsc1.operator(exprDsc2)
---trace ("#3: " + exprDsc1.out + " " + operator + " " + exprDsc2.out)
---trace ("#3: " + exprDsc1.out + " " + operator + "[" + getOrder (operator).out + "] " + exprDsc2.out + "[" + exprDsc2.getOrder.out + "]")
-			order := exprDsc2.getOrder
-			if order = 0 then
-				create {CallChainElement} cceDsc.init (operator, <<exprDsc2>>)
-				create {ExpressionCallDescriptor} Result.init (exprDsc1, <<cceDsc>>)
-			elseif getOrder (operator) >= order then
-				create {CallChainElement} cceDsc.init (operator, <<exprDsc2>>)
-				create {ExpressionCallDescriptor} Result.init (exprDsc1, <<cceDsc>>)
-			else
-				exprCall ?= exprDsc2
-				check
-					non_void_expr_call: exprCall /= Void
-					valid_call_chain: exprCall.callChain.count > 0
-				end -- check
-				create cceDsc1.init (operator, <<exprCall.expression>>)
-				create exprCall1.init (exprDsc1, <<cceDsc1>>)
-				create {ExpressionCallDescriptor} Result.init (exprCall1, <<exprCall.callChain.item (1)>>)
---trace ("#3.1:[" + Result.getOrder.out + "]" + Result.out)
-				--create {CallChainElement} cceDsc.init (operator, <<exprDsc1>>)
-				--create {ExpressionCallDescriptor} Result.init (exprDsc2, <<cceDsc>>)
-			end -- if
-			-- create Result.init (exprDsc1, operator, exprDsc2)
+			-- exprDsc1 operator exprDsc2
+			Result := adjust_priorities (exprDsc1, operator, exprDsc2)
 		end -- if
---trace ("---parseBinaryOperatorExpression")
+		debug
+			--trace ("---parseBinaryOperatorExpression")
+		end -- debug
 	end -- parseBinaryOperatorExpression
-
-	getOrder (identifier: String): Integer is
-	-- 0. All other
-	-- 1. not, ~, /=, =, ^
-	-- 2. *, /, \, and, &
-	-- 3. +, -, or, |
-	require
-		identifier_not_void: identifier /= Void and then identifier.count > 0
-	do
-		inspect
-			identifier.item (1)
-		when '~', '=', '^' then
-			Result := 1
-		when '*', '/', '\', '&' then
-			Result := 2
-		when '+', '-', '|' then
-			Result := 3
-		when 'n' then
-			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 't' then
-				Result := 1
-			end -- if
-		when 'a' then
-			if identifier.count = 3 and then identifier.item (2) = 'n'  and then identifier.item (3) = 'd' then
-				Result := 2
-			end -- if
-		when 'o' then
-			if identifier.count = 2 and then identifier.item (2) = 'r' then
-				Result := 3
-			end -- if
-		when 'x' then
-			if identifier.count = 3 and then identifier.item (2) = 'o'  and then identifier.item (3) = 'r' then
-				Result := 3
-			end -- if
-		when '<', '>' then
-			Result := 3
-		else
-			-- Result := 10
-		end -- inspect
-	end -- getOrder
-
 	
 	parseLambdaExpression (checkSemicolonAfter: Boolean): LambdaExpression is
 	-- LambdaExpression: (rtn Identifier [Signature]) | InlineLambdaExpression
