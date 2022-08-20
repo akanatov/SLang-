@@ -4,7 +4,7 @@ build Kernel from "." // Kernel library is to be built from all SLang files from
 end
 
 val unit Bit
-    const : // Bit is just 0 or 1
+    const: // Bit is just 0 or 1
          0b0, 0b1
     end
 	pure & alias and (other: Bit): as this => if this = 0b0 do 0b0 elsif other = 0b0 do 0b0 else 0b1
@@ -36,6 +36,27 @@ val unit Bit
 		end
 	end // -
 end // Bit
+
+/*val unit BinaryDigit
+    const: // Bit is just 0 or 1
+         0, 1
+    end
+end
+val unit OctalDigit
+    const:
+         0, 1, 2, 3, 4, 5, 6, 7 
+    end
+end
+val unit DecimalDigit
+    const:
+         0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    end
+end
+val unit HeximalDigit
+    const:
+         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F
+    end
+end*/
 
 abstract unit () extend Enumeration // That is a tuple type
 	
@@ -93,17 +114,17 @@ end /// unit tuple
 
 val unit Bit [bitsCount: Cardinal]
 	const : // All Bit constants not longer than B bits in it
-	    //{Bit.0b0 | Bit.0b1}N
+	    //{Bit.0b0 | Bit.0b1}bitsCount
 	end
 	{} data: val Array [0 .. bitsCount-1, Bit] // Bit field ...
 	:= (other: Cardinal) none
 	:= (other: Integer) none /*do
-	/// Set N low bits from Integer other into this
+	/// Set bitsCount low bits from Integer other into this
 	// WIP!!!
 		raise "Not implemented!!!"
-		// WIP What if number of bits in Integer is less than N ?????
+		// WIP What if number of bits in Integer is less than bitsCount ?????
 		
-		/*while pos in 0 .. N - 1 do
+		/*while pos in 0 .. bitsCount - 1 do
 			this (pos) := other.data (pos)
 		end*/ 
 	end */
@@ -224,7 +245,7 @@ val unit Bit [bitsCount: Cardinal]
 	end // Bit
 require
 	bitsCount > 0 /// Number of Bits is greater than zero
-end // Bit [N]
+end // Bit [bitsCount]
 
 abstract unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.maxCardinal], Pointer
 	// Adding all constant objects from basic units allows to use these constants without respective unit name prefix.

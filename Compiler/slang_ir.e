@@ -771,6 +771,7 @@ end -- class RenamePair
 
 --1 Compilation : {CompilationUnitCompound}
      
+--deferred
 class CompilationUnitCommon
 inherit
 	SLangConstants
@@ -782,8 +783,14 @@ create {None}
 feature {Any}
 	-- use const UnitTypeName {"," UnitTypeName}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
-	stringPool: Sorted_Array [String]
-	typePool: Sorted_Array[TypeDescriptor]
+
+	stringPool: Sorted_Array [String] --is
+	--deferred
+	--end
+	typePool: Sorted_Array[TypeDescriptor] --is
+	--deferred
+	--end
+
 	srcFileName: String
 	timeStamp: Integer 
 
@@ -799,6 +806,94 @@ feature {Any}
 	--	output_not_void: o /= Void
 	--deferred
 	--end -- IR_Loaded
+	getContextAsString: String is
+	local
+		i, n: Integer
+	do
+		Result := ""		
+		if stringPool = Void then
+			Result := "Empty pool%N"
+		else
+			from
+				i := stringPool.lower
+				n := stringPool.upper
+				Result.append_string ("Strings pool: ")
+			until
+				i > n
+			loop
+				if i > stringPool.lower then
+					Result.append_string (", ")
+				end -- if
+				Result.append_string (stringPool.item(i))
+				i := i + 1
+			end -- loop
+			Result.append_character('%N')
+			if unit_stringPool = Void then
+				Result.append_string ("Unit strings pool: Void%N")
+			else
+				from
+					i := unit_stringPool.lower
+					n := unit_stringPool.upper
+					Result.append_string ("Unit strings pool: ")
+				until
+					i > n
+				loop
+					if i > unit_stringPool.lower then
+						Result.append_string (", ")
+					end -- if
+					Result.append_string (unit_stringPool.item(i))
+					i := i + 1
+				end -- loop
+				Result.append_character('%N')
+			end -- if
+			if rtn_stringPool = Void then
+				Result.append_string ("Routine strings pool: Void%N")
+			else
+				from
+					i := rtn_stringPool.lower
+					n := rtn_stringPool.upper
+					Result.append_string ("Routine strings pool: ")
+				until
+					i > n
+				loop
+					if i > rtn_stringPool.lower then
+						Result.append_string (", ")
+					end -- if
+					Result.append_string (rtn_stringPool.item(i))
+					i := i + 1
+				end -- loop
+				Result.append_character('%N')
+			end -- if
+			if backup_stringPool = Void then
+				Result.append_string ("Backup strings pool: Void%N")
+			else
+				from
+					i := backup_stringPool.lower
+					n := backup_stringPool.upper
+					Result.append_string ("Backup strings pool: ")
+				until
+					i > n
+				loop
+					if i > backup_stringPool.lower then
+						Result.append_string (", ")
+					end -- if
+					Result.append_string (backup_stringPool.item(i))
+					i := i + 1
+				end -- loop
+				Result.append_character('%N')
+			end -- if			
+		end --if
+		if currentUnit = Void then
+			Result.append_string ("Current unit: Void%N")
+		else
+			Result.append_string ("Current unit: " + currentUnit.name + "%N")
+		end --if
+		if currentRoutine = Void then
+			Result.append_string ("Current routine: Void%N")
+		else
+			Result.append_string ("Current routine: " + currentRoutine.name + "%N")
+		end --if
+	end -- getContextAsString
 
 	currentUnit: UnitDeclarationDescriptor
 	setcurrentUnit (unit: like currentUnit) is
@@ -812,7 +907,6 @@ feature {Any}
 	do
 		currentUnit := Void
 	end -- clearcurrentUnit
-	
 
 	currentRoutine: RoutineDescriptor
 	setCurrentRoutine (rtn: like currentRoutine) is
@@ -851,56 +945,67 @@ feature {Any}
 		backup_stringPool := stringPool
 		backup_typePool := typePool
 		create unit_stringPool.make 
-		create unit_typePool.make
+		create unit_typePool.fill (<<unitAnyDsc>>)
 		stringPool := unit_stringPool
 		typePool := unit_typePool
+		debug
+			print ("%T<<<Current pool stoped >>>Unit pool enabled%N")
+		end -- debug
 		check
 			parsing_mode: scanner /= Void
 		end -- check
-		scanner.setPool (stringPool)
+		scanner.setPool (stringPool)		
+		--scanner.setPool (currentUnit.stringPool)
 	end -- start_unit_parsing
 	
 	stop_unit_parsing is
 	do
 		stringPool:= backup_stringPool
 		typePool:= backup_typePool
+		debug
+			print ("%T<<<Unit pool stoped >>>Anonymous pool restored%N")
+		end -- debug
 		check
 			parsing_mode: scanner /= Void
 		end -- check
 		scanner.setPool (stringPool)
 	end -- stop_unit_parsing
 
-	start_standalone_routine_parsing is
+	start_standalone_routine_parsing (aName: String) is
+	require	
+		non_void_rotuine_name: aName /= Void
 	do
 		backup_stringPool:= stringPool
 		backup_typePool:= typePool
+		create rtn_stringPool.fill (<<aName>>)
+		create rtn_typePool.fill (<<unitAnyDsc>>)
 		stringPool:= rtn_stringPool
 		typePool:= rtn_typePool
+		debug
+			print ("%T<<<Current pool stopped >>> Standalone pool enabled%N")
+		end -- debug
 		check
 			parsing_mode: scanner /= Void
 		end -- check
 		scanner.setPool (stringPool)
+		--scanner.setPool (currentRoutine.stringPool)
 	end -- start_standalone_routine_parsing
 	stop_standalone_routine_parsing is
 	do
 		stringPool:= backup_stringPool
 		typePool:= backup_typePool
+		debug
+			print ("%TStandalone pool stoped >>> Saved pool restored%N")
+		end -- debug
 		check
 			parsing_mode: scanner /= Void
 		end -- check
 		scanner.setPool (stringPool)
 	end -- stop_standalone_routine_parsing
 
-	add_name_to_standalone_routines_pool (name: String) is
-	require
-		non_void_name: name /= Void
-	do
-		rtn_stringPool.add (name)
-	end -- add_name_to_standalone_routines_pool
-
 	attachSystemDescription (sDsc: like sysDsc) is
 	do
-		sysDsc := sDsc
+		sysDsc := sDsc		
 	end -- attachSystemDescription
 
 	sysDsc: SystemDescriptor
@@ -918,7 +1023,7 @@ feature {Any}
 			fileName := path + fs.separator
 		end -- if
 		fileName.append_string (IRfolderName  + fs.separator + unitExternalName + UnitSuffix + "." + INText)
-		create Result.make
+		create Result.make (Void)
 		if not Result.UnitIR_Loaded (fileName, o) then
 			Result := Void
 		end -- if
@@ -931,12 +1036,12 @@ feature {Any}
 	local
 		clusters: Array [ClusterDescriptor]
 	do
-debug
-	if unitDsc.aliasName /= Void then
---		o.putLine ("Loading interface of `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
-	end -- if
---	o.putNL ("Loading interface of `" + unitPrintableName + "` called `" + unitExternalName + "`")
-end	-- debug
+		debug
+			if unitDsc.aliasName /= Void then
+		--		o.putLine ("Loading interface of `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
+			end -- if
+		--	o.putNL ("Loading interface of `" + unitPrintableName + "` called `" + unitExternalName + "`")
+		end	-- debug
 		clusters := sysDsc.hasUnit(unitExternalName)
 		if clusters = Void or else clusters.count = 0 then
 			-- Such unit is not found in the search universe !!!
@@ -965,6 +1070,7 @@ end	-- debug
 	end -- loadUnitInterface
 	
 feature {None}
+
 	fileParsedForUnit (fName: String; o: Output; unitExternalName: String; unitOfInterest: CompilationUnitUnit): CompilationUnitUnit is 
 	require
 		non_void_file_name: fName /= Void
@@ -1027,22 +1133,25 @@ feature {None}
 		end -- if
 	end -- fileParsedForUnit
 
-	unitAnyDsc: UnitTypeNameDescriptor is
-	once
-		create Result.init ("Any", Void)
-	end -- unitAnyDsc
+	--unitAnyDsc: UnitTypeNameDescriptor is
+	--once
+	--	create Result.init ("Any", Void)
+	--end -- unitAnyDsc
 	
 	scanner: SLang_Scanner
 	init_pools (scn: like scanner) is
 	do
-		create useConst.make 
-		create stringPool.make
-		create typePool.fill (<<unitAnyDsc>>)
-		
-		create rtn_stringPool.make
-		create rtn_typePool.make
 		scanner := scn
+		create useConst.make 
+		--set_pools
+		-- Theese are pools for anonymous routine in fact
+		create stringPool.make
+		create typePool.fill (<<unitAnyDsc>>)		
 	end -- init_pools
+	
+	--set_pools is
+	--deferred
+	--end -- set_pools
 
 	-- Save script pools
 	backup_stringPool: Sorted_Array [String]
@@ -1071,22 +1180,135 @@ invariant
 	non_void_type_pool: typePool /= Void
 end -- class CompilationUnitCommon
 
+class CompilationUnitStandaloneRoutine
+inherit
+	CompilationUnitCommon
+	end
+create	
+	--init, 
+	make
+feature {Any}
+	routine: StandaloneRoutineDescriptor
+
+	--init(scn: like scanner) is
+	--do
+	--	init_pools (scn)
+	--end -- init
+
+	make(scn: like scanner) is
+	do
+		init_pools (scn)
+	end -- init
+	
+	--stringPool: Sorted_Array [String] is
+	--do
+	--	Result := routine.stringPool
+	--end
+	--typePool: Sorted_Array[TypeDescriptor] is
+	--do
+	--	Result := routine.typePool
+	--end
+	--
+	--set_pools is
+	--do
+	--	routine.set_pools (<<unitAnyDsc>>)
+	--end -- set_pools
+
+	RoutineIR_Loaded (fileName: String; o: Output): Boolean is
+	local
+		rImage: RoutineImage 
+	do
+		rImage := loadRoutineIR (fileName, o)
+		if rImage /= Void then
+			routine 	:= rImage.routine
+			useConst	:= rImage.useConst	
+			--stringPool	:= rImage.stringPool	
+			--typePool	:= rImage.typePool	
+			srcFileName := rImage.srcFileName
+			timeStamp	:= rImage.timeStamp
+			Result := True
+		end -- if
+	end -- RoutineIR_Loaded
+
+feature {None}	
+	
+	loadRoutineIR (fileName: String; o: Output): RoutineImage is
+	require
+		file_name_not_void: fileName /= Void
+	local
+		aFile: File
+		wasError: Boolean
+	do
+		if wasError then
+			o.putNL ("Consistency error: unable to load standalone routine code from file `" + fileName + "`")
+			Result := Void
+		else
+			create aFile.make_open_read (fileName)
+			create Result.init_empty
+			Result ?= Result.retrieved (aFile)
+			aFile.close
+			if Result = Void then
+				o.putNL ("Consistency error: file `" + fileName + "` does not contain standalone routine code")
+			end -- if
+		end -- if
+	rescue
+		wasError := True
+		retry
+	end -- loadRoutineIR
+
+end -- class CompilationUnitStandaloneRoutine
+
+class AnonymousRoutineDescriptor
+inherit
+	Server
+	end
+create
+	make
+feature
+	statements: Array [StatementDescriptor]
+	locals: Sorted_Array [LocalAttrDeclarationDescriptor]
+	stringPool: Sorted_Array [String]
+	typePool: Sorted_Array[TypeDescriptor]
+	make is
+	do
+		create statements.make (1, 0)
+		create locals.make
+		create stringPool.make
+		create typePool.fill (<<unitAnyDsc>>)
+	end -- make
+end -- class AnonymousRoutineDescriptor
+
+
 class CompilationUnitAnonymousRoutine
 inherit
 	CompilationUnitCommon
 	end
 create	
-	init
+	make -- init
 feature {Any}
 	statements: Array [StatementDescriptor]
+	--stringPool: Sorted_Array [String]
+	--typePool: Sorted_Array[TypeDescriptor]
+	
+	--set_pools is
+	--do
+	--	create stringPool.make
+	--	create typePool.fill (<<unitAnyDsc>>)
+	--end -- set_pools
+
 feature {None}
 	locals: Sorted_Array [LocalAttrDeclarationDescriptor]
-	init (scn: like scanner) is
+	make (scn: like scanner) is
 	do
-		init_pools (scn)
 		create statements.make (1, 0)
 		create locals.make
-	end -- init
+		init_pools (scn)
+	end -- make
+	--init (scn: like scanner) is
+	--do
+	--	init_pools (scn)
+	--	make
+	--end -- init
 feature {Any}
 	addStatement (stmtDsc: StatementDescriptor) is
 	require
@@ -1171,21 +1393,37 @@ inherit
 	CompilationUnitCommon
 	end
 create	
-	init, make
+	--init, 
+	make
 feature {Any}
 	unitDclDsc: UnitDeclarationDescriptor
 
-	init (scn: like scanner) is
+	--init (scn: like scanner) is
+	--do
+	--	init_pools (scn)
+	--	unitDclDsc := Void -- ????
+	--end -- init
+	
+	make (scn: like scanner) is
 	do
 		init_pools (scn)
-		unitDclDsc := Void -- ????
-	end -- init
-	
-	make is
-	do
-		init_pools (Void)
 		--type := Void -- ????
 	end -- make
+	
+	--stringPool: Sorted_Array [String] is
+	--do
+	--	Result := unitDclDsc.stringPool
+	--end
+	--typePool: Sorted_Array[TypeDescriptor] is
+	--do
+	--	Result := unitDclDsc.typePool
+	--end
+	--
+	--set_pools is
+	--do
+	--	unitDclDsc.set_pools (<<unitAnyDsc>>)
+	--end -- set_pools
+
 
 	--isInvalid: Boolean is
 	--do
@@ -1235,8 +1473,8 @@ feature {Any}
 		if uImage /= Void then
 			unitDclDsc  := uImage.unitDclDsc
 			useConst	:= uImage.useConst	
-			stringPool	:= uImage.stringPool	
-			typePool	:= uImage.typePool	
+			--stringPool	:= uImage.stringPool	
+			--typePool	:= uImage.typePool	
 			srcFileName := uImage.srcFileName
 			timeStamp	:= uImage.timeStamp
 			Result := True
@@ -1271,85 +1509,24 @@ feature {None}
 
 end -- class CompilationUnitUnit
 
-class CompilationUnitStandaloneRoutine
-inherit
-	CompilationUnitCommon
-	end
-create	
-	init, make
-feature {Any}
-	routine: StandaloneRoutineDescriptor
-
-	init(scn: like scanner) is
-	do
-		init_pools (scn)
-	end -- init
-
-	make is
-	do
-		init_pools (Void)
-	end -- init
-
-	RoutineIR_Loaded (fileName: String; o: Output): Boolean is
-	local
-		rImage: RoutineImage 
-	do
-		rImage := loadRoutineIR (fileName, o)
-		if rImage /= Void then
-			routine 	:= rImage.routine
-			useConst	:= rImage.useConst	
-			stringPool	:= rImage.stringPool	
-			typePool	:= rImage.typePool	
-			srcFileName := rImage.srcFileName
-			timeStamp	:= rImage.timeStamp
-			Result := True
-		end -- if
-	end -- RoutineIR_Loaded
-
-feature {None}	
-	
-	loadRoutineIR (fileName: String; o: Output): RoutineImage is
-	require
-		file_name_not_void: fileName /= Void
-	local
-		aFile: File
-		wasError: Boolean
-	do
-		if wasError then
-			o.putNL ("Consistency error: unable to load standalone routine code from file `" + fileName + "`")
-			Result := Void
-		else
-			create aFile.make_open_read (fileName)
-			create Result.init_empty
-			Result ?= Result.retrieved (aFile)
-			aFile.close
-			if Result = Void then
-				o.putNL ("Consistency error: file `" + fileName + "` does not contain standalone routine code")
-			end -- if
-		end -- if
-	rescue
-		wasError := True
-		retry
-	end -- loadRoutineIR
-
-end -- class CompilationUnitStandaloneRoutine
-
 
 class CompilationUnitCompound
 -- CompilationUnitCompound: { UseConstDirective }  {StatementsList|StandaloneRoutine|UnitDeclaration}
 inherit
 	CompilationUnitAnonymousRoutine
-		rename 
-			init as anonymous_routine_init
+		--rename 
+		--	init as anonymous_routine_init
 	end
 	SLangConstants
 	end
 create	
 	init
+
 feature {Any}
 
 	units: Sorted_Array [UnitDeclarationDescriptor]
 	routines: Sorted_Array [StandaloneRoutineDescriptor]
+	script: AnonymousRoutineDescriptor
 	
 	attach_usage_pool_to_units_and_standalone_routines is
 	local
@@ -1366,14 +1543,24 @@ feature {Any}
 				units.item (i).attach_use_pool (useConst)
 				i := i + 1
 			end -- loop
+			n := routines.count
 			from
 				i := 1
 			until
-				i > m
+				i > n
 			loop
-				rtn_typePool.add (useConst.item (i))
+				routines.item (i).attach_use_pool (useConst)
 				i := i + 1
-			end -- loop			
+			end -- loop
+			
+			--from
+			--	i := 1
+			--until
+			--	i > m
+			--loop
+			--	rtn_typePool.add (useConst.item (i))
+			--	i := i + 1
+			--end -- loop			
 		end -- if
 	end -- attach_usage_pool_to_units_and_standalone_routines
 
@@ -1413,7 +1600,7 @@ feature {Any}
 	local
 		sImg: AnonymousRoutineImage
 		uImg: UnitImage
-		rImg: RoutineImage -- s
+		rImg: RoutineImage
 		i, n: Integer
 		fName: String
 		filePrefix: String
@@ -1437,7 +1624,7 @@ feature {Any}
 			i > n
 		loop
 			-- Per standalone routine: useConst + routine
-			create rImg.init (FullSourceFileName, tStamp, useConst, routines.item (i), rtn_stringPool, rtn_typePool)
+			create rImg.init (FullSourceFileName, tStamp, useConst, routines.item (i), routines.item (i).stringPool, routines.item (i).typePool)
 			fName := filePrefix  + routines.item (i).name + RoutinesSuffix + "." + irFileExtension
 			if not IRstored (fName, rImg) then
 				o.putNL ("File open/create/write/close error: unable to store standalone routine IR into file `" + fName + "`")
@@ -1509,11 +1696,15 @@ feature {None}
 	end -- IRstored
 
 	init (scn: like scanner) is
+	--make is 
 	do
-		anonymous_routine_init (scn)
+		--anonymous_routine_init (scn)
 		--standalone_routines_init (scn)
+		scanner := scn
 		create routines.make
 		create units.make 
+		make (scn)  -- to be removed when script.make will be fully implemented
+		create script.make
 	end -- init
 invariant
 	non_void_units: units /= Void
@@ -1965,6 +2156,40 @@ feature {Any}
 	--name: String
 	generics: Array [FormalGenericDescriptor]
 	fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
+	
+	useConst: Sorted_Array [UnitTypeNameDescriptor]
+	stringPool: Sorted_Array [String]
+	typePool: Sorted_Array[TypeDescriptor]
+	
+	attach_pools (ast:CompilationUnitCompound) is
+	do
+		stringPool := ast.stringPool
+		typePool := ast.typePool
+	end -- attach_pools
+
+	set_pools (tp: Array [TypeDescriptor]) is
+	do
+		create stringPool.make
+		create typePool.fill (tp)
+	end -- set_pools
+
+	attach_use_pool (uc: like useConst) is
+	require
+		use_const_units_not_void: uc /= Void
+	local
+		i, n: Integer
+	do
+		useConst := uc
+		from
+			n := useConst.count
+			i := 1
+		until
+			i > n
+		loop
+			typePool.add (useConst.item (i))
+			i := i + 1
+		end -- loop
+	end -- attach_use_pool
 	
 	generate (cg: CodeGenerator) is
 	do
@@ -3037,6 +3262,13 @@ feature {Any}
 		stringPool := ast.stringPool
 		typePool := ast.typePool
 	end -- attach_pools
+
+	set_pools (tp: Array [TypeDescriptor]) is
+	do
+		create stringPool.make
+		create typePool.fill (tp)
+	end -- set_pools
+	
 	attach_use_pool (uc: like useConst) is
 	require
 		use_const_units_not_void: uc /= Void
@@ -3133,7 +3365,7 @@ feature {Any}
 		context.clearCurrentUnit
 	end -- checkValidity
 	
-feature {CompilationUnitCompound, SLangCompiler}
+--feature {CompilationUnitCompound, SLangCompiler}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
 	stringPool: Sorted_Array [String]
 	typePool: Sorted_Array[TypeDescriptor]
@@ -6457,7 +6689,10 @@ end -- debug
 	stringPool := context.stringPool
 	--typePool := context.typePool
 		-- do nothing so far
-		pos := stringPool.seek (name)
+		pos := stringPool.seek (name)		
+		if pos <= 0 then
+			o.putLine ("%NERROR: Identifier `" + name + "` not found in the string pool%N" + context.getContextAsString)
+		end -- if
 		check
 			identifer_name_not_registered_in_the_pool: pos > 0
 		end -- check

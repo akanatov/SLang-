@@ -21,10 +21,10 @@ creation
 feature {None}
 	o: Output
 	systems: Sorted_Array [SystemDescriptor]
-	memory: Memory is
-	once
-		create Result
-	end
+	--memory: Memory is
+	--once
+	--	create Result
+	--end
 
 	--delay is 
 	--local
@@ -65,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.13 (Build <AVK July 9th 2022>)")
+		o.putNL ("SLang compiler v0.99.14 (Build <AVK August 20th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -473,5 +473,58 @@ feature {None}
 			--dumpOutput.putNL ("//-------------- IR dump per file end ---------------------")
 		end -- if
 	end -- dumpAST
+
+	doCompilation (sources: Array [String]) is
+	require
+		non_void_source: sources /= Void
+	local
+		i, n: Integer
+		j, m: Integer
+		compilationUnits: Array [CompilationUnitAST]
+		compilationUnitIR: CompilationUnitIR
+	do
+		from
+			i := sources.lower
+			n := sources.upper
+		until
+			i > n
+		loop
+			compilationUnits := parseSource (sources.item (i))
+			if compilationUnits /= Void then
+				from
+					j := compilationUnits.lower
+					m := compilationUnits.upper
+				until
+					j > m
+				loop
+					compilationUnitIR := compilationUnits.item (j).checkValidity
+					if compilationUnitIR /= Void then
+						 compilationUnitIR.processIR
+					end -- if
+					j := j + 1
+				end -- loop		
+			end -- if
+			i := i + 1
+		end -- loop
+	end -- doCompilation
+	
+	parseSource (fileName: String): Array [CompilationUnitAST] is
+	require
+		non_void_file_name: fileName /= Void
+	do
+	end -- parseSource	
 	
 end -- class SLangCompiler
+
+deferred class CompilationUnitAST
+feature
+	checkValidity: CompilationUnitIR is
+	deferred
+	end -- checkValidity
+end -- class CompilationUnitAST
+deferred class CompilationUnitIR
+feature
+	processIR is
+	deferred
+	end -- processIR
+end -- class CompilationUnitIR

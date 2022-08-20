@@ -172,9 +172,12 @@ feature {None}
 feature {Any}
 
 	setPool (p: like pool) is
+	require
+		non_void_pool: p /= Void
 	do
 		pool := p
 	end -- pool
+	
 	Cmode: Boolean
 	-- C P
 	-- < [ less_token

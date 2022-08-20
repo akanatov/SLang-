@@ -2,7 +2,7 @@ pos: Integer; value: Any
 
 
 
-// 0..N
+// 0..n
 /*
 
 

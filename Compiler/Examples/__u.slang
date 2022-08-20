@@ -59,10 +59,10 @@
 	
 end
 
-virtual  unit  MemberDescriptor
+abstract  unit  MemberDescriptor
 	final name: String
 end
-virtual  unit  RoutineDescriptor extend MemberDescriptor
+abstract  unit  RoutineDescriptor extend MemberDescriptor
 	final arguments: Array [ArgumentDescriptor]
 end // RoutineDescriptor
 
@@ -86,7 +86,7 @@ final  unit  FunctionDescriptor extend RoutineDescriptor
 	end
 end // Function [Arguments -> (), Result]*/
 
-virtual  unit  AttributeDescriptor extend MemberDescriptor
+abstract  unit  AttributeDescriptor extend MemberDescriptor
 	value: Any
 	aType: TypeDescriptor
 end // AttributeDescriptor

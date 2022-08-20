@@ -60,7 +60,7 @@ feature {Any}
 	do
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
-			create cuDsc.init (Void)
+			create cuDsc.make (Void) -- init (Void)
 			fileName := IRfolderName + "\_" + fs.getFileName(fName) + ScriptSuffix + "." + ASText
 			if cuDsc.AnonymousRoutineIR_Loaded (fileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
@@ -404,7 +404,7 @@ end -- debug
 			loop
 				fileDsc := ast_files.item (i) 
 				if fileDsc.name.has_substring (UnitSuffix) then
-					create unitDsc.make 
+					create unitDsc.make (Void)
 					if unitDsc.UnitIR_Loaded (fileDsc.path, o) then
 debug
 	--trace ("Type `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
@@ -431,7 +431,7 @@ end -- debug
 						Result := True
 					end -- if				
 				elseif fileDsc.name.has_substring (RoutinesSuffix) then 
-					create rtnDsc.make 
+					create rtnDsc.make (Void)
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
 						rtnDsc.attachSystemDescription (sysDsc)
 debug
