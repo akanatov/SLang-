@@ -196,13 +196,23 @@ create
 	init
 feature
 	genStart (fileName: String; buildExecutable: Boolean): Integer is
-	external "C" alias "C_genStart" 	
+	-- fileName refers to the name of the file which is to be created by code generator
+	-- fileName has no extension it is to be added by the code generator
+	-- if succesfull 1 is to be returned and -1 if error and 0 if code gneerator is not enabled yet
+	-- if buildExecutable is false then dynamic and static libraries are to be created
+	do -- external "C" alias "C_genStart" 	
+		fileName.append_string (".c")
+		if buildExecutable then
+		else
+		end -- if
 	end -- genStart	
 	genEnd is
-	external "C" alias "C_genEnd"
+	do -- external "C" alias "C_genEnd"
 	end -- genEnd
 	genAssignmentToLocal () is
 	do
 	--external "C" alias "C_genAssignmentToLocal"
 	end -- genAssignmentToLocal
+feature {None}
+	file: File
 end -- class C_CodeGenerator
