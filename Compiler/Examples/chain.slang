@@ -4,11 +4,11 @@ b: ?B
 c: ?C
 
 // Instead of this
-if a is A then
+if a is A do 
 	b := a.b
-	if b is B then
+	if b is B do 
 		c := b.c
-		if c is C then
+		if c is C do 
 			d is c.d
 		else
 			action_C_is_void
@@ -20,7 +20,7 @@ else
 	action_A_is_void
 end // if
 
-// 1. Shorter form is suggested. Minus - if several entitiies will have the same type ?T else case will nto distingush such cases
+// 1. Shorter form is suggested. Minus - if several entitiies will have the same type ?T else case will not distingush such cases
 do safe a.b.c.d 
 else case
 	?A: action_A_is_void
