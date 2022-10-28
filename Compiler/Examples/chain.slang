@@ -43,4 +43,3 @@ x is do safe a.b.c.d else else_Value end
 // If type of 'd' is detachable then else ? may be skipped
 y is do safe a.b.c.d end // Type of y is equal to type of d and should be detachable
 
-
