@@ -256,8 +256,9 @@ feature {None}
 		-- ARK generation activation
 		create {ARK_CodeGenerator}codeGenerator.init (outputFileName + ".abc", buildExecutable)
 		registerCodeGenerator (codeGenerator, Result, "Generation 'ARK' failed to start")
+		-- C-code generation activation
 		create {C_CodeGenerator}codeGenerator.init (outputFileName + ".c", buildExecutable)
-		--registerCodeGenerator (codeGenerator, Result, "Generation 'C' failed to start")
+		registerCodeGenerator (codeGenerator, Result, "Generation 'C' failed to start")
 	ensure
 		non_void_list_of_code_generators: Result /= Void
 	end -- initCodeGenerators
