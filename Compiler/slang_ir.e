@@ -3326,9 +3326,6 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-debug
-	o.putLine ("Validity check for: unit " + name)
-end -- debug
 		context.setCurrentUnit (Current)
 		from
 			i := 1
@@ -4170,9 +4167,6 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-debug
-	o.putLine ("Validity check for routine `" + name + "`")
-end -- debug
 		context.setCurrentRoutine (Current)
 		if parameters /= Void then
 			from
@@ -7389,6 +7383,10 @@ inherit
 	--ConstExpressionDescriptor
 	ExpressionDescriptor
 	end
+	SLangLexis
+		undefine
+			is_equal, out
+	end
 create
 	init
 feature	{Any}
@@ -7459,7 +7457,30 @@ feature	{Any}
 	end -- lessThan	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
-		-- Always valid !!!
+		-- Let's check that proper type is registered
+
+		inspect
+			token
+		when string_const_token then
+debug
+	o.putNL ("String const")
+end -- debug
+		when char_const_token then
+debug
+	o.putNL ("Character const")
+end -- debug
+		when integer_const_token then
+debug
+	o.putNL ("Integer const")
+end -- debug
+		when real_const_token then
+debug
+	o.putNL ("Real const")
+end -- debug
+		end -- if
+
+
+		
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -8214,7 +8235,6 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- generate
-
 
 	init (cd: like constDsc; aName: String; args: like arguments; cc: like callChain) is
 	require
