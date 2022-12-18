@@ -54,6 +54,8 @@ feature {Any}
 		aliasTypeDsc: AliasedTypeDescriptor
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
+		--valid_statements: Array [ValidStatementDescriptor]
+		--validStmtDsc: ValidStatementDescriptor
 		generators: Array [CodeGenerator]
 		i, n: Integer
 		j, m: Integer
@@ -130,16 +132,24 @@ end -- debug
 					-- 3. Check validity of cuDsc.statements
 					from
 						statements := cuDsc.statements
+						check
+							non_void_statements: statements /= Void
+						end -- check
 						n := statements.count
+						--create valid_statements.make (1, n)
 						i := 1
 					until
 						i > n
 					loop
+						--validStmtDsc := statements.item(i).getValidStatement (cuDsc, o)
+						--if validStmtDsc = Void then
 						if statements.item(i).isInvalid (cuDsc, o) then
 							debug
 								o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
 							end -- debug
 							Result := True
+						--else
+						--	valid_statements.put (validStmtDsc, i)
 						end -- if
 						i := i + 1
 					end -- loop
@@ -153,20 +163,26 @@ end -- debug
 					generators := initCodeGenerators (fs.getFileName(fName), true)			
 					m := generators.count
 					if m > 0 then
-						from
+						from						
 							statements := cuDsc.statements
 							n := statements.count
+							--check
+							--	valid_statements_not_void: valid_statements /= Void
+							--	counter_consistent: n = valid_statements.count
+							--end -- check
 							i := 1
 						until
 							i > n
 						loop
 							stmtDsc := statements.item(i)
+							--validStmtDsc := valid_statements.item (i)
 							from
 								j := 1
 							until
 								j > m
 							loop
 								stmtDsc.generate (generators.item (j))
+								--validStmtDsc.generate (generators.item (j))
 								j := j + 1
 							end -- loop
 							i := i + 1

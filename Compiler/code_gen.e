@@ -16,7 +16,7 @@ feature
 	end -- genStart	
 	dispose is
 	do
-		if status = 1 then -- ready then
+		if ready then
 			genEnd
 			status := 0
 		end -- if
