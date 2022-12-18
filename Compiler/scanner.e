@@ -217,7 +217,7 @@ feature
 			"->"
 		>>
 	end
-end -- class Tokens
+end -- class SLangLexis
 
 class SLang_Scanner
 inherit
@@ -1806,6 +1806,7 @@ feature {None}
 						isBitConst := False
 						isOctaConst := False
 						isHexConst := False
+						buffer.append_character ('.')
 						buffer.append_character (ch)
 					else	
 						setTheNextToken (dot_token)

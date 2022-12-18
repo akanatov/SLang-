@@ -790,6 +790,16 @@ feature {Any}
 	typePool: Sorted_Array[TypeDescriptor] --is
 	--deferred
 	--end
+	
+	getUnitTypeByName (unitName: String): UnitTypeNameDescriptor is
+	require
+		non_void_unitName: unitName /= Void
+	local
+		utnDsc: UnitTypeNameDescriptor
+	do
+		create utnDsc.init (unitName, Void)
+		Result ?= typePool.search (utnDsc)
+	end -- getUnitTypeByName
 
 	srcFileName: String
 	timeStamp: Integer 
@@ -7393,6 +7403,8 @@ feature	{Any}
 --	unitPrefix: UnitTypeNameDescriptor
 	token: Integer
 	value: Any
+
+	type: UnitTypeNameDescriptor
 	
 	negate is
 	local
@@ -7458,29 +7470,21 @@ feature	{Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		-- Let's check that proper type is registered
-
 		inspect
 			token
 		when string_const_token then
-debug
-	o.putNL ("String const")
-end -- debug
+			type := context.getUnitTypeByName ("String")
 		when char_const_token then
-debug
-	o.putNL ("Character const")
-end -- debug
+			type := context.getUnitTypeByName ("Character")
 		when integer_const_token then
-debug
-	o.putNL ("Integer const")
-end -- debug
+			type := context.getUnitTypeByName ("Integer")
 		when real_const_token then
-debug
-	o.putNL ("Real const")
-end -- debug
+			type := context.getUnitTypeByName ("Real")
+		end -- if		
+		if type = Void then
+			-- constant type is not registered
+			Result := True
 		end -- if
-
-
-		
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do

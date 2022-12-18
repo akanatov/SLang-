@@ -5202,14 +5202,30 @@ end -- debug
 	--  Constant : StringConstant |CharacterConstant |IntegerConstant |RealConstant
 	require
 		valid_token: validToken (<<scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token>>)
+	local
+		utnDsc: UnitTypeNameDescriptor
 	do
 		inspect
 			scanner.token
-		when scanner.string_const_token, scanner.char_const_token then
+		when scanner.string_const_token then
+			-- Register type String
+			create utnDsc.init ("String", Void)
+			utnDsc ?= register_named_type (utnDsc)
+			create Result.init (scanner.token, scanner.tokenString)
+		when scanner.char_const_token then
+			-- Register type Character
+			create utnDsc.init ("Character", Void)
+			utnDsc ?= register_named_type (utnDsc)
 			create Result.init (scanner.token, scanner.tokenString)
 		when scanner.integer_const_token then
+			-- Register type Integer
+			create utnDsc.init ("Integer", Void)
+			utnDsc ?= register_named_type (utnDsc)
 			create Result.init (scanner.token, scanner.integer_value)
 		when scanner.real_const_token then
+			-- Register type Real
+			create utnDsc.init ("Real", Void)
+			utnDsc ?= register_named_type (utnDsc)
 			create Result.init (scanner.token, scanner.tokenString.to_real)
 		end -- if
 		--scanner.nextToken
