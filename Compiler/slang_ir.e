@@ -931,7 +931,7 @@ feature {Any}
 		currentRoutine := Void
 	end -- clearCurrentRoutine
 	
-	name_not_unique (aName: String): Boolean is
+	entity_name_not_unique (aName: String): Boolean is
 	require
 		non_void_name: aName /= Void
 	local	
@@ -942,13 +942,13 @@ feature {Any}
 				Result := True
 			end -- if
 		end -- if
-		if currentUnit /= Void then
+		if not Result and then currentUnit /= Void then
 			memDsc := currentUnit.hasMember (aName)
 			if memDsc /= Void then
 				Result := True
 			end -- if
 		end -- if
-	end -- name_not_unique
+	end -- entity_name_not_unique
 	
 	start_unit_parsing is
 	do
@@ -959,7 +959,7 @@ feature {Any}
 		stringPool := unit_stringPool
 		typePool := unit_typePool
 		debug
-			print ("%T<<<Current pool stoped >>>Unit pool enabled%N")
+			print ("%T<<<Current pool - and >>>Unit pool +%N")
 		end -- debug
 		check
 			parsing_mode: scanner /= Void
@@ -973,7 +973,7 @@ feature {Any}
 		stringPool:= backup_stringPool
 		typePool:= backup_typePool
 		debug
-			print ("%T<<<Unit pool stoped >>>Anonymous pool restored%N")
+			print ("%T<<<Unit pool - and  >>>Anonymous pool restored%N")
 		end -- debug
 		check
 			parsing_mode: scanner /= Void
@@ -992,7 +992,7 @@ feature {Any}
 		stringPool:= rtn_stringPool
 		typePool:= rtn_typePool
 		debug
-			print ("%T<<<Current pool stopped >>> Standalone pool enabled%N")
+			print ("%T<<<Current pool - and >>> Standalone pool +%N")
 		end -- debug
 		check
 			parsing_mode: scanner /= Void
@@ -1005,7 +1005,7 @@ feature {Any}
 		stringPool:= backup_stringPool
 		typePool:= backup_typePool
 		debug
-			print ("%TStandalone pool stoped >>> Saved pool restored%N")
+			print ("%TStandalone pool - and >>> Saved pool restored%N")
 		end -- debug
 		check
 			parsing_mode: scanner /= Void
@@ -1814,7 +1814,7 @@ end -- class UnitImage
 ------------ AST/IR classes -------------------------------------------
 
 class WhenClauseDescriptor
--- when [Identifier:] UnitTypeDescriptor do StatementsList
+-- when ([Identifier:] UnitTypeDescriptor) | Expression do StatementsList
 inherit	
 	BuildServer
 		redefine
@@ -1887,32 +1887,36 @@ feature {Any}
 		decIdent
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	-- when [Identifier:] UnitTypeDescriptor do StatementsList
+	-- when ([Identifier:] UnitTypeDescriptor) | Expression do StatementsList
 	local
 		useConst: Sorted_Array [UnitTypeNameDescriptor]
 		stringPool: Sorted_Array [String]
 		typePool: Sorted_Array[TypeDescriptor]
-		-- notValid: Boolean
 		i, n: Integer
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+		useConst := context.useConst
+		stringPool := context.stringPool
+		typePool := context.typePool
 
-		if identifier /= Void then
-		--	identifier: String   -- should be valid. Unique within the context
-			-- not_implemented_yet
-			if context.name_not_unique (identifier) then
+		if exprDsc = Void then
+			if identifier /= Void then
+				--	identifier: String  should be unique within the context - different from
+				--  locals, parametetrs and unit members
+				if context.entity_name_not_unique (identifier) then
+					Result := True
+				end -- if
+			end -- if
+			if unitType.isInvalid (context, o) then
+				--	unitType: UnitTypeCommonDescriptor -- should be valid
 				Result := True
 			end -- if
-		end -- if
-		if unitType /= Void and then unitType.isInvalid (context, o) then
-			--	unitType: UnitTypeCommonDescriptor -- should be valid
-			Result := True
-		end -- if
--- not_implemented_yet
+		else
+			if exprDsc.isInvalid (context, o) then
+				Result := True
+			end -- if
+		end -- if		
 
---	statements: Array [StatementDescriptor] -- should be valid
+		--	statements: Array [StatementDescriptor] -- should be valid
 		from
 			i := 1
 			n := statements.count
@@ -1962,9 +1966,9 @@ feature {Any}
 		typePool: Sorted_Array[TypeDescriptor]
 		i, n: Integer
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
+		useConst := context.useConst
+		stringPool := context.stringPool
+		typePool := context.typePool
 	
 		-- Check that all names in 'invariantOffList' are valid entities within the block
 		from
@@ -3330,6 +3334,14 @@ feature {Any}
 		-- unitMembers: Sorted_Array [MemberDeclarationDescriptor]
 		-- initMembers: Sorted_Array [MemberDeclarationDescriptor]
 		unitRtnForSearch.set_name (aName)
+		Result := unitMembers.search (unitRtnForSearch)
+		if Result = Void then
+			Result := initMembers.search (unitRtnForSearch)
+			if Result = Void then
+				unitAttrForSearch.set_name (aName)
+				Result := unitMembers.search (unitAttrForSearch)
+			end -- if
+		end -- if
 	end -- hasMember
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -3509,8 +3521,6 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
 	--useConst := context.useConst
 	--stringPool := context.stringPool
@@ -3523,17 +3533,8 @@ feature {Any}
 	end -- generate
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
+		-- nothing to load !!!
 	end -- isNotLoaded
 	
 feature {FormalGenericDescriptor}
@@ -3606,10 +3607,9 @@ feature {Any}
 		--notValid: Boolean
 		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
+		--useConst := context.useConst
+		--stringPool := context.stringPool
+		--typePool := context.typePool
 		if typeConstraint /= Void and then typeConstraint.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -3625,13 +3625,10 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
+		--useConst := context.useConst
+		--stringPool := context.stringPool
+		--typePool := context.typePool
 		if typeConstraint /= Void and then typeConstraint.isNotLoaded (context, o) then
 			Result := True
 		end -- if
@@ -3685,13 +3682,10 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
+		--useConst := context.useConst
+		--stringPool := context.stringPool
+		--typePool := context.typePool
 		if type.isInvalid (context, o) then
 			Result := True
 		end -- if		
@@ -3706,18 +3700,14 @@ feature {Any}
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
+		--useConst := context.useConst
+		--stringPool := context.stringPool
+		--typePool := context.typePool
 		if type.isNotLoaded (context, o) then
 			Result := True
 		end -- if		
 	end -- isNotLoaded
-
 
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -7400,7 +7390,7 @@ inherit
 create
 	init
 feature	{Any}
---	unitPrefix: UnitTypeNameDescriptor
+	unitPrefix: UnitTypeNameDescriptor
 	token: Integer
 	value: Any
 
@@ -7422,12 +7412,20 @@ feature	{Any}
 		end -- if
 	end -- negate
 	
---	init (up: like unitPrefix; t: Integer; v: like value) is
+	make (up: like unitPrefix; v: like value) is
+	require
+		non_void_value: v /= Void
+		non_void_unit: up /= Void
+	do
+		unitPrefix:= up
+		token:= 0
+		value:= v
+	end -- make
 	init (t: Integer; v: like value) is
 	require
 		non_void_value: v /= Void
 	do
---		unitPrefix:= up
+		unitPrefix:= Void
 		token:= t
 		value:= v
 	end -- init
@@ -7480,6 +7478,8 @@ feature	{Any}
 			type := context.getUnitTypeByName ("Integer")
 		when real_const_token then
 			type := context.getUnitTypeByName ("Real")
+		else
+			type := unitPrefix
 		end -- if		
 		if type = Void then
 			-- constant type is not registered
@@ -7510,12 +7510,13 @@ feature	{Any}
 	end -- out
 invariant
 	non_void_value: value /= Void
-	-- valid_token: token = scanner.string_const_token or else
-	--	token = scanner.character_const_token or else
-	--	token = scanner.integer_const_token or else
-	--	token = scanner.real_const_token or else
-	--	token = scanner.string_const_token or else
-	--	token = scanner.identifier_token
+	consistent_1: unitPrefix /= Void implies token = 0
+	consistent_1: unitPrefix = Void implies (token = string_const_token or else
+		token = char_const_token or else
+		token = integer_const_token or else
+		token = real_const_token or else
+		token = string_const_token or else
+		token = identifier_token)
 end -- class ConstantDescriptor
 
 class CallChainElement
@@ -7706,7 +7707,16 @@ feature
 	--stringPool := context.stringPool
 	--typePool := context.typePool
 		-- do nothing so far
-	end -- isInvalid
+		if exprDsc.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if constDsc.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if not Result then
+			-- Ensure that unit type of 'exprDsc' has constant object 'constDsc' - TBD
+		end -- if
+	end -- is_invalid
 
 	generate (cg: CodeGenerator) is
 	do
@@ -9928,7 +9938,24 @@ feature {Any}
 	end -- conformsTo
 	
 	aliasName: String is do end
+
+	getUnitDeclaration: UnitDeclarationDescriptor is
+	do
+		-- TBD
+	end -- getUnitDeclaration
 	
+	hasMember (memberName: String): MemberDeclarationDescriptor is
+	require
+		memeber_name_not_void: memberName /= Void
+	local
+		unitDclDsc: UnitDeclarationDescriptor
+	do
+		unitDclDsc := getUnitDeclaration
+		if unitDclDsc /= Void then
+			Result := unitDclDsc.hasMember (memberName)
+		end -- if
+	end -- hasMember
+
 end -- class TypeDescriptor
 
 class AliasedTypeDescriptor
@@ -10732,15 +10759,18 @@ feature {Any}
 	end -- getExternalName
 
 	is_invalid, isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
+	--local
 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
 		--stringPool: Sorted_Array [String]
 		--typePool: Sorted_Array[TypeDescriptor]	
 		--notValid: Boolean		
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
+		--useConst := context.useConst
+		--stringPool := context.stringPool
+		--typePool := context.typePool
+		
+		-- Nothing to load, always valid !!!
+		
 	end -- isInvalid, isNotLoaded
 	generate (cg: CodeGenerator) is
 	do
@@ -10811,7 +10841,7 @@ feature {Any}
 		if not Result then
 			-- TBD
 		end -- if
-	end -- isInvalid
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -11058,7 +11088,7 @@ feature {Any}
 			-- type should be attached !!!
 			-- not_implemened_yet
 		end -- if
-	end -- isInvalid
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -11447,6 +11477,8 @@ end -- class NamedTypeDescriptor
 deferred class UnitTypeCommonDescriptor
 inherit
 	NamedTypeDescriptor
+		redefine
+			getUnitDeclaration
 	end
 	--TupleFieldDescriptor
 	--end
@@ -11533,7 +11565,7 @@ feature {Any}
 		if isNotLoaded (context, o) then
 			Result := True
 		end -- if		
-	end -- isInvalid
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -11584,7 +11616,13 @@ end -- debug
 			end -- if
 		end -- if
 	end -- isNotLoaded
+
 	interface: CompilationUnitUnit
+	
+	getUnitDeclaration: UnitDeclarationDescriptor is
+	do
+		Result := interface.unitDclDsc
+	end -- getUnitDeclaration
 	
 	sameNameAndGenerics (other: like Current): Boolean is
 	local
@@ -11712,7 +11750,7 @@ feature {Any}
 		if not Result then
 			-- TBD
 		end -- if
-	end -- isInvalid
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -11877,7 +11915,7 @@ feature {Any}
 			-- expr and all alternatives are valid then check types accordance
 			-- not_implemented_yet
 		end -- if
-	end -- isInvalid
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -11927,7 +11965,7 @@ feature {Any}
 		if not Result then
 			-- TBD: expr must have type Boolean 
 		end -- if
-	end -- isInvalid
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -11995,7 +12033,7 @@ class UnitTypeAlternative
 			-- expr should be either Type or value ....
 			-- not_implemented_yet
 		end -- if
-	end -- isInvalid
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -12143,7 +12181,7 @@ feature {Any}
 		end -- if
 			-- expr should be either Type or value ....
 			-- not_implemented_yet
-	end -- isInvalid
+	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far

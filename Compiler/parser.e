@@ -10012,7 +10012,7 @@ feature {None}
 		scanner := aScanner
 		create ast.init (scanner)
 		debug
-			print ("%T>>>Anonymous pool enabled%N")
+			print ("%T>>>Anonymous pool +%N")
 		end -- debug
 		--scanner.setPool (ast.script.stringPool)
 		scanner.setPool (ast.stringPool)
