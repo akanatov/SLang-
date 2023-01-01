@@ -184,6 +184,7 @@ feature
 		wasError: Boolean
 	do
 		if wasError then
+			status := -1
 			Result := -1
 		else
 			if fs.file_exists (fileName) then
@@ -197,6 +198,7 @@ feature
 				file.put_string ("int main(int argc, char **argv) {%N")
 			else
 				-- Library file is to be generated. No 'main'
+				file.put_string ("// Library code %N")
 			end -- if
 			
 			-- Not yet implemented
@@ -209,12 +211,17 @@ feature
 	end -- genStart	
 	genEnd is
 	do
-		if hasEntryPoint then
-			-- Generate entry point. end of 'main' is to be generated
+		if ready then
+			if hasEntryPoint then
+				-- Generate entry point. end of 'main' is to be generated
 				file.put_string ("%Treturn 0;%N}%N")
+			else
+				file.put_string ("// End of library code%N")
+			end -- if
+			file.close
+			file := Void
+			status := -1
 		end -- if
-		file.close
-		file := Void
 	end -- genEnd
 	genAssignmentToLocal () is
 	do

@@ -70,6 +70,8 @@ feature {Any}
 	clusters: Sorted_Array [ClusterDescriptor] -- Clusters to search for usage of units and routines
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 
+	allUnits: Sorted_Array [UnitDeclarationDescriptor] 
+
 	checkSources(o: Output) is
 	local
 		processedFolders: Sorted_Array [String]
@@ -322,6 +324,7 @@ feature {Any}
 		name:= n
 		entry:= e
 		set_clusters_and_libraries (c, l)
+		create allUnits.make
 	end -- init_program
 	
 	init_library (n : String; fp: like from_paths; c: like clusters; l: like libraries) is
@@ -336,7 +339,8 @@ feature {Any}
 			from_paths := fp
 		end -- if
 		set_clusters_and_libraries (c, l)
-	end -- init_program
+		create allUnits.make
+	end -- init_library
 
 	set_clusters_and_libraries (c: like clusters; l: like libraries) is
 	do
@@ -526,7 +530,14 @@ end -- debug
 		selected: Array [Integer]
 		temp: Array [ClusterDescriptor]
 	do
-		if clusters /= Void then
+		debug
+			--print ("%NLooking for the unit '" + unitName + "'%N")
+		end
+		if clusters = Void or else clusters.count = 0 then
+			debug
+				--print ("No clusters provided !!!%N")
+			end
+		else
 			from
 				n := clusters.count
 				i := 1
@@ -536,6 +547,9 @@ end -- debug
 				i > n
 			loop
 				clusterDsc := clusters.item (i)
+				debug
+					--print ("%TCluster '" + clusterDsc.out + "' search%N")
+				end
 				if clusterHasUnit (clusterDsc, unitName) then
 					Result.force (clusterDsc, Result.count + 1)
 					if clusterDsc.unitOrRoutineSelected(unitName) then
@@ -613,10 +627,10 @@ class ClusterDescriptor
 inherit	
 	Comparable
 		redefine
-			out
+			out, is_equal
 	end
 	NamedDescriptor
-		undefine
+		redefine
 			is_equal
 	end
 create
@@ -743,6 +757,10 @@ feature
 	do
 		Result := name < other.name
 	end -- infix "<"
+	is_equal (other: like Current): Boolean is
+	do
+		Result := name.is_equal (other.name)
+	end -- infix "<"
 end -- class ClusterDescriptor
 class RenamePair
 inherit	
@@ -783,13 +801,9 @@ create {None}
 feature {Any}
 	-- use const UnitTypeName {"," UnitTypeName}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
-
-	stringPool: Sorted_Array [String] --is
-	--deferred
-	--end
-	typePool: Sorted_Array[TypeDescriptor] --is
-	--deferred
-	--end
+	-- Pools
+	stringPool: Sorted_Array [String]
+	typePool: Sorted_Array[TypeDescriptor]
 	
 	getUnitTypeByName (unitName: String): UnitTypeNameDescriptor is
 	require
@@ -810,12 +824,7 @@ feature {Any}
 	do
 		useConst := uc
 	end -- setUseConst
-	--IR_Loaded (fileName: String; o: Output): Boolean is
-	--require
-	--	file_name_not_void:  fileName /= Void
-	--	output_not_void: o /= Void
-	--deferred
-	--end -- IR_Loaded
+
 	getContextAsString: String is
 	local
 		i, n: Integer
@@ -959,7 +968,7 @@ feature {Any}
 		stringPool := unit_stringPool
 		typePool := unit_typePool
 		debug
-			print ("%T<<<Current pool - and >>>Unit pool +%N")
+			--print ("%T<<<Current pool - and >>>Unit pool +%N")
 		end -- debug
 		check
 			parsing_mode: scanner /= Void
@@ -973,7 +982,7 @@ feature {Any}
 		stringPool:= backup_stringPool
 		typePool:= backup_typePool
 		debug
-			print ("%T<<<Unit pool - and  >>>Anonymous pool restored%N")
+			--print ("%T<<<Unit pool - and  >>>Anonymous pool restored%N")
 		end -- debug
 		check
 			parsing_mode: scanner /= Void
@@ -992,7 +1001,7 @@ feature {Any}
 		stringPool:= rtn_stringPool
 		typePool:= rtn_typePool
 		debug
-			print ("%T<<<Current pool - and >>> Standalone pool +%N")
+			--print ("%T<<<Current pool - and >>> Standalone pool +%N")
 		end -- debug
 		check
 			parsing_mode: scanner /= Void
@@ -1005,7 +1014,7 @@ feature {Any}
 		stringPool:= backup_stringPool
 		typePool:= backup_typePool
 		debug
-			print ("%TStandalone pool - and >>> Saved pool restored%N")
+			--print ("%TStandalone pool - and >>> Saved pool restored%N")
 		end -- debug
 		check
 			parsing_mode: scanner /= Void
@@ -1034,7 +1043,9 @@ feature {Any}
 		end -- if
 		fileName.append_string (IRfolderName  + fs.separator + unitExternalName + UnitSuffix + "." + INText)
 		create Result.make (Void)
-		if not Result.UnitIR_Loaded (fileName, o) then
+		if Result.UnitIR_Loaded (fileName, o) then
+			sysDsc.allUnits.add (Result.unitDclDsc)
+		else
 			Result := Void
 		end -- if
 	end -- loadUnitInterafceFrom	
@@ -1048,9 +1059,9 @@ feature {Any}
 	do
 		debug
 			if unitDsc.aliasName /= Void then
-		--		o.putLine ("Loading interface of `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
+				-- o.putLine ("Loading interface of `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
 			end -- if
-		--	o.putNL ("Loading interface of `" + unitPrintableName + "` called `" + unitExternalName + "`")
+			--o.putNL ("Loading interface of `" + unitPrintableName + "` called `" + unitExternalName + "`")
 		end	-- debug
 		clusters := sysDsc.hasUnit(unitExternalName)
 		if clusters = Void or else clusters.count = 0 then
@@ -1195,34 +1206,14 @@ inherit
 	CompilationUnitCommon
 	end
 create	
-	--init, 
 	make
 feature {Any}
 	routine: StandaloneRoutineDescriptor
-
-	--init(scn: like scanner) is
-	--do
-	--	init_pools (scn)
-	--end -- init
 
 	make(scn: like scanner) is
 	do
 		init_pools (scn)
 	end -- init
-	
-	--stringPool: Sorted_Array [String] is
-	--do
-	--	Result := routine.stringPool
-	--end
-	--typePool: Sorted_Array[TypeDescriptor] is
-	--do
-	--	Result := routine.typePool
-	--end
-	--
-	--set_pools is
-	--do
-	--	routine.set_pools (<<unitAnyDsc>>)
-	--end -- set_pools
 
 	RoutineIR_Loaded (fileName: String; o: Output): Boolean is
 	local
@@ -1232,8 +1223,8 @@ feature {Any}
 		if rImage /= Void then
 			routine 	:= rImage.routine
 			useConst	:= rImage.useConst	
-			--stringPool	:= rImage.stringPool	
-			--typePool	:= rImage.typePool	
+			stringPool	:= rImage.stringPool	
+			typePool	:= rImage.typePool	
 			srcFileName := rImage.srcFileName
 			timeStamp	:= rImage.timeStamp
 			Result := True
@@ -1297,14 +1288,7 @@ create
 	make -- init
 feature {Any}
 	statements: Array [StatementDescriptor]
-	--stringPool: Sorted_Array [String]
-	--typePool: Sorted_Array[TypeDescriptor]
 	
-	--set_pools is
-	--do
-	--	create stringPool.make
-	--	create typePool.fill (<<unitAnyDsc>>)
-	--end -- set_pools
 
 feature {None}
 	locals: Sorted_Array [LocalAttrDeclarationDescriptor]
@@ -1314,11 +1298,6 @@ feature {None}
 		create locals.make
 		init_pools (scn)
 	end -- make
-	--init (scn: like scanner) is
-	--do
-	--	init_pools (scn)
-	--	make
-	--end -- init
 feature {Any}
 	addStatement (stmtDsc: StatementDescriptor) is
 	require
@@ -1403,42 +1382,16 @@ inherit
 	CompilationUnitCommon
 	end
 create	
-	--init, 
 	make
 feature {Any}
 	unitDclDsc: UnitDeclarationDescriptor
 
-	--init (scn: like scanner) is
-	--do
-	--	init_pools (scn)
-	--	unitDclDsc := Void -- ????
-	--end -- init
-	
 	make (scn: like scanner) is
 	do
 		init_pools (scn)
 		--type := Void -- ????
 	end -- make
 	
-	--stringPool: Sorted_Array [String] is
-	--do
-	--	Result := unitDclDsc.stringPool
-	--end
-	--typePool: Sorted_Array[TypeDescriptor] is
-	--do
-	--	Result := unitDclDsc.typePool
-	--end
-	--
-	--set_pools is
-	--do
-	--	unitDclDsc.set_pools (<<unitAnyDsc>>)
-	--end -- set_pools
-
-
-	--isInvalid: Boolean is
-	--do
-	--	Result := unitDclDsc.isInvalid(sysDsc)
-	--end -- isInvalid
 
 	--failedToGenerate (generators: Array [CodeGenerator]): Boolean is
 	--require
@@ -1482,9 +1435,9 @@ feature {Any}
 		uImage := loadUnitIR (fileName, o)
 		if uImage /= Void then
 			unitDclDsc  := uImage.unitDclDsc
-			useConst	:= uImage.useConst	
-			--stringPool	:= uImage.stringPool	
-			--typePool	:= uImage.typePool	
+			useConst	:= uImage.useConst			
+			stringPool	:= uImage.stringPool	
+			typePool	:= uImage.typePool			
 			srcFileName := uImage.srcFileName
 			timeStamp	:= uImage.timeStamp
 			Result := True
@@ -1634,7 +1587,7 @@ feature {Any}
 			i > n
 		loop
 			-- Per standalone routine: useConst + routine
-			create rImg.init (FullSourceFileName, tStamp, useConst, routines.item (i), routines.item (i).stringPool, routines.item (i).typePool)
+			create rImg.init (FullSourceFileName, tStamp, useConst, routines.item (i)) -- , routines.item (i).stringPool, routines.item (i).typePool)
 			fName := filePrefix  + routines.item (i).name + RoutinesSuffix + "." + irFileExtension
 			if not IRstored (fName, rImg) then
 				o.putNL ("File open/create/write/close error: unable to store standalone routine IR into file `" + fName + "`")
@@ -1661,11 +1614,12 @@ feature {Any}
 		loop
 			-- per type: useConst + type
 			unitDsc := units.item(i)
-			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc, unitDsc.stringPool, unitDsc.typePool)
+			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc) --, unitDsc.stringPool, unitDsc.typePool)
 			fName := filePrefix  + unitDsc.getExternalName + UnitSuffix + "." + irFileExtension
 			if IRstored (fName, uImg) then
 				if unitDsc.aliasName /= Void then
 					-- Straightforward decision to store the full copy of IR for the alias name ... May be optimized
+					-- Like store just a reference to the poriginal IR file ... Need to design better 
 					fName := filePrefix  + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
 					if not IRstored (fName, uImg) then
 						o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
@@ -1772,10 +1726,10 @@ create
 	init, init_empty
 feature {CompilationUnitCommon}
 	routine: StandaloneRoutineDescriptor
-	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; r: like routine; sp: like stringPool; tp: like typePool) is
+	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; r: like routine) is -- ; sp: like stringPool; tp: like typePool) is
 	do
 		routine	:= r
-		init_storage (fn, ts, uc, sp, tp)
+		init_storage (fn, ts, uc, routine.stringPool, routine.typePool) -- sp, tp)
 	end -- init
 end -- class RoutineImage
 
@@ -1796,18 +1750,19 @@ end -- class RoutineImage
 --end -- class RoutinesImage
 
 class UnitImage
--- local class to store type IR
+-- local class to store unit IR
 inherit
 	IR_Storage
 	end
 create	
 	init, init_empty
 feature {CompilationUnitCommon}
-	unitDclDsc: UnitDeclarationDescriptor
-	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; u: like unitDclDsc; sp: like stringPool; tp: like typePool) is
+	  
+	unitDclDsc: UnitDeclarationDescriptor			
+	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; u: like unitDclDsc) is --; sp: like stringPool; tp: like typePool) is
 	do
 		unitDclDsc := u
-		init_storage (fn, ts, uc, sp, tp)
+		init_storage (fn, ts, uc, unitDclDsc.stringPool, unitDclDsc.typePool) --sp, tp)
 	end -- init
 end -- class UnitImage
 
@@ -1889,15 +1844,8 @@ feature {Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	-- when ([Identifier:] UnitTypeDescriptor) | Expression do StatementsList
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]
 		i, n: Integer
 	do
-		useConst := context.useConst
-		stringPool := context.stringPool
-		typePool := context.typePool
-
 		if exprDsc = Void then
 			if identifier /= Void then
 				--	identifier: String  should be unique within the context - different from
@@ -1961,15 +1909,8 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]
 		i, n: Integer
 	do
-		useConst := context.useConst
-		stringPool := context.stringPool
-		typePool := context.typePool
-	
 		-- Check that all names in 'invariantOffList' are valid entities within the block
 		from
 			i := 1
@@ -2766,7 +2707,7 @@ inherit
 			is_equal
 	end
 create 
-	init
+	init, makeForSearch
 feature {Any}
 	isFinal,
 	isRef,
@@ -3382,6 +3323,11 @@ feature {Any}
 
 feature {None}
 	
+	makeForSearch (aName: like name) is
+	do
+		init (aName, False, False, False, False, False, False)
+	end -- makeForSearch
+	
 	init (aName: like name; is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend: Boolean) is
 	do
 		name := aName
@@ -3518,13 +3464,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -3595,22 +3535,17 @@ feature {Any}
 	local
 	do
 		name := n
-		typeConstraint:= tc
-		initConstraint:= ic
+		typeConstraint := tc
+		initConstraint := ic
 	end -- init
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
 		if typeConstraint /= Void and then typeConstraint.isInvalid (context, o) then
+			Result := True
+		end -- if
+		if initConstraint /= Void and then initConstraint.isInvalid (context, o) then
 			Result := True
 		end -- if
 	end -- is_invalid
@@ -3621,21 +3556,14 @@ feature {Any}
 	end -- generate
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
+	local		
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
 		if typeConstraint /= Void and then typeConstraint.isNotLoaded (context, o) then
 			Result := True
 		end -- if
--- Do we need to load all types from the signature?
---		if initConstraint /= Void and then initConstraint.isNotLoaded (context, o) then
---			Result := True
---		end -- if
+		if initConstraint /= Void and then initConstraint.isNotLoaded (context, o) then
+			Result := True
+		end -- if
 	end -- isNotLoaded
 	
 feature {FormalGenericDescriptor}
@@ -3679,13 +3607,7 @@ feature {Any}
 	end -- init
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
 		if type.isInvalid (context, o) then
 			Result := True
 		end -- if		
@@ -3697,13 +3619,7 @@ feature {Any}
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
 		if type.isNotLoaded (context, o) then
 			Result := True
 		end -- if		
@@ -3753,15 +3669,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -3771,15 +3679,7 @@ feature {Any}
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 	end -- isNotLoaded
 
@@ -5024,7 +4924,7 @@ feature
 	do
 		if not validityChecked then
 debug
-	o.putNL ("ValCheck: " + generating_type)
+	--o.putNL ("ValCheck: " + generating_type)
 end -- debug
 			Result := is_invalid (context, o)
 			isValid := not Result
@@ -5155,13 +5055,13 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
+		
+		
+		
 		-- 'id' should be a valid name of writable attribute or local, set link to declration
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -5195,13 +5095,13 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
+		
+		
+		
 
 		if expr /= Void then
 			if expr.isInvalid (context, o) then 
@@ -5243,13 +5143,13 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
+		
+		
+		
 		if expr /= Void then
 			if expr.isInvalid (context, o) then 
 				Result := True
@@ -5381,13 +5281,13 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
+		
+		
+		
 
 		-- check entity !!!
 		if expr.isInvalid (context, o) then 
@@ -5444,13 +5344,13 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
+		
+		
+		
 		if writable.isInvalid (context, o) then 
 			Result := True
 		end -- if
@@ -5838,13 +5738,13 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
+		
+		
+		
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -5918,9 +5818,9 @@ end -- class LocalAttrDeclarationDescriptor
 --	--	stringPool: Sorted_Array [String]
 --	--	typePool: Sorted_Array[TypeDescriptor]	
 --	do
---	--useConst := context.useConst
---	--stringPool := context.stringPool
---	--typePool := context.typePool
+--	
+--	
+--	
 --		-- do nothing so far
 --	end -- isInvalid
 --	generate (cg: CodeGenerator) is
@@ -6173,10 +6073,11 @@ feature{Any}
 	end -- getExternalName
 	getFactualGenericExternalName (pos: Integer): String is
 	do
-		if semType = Void then
--- not_implemened_yet !!!!		
+		if exprType = Void then
+-- not_implemened_yet !!!!
+			Result := "Type of expression '" + out + "' not yet evaluated!!!"
 		else
-			Result := semType.getExternalName
+			Result := exprType.getExternalName
 		end -- if
 	end -- getFactualGenericExternalName
 
@@ -6186,7 +6087,7 @@ feature{Any}
 	--deferred
 	--end -- isInvalid	
 	
-	semType: UnitTypeCommonDescriptor
+	exprType: UnitTypeCommonDescriptor
 	
 end -- class ExpressionDescriptor
 
@@ -6227,13 +6128,13 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
+	
+	
+	
 		if expdsc.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -6284,13 +6185,13 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
+	
+	
+	
 		if expdsc.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -6440,14 +6341,14 @@ end -- class ParenthedExpressionDescriptor
 -- 	end -- theSame
 -- 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 -- 	local
--- 		--useConst: Sorted_Array [UnitTypeNameDescriptor]
--- 		--stringPool: Sorted_Array [String]
--- 		--typePool: Sorted_Array[TypeDescriptor]	
+-- 		
+-- 		
+-- 			
 -- 		-- notValid: Boolean
 -- 	do
--- 	--useConst := context.useConst
--- 	--stringPool := context.stringPool
--- 	--typePool := context.typePool
+-- 	
+-- 	
+-- 	
 -- 		-- do nothing so far
 -- 	end -- isInvalid
 -- --feature {ExpressionDescriptor}
@@ -6512,14 +6413,14 @@ feature
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 		-- notValid: Boolean
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
+	
+	
+	
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -6546,14 +6447,14 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 		-- notValid: Boolean
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
+	
+	
+	
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -6623,15 +6524,15 @@ feature {Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
+		
 		stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+			
 		-- notValid: Boolean
 		pos: Integer
 	do
-	--useConst := context.useConst
+	
 	stringPool := context.stringPool
-	--typePool := context.typePool
+	
 		-- do nothing so far
 		pos := stringPool.seek (name)		
 		if pos <= 0 then
@@ -6770,15 +6671,15 @@ feature
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
-		--notValid: Boolean
+		
+		
+			
+		
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
+	
+	
+	
 		-- Every tuple element should be a vlaid expression
 		from
 			i := 1
@@ -6832,13 +6733,7 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if expr.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -6918,13 +6813,7 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if signature /= Void then
 			if signature.isInvalid (context, o) then
 				Result := True
@@ -6978,14 +6867,7 @@ print ("InlineLambdaExpression.lessThan not_implemented_yet%N")
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7031,14 +6913,7 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7121,14 +6996,7 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7171,13 +7039,7 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7262,14 +7124,7 @@ end -- class OldExpressionDescriptor
 --	end -- lessThan
 --	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 --	local
---		useConst: Sorted_Array [UnitTypeNameDescriptor]
---		stringPool: Sorted_Array [String]
---		typePool: Sorted_Array[TypeDescriptor]	
---		-- notValid: Boolean
 --	do
---	useConst := context.useConst
---	stringPool := context.stringPool
---	typePool := context.typePool
 --		-- do nothing so far
 --	end -- isInvalid
 ----feature {ExpressionDescriptor}
@@ -7350,13 +7205,7 @@ feature {Any}
 	end -- sameAs
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7556,13 +7405,7 @@ feature {Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7698,15 +7541,7 @@ feature
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- do nothing so far
 		if exprDsc.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -7835,13 +7670,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -7943,14 +7772,8 @@ feature{Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if expression.isInvalid (context, o) then
 			Result := True
 		end --if
@@ -8064,14 +7887,8 @@ feature{Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if target.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -8236,13 +8053,7 @@ feature{Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -8396,14 +8207,8 @@ feature{Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if target.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -8563,13 +8368,7 @@ feature{Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -8597,13 +8396,7 @@ create
 feature{Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -8742,14 +8535,8 @@ feature{Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
-		-- unitTypeDsc shoudl have visibel constructor and arguemnts conform to its parameters
+		-- unitTypeDsc shoudl have visible constructor and arguments conform to its parameters
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -8794,13 +8581,7 @@ feature{Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		useConst: Sorted_Array [UnitTypeNameDescriptor]
-		stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
 	do
-	useConst := context.useConst
-	stringPool := context.stringPool
-	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -8866,13 +8647,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -8952,13 +8727,7 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
 		-- check that propoer constructoк is in place 
 		-- arguments conform to parameters
 	end -- is_invalid
@@ -8995,14 +8764,8 @@ feature {Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		from
 			i := ifParts.lower
 			n := ifParts.upper
@@ -9150,13 +8913,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- do nothing so far
 	end -- is_invalid
 	generate (cg: CodeGenerator) is
@@ -9271,13 +9028,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- do nothing so far
 	end -- is_invalid
 	generate (cg: CodeGenerator) is
@@ -9516,14 +9267,8 @@ feature {Any}
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		from
 			i := 1
 			n := statements.count
@@ -9581,14 +9326,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
-		-- i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if expr.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -9939,10 +9677,10 @@ feature {Any}
 	
 	aliasName: String is do end
 
-	getUnitDeclaration: UnitDeclarationDescriptor is
+	unitDeclaration: UnitDeclarationDescriptor is
 	do
-		-- TBD
-	end -- getUnitDeclaration
+		-- TBD: It should be deferred here and implemented in descendants
+	end -- unitDeclaration
 	
 	hasMember (memberName: String): MemberDeclarationDescriptor is
 	require
@@ -9950,7 +9688,7 @@ feature {Any}
 	local
 		unitDclDsc: UnitDeclarationDescriptor
 	do
-		unitDclDsc := getUnitDeclaration
+		unitDclDsc := unitDeclaration
 		if unitDclDsc /= Void then
 			Result := unitDclDsc.hasMember (memberName)
 		end -- if
@@ -10007,16 +9745,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
 		if actualType.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -10024,16 +9753,7 @@ feature {Any}
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
 		if actualType.isNotLoaded (context, o) then
 			Result := True
 		end -- if
@@ -10127,15 +9847,7 @@ feature {Any}
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -10145,15 +9857,7 @@ feature {Any}
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 	end -- isNotLoaded
 	
@@ -10234,14 +9938,7 @@ feature {Any}
 	end -- getExternalName
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 		if signature.isInvalid (context, o) then
 			Result := True
@@ -10257,7 +9954,10 @@ feature {Any}
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
-		-- There is nothing to load for the routine type - really ?		
+		-- Load types from the signature
+		if signature.isNotLoaded (context, o) then
+			Result := True
+		end -- if
 	end -- isNotLoaded
 	
 	sameAs (other: like Current): Boolean is
@@ -10435,14 +10135,8 @@ feature {Any}
 	end -- infix <
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		from
 			-- All parameters are to be valid
 			n := parameters.count
@@ -10469,6 +10163,29 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		i, n: Integer
+	do	
+		from
+			-- All parameters are to be valid
+			n := parameters.count
+			i := 1
+		until	
+			i > n
+		loop
+			if parameters.item (i).isNotLoaded (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+		if returnType /= Void then
+			-- Return type is to be be valid
+			if returnType.isNotLoaded (context, o) then
+				Result := True
+			end -- if
+		end -- if
+	end -- isNotLoaded
 	
 invariant
 	non_void_parameters: parameters /= Void
@@ -10567,15 +10284,7 @@ feature {Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -10585,15 +10294,7 @@ feature {Any}
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 	end -- isNotLoaded
 	
@@ -10661,15 +10362,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 		-- Values should be of the same common ancestor type ... ?
 	end -- isInvalid
@@ -10680,15 +10373,7 @@ feature {Any}
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
-		--i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- not_implemened_yet
 	end -- isNotLoaded
 
@@ -10759,18 +10444,8 @@ feature {Any}
 	end -- getExternalName
 
 	is_invalid, isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
-		--notValid: Boolean		
-	do
-		--useConst := context.useConst
-		--stringPool := context.stringPool
-		--typePool := context.typePool
-		
-		-- Nothing to load, always valid !!!
-		
+	do	
+		-- Nothing to load, always valid !!!		
 	end -- isInvalid, isNotLoaded
 	generate (cg: CodeGenerator) is
 	do
@@ -10826,13 +10501,7 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if anchorSignature /= Void then
 			if anchorSignature.isInvalid (context, o) then
 				Result := True
@@ -10849,7 +10518,10 @@ feature {Any}
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do	
-		-- do nothing so far. Or we need to have signature types loaded ...
+		-- we need to have signature types loaded ...
+		if anchorSignature /= Void and then anchorSignature.isNotLoaded (context, o) then
+			Result := True
+		end -- if
 	end -- isNotLoaded
 
 	sameAs (other: like Current): Boolean is
@@ -10937,16 +10609,8 @@ feature {Any}
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
 		from
 			i := 1
 			n := types.count
@@ -10966,16 +10630,8 @@ feature {Any}
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
 		from
 			i := 1
 			n := types.count
@@ -11073,13 +10729,7 @@ feature {Any}
 	end -- lessThan
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if type.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -11217,16 +10867,8 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
 		from
 			i := 1
 			n := fields.count
@@ -11246,16 +10888,8 @@ feature {Any}
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]
-		--notValid: Boolean
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
-		-- not_implemened_yet
 		from
 			i := 1
 			n := fields.count
@@ -11478,7 +11112,7 @@ deferred class UnitTypeCommonDescriptor
 inherit
 	NamedTypeDescriptor
 		redefine
-			getUnitDeclaration
+			unitDeclaration
 	end
 	--TupleFieldDescriptor
 	--end
@@ -11547,82 +11181,118 @@ feature {Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		typePool: Sorted_Array[TypeDescriptor]	
-		-- notValid: Boolean
-		pos: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-		typePool := context.typePool
-		-- do nothing so far
-		pos := typePool.seek (Current)
-		check
-			unit_registered : pos > 0
-		end -- check
-		-- its interface should be loaded
+		-- its interface should be loaded first
 		if isNotLoaded (context, o) then
 			Result := True
 		end -- if		
+		if not True then
+			-- NOT IMPLEMENTED
+		end -- if
 	end -- is_invalid
+	
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
 	end -- generate
+	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		toRegister: Boolean
-		typePool: Sorted_Array[TypeDescriptor]
-		unitTypeDsc: UnitTypeCommonDescriptor
+--		toRegister: Boolean
+--		typePool: Sorted_Array[TypeDescriptor]
+--		unitTypeDsc: UnitTypeCommonDescriptor
+		typesPool: Sorted_Array[TypeDescriptor]
+		unitDclDsc: UnitDeclarationDescriptor
+		cuDsc: CompilationUnitUnit
+		pos: Integer
+		i, n: Integer
 	do
-		if interface = Void then
-			if generics.count > 0 then
-				typePool := context.typePool
--- Need to search for the generic type not the instantiation !!! Replace Current with the proper node!!!
-				unitTypeDsc ?= typePool.search (Current)
-				if unitTypeDsc = Void then
-debug
---	o.putNL ("Unit type `" + out + "` is NOT found in the type pool")
-end -- debug
-				else
-debug
---	o.putNL ("Unit type `" + out + "` is found in the type pool")
-end -- debug
-					interface := unitTypeDsc.interface
-				end -- if
-				if interface = Void then
-					toRegister := True
-					-- ask system desciption to load type interface 
-					interface := context.loadUnitInterface (getExternalName, out, o, Current)
-					if interface /= Void then
-						interface.instantiate (generics)
-					end -- if
-				end -- if
-			else
-				-- ask system desciption to load type interface 
-				interface := context.loadUnitInterface (getExternalName, out, o, Current)
-			end -- if
-			if interface = Void then
+		-- Find its interface in the context
+		create unitDclDsc.makeForSearch (name)
+		pos	:= context.sysDsc.allUnits.seek (unitDclDsc)
+		if pos > 0 then
+			unitDeclaration := context.sysDsc.allUnits.item (pos)
+		else
+			cuDsc := context.loadUnitInterface (getExternalName, out, o, Current)
+			if cuDsc = Void then
+				context.sysDsc.allUnits.add_after (unitDclDsc, pos)
 				Result := True
-			elseif toRegister then				
-				-- Regsiter the 'interface' in the pool
-				typePool.add (interface.unitDclDsc.getUnitTypeDescriptor) -- unitDclDsc: UnitDeclarationDescriptor
-			end -- if
-			if not Result and then aliasName /= Void then
-				-- Register alias if set in the pool
-				-- Not_implemented_yet !!!
-				-- type A alias B end  type C alias B end  to be detected !!!
-			end -- if
+			else
+				unitDeclaration := cuDsc.unitDclDsc
+				context.sysDsc.allUnits.add_after (unitDeclaration, pos)
+				-- Check that all types from its type pool are loaded
+				typesPool := unitDeclaration.typePool
+				if typesPool /= Void then
+					from 
+						i := 1
+						n := typesPool.count
+					until
+						i > n
+					loop
+						if not typesPool.item (i).isNotLoaded (context, o) then
+							Result := True
+						end -- if
+						i := i + 1
+					end -- loop
+				end -- if
+				if aliasName /= Void then
+					-- Register it !!!
+					unitDeclaration.setAliasName (aliasName)
+					-- TBD: Need to create fake nodes to ensure alias unit nodes will be found !!!
+				end -- if
+			end -- if			
 		end -- if
+		-- XXX : Sorted_Array [UnitDeclarationDescriptor] 
+
+		
+		-- NOT IMPLEMENTED !!!!
+--		if interface = Void then
+--			if generics.count > 0 then
+--				typePool := context.typePool
+---- Need to search for the generic type not the instantiation !!! Replace Current with the proper node!!!
+--				unitTypeDsc ?= typePool.search (Current)
+--				if unitTypeDsc = Void then
+--debug
+----	o.putNL ("Unit type `" + out + "` is NOT found in the type pool")
+--end -- debug
+--				else
+--debug
+----	o.putNL ("Unit type `" + out + "` is found in the type pool")
+--end -- debug
+--					interface := unitTypeDsc.interface
+--				end -- if
+--				if interface = Void then
+--					toRegister := True
+--					-- ask system desciption to load type interface 
+--					interface := context.loadUnitInterface (getExternalName, out, o, Current)
+--					if interface /= Void then
+--						interface.instantiate (generics)
+--					end -- if
+--				end -- if
+--			else
+--				-- ask system desciption to load type interface 
+--				interface := context.loadUnitInterface (getExternalName, out, o, Current)
+--			end -- if
+--			if interface = Void then
+--				Result := True
+--			elseif toRegister then				
+--				-- Regsiter the 'interface' in the pool
+--				typePool.add (interface.unitDclDsc.getUnitTypeDescriptor) -- unitDclDsc: UnitDeclarationDescriptor
+--			end -- if
+--			if not Result and then aliasName /= Void then
+--				-- Register alias if set in the pool
+--				-- Not_implemented_yet !!!
+--				-- type A alias B end  type C alias B end  to be detected !!!
+--			end -- if
+--		end -- if
 	end -- isNotLoaded
 
-	interface: CompilationUnitUnit
+	--interface: CompilationUnitUnit
 	
-	getUnitDeclaration: UnitDeclarationDescriptor is
-	do
-		Result := interface.unitDclDsc
-	end -- getUnitDeclaration
+	unitDeclaration: UnitDeclarationDescriptor --is
+	--do
+		--Result := interface.unitDclDsc
+	--end -- unitDeclaration
 	
 	sameNameAndGenerics (other: like Current): Boolean is
 	local
@@ -11723,14 +11393,8 @@ feature {Any}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		from
 			i := 1
 			n := ifExprLines.count
@@ -11889,14 +11553,8 @@ feature {Any}
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 		i, n: Integer
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if expr.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -11947,13 +11605,7 @@ feature {Any}
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		-- 'expr' is valid and of Boolean type
 		if expr.isInvalid (context, o) then
 			Result := True
@@ -12020,13 +11672,10 @@ class UnitTypeAlternative
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
+		
+		
+			
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if unitTypeDsc.isInvalid (context, o) then
 			Result := True
 		else
@@ -12071,13 +11720,7 @@ feature {Any}
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if expression.isInvalid (context, o) then
 			Result := True
 		else
@@ -12159,13 +11802,7 @@ feature {Any}
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		--useConst: Sorted_Array [UnitTypeNameDescriptor]
-		--stringPool: Sorted_Array [String]
-		--typePool: Sorted_Array[TypeDescriptor]	
 	do
-	--useConst := context.useConst
-	--stringPool := context.stringPool
-	--typePool := context.typePool
 		if lower.isInvalid (context, o) then
 			Result := True
 		end -- if

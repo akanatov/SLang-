@@ -65,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.14 (Build <AVK December 19th 2022>)")
+		o.putNL ("SLang compiler v0.99.14 (Build <AVK December 30th 2022>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -467,6 +467,23 @@ feature {None}
 						dumpOutput.put ("*/")
 						dumpOutput.newLine
 					end -- if
+
+					n := parser.ast.units.item(j).stringPool.count
+					if n > 0 then
+						from
+							dumpOutput.put ("/* Strings pool:")
+							i := 1
+						until
+							i > n
+						loop
+							dumpOutput.put (" ")
+							dumpOutput.put (parser.ast.units.item(j).stringPool.item (i))
+							i := i + 1
+						end -- loop
+						dumpOutput.put ("*/")
+						dumpOutput.newLine
+					end -- if
+
 					j := j + 1
 				end -- loop
 			end -- if

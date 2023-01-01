@@ -20,6 +20,7 @@ else
 	action_A_is_void
 end // if
 
+/*
 // 1. Shorter form is suggested. Minus - if several entitiies will have the same type ?T else case will not distingush such cases
 do safe a.b.c.d 
 else case
@@ -142,3 +143,4 @@ while t in (T1, T2, T3) do
 	result is t.foo // Calling a function leads to synchronization!
 	// Type of 'result' is Result
 end
+*/

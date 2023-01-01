@@ -516,6 +516,7 @@ feature {None}
 		entry: String
 		target: String
 		paths: Sorted_Array [String]
+		clusterDsc: ClusterDescriptor
 		clusters: Sorted_Array [ClusterDescriptor] -- clusters with adaptations
 		libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 		wasError: Boolean
@@ -568,7 +569,18 @@ feature {None}
 				if scanner.token = scanner.cluster_token then
 					scanner.nextToken
 					clusters := parseClusters
+				else
+					-- No clusters specified - add the current folder into as default
+					create clusters.make
+					create clusterDsc.init (".", Void, Void, Void)
+					clusters.add (clusterDsc)
 				end -- if
+				if paths /= Void then
+					-- in case of library all paths from which libarry is to be built is to be added as clusters to look for units
+-- Unknown crash of VE !!!
+-- TEMPORARY !!!!					addPathsToClusters (paths, clusters)
+				end -- if
+				
 				if scanner.token = scanner.foreign_token then
 					scanner.nextToken
 					libraries:= parseStrings
@@ -590,7 +602,26 @@ feature {None}
 		end -- if 
 -- trace ("<<parseSystemDescription")
 	end -- parseSystemDescription
-	
+
+	addPathsToClusters (paths: Sorted_Array [String]; clusters: Sorted_Array [ClusterDescriptor]) is
+	require
+		paths_not_void: paths /= Void
+		clusters_not_void: clusters /= Void
+	local
+		clusterDsc: ClusterDescriptor
+		i, n: Integer
+	do
+		from
+			n := paths.count
+		until
+			i = n
+		loop
+			create clusterDsc.init (paths.item (i), Void, Void, Void)
+			clusters.add (clusterDsc)
+			i := i + 1
+		end -- loop
+	end -- addPathsToClusters
+
 	parseTarget: String is
 	local
 		name: String
@@ -10012,7 +10043,7 @@ feature {None}
 		scanner := aScanner
 		create ast.init (scanner)
 		debug
-			print ("%T>>>Anonymous pool +%N")
+			--print ("%T>>>Anonymous pool +%N")
 		end -- debug
 		--scanner.setPool (ast.script.stringPool)
 		scanner.setPool (ast.stringPool)

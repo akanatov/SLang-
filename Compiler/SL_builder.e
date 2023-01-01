@@ -319,7 +319,7 @@ feature {None}
 			clusters := sysDsc.hasUnit (entryPointName)
 			if clusters = Void or else clusters.count = 0 then
 				-- Such type is not found in the search universe !!!
-				o.putNL ("Error: root type `" + entryPointName + "` is not found in the provided universe")
+				o.putNL ("Error: root unit `" + entryPointName + "` is not found in the provided universe")
 			elseif clusters.count > 1 then
 				-- More than one type is found in the search universe !!!
 				o.putNL ("Error: " + clusters.count.out + " versions of the root type `" + entryPointName + "` found in the provided universe. Select only one to be used")

@@ -61,21 +61,21 @@ end*/
 abstract unit () extend Enumeration // That is a tuple type
 	
 	() (pos: Cardinal; value: Any)
-	/// It puts element into tuple at position, put by position
+	/// It puts an element 'value' into the tuple at position 'pos'
 	require
-		pos in 1 .. count /// Valid elelment position
+		pos in 1 .. count /// Valid element position
 	none
 	
 	() (fieldName: String; value: Any)
-	/// It puts element into field called fieldName, put by name
+	/// It puts an element 'value' into a field called fieldName
 	require
 		fieldIndex(fieldName) > 0 /// Tuple must have this field
 	none
 
-	pure () (index: Cardinal): Any
-	/// Get tuple element at at postion index
+	pure () (pos: Cardinal): Any
+	/// Get tuple element at postion 'pos'
 	require
-		index in 1 .. count /// Valid index
+		pos in 1 .. count /// Valid element postion 
 	none
 
 	pure () (fieldName: String): Any
@@ -85,13 +85,13 @@ abstract unit () extend Enumeration // That is a tuple type
 	none
 	
 	pure count: Cardinal
-	/// Return the number of elelments in the tuple
+	/// Return the number of elements in the tuple
 	none
   
 	{ this } pure fieldIndex (fieldName: String): Cardinal
 	none
 	ensure
-		return in 0 .. count /// If no such field then 0 otherwise valid position
+		return in 0 .. count /// If no such field then 0 otherwise a valid position
 	end // fieldIndex
 
 	override pure succ: as this => this(this.ord + 1)
@@ -110,7 +110,7 @@ abstract unit () extend Enumeration // That is a tuple type
 		end // while
 	end // ord
 
-end /// unit tuple
+end /// unit ()
 
 val unit Bit [bitsCount: Cardinal]
 	const : // All Bit constants not longer than B bits in it
@@ -1266,10 +1266,16 @@ final unit ConstantDescriptor extend AttributeDescriptor
 	ConstantDescriptor (:= name; := aType; := value) none
 end // ConstantDescriptor
 
-final unit TypeDescriptior
+final unit TypeDescriptor
 	final name: String
 	final routines : Array [RoutineDescriptor]
 	final attributes : Array [AttributeDescriptor]
-	final parents: Array [TypeDesciptor]
-	TypeDescriptior (:= name; := parents; := routines; := attributes) none
-end // TypeDescriptior
+	final parents: Array [TypeDescriptor]
+	TypeDescriptor (:= name; := parents; := routines; := attributes) none
+end // TypeDescriptor
+
+final unit ArgumentDescriptor
+	final name: String
+	final aType: TypeDescriptor	
+	ArgumentDescriptor (:= name; := aType) none
+end // ArgumentDescriptor
