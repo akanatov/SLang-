@@ -65,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.14 (Build <AVK January 1st 2023>)")
+		o.putNL ("SLang compiler v0.99.14 (Build <AVK January 2nd 2023>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -446,9 +446,9 @@ feature {None}
 					if n > 0 then
 						from
 							if n = 1 then
-								dumpOutput.put ("/* Type `" + parser.ast.units.item(j).fullUnitName + "` depends on 1 type: ")
+								dumpOutput.put ("/* Unit `" + parser.ast.units.item(j).fullUnitName + "` depends on 1 type: ")
 							else
-								dumpOutput.put ("/* Type `" + parser.ast.units.item(j).fullUnitName + "` depends on " + n.out + " types: ")
+								dumpOutput.put ("/* Unit `" + parser.ast.units.item(j).fullUnitName + "` depends on " + n.out + " types: ")
 							end -- if
 							i := 1
 						until
@@ -456,6 +456,8 @@ feature {None}
 						loop
 							--dumpOutput.putArray (<<"(", parser.ast.units.item(j).typePool.item (i).weight, ")">>)
 							dumpOutput.put (parser.ast.units.item(j).typePool.item (i).out)
+							--dumpOutput.put ("/")
+							--dumpOutput.put (parser.ast.units.item(j).typePool.item (i).generating_type)
 							if i < n then
 								dumpOutput.put(", ")
 							end -- if

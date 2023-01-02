@@ -319,18 +319,18 @@ feature {None}
 			clusters := sysDsc.hasUnit (entryPointName)
 			if clusters = Void or else clusters.count = 0 then
 				-- Such type is not found in the search universe !!!
-				o.putNL ("Error: root unit `" + entryPointName + "` is not found in the provided universe")
+				o.putNL ("Error: root unit `" + entryPointName + "` is not found in the provided context")
 			elseif clusters.count > 1 then
 				-- More than one type is found in the search universe !!!
-				o.putNL ("Error: " + clusters.count.out + " versions of the root type `" + entryPointName + "` found in the provided universe. Select only one to be used")
+				o.putNL ("Error: " + clusters.count.out + " versions of the root unit `" + entryPointName + "` found in the provided context. Select only one to be used")
 			else
 not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "`")
 				-- Load it
---				o.putLine ("Loading interface of the root `" + entryPointName + "`")
+--				o.putLine ("Loading root unit `" + entryPointName + "`")
 --				Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
 --				if Result = Void then
 --					-- There was a problem to load type interface 
---					o.putNL ("Error: type `" + unitPrintableName + "` was not loaded correctly")
+--					o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
 --				elseif fs.file_exists(Result.srcFileName) then
 --					-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
 --					if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
@@ -338,7 +338,7 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + s
 --						Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
 --					end -- if
 --				else
---					o.putNL ("Warning: source file for the root type `" + unitPrintableName + "` is no longer in place")
+--					o.putNL ("Warning: source file of the root unit `" + unitPrintableName + "` is no longer in place")
 --				end -- if
 			end -- if	
 		else

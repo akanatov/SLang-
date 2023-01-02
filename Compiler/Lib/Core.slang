@@ -1,5 +1,5 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.13 July 4th 2022
+// Version 0.99.14 Janury 1st 2023
 build Kernel from "." // Kernel library is to be built from all SLang files from the current folder
 end
 
@@ -916,7 +916,7 @@ unit String extend AString
 	do
 		return data (pos)
 	end
-	safe () (pos: Cardinal; value: G) 
+	() (pos: Cardinal; value: Character) 
 		/// Set array element at position pos with value
 	require 
 		1 <= pos and then pos <= count /// Valid element index 
@@ -1036,7 +1036,7 @@ unit Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray
  ///   One dimentional static array .... WIP !!!
 /*
 	a1 is Array [Real, (10,25)]
-	// That is what we like to have ....
+C:\Work\SLang\Compiler\Lib\Core.slang	// That is what we like to have ....
 */
 	override lower: Integer is arrayBounds(1)
 	override upper: Integer is arrayBounds(2)

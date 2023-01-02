@@ -187,7 +187,7 @@ feature {Any}
 		actualFilesCount: Integer
 		i, n: Integer
 	do
-		o.putLine ("Checking cluser at `" + path + "`")
+		o.putLine ("Checking sources actuality at `" + path + "`")
 		from
 			files := safe_file_list (path)
 			markerFiles := readMarkers (path + fs.separator + IRfolderName)
@@ -229,81 +229,86 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end	-- loop
-		if slangFileCount < n then
-			files.resize (1, slangFileCount)
-		end -- if
-		inspect
-			actualFilesCount
-		when 0 then
-		when 1 then
-			o.putLine ("File is actual ...")
+		
+		if slangFileCount = 0 then
+			o.putLine ("All sources are up-to-date")
 		else
-			o.putLine (actualFilesCount.out + " files are actual ...")
-		end -- inspect
-		n := slangFileCount
-		from 
-			if n > 0 then
-				o.putLine (n.out + " files to parse to actualize ...")
+			if slangFileCount < n then
+				files.resize (1, slangFileCount)
 			end -- if
-			i := 1
-		until
-			i > n
-		loop
-			fName := files.item (i).path
-			create scanner.init (fName)
-			if scanner.isReady then
-				if fs.getFileExtension (fName).is_equal (CLangExt) then
-					scanner.setCmode
-				else
-					scanner.setPmode
+			inspect
+				actualFilesCount
+			when 0 then
+			when 1 then
+				o.putLine ("1 source file is actual ...")
+			else
+				o.putLine (actualFilesCount.out + " source files are actual ...")
+			end -- inspect
+			n := slangFileCount
+			from 
+				if n > 0 then
+					o.putLine (n.out + " files to be parsed to actualize ...")
 				end -- if
-				create parser.init (scanner, Void, o)
-				o.putLine ("Parsing file `" + fName + "`")
-				parser.parseSourceFile
-				scanner.close
-				parser.ast.attach_usage_pool_to_units_and_standalone_routines
-				inspect 
-					parser.errorsCount
-				when 0 then
-					if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
-						saveErrCount := parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, ASText, o, Void)
-						parser.ast.cutImplementation
-						saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o, Void)
-						if saveErrCount = 0 then
-							-- Remove previous timestamp files and store the latest parsing timestamp !!!
-							tsfName := fs.getFilePath(fName) + fs.separator + IRfolderName + fs.separator + fs.getFileName(fName)
-							fs.remove_files_with_the_same_name (tsfName)
-							tsfName.append_string ("." + scanner.timeStamp.out)
-							fs.add_file (tsfName, "r")
-							o.putLine ("File `" + fName + "` parsed successfully")
+				i := 1
+			until
+				i > n
+			loop
+				fName := files.item (i).path
+				create scanner.init (fName)
+				if scanner.isReady then
+					if fs.getFileExtension (fName).is_equal (CLangExt) then
+						scanner.setCmode
+					else
+						scanner.setPmode
+					end -- if
+					create parser.init (scanner, Void, o)
+					o.putLine ("Parsing non-actual file `" + fName + "` ...")
+					parser.parseSourceFile
+					scanner.close
+					parser.ast.attach_usage_pool_to_units_and_standalone_routines
+					inspect 
+						parser.errorsCount
+					when 0 then
+						if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
+							saveErrCount := parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, ASText, o, Void)
+							parser.ast.cutImplementation
+							saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o, Void)
+							if saveErrCount = 0 then
+								-- Remove previous timestamp files and store the latest parsing timestamp !!!
+								tsfName := fs.getFilePath(fName) + fs.separator + IRfolderName + fs.separator + fs.getFileName(fName)
+								fs.remove_files_with_the_same_name (tsfName)
+								tsfName.append_string ("." + scanner.timeStamp.out)
+								fs.add_file (tsfName, "r")
+								o.putLine ("File `" + fName + "` parsed successfully")
+							else
+								o.putLine (
+									"File `" + fName + 
+									"` parsed with no errors. But some parsing results were not stored due to " + 
+									saveErrCount.out + " I/O errors!"
+								)
+								skipBuild := True
+							end -- if
 						else
 							o.putLine (
-								"File `" + fName + 
-								"` parsed with no errors. But some parsing results were not stored due to " + 
-								saveErrCount.out + " I/O errors!"
+								"Failed to create folder `" + IRfolderName + 
+								"` to store internal files. Parsing results of file `" + fName + "` are not saved!"
 							)
 							skipBuild := True
 						end -- if
-					else
-						o.putLine (
-							"Failed to create folder `" + IRfolderName + 
-							"` to store internal files. Parsing results of file `" + fName + "` are not saved!"
-						)
+					when 1 then
+						o.putLine ("File `" + fName + "` parsed with 1 error!")
 						skipBuild := True
-					end -- if
-				when 1 then
-					o.putLine ("File `" + fName + "` parsed with 1 error!")
-					skipBuild := True
+					else
+						o.putLine ("File `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
+						skipBuild := True
+					end -- inspect
 				else
-					o.putLine ("File `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
+					o.putLine ("File `" + fName + "` not found or cannot be opened for parsing")
 					skipBuild := True
-				end -- inspect
-			else
-				o.putLine ("File `" + fName + "` not found or cannot be opened for parsing")
-				skipBuild := True
-			end -- if
-			i := i + 1
-		end -- loop
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
 	end -- parseFolder
 		
 	--is_script: Boolean is
@@ -1059,21 +1064,21 @@ feature {Any}
 	do
 		debug
 			if unitDsc.aliasName /= Void then
-				-- o.putLine ("Loading interface of `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
+				-- o.putLine ("Loading unit `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
 			end -- if
-			--o.putNL ("Loading interface of `" + unitPrintableName + "` called `" + unitExternalName + "`")
+			--o.putNL ("Loading unit `" + unitPrintableName + "` called `" + unitExternalName + "`")
 		end	-- debug
 		clusters := sysDsc.hasUnit(unitExternalName)
 		if clusters = Void or else clusters.count = 0 then
 			-- Such unit is not found in the search universe !!!
-			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided universe")
+			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided context")
 			-- Let's parse all sources across all clusters!
 		elseif clusters.count > 1 then
 			-- More than one unit is found in the search universe !!!
-			o.putNL ("Error: " + clusters.count.out + " versions of unit `" + unitPrintableName + "` found in the provided universe. Select only one to be used")
+			o.putNL ("Error: " + clusters.count.out + " versions of unit `" + unitPrintableName + "` found in the provided context. Select only one to be used")
 		else
 			-- Load it
-			o.putLine ("Loading interface of `" + unitPrintableName + "`")
+			o.putLine ("Loading unit `" + unitPrintableName + "`")
 			Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
 			if Result = Void then
 				-- There was a problem to load type interface 
@@ -1083,6 +1088,8 @@ feature {Any}
 				if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
 					-- Ensure source file parsed
 					Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
+				--else
+					o.putLine ("Unit `" + unitPrintableName + "` loaded")
 				end -- if
 			else
 				o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place")
@@ -3193,7 +3200,7 @@ feature {Any}
 					if formalGenerics.item (i).is_equal (other.formalGenerics.item (i)) then
 						i := i + 1
 					else
-						i := n + 1
+  						i := n + 1
 						Result := False
 					end -- if
 				end -- loop
@@ -3463,7 +3470,6 @@ feature {Any}
 	end -- init
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		-- not_implemened_yet
 	end -- isInvalid
@@ -3606,7 +3612,6 @@ feature {Any}
 		type := ut
 	end -- init
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		if type.isInvalid (context, o) then
 			Result := True
@@ -3618,7 +3623,6 @@ feature {Any}
 	end -- generate
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		if type.isNotLoaded (context, o) then
 			Result := True
@@ -3668,7 +3672,6 @@ feature {Any}
 	end -- init
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		-- not_implemened_yet
 	end -- isInvalid
@@ -3678,7 +3681,6 @@ feature {Any}
 	end -- generate
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		-- not_implemened_yet
 	end -- isNotLoaded
@@ -9744,7 +9746,6 @@ feature {Any}
 	end -- generate
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		if actualType.isInvalid (context, o) then
 			Result := True
@@ -9752,7 +9753,6 @@ feature {Any}
 	end -- is_invalid
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		if actualType.isNotLoaded (context, o) then
 			Result := True
@@ -9846,7 +9846,6 @@ feature {Any}
 		Result.append_string (getIdent + "end")
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		-- not_implemened_yet
 	end -- isInvalid
@@ -9856,7 +9855,6 @@ feature {Any}
 	end -- generate
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		-- not_implemened_yet
 	end -- isNotLoaded
@@ -11186,7 +11184,7 @@ feature {Any}
 		if isNotLoaded (context, o) then
 			Result := True
 		end -- if		
-		if not True then
+		if not Result then
 			-- NOT IMPLEMENTED
 		end -- if
 	end -- is_invalid
@@ -11201,29 +11199,59 @@ feature {Any}
 --		toRegister: Boolean
 --		typePool: Sorted_Array[TypeDescriptor]
 --		unitTypeDsc: UnitTypeCommonDescriptor
+		toBreak: Boolean
+		foundInPool: Boolean
+		genericsCount: Integer
 		typesPool: Sorted_Array[TypeDescriptor]
 		unitDclDsc: UnitDeclarationDescriptor
 		cuDsc: CompilationUnitUnit
 		pos: Integer
 		i, n: Integer
 	do
-		-- Find its interface in the context
-		create unitDclDsc.makeForSearch (name)
-		pos	:= context.sysDsc.allUnits.seek (unitDclDsc)
-		if pos > 0 then
-			unitDeclaration := context.sysDsc.allUnits.item (pos)
+		genericsCount := generics.count 
+		if genericsCount > 0 then
+			-- Not supported yet
+			from
+				i := 1
+				n := context.sysDsc.allUnits.count
+			until
+				i > n
+			loop
+				unitDclDsc := context.sysDsc.allUnits.item (i)
+				if name.is_equal (unitDclDsc.name) then
+					toBreak := True
+					if genericsCount = unitDclDsc.formalGenerics.count then 
+						-- Formal generics to be instantiated !!! TBD !!!
+						unitDeclaration := unitDclDsc
+						foundInPool := True
+						i := n
+					end -- if
+				elseif toBreak then
+					i := n -- No need to scan the rest fo the sorted list
+				end -- if
+				i := i + 1
+			end -- loop
 		else
+			-- Find its interface in the context
+			create unitDclDsc.makeForSearch (name)
+			pos	:= context.sysDsc.allUnits.seek (unitDclDsc)
+			if pos > 0 then
+				unitDeclaration := context.sysDsc.allUnits.item (pos)
+				foundInPool := True
+			else
+				context.sysDsc.allUnits.add_after (unitDclDsc, pos)
+			end -- if
+		end -- if
+		if not foundInPool then
 			cuDsc := context.loadUnitInterface (getExternalName, out, o, Current)
 			if cuDsc = Void then
-				context.sysDsc.allUnits.add_after (unitDclDsc, pos)
 				Result := True
 			else
 				unitDeclaration := cuDsc.unitDclDsc
-				context.sysDsc.allUnits.add_after (unitDeclaration, pos)
 				-- Check that all types from its type pool are loaded
 				typesPool := unitDeclaration.typePool
 				if typesPool /= Void then
-					from 
+					from
 						i := 1
 						n := typesPool.count
 					until
@@ -11238,10 +11266,11 @@ feature {Any}
 				if aliasName /= Void then
 					-- Register it !!!
 					unitDeclaration.setAliasName (aliasName)
-					-- TBD: Need to create fake nodes to ensure alias unit nodes will be found !!!
+					-- TBD: Need to create a fake node to ensure alias unit nodes will be found !!!
 				end -- if
 			end -- if			
 		end -- if
+		
 		-- XXX : Sorted_Array [UnitDeclarationDescriptor] 
 
 		
