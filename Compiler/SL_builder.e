@@ -43,13 +43,14 @@ feature {Any}
 	require
 		non_void_file_name: fName /= Void
 	local 
-		cuDsc : CompilationUnitAnonymousRoutine
+		scriptDsc : CompilationUnitAnonymousRoutine
 		sysDsc: SystemDescriptor
 		fileName: String
 		typePool: Sorted_Array[TypeDescriptor]
 		typeDsc: TypeDescriptor
 		aliasTypes: Sorted_Array [AliasedTypeDescriptor]
 		attachedTypeDsc: AttachedTypeDescriptor
+		unitDclDsc: UnitDeclarationDescriptor
 		--unitTypeDsc: UnitTypeNameDescriptor
 		aliasTypeDsc: AliasedTypeDescriptor
 		statements: Array [StatementDescriptor]
@@ -59,33 +60,34 @@ feature {Any}
 		generators: Array [CodeGenerator]
 		i, n: Integer
 		j, m: Integer
+		pos: Integer
 	do
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
-			create cuDsc.make (Void) -- init (Void)
+			create scriptDsc.make (Void)
 			fileName := IRfolderName + "\_" + fs.getFileName(fName) + ScriptSuffix + "." + ASText
-			if cuDsc.AnonymousRoutineIR_Loaded (fileName, o) then
+			if scriptDsc.AnonymousRoutineIR_Loaded (fileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
 				-- 1. How to get system description - where to look for units !!! 
 				create sysDsc.init_script (fs.getFileName(fName), getAnonymousRoutineClusters, Void)
-				cuDsc.attachSystemDescription (sysDsc)
+				scriptDsc.attachSystemDescription (sysDsc)
 				
 				-- 2. Process pools - ensure that all units' interfaces used are loaded
 				-- All use const types are registred in the type pool
 				--from
-				--	useConst  := cuDsc.useConst
+				--	useConst  := scriptDscDsc.useConst
 				--	n := useConst.count
 				--	i := 1
 				--until
 				--	i > n
 				--loop
-				--	if useConst.item(i).isNotLoaded (cuDsc) then
+				--	if useConst.item(i).isNotLoaded (scriptDscDsc) then
 				--		skipCodeGen := True
 				--	end -- if
 				--	i := i + 1
 				--end -- loop
 				from
-					typePool := cuDsc.typePool
+					typePool := scriptDsc.typePool
 					create aliasTypes.make
 					n := typePool.count
 					i := 1
@@ -96,9 +98,9 @@ debug
 --	o.putNL ("Type pool: " + i.out + " - `" + typePool.item(i).out + "` loading!")
 end -- debug
 					typeDsc := typePool.item(i) 
-					if typeDsc.isNotLoaded (cuDsc, o) then
+					if typeDsc.isNotLoaded (scriptDsc, o) then
 						debug
-							--o.putNL ("Load interface of `" + typePool.item(i).out + "` failed!")
+							o.putNL (">>>Load interface of `" + typeDsc.out + "` failed!")
 						end -- debug
 						Result := True
 					elseif typeDsc.aliasName /= Void then
@@ -106,8 +108,7 @@ end -- debug
 						if attachedTypeDsc /= Void then
 							create aliasTypeDsc.init (typeDsc.aliasName, attachedTypeDsc)
 							if not aliasTypes.added (aliasTypeDsc) then
-	-- not_implemented_yet: It should be a validity error !!!
-								o.putNL ("Error: at least two type types has the same alias `" + typeDsc.aliasName + "`")
+								o.putNL ("Error: at least two types has the same alias `" + typeDsc.aliasName + "`")
 								Result := True
 							end -- if
 						end -- if
@@ -116,22 +117,36 @@ end -- debug
 				end -- loop
 
 				if not Result then
-					-- Register all alias types
+					
+					-- Need to check that no name clashes with already loaded untis !!!
+					
+					---- Register all alias types 
 					from
-						typePool := cuDsc.typePool
+						typePool := scriptDsc.typePool
 						n := aliasTypes.count
 						i := 1
 					until
 						i > n					
 					loop
-						typePool.add (aliasTypes.item (i))
+					--	typePool.add (aliasTypes.item (i))
+						aliasTypeDsc := aliasTypes.item (i)
+						create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName)
+						pos	:= sysDsc.allUnits.seek (unitDclDsc)
+						--pos	:= sysDsc.allUnits.seek (aliasTypeDsc)
+						if pos > 0 then -- already registered
+							o.putNL ("Warning: type alias `" + typeDsc.aliasName + "` clashes with other unit name and will be ignored")
+						else -- have it registered
+							--sysDsc.allUnits.add_after (aliasTypeDsc, pos)
+							sysDsc.allUnits.add_after (unitDclDsc, pos)
+						end -- if					
+					
 						i := i + 1
 					end -- loop
-					
+
 					-- If all required types loaded 
 					-- 3. Check validity of cuDsc.statements
 					from
-						statements := cuDsc.statements
+						statements := scriptDsc.statements
 						check
 							non_void_statements: statements /= Void
 						end -- check
@@ -143,7 +158,7 @@ end -- debug
 					loop
 						--validStmtDsc := statements.item(i).getValidStatement (cuDsc, o)
 						--if validStmtDsc = Void then
-						if statements.item(i).isInvalid (cuDsc, o) then
+						if statements.item(i).isInvalid (scriptDsc, o) then
 							debug
 								o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
 							end -- debug
@@ -164,7 +179,7 @@ end -- debug
 					m := generators.count
 					if m > 0 then
 						from						
-							statements := cuDsc.statements
+							statements := scriptDsc.statements
 							n := statements.count
 							--check
 							--	valid_statements_not_void: valid_statements /= Void

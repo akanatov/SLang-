@@ -8900,6 +8900,10 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			scanner.nextToken
 			if scanner.token = scanner.identifier_token then
 				aliasName := scanner.tokenString
+				if rtnName /= Void and then rtnName.is_equal (aliasName) then
+					-- routine name is the same as alias - error!
+					validity_error( "Routine alias name should be different form its name `" + rtnName + "`") 
+				end -- if
 				scanner.nextToken
 				name1 := scanner.tokenString
 				if aliasName.is_equal ("and") and then name1.is_equal ("then") then
@@ -9030,7 +9034,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				scanner.identifier_token, scanner.operator_token, -- scanner.minus_token,
 				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
 				scanner.assignment_token, scanner.left_paranthesis_token
-			>>)
+				>>)
 		end -- if
 	end -- parsePureSafe
 
@@ -9471,6 +9475,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		unitUsageAndConst: UseConstBlock
 		unitName: String
 		typeName: String
+		aliasName: String
 		initDsc: InitDeclarationDescriptor
 		toLeave: Boolean
 		initialErrorsCount: Integer
@@ -9508,7 +9513,12 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				inspect	
 					scanner.token
 				when scanner.type_name_token then -- parse alias name
-					currentUnitDsc.setAliasName (scanner.tokenString)
+					aliasName := scanner.tokenString
+					if unitName.is_equal (aliasName) then
+						-- unit name is the same as alias - error!
+						validity_error( "Unit alias name should be different form its name `" + unitName + "`") 
+					end -- if
+					currentUnitDsc.setAliasName (aliasName)
 					scanner.nextToken
 				else
 					o.putLine ("Parsing unit `" + unitName + "`")

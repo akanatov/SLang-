@@ -1066,7 +1066,7 @@ feature {Any}
 			if unitDsc.aliasName /= Void then
 				-- o.putLine ("Loading unit `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
 			end -- if
-			--o.putNL ("Loading unit `" + unitPrintableName + "` called `" + unitExternalName + "`")
+			o.putNL (">>> Loading unit `" + unitPrintableName + "` called `" + unitExternalName + "`")
 		end	-- debug
 		clusters := sysDsc.hasUnit(unitExternalName)
 		if clusters = Void or else clusters.count = 0 then
@@ -1086,9 +1086,12 @@ feature {Any}
 			elseif fs.file_exists(Result.srcFileName) then
 				-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
 				if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
-					-- Ensure source file parsed
+					-- Source file was modified - parse it to ensure consistency
+					debug
+						--o.putLine ("Parse file `" + Result.srcFileName + "` to ensure actuality of `" + unitPrintableName + "`")
+					end -- debug
 					Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
-				--else
+				else
 					o.putLine ("Unit `" + unitPrintableName + "` loaded")
 				end -- if
 			else
@@ -3478,11 +3481,6 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	do
-		-- nothing to load !!!
-	end -- isNotLoaded
-	
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
 	do
@@ -3499,6 +3497,8 @@ class FormalGenericTypeDescriptor
 -- Identifier ["extend" Type ] ["new" [Signature]]
 inherit
 	FormalGenericDescriptor
+		redefine	
+			isNotLoaded
 	end
 create
 	init
@@ -3587,6 +3587,8 @@ class FormalGenericConstantDescriptor
 -- Identifier ":" TypeDescriptor
 inherit
 	FormalGenericDescriptor
+		redefine	
+			isNotLoaded
 	end
 create
 	init
@@ -3646,6 +3648,8 @@ class FormalGenericRoutineDescriptor
 -- Identifier ":" RoutineType
 inherit
 	FormalGenericDescriptor
+		redefine	
+			isNotLoaded
 	end
 create
 	init
@@ -3682,7 +3686,9 @@ feature {Any}
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
-		-- not_implemened_yet
+		if routineType.isNotLoaded (context, o) then
+			Result := True
+		end -- if
 	end -- isNotLoaded
 
 
@@ -6077,7 +6083,7 @@ feature{Any}
 	do
 		if exprType = Void then
 -- not_implemened_yet !!!!
-			Result := "Type of expression '" + out + "' not yet evaluated!!!"
+			Result := "<< Type of expression `" + out + "` not yet evaluated!!! >>"
 		else
 			Result := exprType.getExternalName
 		end -- if
@@ -6088,6 +6094,9 @@ feature{Any}
 	--	non_void_context: context /= Void
 	--deferred
 	--end -- isInvalid	
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+	end -- isNotLoaded
 	
 	exprType: UnitTypeCommonDescriptor
 	
@@ -9368,6 +9377,10 @@ feature
 		Result := clone (name)
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	deferred
+	end -- isNotLoaded
+
 invariant
 	--not_void_name: name /= Void
 end -- class MemberDescriptionDescriptor
@@ -9398,6 +9411,12 @@ feature {Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- checkValidity
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+		if signature.isNotLoaded (context, o) then
+			Result := True
+		end -- if
+	end -- isNotLoaded
 
 feature {MemberDescriptionDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -9442,6 +9461,12 @@ feature {Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- checkValidity
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+		if type.isNotLoaded (context, o) then
+			Result := True
+		end -- if
+	end -- isNotLoaded
 
 feature {MemberDescriptionDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -9855,8 +9880,21 @@ feature {Any}
 	end -- generate
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		i, n: Integer
 	do
-		-- not_implemened_yet
+		from
+			i := 1
+			n := members.count
+			Result := True
+		until
+			i > n
+		loop
+			if members.item (i).isNotLoaded (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
 	end -- isNotLoaded
 	
 	sameAs (other: like Current): Boolean is
@@ -10281,7 +10319,6 @@ feature {Any}
 	end -- getExternalName
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		-- not_implemened_yet
 	end -- isInvalid
@@ -10291,9 +10328,13 @@ feature {Any}
 	end -- generate
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
-		-- not_implemened_yet
+		if left.isNotLoaded (context, o) then
+			Result := True
+		end -- if
+		if right.isNotLoaded (context, o) then
+			Result := True
+		end -- if
 	end -- isNotLoaded
 	
 invariant
@@ -10359,7 +10400,6 @@ feature {Any}
 	end -- if
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		-- not_implemened_yet
 		-- Values should be of the same common ancestor type ... ?
@@ -10371,8 +10411,19 @@ feature {Any}
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
+		i, n: Integer
 	do
-		-- not_implemened_yet
+		from
+			i := 1
+			n := values.count
+		until
+			i > n
+		loop
+			if values.item (i).isNotLoaded (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
 	end -- isNotLoaded
 
 	sameAs (other: like Current): Boolean is
@@ -10493,7 +10544,7 @@ feature {Any}
 		Result := "as_" + anchorId
 		if anchorSignature /= Void then
 			Result.append_string (anchorSignature.getExternalName)
-		end -- if
+		end -- if		
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 
@@ -10990,13 +11041,13 @@ feature {Any}
 	--name: String
 	out: String is
 	do
-		Result := "" + name
+		Result := clone(name)
 		Result.append_string (": ")
 		Result.append_string (type.out)
 	end -- out
 	getExternalName: String is
 	do
-		Result := "" + name
+		Result := clone (name)
 		Result.append_character ('$')
 		Result.append_string (type.getExternalName)
 		Result.append_string ("_" + buildHash (Result))
@@ -11110,7 +11161,7 @@ deferred class UnitTypeCommonDescriptor
 inherit
 	NamedTypeDescriptor
 		redefine
-			unitDeclaration
+			unitDeclaration, isNotLoaded
 	end
 	--TupleFieldDescriptor
 	--end
@@ -11158,11 +11209,11 @@ feature {Any}
 	local
 		i,n : Integer
 	do
-		Result := "" + name
+		Result := clone (name)
 		n := generics.count
 		if n > 0 then
 			from
-				Result.append_character ('$')
+				Result.append_character ('[')
 				i := 1
 			until
 				i > n
@@ -11210,7 +11261,6 @@ feature {Any}
 	do
 		genericsCount := generics.count 
 		if genericsCount > 0 then
-			-- Not supported yet
 			from
 				i := 1
 				n := context.sysDsc.allUnits.count
@@ -11227,26 +11277,31 @@ feature {Any}
 						i := n
 					end -- if
 				elseif toBreak then
-					i := n -- No need to scan the rest fo the sorted list
+					i := n -- No need to scan the rest of the types sorted list
 				end -- if
 				i := i + 1
 			end -- loop
 		else
-			-- Find its interface in the context
+			-- Non-generic type: Find its interface in the context
 			create unitDclDsc.makeForSearch (name)
 			pos	:= context.sysDsc.allUnits.seek (unitDclDsc)
-			if pos > 0 then
+			if pos > 0 then -- already registered
 				unitDeclaration := context.sysDsc.allUnits.item (pos)
 				foundInPool := True
-			else
+			else -- have it registered
 				context.sysDsc.allUnits.add_after (unitDclDsc, pos)
 			end -- if
 		end -- if
-		if not foundInPool then
+		if not foundInPool then -- let's load it
 			cuDsc := context.loadUnitInterface (getExternalName, out, o, Current)
-			if cuDsc = Void then
+			if cuDsc = Void then -- failed to load
 				Result := True
 			else
+				
+				if genericsCount > 0 then -- What should be instantiated ???? This is an obsolete code
+					cuDsc.instantiate (generics)
+				end -- if
+				
 				unitDeclaration := cuDsc.unitDclDsc
 				-- Check that all types from its type pool are loaded
 				typesPool := unitDeclaration.typePool
@@ -11257,7 +11312,7 @@ feature {Any}
 					until
 						i > n
 					loop
-						if not typesPool.item (i).isNotLoaded (context, o) then
+						if typesPool.item (i).isNotLoaded (context, o) then
 							Result := True
 						end -- if
 						i := i + 1

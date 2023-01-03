@@ -65,7 +65,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.14 (Build <AVK January 2nd 2023>)")
+		o.putNL ("SLang compiler v0.99.14 (Build <AVK January 3rd 2023>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else
@@ -123,7 +123,7 @@ feature {None}
 						Cmode := False
 					else
 						-- Do not parse such file!!!
-						o.putLine ("File `" + fName + "` has extension different from valid SLang source file and ignored")
+						o.putLine ("File `" + fName + "` has extension different from a valid SLang source file and ignored")
 						skipSourceFile := True
 					end -- if
 		
@@ -207,7 +207,7 @@ feature {None}
 				m := systems.count
 				if skipBuild then
 					if n > 0 or else m > 0 then
-						o.putLine ("Due to parsing errors, build(s) dropped")
+						o.putLine ("Due to parsing errors, all build activities dropped")
 					end -- if
 				else
 					if n > 0 then
@@ -299,9 +299,9 @@ feature {None}
 				from
 					j := 1
 					if m = 1 then
-						dumpOutput.put ("/* 1 type compiled successfully: ")
+						dumpOutput.put ("/* 1 unit compiled successfully: ")
 					else
-						dumpOutput.put ("/* " + m.out + " types compiled successfully: ")
+						dumpOutput.put ("/* " + m.out + " units compiled successfully: ")
 					end -- if
 				until
 					j > m
@@ -470,21 +470,21 @@ feature {None}
 						dumpOutput.newLine
 					end -- if
 
-					n := parser.ast.units.item(j).stringPool.count
-					if n > 0 then
-						from
-							dumpOutput.put ("/* Strings pool:")
-							i := 1
-						until
-							i > n
-						loop
-							dumpOutput.put (" ")
-							dumpOutput.put (parser.ast.units.item(j).stringPool.item (i))
-							i := i + 1
-						end -- loop
-						dumpOutput.put ("*/")
-						dumpOutput.newLine
-					end -- if
+					--n := parser.ast.units.item(j).stringPool.count
+					--if n > 0 then
+					--	from
+					--		dumpOutput.put ("/* Strings pool:")
+					--		i := 1
+					--	until
+					--		i > n
+					--	loop
+					--		dumpOutput.put (" ")
+					--		dumpOutput.put (parser.ast.units.item(j).stringPool.item (i))
+					--		i := i + 1
+					--	end -- loop
+					--	dumpOutput.put ("*/")
+					--	dumpOutput.newLine
+					--end -- if
 
 					j := j + 1
 				end -- loop
