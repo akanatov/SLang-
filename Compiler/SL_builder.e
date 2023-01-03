@@ -51,6 +51,7 @@ feature {Any}
 		aliasTypes: Sorted_Array [AliasedTypeDescriptor]
 		attachedTypeDsc: AttachedTypeDescriptor
 		unitDclDsc: UnitDeclarationDescriptor
+		utcDsc : UnitTypeCommonDescriptor
 		--unitTypeDsc: UnitTypeNameDescriptor
 		aliasTypeDsc: AliasedTypeDescriptor
 		statements: Array [StatementDescriptor]
@@ -94,13 +95,13 @@ feature {Any}
 				until
 					i > n					
 				loop
-debug
---	o.putNL ("Type pool: " + i.out + " - `" + typePool.item(i).out + "` loading!")
-end -- debug
 					typeDsc := typePool.item(i) 
+					debug
+						o.putNL (">>> Checking if type `" + typeDsc.out + "` is loaded")
+					end -- debug
 					if typeDsc.isNotLoaded (scriptDsc, o) then
 						debug
-							o.putNL (">>>Load interface of `" + typeDsc.out + "` failed!")
+							o.putNL ("<<< Failed to load `" + typeDsc.out + "`")
 						end -- debug
 						Result := True
 					elseif typeDsc.aliasName /= Void then
@@ -130,7 +131,12 @@ end -- debug
 					loop
 					--	typePool.add (aliasTypes.item (i))
 						aliasTypeDsc := aliasTypes.item (i)
-						create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName)
+						utcDsc ?= aliasTypeDsc.actualType
+						if utcDsc = Void then
+							create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, Void)
+						else
+							create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, sysDsc.getFormalGenerics(utcDsc.generics))
+						end -- if
 						pos	:= sysDsc.allUnits.seek (unitDclDsc)
 						--pos	:= sysDsc.allUnits.seek (aliasTypeDsc)
 						if pos > 0 then -- already registered
@@ -359,7 +365,7 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + s
 		else
 not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "`")
 			-- Entry point is the standaloe procedure name!
-			--sysDsc. findStandAloneRoutine
+			--sysDsc.findStandAloneRoutine (sysDsc.entry)
 		end -- if
 	end -- executable_build_failed
 	

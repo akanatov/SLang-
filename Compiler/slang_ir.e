@@ -72,6 +72,46 @@ feature {Any}
 
 	allUnits: Sorted_Array [UnitDeclarationDescriptor] 
 
+
+	getFormalGenerics(generics: Array[TypeOrExpressionDescriptor]): Array [FormalGenericDescriptor] is
+	require
+		non_void_factual_generics: generics /= Void
+	local
+		i, n: Integer
+		fgDsc: FormalGenericDescriptor
+		typDsc: TypeDescriptor
+		exprDsc: ExpressionDescriptor
+	do
+		from
+			i := 1
+			n := generics.count
+			create Result.make (1, n)
+		until
+			i > n
+		loop
+			typDsc ?= generics.item (i)
+			if typDsc = Void then
+				-- A[expression]
+				--create {?????} fg.init ()
+				-- Not_implemented_yet
+				exprDsc ?= generics.item (i)
+				check
+					it_is_expression: exprDsc /= Void
+				end -- check
+				--if exprDsc.isConst then
+				--else
+					-- Ugly temporary ....
+					create {FormalGenericTypeDescriptor}fgDsc.init (exprDsc.out, Void, Void)				
+				---end -- if				
+			else
+				-- A[Type]
+				create {FormalGenericTypeDescriptor}fgDsc.init ("par#" + i.out, Void, Void)				
+			end -- if
+			Result.put (fgDsc, i)
+			i := i + 1
+		end -- loop
+	end -- getFormalGenerics
+	
 	checkSources(o: Output) is
 	local
 		processedFolders: Sorted_Array [String]
@@ -3333,9 +3373,12 @@ feature {Any}
 
 feature {None}
 	
-	makeForSearch (aName: like name) is
+	makeForSearch (aName: like name; generics: like formalGenerics) is
 	do
 		init (aName, False, False, False, False, False, False)
+		if generics /= Void then
+			formalGenerics := generics
+		end -- if
 	end -- makeForSearch
 	
 	init (aName: like name; is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend: Boolean) is
@@ -3456,7 +3499,7 @@ create
 feature {Any}
 	out: String is
 	do
-		Result := "" + name
+		Result := clone (name)
 	end -- out
 	getExternalName (pos: Integer): String is
 	do
@@ -3507,7 +3550,7 @@ feature {Any}
 	initConstraint: SignatureDescriptor
 	out: String is
 	do
-		Result := "" + name
+		Result := clone(name)
 		if typeConstraint /= Void then
 			Result.append_string(" extend ")
 			Result.append_string (typeConstraint.out)
@@ -6097,6 +6140,8 @@ feature{Any}
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- isNotLoaded
+
+	isConst: Boolean is do end -- isConst
 	
 	exprType: UnitTypeCommonDescriptor
 	
@@ -6221,12 +6266,18 @@ end -- class IsAttachedDescriptor
 class ForcedExpressionDescriptor
 inherit
 	ExpressionDescriptor
+		redefine
+			isConst
 	end
 create
 	init
 feature
 	forcedType: UnitTypeCommonDescriptor
 	realExpr: ExpressionDescriptor
+	isConst: Boolean is
+	do
+		Result := realExpr.isConst
+	end -- isConst
 	init (ft: like forcedType; expr: like realExpr) is
 	require
 		forcedType_not_void: ft /= Void
@@ -6275,6 +6326,8 @@ end -- class ForcedExpressionDescriptor
 class ParenthedExpressionDescriptor
 inherit
 	ExpressionDescriptor
+		redefine
+			isConst
 	end
 create
 	init
@@ -6286,6 +6339,10 @@ feature
 	do
 		expr := e
 	end -- init
+	isConst: Boolean is
+	do
+		Result := expr.isConst
+	end -- isConst
 	out: String is
 	do
 		Result := "(" + expr.out + ")"
@@ -6423,15 +6480,7 @@ feature
 	do
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		
-		
-			
-		-- notValid: Boolean
 	do
-	
-	
-	
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -6440,6 +6489,7 @@ feature
 	end -- generate
 
 end -- class ThisDescriptor
+
 class ReturnDescriptor
 inherit
 	--CallDescriptor
@@ -6447,6 +6497,7 @@ inherit
 	--		sameAs, lessThan
 	ExpressionDescriptor
 	end
+
 feature {Any}
 	out: String is do Result := "return" end
 	sameAs (other: like Current): Boolean is
@@ -6457,15 +6508,7 @@ feature {Any}
 	do
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		
-		
-			
-		-- notValid: Boolean
 	do
-	
-	
-	
 		-- do nothing so far
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -6474,6 +6517,7 @@ feature {Any}
 	end -- generate
 	
 end -- class ReturnDescriptor
+
 deferred class EntityDescriptor
 inherit
 	ExpressionDescriptor
@@ -6535,23 +6579,20 @@ feature {Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		
-		stringPool: Sorted_Array [String]
-			
-		-- notValid: Boolean
-		pos: Integer
+		--stringPool: Sorted_Array [String]
+		--pos: Integer
 	do
-	
-	stringPool := context.stringPool
-	
-		-- do nothing so far
-		pos := stringPool.seek (name)		
-		if pos <= 0 then
-			o.putLine ("%NERROR: Identifier `" + name + "` not found in the string pool%N" + context.getContextAsString)
-		end -- if
-		check
-			identifer_name_not_registered_in_the_pool: pos > 0
-		end -- check
+		--stringPool := context.stringPool
+		--pos := stringPool.seek (name)		
+		--if pos <= 0 then
+		--	o.putLine ("%NERROR: Identifier `" + name + "` not found in the string pool%N" + context.getContextAsString)
+		--end -- if
+		--check
+		--	identifer_name_not_registered_in_the_pool: pos > 0
+		--end -- check
+		
+		--Need to be sure it is visible in the currently active context ... Not_implemented_yet
+		
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -6605,6 +6646,8 @@ end -- class GenericIdentifierDescriptor
 class TupleExpressionDescriptor
 inherit
 	ExpressionDescriptor
+		redefine
+			isConst
 	end
 create
 	init
@@ -6618,6 +6661,27 @@ feature
 			tuple := t
 		end -- if
 	end -- init
+
+	isConst: Boolean is
+	local
+		i, n: Integer
+	do
+		from
+			Result := True
+			i := 1
+			n := tuple.count
+		until
+			i > n
+		loop
+			if tuple.item(i).isConst then
+				i := i + 1
+			else
+				Result := False
+				i := n + 1
+			end -- if
+		end -- loop
+	end -- isConst
+
 	out: String is
 	local
 		i, n: Integer
@@ -6766,8 +6830,8 @@ end -- class RefExpressionDescriptor
 
 deferred class LambdaExpression
 -- (rtn Identifier [Signature])|InlineLambdaExpression
--- InlineLambdaExpression  : [pure|safe] rtn [Parameters] [“:” Type]
--- 	( [RequireBlock] InnerBlockDescriptor | foreign [EnsureBlock] [end] )|(“=>”Expression )
+-- InlineLambdaExpression  : [pure|safe] rtn [Parameters] [":" Type]
+-- 	( [RequireBlock] InnerBlockDescriptor | foreign [EnsureBlock] [end] )|("=>" Expression )
 inherit
 	ExpressionDescriptor
 	end
@@ -6850,6 +6914,8 @@ class InlineLambdaExpression
 -- [pure|safe] rtn [Parameters] [":" Type] ( [RequireBlock] InnerBlockDescriptor | foreign [EnsureBlock] [end] )|("=>" Expression )
 inherit
 	LambdaExpression
+		redefine
+			isConst
 	end
 	UnitRoutineDeclarationDescriptor
 		rename	
@@ -6868,6 +6934,7 @@ feature {Any}
 	do
 		unitRoutineInit (False, False, False, False, "<>", Void, p, t, Void, Void, pre, isF, False,  b, e, post)
 	end -- init
+	isConst: Boolean is True
 	sameAs (other: like Current): Boolean is
 	once
 print ("InlineLambdaExpression.sameAs not_implemented_yet%N")
@@ -7242,6 +7309,8 @@ inherit
 	--		sameAs, lessThan
 	--ConstExpressionDescriptor
 	ExpressionDescriptor
+		redefine
+			isConst
 	end
 	SLangLexis
 		undefine
@@ -7255,6 +7324,8 @@ feature	{Any}
 	value: Any
 
 	type: UnitTypeNameDescriptor
+
+	isConst: Boolean is True
 	
 	negate is
 	local
@@ -7512,10 +7583,16 @@ end -- class CallChainElement
 class QualifiedConstantDescriptor
 inherit
 	ConstExpressionDescriptor
+		rename
+			isConst as hiddenIsConst
+		export
+			{None} hiddenIsConst
 	end
 	CallDescriptor
 		redefine
-			sameAs, lessThan
+			sameAs, lessThan, isConst
+		select
+			isConst
 	end
 create	
 	init
@@ -7523,6 +7600,11 @@ feature
 	exprDsc: ExpressionDescriptor
 	constDsc: ConstantDescriptor
 
+	isConst: Boolean is
+	do
+		Result := exprDsc.isConst
+	end -- isConst
+	
 	init (ceDsc: like exprDsc; cDsc: like constDsc) is
 	require
 		non_void_expr: ceDsc /= Void
@@ -10232,8 +10314,11 @@ end -- class SignatureDescriptor
 deferred class ConstExpressionDescriptor
 inherit
 	ExpressionDescriptor
+		redefine
+			isConst
 	end
 feature
+	isConst: Boolean is True
 end -- class ConstExpressionDescriptor
 
 deferred class RangeTypeDescriptor
@@ -11148,6 +11233,8 @@ inherit
 	ExpressionDescriptor
 		undefine
 			is_equal, infix "<", getExternalName, getFactualGenericExternalName
+		redefine
+			isConst
 	end
 	NamedDescriptor
 		undefine
@@ -11155,6 +11242,7 @@ inherit
 	end
 feature {Any}
 	--name: String
+	isConst: Boolean is True -- it is just a type
 end -- class NamedTypeDescriptor
 
 deferred class UnitTypeCommonDescriptor
@@ -11213,14 +11301,13 @@ feature {Any}
 		n := generics.count
 		if n > 0 then
 			from
-				Result.append_character ('[')
+				Result.append_character ('$')
 				i := 1
 			until
 				i > n
 			loop
 				Result.append_character ('_')
 				Result.append_string (generics.item (i).getFactualGenericExternalName (i))
-				--Result.append_string (i.out)
 				i := i + 1
 			end -- loop
 			Result.append_character ('$')
@@ -11250,7 +11337,7 @@ feature {Any}
 --		toRegister: Boolean
 --		typePool: Sorted_Array[TypeDescriptor]
 --		unitTypeDsc: UnitTypeCommonDescriptor
-		toBreak: Boolean
+		--toBreak: Boolean
 		foundInPool: Boolean
 		genericsCount: Integer
 		typesPool: Sorted_Array[TypeDescriptor]
@@ -11259,31 +11346,31 @@ feature {Any}
 		pos: Integer
 		i, n: Integer
 	do
-		genericsCount := generics.count 
-		if genericsCount > 0 then
-			from
-				i := 1
-				n := context.sysDsc.allUnits.count
-			until
-				i > n
-			loop
-				unitDclDsc := context.sysDsc.allUnits.item (i)
-				if name.is_equal (unitDclDsc.name) then
-					toBreak := True
-					if genericsCount = unitDclDsc.formalGenerics.count then 
-						-- Formal generics to be instantiated !!! TBD !!!
-						unitDeclaration := unitDclDsc
-						foundInPool := True
-						i := n
-					end -- if
-				elseif toBreak then
-					i := n -- No need to scan the rest of the types sorted list
-				end -- if
-				i := i + 1
-			end -- loop
-		else
-			-- Non-generic type: Find its interface in the context
-			create unitDclDsc.makeForSearch (name)
+		--genericsCount := generics.count 
+		--if genericsCount > 0 then
+		--	from
+		--		i := 1
+		--		n := context.sysDsc.allUnits.count
+		--	until
+		--		i > n
+		--	loop
+		--		unitDclDsc := context.sysDsc.allUnits.item (i)
+		--		if name.is_equal (unitDclDsc.name) then
+		--			toBreak := True
+		--			if genericsCount = unitDclDsc.formalGenerics.count then 
+		--				-- Formal generics to be instantiated !!! TBD !!!
+		--				unitDeclaration := unitDclDsc
+		--				foundInPool := True
+		--				i := n
+		--			end -- if
+		--		elseif toBreak then
+		--			i := n -- No need to scan the rest of the types sorted list
+		--		end -- if
+		--		i := i + 1
+		--	end -- loop
+		--else
+		--	-- Non-generic type: Find its interface in the context
+			create unitDclDsc.makeForSearch (name, context.sysDsc.getFormalGenerics(generics))
 			pos	:= context.sysDsc.allUnits.seek (unitDclDsc)
 			if pos > 0 then -- already registered
 				unitDeclaration := context.sysDsc.allUnits.item (pos)
@@ -11291,7 +11378,7 @@ feature {Any}
 			else -- have it registered
 				context.sysDsc.allUnits.add_after (unitDclDsc, pos)
 			end -- if
-		end -- if
+		--end -- if
 		if not foundInPool then -- let's load it
 			cuDsc := context.loadUnitInterface (getExternalName, out, o, Current)
 			if cuDsc = Void then -- failed to load
@@ -11444,17 +11531,8 @@ inherit
 			sameNameAndGenerics as sameAs,
 			lessNameAndGenerics as lessThan
 	end
---	ExpressionDescriptor
---		undefine
---			is_equal, infix "<", getExternalName, getFactualGenericExternalName
---	end
-	--EntityDescriptor
-	--	undefine
-	--		is_equal, infix "<", getExternalName, getFactualGenericExternalName
-	--end 
 create
 	init
-
 end -- class UnitTypeNameDescriptor
 
 
@@ -11731,6 +11809,8 @@ class UnitTypeAlternative
  	AlternativeTagDescriptor
  	end
 	ExpressionDescriptor
+		redefine
+			isConst
 	end
  create
  	init
@@ -11742,6 +11822,7 @@ class UnitTypeAlternative
  	do
  		unitTypeDsc := t
  	end -- init
+	isConst: Boolean is True -- It is just a type 
  	sameAs (other: like Current): Boolean is
  	do
  		Result := unitTypeDsc.sameAs (other.unitTypeDsc)
@@ -11755,16 +11836,9 @@ class UnitTypeAlternative
  		Result := unitTypeDsc.out
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-		
-		
-			
 	do
 		if unitTypeDsc.isInvalid (context, o) then
 			Result := True
-		else
-			-- expr should be either Type or value ....
-			-- not_implemented_yet
 		end -- if
 	end -- is_invalid
 	generate (cg: CodeGenerator) is

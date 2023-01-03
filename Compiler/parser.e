@@ -6986,7 +6986,7 @@ end
 				else
 					utnDsc ?= tDsc
 					if utnDsc = Void then
-						validity_error ("Extendign incorrect type `" + tDsc.out + "`")
+						validity_error ("Generic parameter constraint is of incorrect type `" + tDsc.out + "`")
 						wasError := True
 					else
 						if scanner.token = scanner.new_token then
@@ -7023,11 +7023,12 @@ end
 				if fgTypes /= Void then
 					fgTypes.add (fgtnDsc)
 				end -- if
-				if utnDsc = Void and then signDsc = Void then
-					Result := fgtnDsc
-				else
-					create {FormalGenericTypeDescriptor}Result.init (name, utnDsc, signDsc)
-				end -- if
+				--if utnDsc = Void and then signDsc = Void then
+				--	Result := fgtnDsc
+				--else
+				--	create {FormalGenericTypeDescriptor}Result.init (name, utnDsc, signDsc)
+				--end -- if
+				create {FormalGenericTypeDescriptor}Result.init (name, utnDsc, signDsc)
 			end -- if
 		when scanner.identifier_token then
 			scanner.nextToken
