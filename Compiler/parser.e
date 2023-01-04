@@ -6321,153 +6321,19 @@ end -- debug
 	require
 		name_not_void: name /= Void
 	local
-		toLeave: Boolean
 		generics: Array [TypeOrExpressionDescriptor]
-		td: TypeOrExpressionDescriptor
-		--typeDsc: TypeDescriptor
 		utnDsc: UnitTypeNameDescriptor
-		commaFound: Boolean
 	do
-		debug
-		--	trace (">>> parseUnitTypeName1: " + name)
-		end
 		if scanner.genericsStart then
-			from
-				create generics.make (1, 0)
-				scanner.nextToken
-			until
-				toLeave
-			loop
-				inspect
-					scanner.token
-				when scanner.comma_token then
-					--trace ("%T%TparseUnitTypeName1 " + name + "[   .... COMMA")
-					if commaFound then
-						syntax_error (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token>>)
-						toLeave := True
-					else
-						commaFound := True
-						scanner.nextToken
-					end -- if
-				--when scanner.identifier_token then
-				--	if commaFound or else generics.count = 0 then
-				--		commaFound := False
-				--		td := parseConstExpression (False)
-				--		if td = Void then
-				--			toLeave := True
-				--		else
-				--			debug
-				--			--	trace (">>> parseUnitTypeName1: " + name + "[ident " + td.out)
-				--			end
-				--			generics.force (td, generics.count + 1)
-				--		end -- if
-				--	else
-				--		syntax_error (<<scanner.comma_token>>)
-				--		toLeave := True
-				--	end -- if
-				when scanner.identifier_token, scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
-					-- Expr started with ident or constant!
-					if commaFound or else generics.count = 0 then
-						commaFound := False
-						--td := parseTypeOrConstExprDescriptor
-						td := parseExpression
-						if td = Void then
-							toLeave := True
-						else
-							debug
-							--	trace (">>> parseUnitTypeName1: " + name + "[ident or const " + td.out)
-							end
-							generics.force (td, generics.count + 1)
-						end -- if
-					else
-						syntax_error (<<scanner.comma_token>>)
-						toLeave := True
-					end -- if
-				when scanner.type_name_token then
-					-- Type or ConstExpr
-					if commaFound or else generics.count = 0 then
-						commaFound := False
-						td := parseTypeWithOptionalCallChain
-						if td = Void then
-							toLeave := True
-						else
-							debug
-							--	trace (">>> parseUnitTypeName1: " + name + "[type " + td.out)
-							end
-							generics.force (td, generics.count + 1)
-						end -- if
-					else
-						syntax_error (<<scanner.comma_token>>)
-						toLeave := True
-					end -- if
-				when scanner.as_token, scanner.detach_token, scanner.rtn_token then
-					-- Type!
-					debug
-					--	trace ("%T%TparseUnitTypeName1 " + name + " as|?|rtn")
-					end
-					if commaFound or else generics.count = 0 then
-						commaFound := False
-						-- td := parseTypeOrConstExprDescriptor
-						td := parseTypeDescriptor
-						if td = Void then
-							toLeave := True
-						else
-							debug
-							--	trace (">>> parseUnitTypeName1: " + name + "[type " + td.out)
-							end
-							generics.force (td, generics.count + 1)
-						end -- if
-					else
-						syntax_error (<<scanner.comma_token>>)
-						toLeave := True
-					end -- if
-				else
-					debug
-					--	trace (">>> parseUnitTypeName1: finish !!! " + name)
-					end
-					if scanner.genericsEnd then
-						if commaFound then
-							--trace ("%T%TparseUnitTypeName1 " + name + "[   .... ] END #1")
-							-- identifier, as, ?, rtn, (
-							syntax_error (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token,
-								scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
-							>>)
-						elseif generics.count = 0 then
-							--trace ("%T%TparseUnitTypeName1 " + name + "[   .... ] END #2")
-							syntax_error (<<
-								scanner.identifier_token, scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
-							>>)
-						else
-							--trace ("%T%TparseUnitTypeName1 " + name + "[   .... ] END #2")
-							scanner.nextWithSemicolon (checkSemicolonAfter)
-							create {UnitTypeNameDescriptor} Result.init (name, generics)
-						end -- if
-					else
-						--trace ("%T%TparseUnitTypeName1 " + name + " ???? " + scanner.tokenString)
-						if commaFound then
-							syntax_error (<<scanner.identifier_token, scanner.type_name_token, scanner.as_token, scanner.detach_token, scanner.rtn_token,
-								scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
-							>>)
-						elseif scanner.Cmode then
-							syntax_error (<<scanner.comma_token, scanner.greater_token>>)
-						else
-							syntax_error (<<scanner.comma_token, scanner.right_square_bracket_token>>)
-						end -- if
-					end -- if
-					toLeave := True
-				end -- inspect
-			end -- loop
-			if Result /= Void then
-				Result ?= register_type (Result)
-				check
-					generic_type_registred: Result /= Void
-				end -- check
-			end -- if
+			generics := parseFactualGenerics
+			if generics /= Void then
+				create {UnitTypeNameDescriptor} Result.init (name, generics)
+				Result := register_type (Result)
+			end -- if		
 		else
 			create utnDsc.init (name, Void)
 			Result := register_named_type (utnDsc)
 		end -- inspect
-		--trace ("<<< parseUnitTypeName1")
 	end -- parseTypeStartedWithName1
 
 	parseUnitTypeName1 (name: String; checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeNameDescriptor
@@ -6476,150 +6342,22 @@ end -- debug
 	require
 		name_not_void: name /= Void
 	local
-		toLeave: Boolean
 		generics: Array [TypeOrExpressionDescriptor]
-		td: TypeOrExpressionDescriptor
 		typeDsc: TypeDescriptor
 		utnDsc: UnitTypeNameDescriptor
-		commaFound: Boolean
 	do
 		debug
 		--	trace (">>> parseUnitTypeName1: " + name)
 		end
-		if scanner.genericsStart then
-			from
-				create generics.make (1, 0)
-				scanner.nextToken
-			until
-				toLeave
-			loop
-				inspect
-					scanner.token
-				when scanner.comma_token then
-					debug
-						--trace ("%T%TparseUnitTypeName1 " + name + "[   .... COMMA")
-					end
-					if commaFound then
-						syntax_error (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token>>)
-						toLeave := True
-					else
-						commaFound := True
-						scanner.nextToken
-					end -- if
-				when scanner.identifier_token, scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
-					if commaFound or else generics.count = 0 then
-						commaFound := False
-						td := parseExpression
-						if td = Void then
-							toLeave := True
-						else
-							debug
-							--	trace (">>> parseUnitTypeName1: " + name + "[ident or const " + td.out)
-							end
-							generics.force (td, generics.count + 1)
-						end -- if
-					else
-						syntax_error (<<scanner.comma_token>>)
-						toLeave := True
-					end -- if
-				--when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
-				--	-- Expr started with constant!
-				--	if commaFound or else generics.count = 0 then
-				--		commaFound := False
-				--		--td := parseTypeOrConstExprDescriptor
-				--		td := parseExpression
-				--		if td = Void then
-				--			toLeave := True
-				--		else
-				--			debug
-				--			--	trace (">>> parseUnitTypeName1: " + name + "[const " + td.out)
-				--			end
-				--			generics.force (td, generics.count + 1)
-				--		end -- if
-				--	else
-				--		syntax_error (<<scanner.comma_token>>)
-				--		toLeave := True
-				--	end -- if
-				when scanner.type_name_token then
-					-- Type or ConstExpr
-					if commaFound or else generics.count = 0 then
-						commaFound := False
-						td := parseTypeWithOptionalCallChain
-						if td = Void then
-							toLeave := True
-						else
-							debug
-							--	trace (">>> parseUnitTypeName1: " + name + "[type " + td.out)
-							end
-							generics.force (td, generics.count + 1)
-						end -- if
-					else
-						syntax_error (<<scanner.comma_token>>)
-						toLeave := True
-					end -- if
-				when scanner.as_token, scanner.detach_token, scanner.rtn_token then
-					-- Type!
-					debug
-					--	trace ("%T%TparseUnitTypeName1 " + name + " as|?|rtn")
-					end
-					if commaFound or else generics.count = 0 then
-						commaFound := False
-						-- td := parseTypeOrConstExprDescriptor
-						td := parseTypeDescriptor
-						if td = Void then
-							toLeave := True
-						else
-							debug
-							--	trace (">>> parseUnitTypeName1: " + name + "[type " + td.out)
-							end
-							generics.force (td, generics.count + 1)
-						end -- if
-					else
-						syntax_error (<<scanner.comma_token>>)
-						toLeave := True
-					end -- if
-				else
-					debug
-					--	trace (">>> parseUnitTypeName1: finish !!! " + name)
-					end
-					if scanner.genericsEnd then
-						if commaFound then
-							--trace ("%T%TparseUnitTypeName1 " + name + "[   .... ] END #1")
-							-- identifier, as, ?, rtn, (
-							syntax_error (<<scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.rtn_token,
-								scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
-							>>)
-						elseif generics.count = 0 then
-							--trace ("%T%TparseUnitTypeName1 " + name + "[   .... ] END #2")
-							syntax_error (<<
-								scanner.identifier_token, scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
-							>>)
-						else
-							--trace ("%T%TparseUnitTypeName1 " + name + "[   .... ] END #2")
-							scanner.nextWithSemicolon (checkSemicolonAfter)
-							create {UnitTypeNameDescriptor} Result.init (name, generics)
-						end -- if
-					else
-						--trace ("%T%TparseUnitTypeName1 " + name + " ???? " + scanner.tokenString)
-						if commaFound then
-							syntax_error (<<scanner.identifier_token, scanner.type_name_token, scanner.as_token, scanner.detach_token, scanner.rtn_token,
-								scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
-							>>)
-						elseif scanner.Cmode then
-							syntax_error (<<scanner.comma_token, scanner.greater_token>>)
-						else
-							syntax_error (<<scanner.comma_token, scanner.right_square_bracket_token>>)
-						end -- if
-					end -- if
-					toLeave := True
-				end -- inspect
-			end -- loop
-			if Result /= Void then
+		if scanner.genericsStart then		
+			generics := parseFactualGenerics
+			if generics /= Void then
+				create {UnitTypeNameDescriptor} Result.init (name, generics)
 				Result ?= register_type (Result)
 				check
 					generic_type_registred: Result /= Void
 				end -- check
-			end -- if
+			end -- if			
 		else
 			create utnDsc.init (name, Void)
 			typeDsc := register_named_type (utnDsc)
@@ -6629,7 +6367,7 @@ end -- debug
 					validity_error ("Improper type `" + utnDsc.out + "` is used as a unit type unfolded as `" + typeDsc.out + "`")
 				end -- if
 			end -- if
-		end -- inspect
+		end -- if
 		debug
 			--trace ("<<< parseUnitTypeName1")
 		end
@@ -6689,9 +6427,9 @@ end -- debug
 				end -- if
 			end -- if
 		end -- inspect
-debug
---trace ("%T%T%TparseTypeOrConstExprDescriptor: " + Result.out)
-end -- debug
+		debug
+			--trace ("%T%T%TparseTypeOrConstExprDescriptor: " + Result.out)
+		end -- debug
 	end -- parseTypeWithOptionalCallChain
 
 	parseUnitTypeName: UnitTypeNameDescriptor is
@@ -6707,27 +6445,6 @@ end -- debug
 		end -- if		
 	end -- parseUnitTypeName
 	
-	--parseTypeStartedWithName (checkSemicolonAfter: Boolean): TypeDescriptor is
-	--local
-	--	name: String
-	--	utnDsc: UnitTypeNameDescriptor
-	--do
-	--	if scanner.token = scanner.type_name_token then
-	--		name := scanner.tokenString
-	--		--trace (">>>parseUnitTypeName2: " + name + " ; - " + checkSemicolonAfter.out)
-	--		scanner.nextWithSemicolon (checkSemicolonAfter)
-	--		if checkSemicolonAfter and then scanner.token = scanner.semicolon_token then
-	--			--scanner.nextToken
-	--			create utnDsc.init (name, Void)
-	--			-- Register type in the type pool
-	--			Result := register_named_type (utnDsc)
-	--		else
-	--			Result := parseTypeStartedWithName1 (name, checkSemicolonAfter)
-	--		end -- if
-	--		--trace ("<<<parseUnitTypeName2: " + Result.out)
-	--	end -- if
-	--end -- parseTypeStartedWithName
-	
 	parseUnitTypeName2(checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeNameDescriptor is
 	local
 		name: String
@@ -6736,7 +6453,7 @@ end -- debug
 	do
 		if scanner.token = scanner.type_name_token then
 			name := scanner.tokenString
---trace (">>>parseUnitTypeName2: " + name + " ; - " + checkSemicolonAfter.out)
+			--trace (">>>parseUnitTypeName2: " + name + " ; - " + checkSemicolonAfter.out)
 			scanner.nextWithSemicolon (checkSemicolonAfter)
 			if checkSemicolonAfter and then scanner.token = scanner.semicolon_token then
 				--scanner.nextToken
@@ -6752,25 +6469,10 @@ end -- debug
 			else
 				Result := parseUnitTypeName1 (name, checkSemicolonAfter)
 			end -- if
---trace ("<<<parseUnitTypeName2: " + Result.out)
+			--trace ("<<<parseUnitTypeName2: " + Result.out)
 		end -- if
 	end -- parseUnitTypeName2
 	
-	--parseUnitType (checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeCommonDescriptor is
-	--do
-	--	Result := parseUnitType2 (checkSemicolonAfter)
-	--	--inspect
-	--	--	scanner.token
-	--	--when scanner.type_name_token then
-	--	--	Result := parseUnitType1 (False)
-	--	--when scanner.ref_token, scanner.val_token, scanner.concurrent_token then
-	--	--	Result := parseUnitType1 (False)
-	--	--else
-	--	--	syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)			
-	--	--end -- inspect
-	--end -- parseUnitType
-
-	--parseUnitType2 (checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeCommonDescriptor is
 	parseUnitType(checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeCommonDescriptor is
 	do
 		inspect
@@ -6816,9 +6518,6 @@ end -- debug
 					Result := nmdDsc
 				else
 					utd ?= nmdDsc
-					--check
-					--	valid_type: utd /= Void
-					--end -- check
 					if utd = Void then
 						-- ref|val|concurrent FormalGenericName
 						if isRef then
@@ -6851,9 +6550,9 @@ end -- debug
 		unitTypeDsc: UnitTypeCommonDescriptor
 		aliasedTypeDsc: AliasedTypeDescriptor
 	do
-debug
-	--trace ("Registering type `" + nmdType.name + "` of kind `" + nmdType.generating_type + "`")
-end -- debug
+		debug
+			--trace ("Registering type `" + nmdType.name + "` of kind `" + nmdType.generating_type + "`")
+		end -- debug
 		unitTypeDsc ?= nmdType
 		if unitTypeDsc /= Void and then unitTypeDsc.generics.count = 0 then
 			-- It is just a type name
@@ -6866,44 +6565,44 @@ end -- debug
 				if fgtDsc = Void then
 					if aliasedTypeDsc = Void then
 						Result := ast.typePool.add_it (unitTypeDsc)
-debug
-	--trace ("Type#1 `" + unitTypeDsc.name + "` of kind `" + unitTypeDsc.generating_type + "` registered")
-end -- debug
+						debug
+							--trace ("Type#1 `" + unitTypeDsc.name + "` of kind `" + unitTypeDsc.generating_type + "` registered")
+						end -- debug
 					else
 						Result := aliasedTypeDsc.actualType
-debug
-	--trace ("Type@1 `" + aliasedTypeDsc.actualType.out + "` of kind `" + aliasedTypeDsc.actualType.generating_type + "` registered")
-end -- debug
+						debug
+							--trace ("Type@1 `" + aliasedTypeDsc.actualType.out + "` of kind `" + aliasedTypeDsc.actualType.generating_type + "` registered")
+						end -- debug
 					end -- if
 				elseif aliasedTypeDsc = Void then
 					Result := fgtDsc
-debug
-	--trace ("Type$1 `" + fgtDsc.name + "` of kind `" + fgtDsc.generating_type + "` registered")
-end -- debug
+					debug
+						--trace ("Type$1 `" + fgtDsc.name + "` of kind `" + fgtDsc.generating_type + "` registered")
+					end -- debug
 				else	
 					-- Both fgtDsc and aliasedTypeDsc present
 					validity_error ("Alias type `" + aliasedTypeDsc.aliasName + "` has the same name as formal generic parameter")
 					Result := fgtDsc
-debug
-	--trace ("Type$2 `" + fgtDsc.name + "` of kind `" + fgtDsc.generating_type + "` registered")
-end -- debug
+					debug
+						--trace ("Type$2 `" + fgtDsc.name + "` of kind `" + fgtDsc.generating_type + "` registered")
+					end -- debug
 				end -- if
 			elseif aliasedTypeDsc = Void then
 				Result := ast.typePool.add_it (unitTypeDsc)
-debug
-	--trace ("Type#2 `" + unitTypeDsc.name + "` of kind `" + unitTypeDsc.generating_type + "` registered")
-end -- debug
+				debug
+					--trace ("Type#2 `" + unitTypeDsc.name + "` of kind `" + unitTypeDsc.generating_type + "` registered")
+				end -- debug
 			else
 				Result := aliasedTypeDsc.actualType
-debug
-	--trace ("Type@2 `" + aliasedTypeDsc.actualType.out + "` of kind `" + aliasedTypeDsc.actualType.generating_type + "` registered")
-end -- debug
+				debug
+					--trace ("Type@2 `" + aliasedTypeDsc.actualType.out + "` of kind `" + aliasedTypeDsc.actualType.generating_type + "` registered")
+				end -- debug
 			end -- if
 		else
 			Result := ast.typePool.add_it (nmdType)
-debug
-	--trace ("Type `" + nmdType.name + "` of kind `" + nmdType.generating_type + "` registered")
-end -- debug
+			debug
+				--trace ("Type `" + nmdType.name + "` of kind `" + nmdType.generating_type + "` registered")
+			end -- debug
 		end -- if
 		check
 			type_registered: Result /= Void
@@ -6932,9 +6631,9 @@ end -- debug
 		non_void_type: aType /= Void
 	do
 		Result := ast.typePool.add_it (aType)
-debug
-	--trace ("Registering type: " + Result.out)
-end
+		debug
+			--trace ("Registering type: " + Result.out)
+		end
 	ensure
 		non_void_registered_type: Result /= Void		
 	end -- register_type
@@ -6950,39 +6649,28 @@ end
 		end -- inspect
 	end -- parseUnitTypeWithSemicolonAfter
 	
-	parseFactualGenericType: TypeOrExpressionDescriptor is
+	parseFactualGenericArgument: TypeOrExpressionDescriptor is
 	require
-		valid_token: validToken (<<scanner.type_name_token, scanner.identifier_token, scanner.as_token, scanner.rtn_token>>)
-	local
-		typeDsc: TypeDescriptor
-		--nmdDsc: NamedTypeDescriptor -- UnitTypeNameDescriptor
-		exprDsc: ExpressionDescriptor
-		name: String
+		valid_token: validToken (<<
+			scanner.type_name_token, scanner.identifier_token, scanner.as_token, scanner.rtn_token,
+			scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
+		>>)
 	do
-		name := scanner.tokenString
 		inspect
 			scanner.token
-		when scanner.type_name_token then		
-			typeDsc := parseUnitTypeName
-			if typeDsc /= Void then			
-				Result := typeDsc
-			end -- if		
+		when scanner.type_name_token then	
+			-- parse type or module call chain
+			Result := parseTypeWithOptionalCallChain
 		when scanner.as_token then
 			-- parse anchored type
-			typeDsc := parseAnchorType (False)
-			if typeDsc /= Void then			
-				Result := typeDsc
-			end -- if		
+			Result := parseAnchorType (False)
 		when scanner.rtn_token then
 			-- it can be inline lambda expression or routine type !!! rtn
-not_implemented_yet ("routine instatiation is not yet supported: [ rtn ... ")
-		when scanner.identifier_token then
-			exprDsc := parseExpression
-			if exprDsc /= Void then
-				Result := exprDsc
-			end -- if		
+			Result := parseLambdaExpression (False)
+		when scanner.identifier_token, scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+			Result := parseExpression
 		end -- inspect		
-	end -- parseFactualGenericType
+	end -- parseFactualGenericArgument
 	
 	parseFormalGenericType (fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]): FormalGenericDescriptor is
 	-- Identifier|TypeName ([“extend” UnitTypeName ] [“new” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
@@ -9346,11 +9034,13 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		loop
 			inspect
 				scanner.token
-			when scanner.type_name_token, scanner.identifier_token, scanner.as_token, scanner.rtn_token then
-				-- Type ...
+			when scanner.type_name_token, scanner.identifier_token, scanner.as_token, scanner.rtn_token, 
+				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
+			then
+				-- Type or some constant (routine or value)
 				if commaFound or else Result.count = 0 then
 					commaFound := False
-					typeOrExprDsc := parseFactualGenericType
+					typeOrExprDsc := parseFactualGenericArgument
 					if typeOrExprDsc = Void then
 						toLeave := True
 						Result := Void
@@ -9386,12 +9076,19 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					--trace ("%TparseFactualGenerics: ]")
 				elseif commaFound then
 					Result := Void
-					syntax_error (<<scanner.type_name_token, scanner.identifier_token>>)
+					syntax_error (<<
+						scanner.type_name_token, scanner.identifier_token,
+						scanner.as_token, scanner.rtn_token,
+						scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token						
+					>>)
 				elseif scanner.Cmode then
 					Result := Void
 					syntax_error (<<scanner.comma_token, scanner.greater_token>>)
 				else
 					Result := Void
+					debug
+						--trace ("%TparseFactualGenerics: no ] found")
+					end
 					syntax_error (<<scanner.comma_token, scanner.right_square_bracket_token>>)
 				end -- if
 				toLeave := True
@@ -9409,7 +9106,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		toLeave: Boolean
 		commaFound: Boolean
 	do
--- trace (">>> parseFormalGenerics")
+		-- trace (">>> parseFormalGenerics")
 		from
 			create Result.make (1, 0)
 			scanner.nextToken
@@ -9455,7 +9152,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					end -- if
 					scanner.nextToken
 					toLeave := True				
---trace ("%TparseFormalGenerics: ]")
+					--trace ("%TparseFormalGenerics: ]")
 				elseif commaFound then
 					Result := Void
 					syntax_error (<<scanner.type_name_token>>)
@@ -9469,7 +9166,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				toLeave := True
 			end -- inspect
 		end -- loop
--- trace ("<<<parseFormalGenerics")
+		-- trace ("<<<parseFormalGenerics")
 		if Result /= Void and then fgTypes /= Void and then fgTypes.count > 0 then
 			ast.setFGpool (fgTypes)
 		end -- if

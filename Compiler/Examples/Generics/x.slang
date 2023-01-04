@@ -8,7 +8,7 @@ a3 is A[rtn do end]
 any is Any
 a2 is A[any]*/
 
-/*unit A[G]
+unit A[G]
 end
 
 unit A[c: Any]
@@ -18,5 +18,5 @@ unit A[r: rtn]
 end
 
 unit Any
-end*/
+end
 
