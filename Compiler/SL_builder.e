@@ -69,7 +69,7 @@ feature {Any}
 			fileName := IRfolderName + "\_" + fs.getFileName(fName) + ScriptSuffix + "." + ASText
 			if scriptDsc.AnonymousRoutineIR_Loaded (fileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
-				-- 1. How to get system description - where to look for units !!! 
+				-- 1. Build system description - where to look for units !!! 
 				create sysDsc.init_script (fs.getFileName(fName), getAnonymousRoutineClusters, Void)
 				scriptDsc.attachSystemDescription (sysDsc)
 				
@@ -87,6 +87,7 @@ feature {Any}
 				--	end -- if
 				--	i := i + 1
 				--end -- loop
+				
 				from
 					typePool := scriptDsc.typePool
 					create aliasTypes.make
@@ -97,11 +98,11 @@ feature {Any}
 				loop
 					typeDsc := typePool.item(i) 
 					debug
-						o.putNL (">>> Checking if type `" + typeDsc.out + "` is loaded")
+						--o.putNL (">>> Checking if type `" + typeDsc.out + "` is loaded")
 					end -- debug
 					if typeDsc.isNotLoaded (scriptDsc, o) then
 						debug
-							o.putNL ("<<< Failed to load `" + typeDsc.out + "`")
+							--o.putNL ("<<< Failed to load `" + typeDsc.out + "`")
 						end -- debug
 						Result := True
 					elseif typeDsc.aliasName /= Void then
@@ -132,11 +133,16 @@ feature {Any}
 					--	typePool.add (aliasTypes.item (i))
 						aliasTypeDsc := aliasTypes.item (i)
 						utcDsc ?= aliasTypeDsc.actualType
+
 						if utcDsc = Void then
 							create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, Void)
 						else
 							create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, sysDsc.getFormalGenerics(utcDsc.generics))
 						end -- if
+						
+						-- unitDclDsc should refer to the actualType !!! Alias support is not consistent !!!
+						-- change the type of context types !!! 
+
 						pos	:= sysDsc.allUnits.seek (unitDclDsc)
 						--pos	:= sysDsc.allUnits.seek (aliasTypeDsc)
 						if pos > 0 then -- already registered

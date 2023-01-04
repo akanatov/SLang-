@@ -70,7 +70,8 @@ feature {Any}
 	clusters: Sorted_Array [ClusterDescriptor] -- Clusters to search for usage of units and routines
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 
-	allUnits: Sorted_Array [UnitDeclarationDescriptor] 
+	--allUnits: Sorted_Array [UnitDeclarationDescriptor] 
+	allUnits: Sorted_Array [ContextTypeDescriptor] 
 
 
 	getFormalGenerics(generics: Array[TypeOrExpressionDescriptor]): Array [FormalGenericDescriptor] is
@@ -2729,6 +2730,80 @@ invariant
 	non_void_importConstantsFrom: constants /= Void
 end -- class UseConstBlock
 
+
+class UnitAliasDescriptor
+inherit
+	ContextTypeDescriptor
+	end
+create
+	init
+feature {Any}
+	aliasName: String
+	unitDclDsc: UnitDeclarationDescriptor
+	init (aName: like aliasName; aType: like unitDclDsc) is
+	require
+		non_void_alias_name: aName /= Void
+		non_void_real_type: aType /= Void
+	do
+		aliasName := aName
+		unitDclDsc := aType
+	end -- init
+	sameAs (other: like Current) : Boolean is
+	do
+		Result := aliasName.is_equal (other.aliasName)
+	end -- sameAs
+	lessThan (other: like Current) : Boolean is
+	do
+		Result := aliasName < other.aliasName
+	end -- lessThan
+
+	--getExternalName: String is
+	--do
+	--	Result := unitDclDsc.getExternalName
+	--end -- getExternalName
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+		if unitDclDsc.isInvalid (context, o) then
+			Result := True
+		end -- if
+	end -- is_invalid
+	
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--do
+	--	if unitDclDsc.isNotLoaded (context, o) then
+	--		Result := True
+	--	end -- if
+	--end -- isNotLoaded
+	
+invariant
+	non_void_alias_name: aliasName /= Void
+	non_void_actual_type: unitDclDsc /= Void
+end -- class UnitAliasDescriptor
+
+deferred class ContextTypeDescriptor
+inherit
+	SmartComparable
+	end
+	BuildServer
+		undefine
+			is_equal
+	end
+	NamedDescriptor
+		undefine
+			is_equal
+	end
+	Identation
+		undefine
+			is_equal
+	end
+feature
+end -- class ContextTypeDescriptor
+
 class UnitDeclarationDescriptor
 -- UnitDeclaration: ([final] [ref|val|concurrent])|[abstract]|[extend]
 -- type Identifier [AliasName] [FormalGenerics] [InheritDirective] [EnclosedUseDirective]
@@ -2740,22 +2815,26 @@ class UnitDeclarationDescriptor
 -- [InvariantBlock]
 -- end
 inherit
-	Comparable
+	ContextTypeDescriptor
 		redefine
-			is_equal, out
+			out
 	end
-	BuildServer
-		undefine
-			out, is_equal
-	end
-	NamedDescriptor
-		undefine
-			is_equal
-	end
-	Identation
-		undefine
-			is_equal
-	end
+	--Comparable
+	--	redefine
+	--		is_equal, out
+	--end
+	--BuildServer
+	--	undefine
+	--		out, is_equal
+	--end
+	--NamedDescriptor
+	--	undefine
+	--		is_equal
+	--end
+	--Identation
+	--	undefine
+	--		is_equal
+	--end
 create 
 	init, makeForSearch
 feature {Any}
@@ -2959,7 +3038,7 @@ feature {Any}
 				Result.append_string ("concurrent ")
 			end -- if
 		end -- if
-		Result.append_string ("type " + name)
+		Result.append_string ("unit " + name)
 		if aliasName /= Void then
 			Result.append_string (" alias " + aliasName)
 		end
@@ -3188,13 +3267,16 @@ feature {Any}
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		Result.append_string (getIdent + "end // type " + name + "%N")
+		Result.append_string (getIdent + "end // unit " + name + "%N")
 	end -- out
+	
 	setAliasName (aName: like aliasName) is
 	do
 		aliasName := aName
 	end -- setAliasName
-	infix "<" (other: like Current): Boolean is
+	
+	--infix "<" (other: like Current): Boolean is
+	lessThan (other: like Current): Boolean is
 	local
 		i, n, m: Integer
 	do
@@ -3224,8 +3306,10 @@ feature {Any}
 				end -- if
 			end -- if
 		end -- if
-	end
-	is_equal (other: like Current): Boolean is
+	end -- lessThan
+	
+	--is_equal (other: like Current): Boolean is
+	sameAs (other: like Current): Boolean is
 	local
 		i, n: Integer
 	do
@@ -3249,7 +3333,8 @@ feature {Any}
 				end -- loop
 			end -- if
 		end -- if		
-	end	-- is_equal
+	end	-- sameAs
+	
 	attach_pools (ast:CompilationUnitCompound) is
 	do
 		stringPool := ast.stringPool
@@ -9805,6 +9890,7 @@ feature {Any}
 
 end -- class TypeDescriptor
 
+
 class AliasedTypeDescriptor
 inherit
 	TypeDescriptor
@@ -9913,7 +9999,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := "type"
+		Result := "unit"
 		from
 			i := 1
 			n := members.count
@@ -9931,7 +10017,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := getIdent + "type "
+		Result := getIdent + "unit "
 		from
 			i := 1
 			n := members.count
@@ -11271,7 +11357,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := "" + name
+		Result := clone (name)
 		n := generics.count
 		if n > 0 then
 			from
@@ -11342,6 +11428,7 @@ feature {Any}
 		genericsCount: Integer
 		typesPool: Sorted_Array[TypeDescriptor]
 		unitDclDsc: UnitDeclarationDescriptor
+		aliasDsc: UnitAliasDescriptor
 		cuDsc: CompilationUnitUnit
 		pos: Integer
 		i, n: Integer
@@ -11373,7 +11460,15 @@ feature {Any}
 			create unitDclDsc.makeForSearch (name, context.sysDsc.getFormalGenerics(generics))
 			pos	:= context.sysDsc.allUnits.seek (unitDclDsc)
 			if pos > 0 then -- already registered
-				unitDeclaration := context.sysDsc.allUnits.item (pos)
+				unitDeclaration ?= context.sysDsc.allUnits.item (pos)
+				if unitDeclaration = Void then
+					-- It should be the alias then
+					aliasDsc ?= context.sysDsc.allUnits.item (pos)
+					check
+						non_void_: aliasDsc /= Void
+					end 
+					unitDeclaration := aliasDsc.unitDclDsc
+				end -- if
 				foundInPool := True
 			else -- have it registered
 				context.sysDsc.allUnits.add_after (unitDclDsc, pos)
@@ -11408,54 +11503,13 @@ feature {Any}
 				if aliasName /= Void then
 					-- Register it !!!
 					unitDeclaration.setAliasName (aliasName)
-					-- TBD: Need to create a fake node to ensure alias unit nodes will be found !!!
+					-- Create an alias node to ensure it is registred too
+					create aliasDsc.init (aliasName, unitDeclaration)
+					context.sysDsc.allUnits.add (aliasDsc)
 				end -- if
 			end -- if			
 		end -- if
 		
-		-- XXX : Sorted_Array [UnitDeclarationDescriptor] 
-
-		
-		-- NOT IMPLEMENTED !!!!
---		if interface = Void then
---			if generics.count > 0 then
---				typePool := context.typePool
----- Need to search for the generic type not the instantiation !!! Replace Current with the proper node!!!
---				unitTypeDsc ?= typePool.search (Current)
---				if unitTypeDsc = Void then
---debug
-----	o.putNL ("Unit type `" + out + "` is NOT found in the type pool")
---end -- debug
---				else
---debug
-----	o.putNL ("Unit type `" + out + "` is found in the type pool")
---end -- debug
---					interface := unitTypeDsc.interface
---				end -- if
---				if interface = Void then
---					toRegister := True
---					-- ask system desciption to load type interface 
---					interface := context.loadUnitInterface (getExternalName, out, o, Current)
---					if interface /= Void then
---						interface.instantiate (generics)
---					end -- if
---				end -- if
---			else
---				-- ask system desciption to load type interface 
---				interface := context.loadUnitInterface (getExternalName, out, o, Current)
---			end -- if
---			if interface = Void then
---				Result := True
---			elseif toRegister then				
---				-- Regsiter the 'interface' in the pool
---				typePool.add (interface.unitDclDsc.getUnitTypeDescriptor) -- unitDclDsc: UnitDeclarationDescriptor
---			end -- if
---			if not Result and then aliasName /= Void then
---				-- Register alias if set in the pool
---				-- Not_implemented_yet !!!
---				-- type A alias B end  type C alias B end  to be detected !!!
---			end -- if
---		end -- if
 	end -- isNotLoaded
 
 	--interface: CompilationUnitUnit
