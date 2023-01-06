@@ -6673,7 +6673,9 @@ end -- debug
 	end -- parseFactualGenericArgument
 	
 	parseFormalGenericType (fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]): FormalGenericDescriptor is
-	-- Identifier|TypeName ([“extend” UnitTypeName ] [“new” [Signature]])| [“:” (UnitTypeDescriptor | RoutineType)]
+	-- (TypeName [“extend” UnitTypeName ] [“new” [Signature]])
+	-- |
+	-- (Identifier“:” UnitTypeDescriptor|RoutineType)
 	-- ^
 	require
 		valid_token: validToken (<<scanner.type_name_token, scanner.identifier_token>>)
@@ -6690,7 +6692,7 @@ end -- debug
 		name := scanner.tokenString
 		inspect
 			scanner.token
-		when scanner.type_name_token then
+		when scanner.type_name_token then -- G extent UnitType new signature
 			scanner.nextToken
 			inspect
 				scanner.token
@@ -6746,7 +6748,7 @@ end -- debug
 				--end -- if
 				create {FormalGenericTypeDescriptor}Result.init (name, utnDsc, signDsc)
 			end -- if
-		when scanner.identifier_token then
+		when scanner.identifier_token then -- constantName: Type
 			scanner.nextToken
 			if scanner.token = scanner.colon_token then
 				scanner.nextToken
@@ -6768,7 +6770,8 @@ end -- debug
 					-- Identifier “:” RoutineType
 					rtnTypeDsc := parseRoutineType (False)
 					if rtnTypeDsc /= Void then
-						create {FormalGenericRoutineDescriptor} Result.init (name, rtnTypeDsc)
+						--create {FormalGenericRoutineDescriptor} Result.init (name, rtnTypeDsc)
+						create {FormalGenericConstantDescriptor} Result.init (name, rtnTypeDsc)
 					end -- if
 				when scanner.left_paranthesis_token then
 					-- tuple type expected

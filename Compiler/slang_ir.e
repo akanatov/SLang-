@@ -71,9 +71,10 @@ feature {Any}
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 
 	--allUnits: Sorted_Array [UnitDeclarationDescriptor] 
-	allUnits: Sorted_Array [ContextTypeDescriptor] 
+	allUnits: Sorted_Array [ContextTypeDescriptor]
 
 
+-- No need to do it at all !!!! 
 	getFormalGenerics(generics: Array[TypeOrExpressionDescriptor]): Array [FormalGenericDescriptor] is
 	require
 		non_void_factual_generics: generics /= Void
@@ -114,6 +115,7 @@ feature {Any}
 	end -- getFormalGenerics
 	
 	checkSources(o: Output) is
+	-- Check all sources across all clusters
 	local
 		processedFolders: Sorted_Array [String]
 		folderName: String
@@ -487,6 +489,52 @@ feature {Any}
 		end -- if
 	end -- clusterHasRoutine
 
+	clusterHasGenericUnit (clusterDsc: ClusterDescriptor; unitName: String): Boolean is
+	require
+		non_void_unit_name: unitName /= Void
+		non_void_cluster_dsc: clusterDsc /= Void
+	local	
+		path: String
+		fileName: String
+		i, n: Integer
+		ast_files: Array [Fsys_Dat]
+		genericUnitNamePrefix: String
+	do
+		if not clusterDsc.unitOrRoutineExcluded (unitName) then
+			-- There should be at least one file started with clusterDsc.getNameAfterRenaming (unitName) + "$"
+			path := clone (clusterDsc.name)
+			if path.item (path.count) = '\' or else path.item (path.count) = '/' then
+			else
+				path.append_string (fs.separator)
+			end -- if
+			path.append_string (IRfolderName)
+
+			from
+				ast_files := fs.getAllFilesWithExtension (path, INText)
+				genericUnitNamePrefix := clusterDsc.getNameAfterRenaming (unitName) + "$"
+				i := 1
+				n := ast_files.count
+			until
+				i > n
+			loop
+				fileName := ast_files.item (i).name
+				if fileName.has_substring (genericUnitNamePrefix) and then fileName.has_substring (UnitSuffix) then
+					Result := True
+					i := n + 1
+				else
+					i := i + 1
+				end -- if
+			end -- loop	
+		end -- if
+		debug
+			--if Result then
+			--	print ("%N%T+++Unit `" + unitName + "` found in `" + path + "`%N")
+			--else
+			--	print ("%N%T---Unit `" + unitName + "` not found in `" + path + "`%N")
+			--end -- if
+		end -- debug
+	end -- clusterHasGenericUnit
+	
 	clusterHasUnit (clusterDsc: ClusterDescriptor; unitName: String): Boolean is
 	require
 		non_void_unit_name: unitName /= Void
@@ -505,13 +553,13 @@ feature {Any}
 			fileName.append_string (IRfolderName  + fs.separator + clusterDsc.getNameAfterRenaming (unitName) + UnitSuffix + "." + INText)
 			Result := fs.file_exists (fileName)
 		end -- if
-debug
-	if Result then
-		--print ("Unit `" + unitName + "` found,  file `" + fileName + "` is in place%N")
-	else
-		--print ("Unit `" + unitName + "` not found,  file `" + fileName + "` is missed%N")
-	end -- if
-end -- debug
+		debug
+			--if Result then
+			--	print ("%N---Unit `" + unitName + "` found,  file `" + fileName + "` is in place%N")
+			--else
+			--	print ("%N---Unit `" + unitName + "` not found,  file `" + fileName + "` is missed%N")
+			--end -- if
+		end -- debug
 	end -- clusterHasUnit
 	
 	hasStandAloneRoutine(rtnName: String): Array [ClusterDescriptor] is
@@ -567,6 +615,18 @@ end -- debug
 	end -- hasStandAloneRoutine
 
 	hasUnit(unitName: String): Array [ClusterDescriptor] is
+	do
+		Result := has_unit (unitName, False)
+	end -- hasUnit
+
+	hasGenericUnit(unitName: String): Array [ClusterDescriptor] is
+	do
+		Result := has_unit (unitName, True)
+	end -- hasGenericUnit
+	
+feature {None}	
+
+	has_unit(unitName: String; isGeneric: Boolean): Array [ClusterDescriptor] is
 		-- returns list of clusters where such type exists
 	require
 		non_void_unit_name: unitName /= Void
@@ -577,7 +637,7 @@ end -- debug
 		temp: Array [ClusterDescriptor]
 	do
 		debug
-			--print ("%NLooking for the unit '" + unitName + "'%N")
+			--print ("%N+++Looking for the unit '" + unitName + "'%N")
 		end
 		if clusters = Void or else clusters.count = 0 then
 			debug
@@ -594,9 +654,9 @@ end -- debug
 			loop
 				clusterDsc := clusters.item (i)
 				debug
-					--print ("%TCluster '" + clusterDsc.out + "' search%N")
+					--print ("%T+++Cluster '" + clusterDsc.out + "' search%N")
 				end
-				if clusterHasUnit (clusterDsc, unitName) then
+				if isGeneric and then clusterHasGenericUnit (clusterDsc, unitName) or else clusterHasUnit (clusterDsc, unitName) then
 					Result.force (clusterDsc, Result.count + 1)
 					if clusterDsc.unitOrRoutineSelected(unitName) then
 						selected.force (Result.count, selected.count + 1)
@@ -626,8 +686,8 @@ end -- debug
 				Result := temp
 			end -- inspect
 		end -- if
-	end -- hasUnit
-	
+	end -- has_unit
+
 invariant
 	--name_not_void: name /= Void
 	is_program: entry /= Void implies from_paths = Void
@@ -1075,135 +1135,252 @@ feature {Any}
 
 	sysDsc: SystemDescriptor
 
-	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): CompilationUnitUnit is
+	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): UnitDeclarationDescriptor is
 	require
 		non_void_unit_name: unitExternalName /= Void
 		non_void_path: path /= Void
+		non_void_conext: sysDsc /= Void
 	local	
 		fileName: String
+		cuDsc: CompilationUnitUnit
 	do
 		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
-			fileName := path + ""
+			fileName := clone(path)
 		else
 			fileName := path + fs.separator
 		end -- if
 		fileName.append_string (IRfolderName  + fs.separator + unitExternalName + UnitSuffix + "." + INText)
-		create Result.make (Void)
-		if Result.UnitIR_Loaded (fileName, o) then
-			sysDsc.allUnits.add (Result.unitDclDsc)
-		else
-			Result := Void
+		create cuDsc.make (Void)
+		if cuDsc.UnitIR_Loaded (fileName, o) then
+			Result := cuDsc.unitDclDsc
+			sysDsc.allUnits.add (Result)
 		end -- if
 	end -- loadUnitInterafceFrom	
 
-	loadUnitInterface (unitExternalName, unitPrintableName: String; o: Output; unitDsc:UnitTypeCommonDescriptor): CompilationUnitUnit is
+	loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): UnitDeclarationDescriptor is
 	require
-		non_void_unit_name: unitExternalName /= Void
-		non_void_print_name: unitPrintableName /= Void		
+		non_void_current_unit: unitDsc /= Void
+		--non_generic_unit: unitDsc.generics.count = 0
 	local
 		clusters: Array [ClusterDescriptor]
+		unitExternalName,
+		unitPrintableName: String
+		genericUnits: Array [UnitDeclarationDescriptor] --CompilationUnitUnit]
 	do
+		unitExternalName := unitDsc.name -- unitDsc.getExternalName
+		unitPrintableName:= unitDsc.out -- unitDsc.name  -- Name[factualGenerics]
 		debug
-			if unitDsc.aliasName /= Void then
-				-- o.putLine ("Loading unit `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
-			end -- if
-			o.putNL (">>> Loading unit `" + unitPrintableName + "` called `" + unitExternalName + "`")
+			--if unitDsc.aliasName /= Void then
+			--	o.putLine ("Loading unit `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
+			--end -- if
+			--o.putNL (">>> Looking for unit `" + unitPrintableName + "` to be located in file  `" + unitExternalName + "`")
 		end	-- debug
-		clusters := sysDsc.hasUnit(unitExternalName)
+		o.putLine ("Looking for unit `" + unitPrintableName + "`")
+		if unitDsc.generics.count = 0 then
+			clusters := sysDsc.hasUnit(unitExternalName)
+		else
+			clusters := sysDsc.hasGenericUnit(unitExternalName)
+		end -- if
 		if clusters = Void or else clusters.count = 0 then
 			-- Such unit is not found in the search universe !!!
 			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided context")
-			-- Let's parse all sources across all clusters!
 		elseif clusters.count > 1 then
 			-- More than one unit is found in the search universe !!!
-			o.putNL ("Error: " + clusters.count.out + " versions of unit `" + unitPrintableName + "` found in the provided context. Select only one to be used")
+			o.putNL ("Error: " + clusters.count.out + " versions of unit `" + unitPrintableName + "` found in the provided context. Select the one to be used in your project")
 		else
 			-- Load it
 			o.putLine ("Loading unit `" + unitPrintableName + "`")
-			Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
+			if unitDsc.generics.count = 0 then
+				Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
+			else
+				-- 
+				genericUnits := loadGenericUnitInterafcesFrom (clusters.item (1).name, unitExternalName, o)
+				if genericUnits /= Void then
+					if genericUnits.count = 1 then
+						-- There is no generic unit name overloading 
+						Result := genericUnits.item (1)
+					else
+						-- Several units !!!
+						-- Not_implemented_yet
+						o.putNL ("Error: generic unit name overloading  not supported yet! Unit `" + unitPrintableName + "`")
+					end -- if
+				end -- if
+			end -- if
 			if Result = Void then
 				-- There was a problem to load type interface 
 				o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
-			elseif fs.file_exists(Result.srcFileName) then
-				-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
-				if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
-					-- Source file was modified - parse it to ensure consistency
-					debug
-						--o.putLine ("Parse file `" + Result.srcFileName + "` to ensure actuality of `" + unitPrintableName + "`")
-					end -- debug
-					Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
-				else
-					o.putLine ("Unit `" + unitPrintableName + "` loaded")
-				end -- if
 			else
-				o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place")
+				o.putLine ("Unit `" + unitPrintableName + "` loaded")
+			-- No need to check sources actuality here - it was all already done for the whole project when build was started !!!
+			--elseif fs.file_exists(Result.srcFileName) then
+			--	-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
+			--	if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
+			--		-- Source file was modified - parse it to ensure consistency
+			--		debug
+			--			--o.putLine ("Parse file `" + Result.srcFileName + "` to ensure actuality of `" + unitPrintableName + "`")
+			--		end -- debug
+			--		Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
+			--	else
+			--		o.putLine ("Unit `" + unitPrintableName + "` loaded")
+			--	end -- if
+			--else
+			--	o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place, but unit code is loaded")
 			end -- if
 		end -- if
 	end -- loadUnitInterface
 	
+	loadGenericUnits (unitDsc: UnitTypeCommonDescriptor; o: Output): Array [UnitDeclarationDescriptor] is -- CompilationUnitUnit] is
+	require
+		non_void_current_unit: unitDsc /= Void
+		current_unit_is_generic: unitDsc.generics.count > 0		
+	local 
+		unitExternalName,
+		unitPrintableName,
+		unitName : String
+		clusters: Array [ClusterDescriptor]
+	do 
+		unitName := unitDsc.name
+		unitExternalName := unitDsc.getExternalName
+		unitPrintableName:= unitDsc.out  -- Name[factualGenerics]
+		o.putLine ("Looking for generic unit `" + unitName + "` for type `" + unitPrintableName + "`" )
+		clusters := sysDsc.hasGenericUnit(unitName)
+		--clusters := sysDsc.hasUnit(unitName)
+		if clusters = Void or else clusters.count = 0 then
+			-- Such unit is not found in the search universe !!!
+			o.putNL ("Error: generic unit(s) for type `" + unitPrintableName + "` not found in the provided context")
+		elseif clusters.count > 1 then
+			-- More than one unit is found in the search universe !!!
+			o.putNL ("Error: " + clusters.count.out + " folders have versions of generic unit `" + unitName + "` in the provided context. Select the one to be used in your project")
+		else
+			-- Load it
+			o.putLine ("Loading generic unit(s) `" + unitName + "`")
+			Result := loadGenericUnitInterafcesFrom (clusters.item (1).name, unitName, o)
+			if Result = Void then
+				-- There was a problem to load type interface 
+				o.putNL ("Error: generic unit(s) `" + unitName + "` was not loaded correctly")
+			elseif Result.count = 1 then
+				o.putLine ("Generic unit `" + Result.item(1).fullUnitName + "` was loaded")
+			else
+				o.putLine (Result.count.out + " generic units named `" + unitName + "` were loaded")
+			end -- if
+		end -- if
+	end -- loadGenericUnits	
+	
 feature {None}
 
-	fileParsedForUnit (fName: String; o: Output; unitExternalName: String; unitOfInterest: CompilationUnitUnit): CompilationUnitUnit is 
-	require
-		non_void_file_name: fName /= Void
-		non_void_unit_of_interest: unitOfInterest /= Void
+	loadGenericUnitInterafcesFrom (path: String; unitName: String; o: Output): Array [UnitDeclarationDescriptor] is --CompilationUnitUnit] is
 	local
-		aScanner: SLang_scanner
-		parser: SLang_parser
-		sName: String
-		tsfName: String
-		saveErrCount: Integer
+		ir_path: String
+		ast_files: Array [Fsys_Dat]
+		fileDsc: Fsys_Dat
+		i, n: Integer
+		j: Integer
+		unitIR: CompilationUnitUnit
+		genericUnitNamePrefix: String
+		fileName: String
 	do
-		create aScanner.init (fName)
-		if aScanner.isReady then
-			if fs.getFileExtension (fName).is_equal (CLangExt) then
-				aScanner.setCmode
-			else
-				aScanner.setPmode
-			end -- if
-			create parser.init (aScanner, Void, o)
-			o.putLine ("Parsing changed file `" + fName + "`")
-			parser.parseSourceFile
-			aScanner.close
-			parser.ast.attach_usage_pool_to_units_and_standalone_routines 
-			inspect 
-				parser.errorsCount
-			when 0 then
-				if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
-					sName := fs.getFileName(fName)
-					saveErrCount := parser.ast.saveInternalRepresentation (fName, aScanner.timeStamp, sName, ASText, o, Void)
-					parser.ast.cutImplementation
-					saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, aScanner.timeStamp, sName, INText, o, unitOfInterest)
-					if saveErrCount = 0 then
-						-- Remove previous timestamp files and store the latest parsing timestamp !!!
-						tsfName := fs.getFilePath(fName) + fs.separator + IRfolderName + fs.separator + fs.getFileName(fName)
-						fs.remove_files_with_the_same_name (tsfName)
-						tsfName.append_string ("." + aScanner.timeStamp.out)
-						fs.add_file (tsfName, "r")
-						o.putLine ("Changed file `" + fName + "` parsed successfully")
-						Result := unitOfInterest -- True
-					else
-						o.putLine (
-							"Changed file `" + fName + 
-							"` parsed with no errors. But some parsing results were not stored due to " + 
-							saveErrCount.out + " I/O errors!"
-						)
-					end -- if
-				else
-					o.putLine (
-						"Failed to create folder `" + IRfolderName + 
-						"` to store internal files. Parsing results of changed file `" + fName + "` are not saved!"
-					)
-				end -- if
-			when 1 then
-				o.putLine ("Changed file `" + fName + "` parsed with 1 error!")
-			else
-				o.putLine ("Changed file `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
-			end -- inspect
+		-- files pattern <unitName>$_*$U.int
+		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
+			ir_path := path + IRfolderName
 		else
-			o.putLine ("Changed file `" + fName + "` not found or cannot be opened for parsing")
+			ir_path := path + fs.separator + IRfolderName
 		end -- if
-	end -- fileParsedForUnit
+
+		if fs.folderExists (ir_path) then
+			from
+				ast_files := fs.getAllFilesWithExtension (ir_path, INText)
+				genericUnitNamePrefix := unitName + "$_"
+				i := 1
+				j := 0
+				n := ast_files.count
+				create Result.make (1, n)
+			until
+				i > n
+			loop
+				fileDsc := ast_files.item (i) 
+				fileName := fileDsc.name
+
+				if fileName.has_substring (genericUnitNamePrefix) and then fileName.has_substring (UnitSuffix) then
+					create unitIR.make (Void)
+					if unitIR.UnitIR_Loaded (fileDsc.path, o) then
+						sysDsc.allUnits.add (unitIR.unitDclDsc) -- register generic unit in the project context
+						j := j + 1
+						Result.put (unitIR.unitDclDsc, j)
+					else
+						Result := Void
+						i := n
+					end -- if		
+				end -- if
+				i := i + 1
+			end -- loop
+			if Result /= Void and then j > 0 and then j < n then
+				Result.resize (1, j)
+			end -- if
+		end -- if
+	end -- loadGenericUnitInterafcesFrom
+
+
+	--fileParsedForUnit (fName: String; o: Output; unitExternalName: String; unitOfInterest: CompilationUnitUnit): CompilationUnitUnit is 
+	--require
+	--	non_void_file_name: fName /= Void
+	--	non_void_unit_of_interest: unitOfInterest /= Void
+	--local
+	--	aScanner: SLang_scanner
+	--	parser: SLang_parser
+	--	sName: String
+	--	tsfName: String
+	--	saveErrCount: Integer
+	--do
+	--	create aScanner.init (fName)
+	--	if aScanner.isReady then
+	--		if fs.getFileExtension (fName).is_equal (CLangExt) then
+	--			aScanner.setCmode
+	--		else
+	--			aScanner.setPmode
+	--		end -- if
+	--		create parser.init (aScanner, Void, o)
+	--		o.putLine ("Parsing changed file `" + fName + "`")
+	--		parser.parseSourceFile
+	--		aScanner.close
+	--		parser.ast.attach_usage_pool_to_units_and_standalone_routines 
+	--		inspect 
+	--			parser.errorsCount
+	--		when 0 then
+	--			if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
+	--				sName := fs.getFileName(fName)
+	--				saveErrCount := parser.ast.saveInternalRepresentation (fName, aScanner.timeStamp, sName, ASText, o, Void)
+	--				parser.ast.cutImplementation
+	--				saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, aScanner.timeStamp, sName, INText, o, unitOfInterest)
+	--				if saveErrCount = 0 then
+	--					-- Remove previous timestamp files and store the latest parsing timestamp !!!
+	--					tsfName := fs.getFilePath(fName) + fs.separator + IRfolderName + fs.separator + fs.getFileName(fName)
+	--					fs.remove_files_with_the_same_name (tsfName)
+	--					tsfName.append_string ("." + aScanner.timeStamp.out)
+	--					fs.add_file (tsfName, "r")
+	--					o.putLine ("Changed file `" + fName + "` parsed successfully")
+	--					Result := unitOfInterest -- True
+	--				else
+	--					o.putLine (
+	--						"Changed file `" + fName + 
+	--						"` parsed with no errors. But some parsing results were not stored due to " + 
+	--						saveErrCount.out + " I/O errors!"
+	--					)
+	--				end -- if
+	--			else
+	--				o.putLine (
+	--					"Failed to create folder `" + IRfolderName + 
+	--					"` to store internal files. Parsing results of changed file `" + fName + "` are not saved!"
+	--				)
+	--			end -- if
+	--		when 1 then
+	--			o.putLine ("Changed file `" + fName + "` parsed with 1 error!")
+	--		else
+	--			o.putLine ("Changed file `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
+	--		end -- inspect
+	--	else
+	--		o.putLine ("Changed file `" + fName + "` not found or cannot be opened for parsing")
+	--	end -- if
+	--end -- fileParsedForUnit
 
 	--unitAnyDsc: UnitTypeNameDescriptor is
 	--once
@@ -2875,19 +3052,22 @@ feature {Any}
 	do
 		Result := buildExternalName (aliasName)
 	end -- getAliasExternalName
+
 	getExternalName: String is
 	do
 		Result := buildExternalName (name)
 	end -- getExternalName
+
 	buildExternalName(aName: String): String is
 	local
 		i, n: Integer
 	do
-		Result := ""
-		Result.append_string (aName)
 		n := formalGenerics.count
-		if n > 0 then
+		if n = 0 then
+			Result := aName
+		else
 			from
+				Result := clone (aName)
 				Result.append_character ('$')
 				i := 1
 			until
@@ -2905,7 +3085,8 @@ feature {Any}
 			end -- loop
 			Result.append_character ('$')
 		end -- if
-		Result.append_string ("_" + buildHash (Result))
+		-- No need so far ...
+		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 		
 	parents: Sorted_Array [ParentDescriptor]
@@ -3772,66 +3953,67 @@ invariant
 	type_not_void: type /= Void
 end
 
-class FormalGenericRoutineDescriptor
--- Identifier ":" RoutineType
-inherit
-	FormalGenericDescriptor
-		redefine	
-			isNotLoaded
-	end
-create
-	init
-feature {Any}
-	routineType: RoutineTypeDescriptor
-	out: String is
-	do
-		Result := name + ": " + routineType.out
-	end -- out
-	getExternalName (pos: Integer): String is
-	do
-		Result := routineType.getExternalName
-		--Result := name + "_" + routineType.getExternalName
-		--Result.append_string ("_" + buildHash (Result))
-	end -- getExternalName
-	
-	init (aName: String; rt: RoutineTypeDescriptor) is
-	require
-		name_not_void: aName /= Void
-		type_not_void: rt /= Void
-	do
-		name := aName
-		routineType := rt
-	end -- init
+--class FormalGenericRoutineDescriptor
+---- Identifier ":" RoutineType
+--inherit
+--	FormalGenericDescriptor
+--		redefine	
+--			isNotLoaded
+--	end
+--create
+--	init
+--feature {Any}
+--	routineType: RoutineTypeDescriptor
+--	out: String is
+--	do
+--		Result := name + ": " + routineType.out
+--	end -- out
+--	getExternalName (pos: Integer): String is
+--	do
+--		Result := routineType.getExternalName
+--		--Result := name + "_" + routineType.getExternalName
+--		--Result.append_string ("_" + buildHash (Result))
+--	end -- getExternalName
+--	
+--	init (aName: String; rt: RoutineTypeDescriptor) is
+--	require
+--		name_not_void: aName /= Void
+--		type_not_void: rt /= Void
+--	do
+--		name := aName
+--		routineType := rt
+--	end -- init
+--
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	do
+--		-- not_implemened_yet
+--	end -- isInvalid
+--	generate (cg: CodeGenerator) is
+--	do
+--		-- do nothing so far
+--	end -- generate
+--	
+--	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+--	do
+--		if routineType.isNotLoaded (context, o) then
+--			Result := True
+--		end -- if
+--	end -- isNotLoaded
+--
+--
+--feature {FormalGenericDescriptor}
+--	sameAs (other: like Current): Boolean is
+--	do
+--		Result := routineType.is_equal (other.routineType)
+--	end -- sameAs
+--	lessThan (other: like Current): Boolean is
+--	do
+--		Result := routineType < other.routineType
+--	end -- lessThan
+--invariant
+--	type_not_void: routineType /= Void
+--end -- class FormalGenericRoutineDescriptor
 
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	do
-		-- not_implemened_yet
-	end -- isInvalid
-	generate (cg: CodeGenerator) is
-	do
-		-- do nothing so far
-	end -- generate
-	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	do
-		if routineType.isNotLoaded (context, o) then
-			Result := True
-		end -- if
-	end -- isNotLoaded
-
-
-feature {FormalGenericDescriptor}
-	sameAs (other: like Current): Boolean is
-	do
-		Result := routineType.is_equal (other.routineType)
-	end -- sameAs
-	lessThan (other: like Current): Boolean is
-	do
-		Result := routineType < other.routineType
-	end -- lessThan
-invariant
-	type_not_void: routineType /= Void
-end -- class FormalGenericRoutineDescriptor
 
 class SelectionDescriptor
 --14 Identifier[Signature]
@@ -11420,50 +11602,88 @@ feature {Any}
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
---		toRegister: Boolean
---		typePool: Sorted_Array[TypeDescriptor]
---		unitTypeDsc: UnitTypeCommonDescriptor
-		--toBreak: Boolean
 		foundInPool: Boolean
 		genericsCount: Integer
-		typesPool: Sorted_Array[TypeDescriptor]
 		unitDclDsc: UnitDeclarationDescriptor
 		aliasDsc: UnitAliasDescriptor
-		cuDsc: CompilationUnitUnit
+		genericUnits: Array [UnitDeclarationDescriptor]
+		contextTypes: Sorted_Array [ContextTypeDescriptor]
 		pos: Integer
 		i, n: Integer
+		m: Integer
 	do
-		--genericsCount := generics.count 
-		--if genericsCount > 0 then
-		--	from
-		--		i := 1
-		--		n := context.sysDsc.allUnits.count
-		--	until
-		--		i > n
-		--	loop
-		--		unitDclDsc := context.sysDsc.allUnits.item (i)
-		--		if name.is_equal (unitDclDsc.name) then
-		--			toBreak := True
-		--			if genericsCount = unitDclDsc.formalGenerics.count then 
-		--				-- Formal generics to be instantiated !!! TBD !!!
-		--				unitDeclaration := unitDclDsc
-		--				foundInPool := True
-		--				i := n
-		--			end -- if
-		--		elseif toBreak then
-		--			i := n -- No need to scan the rest of the types sorted list
-		--		end -- if
-		--		i := i + 1
-		--	end -- loop
-		--else
-		--	-- Non-generic type: Find its interface in the context
-			create unitDclDsc.makeForSearch (name, context.sysDsc.getFormalGenerics(generics))
-			pos	:= context.sysDsc.allUnits.seek (unitDclDsc)
+		contextTypes := context.sysDsc.allUnits
+		genericsCount := generics.count 
+		if genericsCount > 0 then
+			-- Current could be: A[Type] or A[constExpr] where constExpr can be some const Object or rtn Object
+			
+			-- Check if such generic units were already loaded or not yet ...
+			-- Think how to speed up the scan !!!
+			from
+				i := 1
+				n := contextTypes.count
+			until
+				i > n
+			loop
+				unitDclDsc ?= contextTypes.item (i)
+				if unitDclDsc /= Void and then unitDclDsc.formalGenerics.count > 0 and then name.is_equal (unitDclDsc.name) then
+					-- get all genericUnits from the context
+					from
+						create genericUnits.make (1, n)
+						m := 1
+						genericUnits.put (unitDclDsc, m)
+						i := i + 1
+					until
+						i > n
+					loop
+						unitDclDsc ?= contextTypes.item (i)
+						if unitDclDsc /= Void and then unitDclDsc.formalGenerics.count > 0 and then name.is_equal (unitDclDsc.name) then
+							m := m + 1
+							genericUnits.put (unitDclDsc, m)
+							i := i + 1
+						else
+							i := n + 1
+						end -- if
+					end -- loop
+					if m < n then
+						genericUnits.resize (1, m)
+					end -- if
+					foundInPool := True
+					debug
+						--o.putNL (">>> Generic units loaded: " + genericUnits.out)
+					end -- debug
+				else
+					i := i + 1
+				end -- if
+			end -- loop
+			if not foundInPool then 
+				-- Load all possible generic units named as the current one
+				genericUnits := context.loadGenericUnits (Current, o)
+			end -- if			
+			check
+				generic_units_loaded: genericUnits /= Void
+			end -- check
+			-- We have loaded all generic units for the current generic type
+			if genericUnits.count = 1 then
+				unitDeclaration := genericUnits.item (1)
+				-- It is not instantiated !!! Shoudl it be?
+				if not foundInPool then 
+					if failedToLoadPoolTypesAndAlias (context, o) then
+						Result := True
+					end -- if
+				end -- if
+			else
+				-- What to do here ????
+				o.putNL ("%TError: not_implemened_yet - generic untis name overloading is not supported yet !!!")
+			end -- if
+		else
+			create unitDclDsc.makeForSearch (name, Void) -- context.sysDsc.getFormalGenerics(generics))
+			pos	:= contextTypes.seek (unitDclDsc)
 			if pos > 0 then -- already registered
-				unitDeclaration ?= context.sysDsc.allUnits.item (pos)
+				unitDeclaration ?= contextTypes.item (pos)
 				if unitDeclaration = Void then
 					-- It should be the alias then
-					aliasDsc ?= context.sysDsc.allUnits.item (pos)
+					aliasDsc ?= contextTypes.item (pos)
 					check
 						non_void_: aliasDsc /= Void
 					end 
@@ -11471,53 +11691,56 @@ feature {Any}
 				end -- if
 				foundInPool := True
 			else -- have it registered
-				context.sysDsc.allUnits.add_after (unitDclDsc, pos)
+				contextTypes.add_after (unitDclDsc, pos)
 			end -- if
-		--end -- if
-		if not foundInPool then -- let's load it
-			cuDsc := context.loadUnitInterface (getExternalName, out, o, Current)
-			if cuDsc = Void then -- failed to load
-				Result := True
-			else
-				
-				if genericsCount > 0 then -- What should be instantiated ???? This is an obsolete code
-					cuDsc.instantiate (generics)
-				end -- if
-				
-				unitDeclaration := cuDsc.unitDclDsc
-				-- Check that all types from its type pool are loaded
-				typesPool := unitDeclaration.typePool
-				if typesPool /= Void then
-					from
-						i := 1
-						n := typesPool.count
-					until
-						i > n
-					loop
-						if typesPool.item (i).isNotLoaded (context, o) then
-							Result := True
-						end -- if
-						i := i + 1
-					end -- loop
-				end -- if
-				if aliasName /= Void then
-					-- Register it !!!
-					unitDeclaration.setAliasName (aliasName)
-					-- Create an alias node to ensure it is registred too
-					create aliasDsc.init (aliasName, unitDeclaration)
-					context.sysDsc.allUnits.add (aliasDsc)
-				end -- if
-			end -- if			
-		end -- if
-		
-	end -- isNotLoaded
 
-	--interface: CompilationUnitUnit
+			if not foundInPool then -- let's load it
+				unitDeclaration := context.loadUnitInterface (Current, o)
+				if unitDeclaration = Void then -- failed to load
+					Result := True
+				else																
+					-- Check that all types from its type pool and alias are loaded
+					if failedToLoadPoolTypesAndAlias (context, o) then
+						Result := True
+					end -- if
+				end -- if			
+			end -- if
+		end -- if
+	end -- isNotLoaded
 	
-	unitDeclaration: UnitDeclarationDescriptor --is
-	--do
-		--Result := interface.unitDclDsc
-	--end -- unitDeclaration
+	failedToLoadPoolTypesAndAlias (context: CompilationUnitCommon; o: Output): Boolean is
+	require
+		non_void_unitDeclaration: unitDeclaration /= Void
+	local
+		typesPool: Sorted_Array[TypeDescriptor]
+		aliasDsc: UnitAliasDescriptor
+		i, n: Integer
+	do
+		typesPool := unitDeclaration.typePool
+		if typesPool /= Void then
+			from
+				i := 1
+				n := typesPool.count
+			until
+				i > n
+			loop
+				if typesPool.item (i).isNotLoaded (context, o) then
+					Result := True
+				end -- if
+				i := i + 1
+			end -- loop
+		end -- if
+		if aliasName /= Void then
+			-- Register it !!!
+			unitDeclaration.setAliasName (aliasName)
+			-- Create an alias node to ensure it is registred too
+			create aliasDsc.init (aliasName, unitDeclaration)
+			context.sysDsc.allUnits.add (aliasDsc)
+		end -- if
+	end -- failedToLoadPoolTypesAndAlias
+
+
+	unitDeclaration: UnitDeclarationDescriptor
 	
 	sameNameAndGenerics (other: like Current): Boolean is
 	local

@@ -6,8 +6,11 @@ inherit
 			add_cluster as createFolder			
 	end
 feature {Any}
+
 	separator: String is "/"
+
 	dot: String is "."
+
 	younger (path1, path2: String): Boolean is
 		-- path1 < path2 in terms of date 
 	require
@@ -28,6 +31,7 @@ feature {Any}
 			retry
 		end -- if
 	end -- younger
+	
 	getAllFilesWithExtension (path, ext: String): Array [Fsys_Dat] is
 	require
 		path_not_void: path /= Void
@@ -76,6 +80,7 @@ feature {Any}
 		wasError := True
 		retry
 	end -- getAllFilesWithExtension
+
 	folderCreated (folderName: String): Boolean is
 	require
 		folderName_not_void: folderName /= Void
@@ -218,7 +223,7 @@ feature {Any}
 			end -- loop
 		end -- if
 	end -- remove_files_with_the_same_name
-	
+		
 	get_files_with_the_same_name (fileName: String): Array [FSys_Dat] is
 	require
 		non_void_fileName: fileName /= Void
@@ -250,7 +255,6 @@ feature {Any}
 	ensure	
 		non_void_list: Result /= Void
 	end -- get_files_with_the_same_name
-
 	
 	loadObjectFromFile (aFile: File): Storable is
 	require
@@ -261,6 +265,7 @@ feature {Any}
 	ensure
 		object_loaded : Result /= Void
 	end -- loadObjectFromFile
+
 	objectStoredToFile (object: Storable; aFile: File): Boolean is
 	require
 		file_not_void: aFile /= Void
@@ -279,6 +284,7 @@ feature {Any}
 	end -- objectStoredToFile
 	
 feature {None}
+
 	silent_remove_file(fileName: String) is
 	require
 		non_void_fileName: fileName /= Void
