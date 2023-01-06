@@ -3896,7 +3896,7 @@ class FormalGenericConstantDescriptor
 inherit
 	FormalGenericDescriptor
 		redefine	
-			isNotLoaded, isType
+			isNotLoaded, isType, isRoutine
 	end
 create
 	init
@@ -3913,6 +3913,10 @@ feature {Any}
 		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 	isType: Boolean is do end
+	isRoutine: Boolean is do
+		Result := type.isRoutine
+	end
+
 	init (aName: String; ut: like type) is
 	require
 		name_not_void: aName /= Void
@@ -7105,6 +7109,8 @@ class LambdaFromRoutineExpression
 -- rtn Identifier [Signature]
 inherit
 	LambdaExpression
+		redefine
+			isRoutine
 	end
 	NamedDescriptor
 		undefine
@@ -7129,6 +7135,10 @@ feature {Any}
 		name := n
 		signature := s
 	end -- init
+	isRoutine: Boolean is 
+	do
+		Result := True
+	end -- isRoutine
 	sameAs (other: like Current): Boolean is
 	do
 		Result := name.is_equal (other.name)
@@ -10001,6 +10011,7 @@ feature
 	isType: Boolean is
 	deferred
 	end -- isType
+	isRoutine: Boolean is do end
 end -- class TypeOrExpressionDescriptor
 
 deferred class TypeDescriptor
@@ -10014,6 +10025,7 @@ inherit
 	end
 feature {Any}
 	isType: Boolean is do Result := True end
+
 
 	getFactualGenericExternalName (pos: Integer): String is
 	do
@@ -10299,6 +10311,8 @@ class RoutineTypeDescriptor
 -- rtn [SignatureDescriptor]
 inherit	
 	AttachedTypeDescriptor
+		redefine
+			isRoutine
 	end
 create	
 	init
@@ -10310,6 +10324,10 @@ feature {Any}
 	do
 		signature := s
 	end -- init
+	isRoutine: Boolean is do
+		Result := True
+	end
+
 	out: String is 
 	do
 		Result := "rtn " + signature.out
@@ -11694,7 +11712,7 @@ feature {Any}
 					debug
 						--o.putNL ("Debug: factual generic `" + generics.item (i).generating_type + "` isType =  " + generics.item (i).isType.out)
 					end
-					minimizeGenericUnits (genericUnits, i, n, not generics.item (i).isType)
+					minimizeGenericUnits (genericUnits, i, n, not generics.item (i).isType, generics.item (i).isRoutine)
 					inspect
 						genericUnits.count
 					when 0 then -- there is no generic unit which fits the current instantiation !!!
@@ -11761,7 +11779,7 @@ feature {Any}
 		end -- if
 	end -- isNotLoaded
 
-	minimizeGenericUnits (genericUnits: Array [UnitDeclarationDescriptor]; index, factualsCount: Integer; isFactualExpr: Boolean) is
+	minimizeGenericUnits (genericUnits: Array [UnitDeclarationDescriptor]; index, factualsCount: Integer; isFactualExpr, isRtn: Boolean) is
 	require
 		valid_index: index > 0
 		index_in_range: index <= factualsCount
@@ -11769,6 +11787,8 @@ feature {Any}
 		i, n: Integer
 		j, m: Integer
 		formalsCount: Integer
+		fgDsc: FormalGenericDescriptor
+		toSkip: Boolean
 	do
 		from
 			i := 1
@@ -11778,12 +11798,21 @@ feature {Any}
 		loop
 			formalsCount := genericUnits.item(i).formalGenerics.count
 			if factualsCount = formalsCount then
-				if genericUnits.item(i).formalGenerics.item (index).isType then
+				fgDsc := genericUnits.item(i).formalGenerics.item (index)
+				if fgDsc.isType then -- and then isFactualExpr or else not isFactualExpr then
 					if isFactualExpr then
 						m := m + 1
 						genericUnits.put(Void, i)
+						toSkip := True
 					end -- if
 				elseif not isFactualExpr then
+					m := m + 1
+					genericUnits.put(Void, i)
+					toSkip := True
+				end -- if
+				if toSkip then
+					toSkip := False
+				elseif isRtn and then not fgDsc.isRoutine  then
 					m := m + 1
 					genericUnits.put(Void, i)
 				end -- if
