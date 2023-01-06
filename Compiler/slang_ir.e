@@ -3801,7 +3801,6 @@ feature {FormalGenericDescriptor}
 	end -- lessThan
 end -- class FormalGenericTypeNameDescriptor
 
-
 class FormalGenericTypeDescriptor
 -- Identifier ["extend" Type ] ["new" [Signature]]
 inherit
@@ -3897,7 +3896,7 @@ class FormalGenericConstantDescriptor
 inherit
 	FormalGenericDescriptor
 		redefine	
-			isNotLoaded
+			isNotLoaded, isType
 	end
 create
 	init
@@ -3913,7 +3912,7 @@ feature {Any}
 		--Result := name + "_" + type.getExternalName
 		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
-	
+	isType: Boolean is do end
 	init (aName: String; ut: like type) is
 	require
 		name_not_void: aName /= Void
@@ -6380,6 +6379,8 @@ inherit
 			is_equal, out
 	end
 feature{Any}
+	isType: Boolean is do end
+
 	getOrder: Integer is
 	-- 0. All other, top priority
 	do
@@ -6793,12 +6794,9 @@ end -- class EntityDescriptor
 
 class IdentifierDescriptor
 inherit
-	--CallDescriptor
-	--ConstExpressionDescriptor
 	ExpressionDescriptor
 		redefine
 			getExternalName
-		--	sameAs, lessThan
 	end
 	ConstObjectDescriptor
 		undefine
@@ -6815,8 +6813,6 @@ inherit
 create
 	init
 feature {Any}	
-	--name: String
-
 	init (s: String) is
 	require
 		identifier_name_not_void: s /= Void
@@ -10002,6 +9998,9 @@ feature
 	ensure
 		non_void_external_name: Result /= Void
 	end -- getFactualGenericExternalName
+	isType: Boolean is
+	deferred
+	end -- isType
 end -- class TypeOrExpressionDescriptor
 
 deferred class TypeDescriptor
@@ -10014,6 +10013,8 @@ inherit
 	TypeOrExpressionDescriptor
 	end
 feature {Any}
+	isType: Boolean is do Result := True end
+
 	getFactualGenericExternalName (pos: Integer): String is
 	do
 		Result := pos.out
@@ -11500,7 +11501,7 @@ inherit
 	end
 	ExpressionDescriptor
 		undefine
-			is_equal, infix "<", getExternalName, getFactualGenericExternalName
+			is_equal, infix "<", getExternalName, getFactualGenericExternalName, isType
 		redefine
 			isConst
 	end
@@ -11535,6 +11536,7 @@ feature {Any}
 			generics := g
 		end -- if
 	end -- setNameAndGenerics
+	
 	out: String is
 	local
 		i, n: Integer
@@ -11561,6 +11563,7 @@ feature {Any}
 		--	Result.append_string (aliasName)
 		--end -- if
 	end -- out
+	
 	getExternalName: String is
 	local
 		i,n : Integer
@@ -11608,6 +11611,9 @@ feature {Any}
 		aliasDsc: UnitAliasDescriptor
 		genericUnits: Array [UnitDeclarationDescriptor]
 		contextTypes: Sorted_Array [ContextTypeDescriptor]
+		--typeOrExpDsc: TypeOrExpressionDescriptor
+		--typeDsc: TypeDescriptor
+		--exprDsc: ExpressionDescriptor
 		pos: Integer
 		i, n: Integer
 		m: Integer
@@ -11650,7 +11656,7 @@ feature {Any}
 					end -- if
 					foundInPool := True
 					debug
-						--o.putNL (">>> Generic units loaded: " + genericUnits.out)
+						--o.putNL (">>> Generic units taken from context: " + genericUnits.out)
 					end -- debug
 				else
 					i := i + 1
@@ -11666,7 +11672,10 @@ feature {Any}
 			-- We have loaded all generic units for the current generic type
 			if genericUnits.count = 1 then
 				unitDeclaration := genericUnits.item (1)
-				-- It is not instantiated !!! Shoudl it be?
+				debug
+					o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+				end -- debug
+				-- It is not instantiated !!! Should it be?
 				if not foundInPool then 
 					if failedToLoadPoolTypesAndAlias (context, o) then
 						Result := True
@@ -11674,7 +11683,51 @@ feature {Any}
 				end -- if
 			else
 				-- What to do here ????
-				o.putNL ("%TError: not_implemened_yet - generic untis name overloading is not supported yet !!!")
+				-- if current type has all factual generic parameters as Types then
+				-- there should be only one generic unit declaration with all formal generic type parameters
+				from
+					i := 1
+					n := generics.count 
+				until
+					i > n
+				loop
+					debug
+						--o.putNL ("Debug: factual generic `" + generics.item (i).generating_type + "` isType =  " + generics.item (i).isType.out)
+					end
+					minimizeGenericUnits (genericUnits, i, n, not generics.item (i).isType)
+					inspect
+						genericUnits.count
+					when 0 then -- there is no generic unit which fits the current instantiation !!!
+						i := n + 1
+						o.putNL ("Error: there is no generic unit in the provided context which fits the instantiation `" + out + "`")
+						Result := True
+					when 1 then
+						unitDeclaration := genericUnits.item (1)
+						debug
+							o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+						end -- debug
+						if not foundInPool then 
+							if failedToLoadPoolTypesAndAlias (context, o) then
+								Result := True
+							end -- if
+						end -- if
+						i := n + 1
+					else
+						i := i + 1
+					end -- if
+				end -- loop
+				if genericUnits.count > 1 then
+					o.putNL ("Error: not_implemened_yet - more than one generic unit fits instantiation `" + out + "`")
+					from
+						i := 1
+						n := genericUnits.count 
+					until
+						i > n
+					loop
+						o.putNL ("%TUnit `" + genericUnits.item(i).fullUnitName + "`")
+						i := i + 1
+					end -- loop
+				end -- if
 			end -- if
 		else
 			create unitDclDsc.makeForSearch (name, Void) -- context.sysDsc.getFormalGenerics(generics))
@@ -11707,6 +11760,65 @@ feature {Any}
 			end -- if
 		end -- if
 	end -- isNotLoaded
+
+	minimizeGenericUnits (genericUnits: Array [UnitDeclarationDescriptor]; index, factualsCount: Integer; isFactualExpr: Boolean) is
+	require
+		valid_index: index > 0
+		index_in_range: index <= factualsCount
+	local
+		i, n: Integer
+		j, m: Integer
+		formalsCount: Integer
+	do
+		from
+			i := 1
+			n := genericUnits.count
+		until	
+			i > n
+		loop
+			formalsCount := genericUnits.item(i).formalGenerics.count
+			if factualsCount = formalsCount then
+				if genericUnits.item(i).formalGenerics.item (index).isType then
+					if isFactualExpr then
+						m := m + 1
+						genericUnits.put(Void, i)
+					end -- if
+				elseif not isFactualExpr then
+					m := m + 1
+					genericUnits.put(Void, i)
+				end -- if
+			else -- # of factual generic arguments is not eual to # of formal generic parameters
+				m := m + 1
+				genericUnits.put(Void, i)
+			end -- if
+			i := i + 1
+		end -- loop
+		if m = 0 then
+			-- nothing removed
+		elseif m = n then
+			-- all removed
+			genericUnits.resize(1, 0)
+		else
+			m := n - m -- now m is the number of elements left
+			-- pack Void and resize
+			from
+				i := 1
+				j := 0
+				n := genericUnits.count
+			until
+				i > n or else j > m
+			loop
+				if genericUnits.item(i) /= Void then
+					j := j + 1
+					if j < i then
+						genericUnits.put(genericUnits.item(i), j)
+					end -- if
+				end -- if
+				i := i + 1
+			end -- loop
+			genericUnits.resize(1, m)
+		end -- inspect		
+	end -- minimizeGenericUnits
 	
 	failedToLoadPoolTypesAndAlias (context: CompilationUnitCommon; o: Output): Boolean is
 	require
