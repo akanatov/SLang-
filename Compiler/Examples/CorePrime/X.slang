@@ -15,7 +15,7 @@ val unit Bit [bitsCount: Cardinal]
 	const : // All Bit constants not longer than B bits in it
 	    //{Bit.0b0 | Bit.0b1}bitsCount
 	end
-	{} data: val Array [0 .. bitsCount-1, Bit] // Bit field ...
+	{} data: val Array [Bit, 0 .. bitsCount-1] // Bit field ...
 	pure getLowBits (bitsToGet: Cardinal) : Bit [bitsCount]
 	do
 		result is new Bit [bitsToGet] // Hmmm .... Dynamic bit field allocation

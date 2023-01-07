@@ -2565,6 +2565,53 @@ end
 		end -- inspect
 	end -- parseUnaryExpression
 
+	parseExpressionOrTuple (checkForCommentAfter, checkSemicolonAfter, parseConstExpr: Boolean): ExpressionDescriptor is
+	require
+		valid_token: scanner.token = scanner.left_paranthesis_token
+	local	
+		exprDsc: ExpressionDescriptor
+	do
+		scanner.nextToken
+		exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
+		if exprDsc /= Void then
+			debug
+				--trace ("#2: (Expression " + exprDsc.out)
+			end -- debug
+			inspect
+				scanner.token
+			when scanner.right_paranthesis_token then				
+				scanner.nextWithSemicolon (checkSemicolonAfter)
+				inspect
+					scanner.token
+				when scanner.dot_token then
+					create {ExpressionCallDescriptor} Result.init (exprDsc, parseCallChain)
+				--when scanner.semicolon_token then
+				--	--scanner.nextToken Keep semicolon till the caller to remove it
+				--	create {ParenthedExpressionDescriptor} Result.init (exprDsc)
+				else
+					create {ParenthedExpressionDescriptor} Result.init (exprDsc)
+				end -- if
+				debug
+					--trace ("#4: (Expr) " + Result.out)
+				end -- debug
+			when scanner.comma_token then
+				-- It is a turple expression !!!!
+				Result := parseTupleExpression (exprDsc)
+				if Result /= Void then
+					if scanner.token = scanner.dot_token then
+						create {ExpressionCallDescriptor} Result.init (Result, parseCallChain)
+					end -- if
+				end -- if
+			else
+				debug
+					--trace ("#3parseExpression1")
+				end -- debug
+				syntax_error (<<scanner.right_paranthesis_token>>)
+			end -- inspect
+		end -- if			
+	end -- parseExpressionOrTuple
+
+
 	parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, returnType, parseConstExpr: Boolean): ExpressionDescriptor is
 	--50 Expression:
 	-- 		IfExpression | MemberCall | NewExpression | Expression Operator Expression | Operator Expression | Constant | TypeOfExpression |
@@ -2622,44 +2669,10 @@ end
 			end -- debug
 		when scanner.left_paranthesis_token then
 			-- “(”Expression“)” or tuple “(”Expression {", "Expression}“)” {CallChain}
-			scanner.nextToken
-			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
-			if exprDsc /= Void then
-				debug
-					--trace ("#2: (Expression " + exprDsc.out)
-				end -- debug
-				inspect
-					scanner.token
-				when scanner.right_paranthesis_token then				
-					scanner.nextWithSemicolon (checkSemicolonAfter)
-					inspect
-						scanner.token
-					when scanner.dot_token then
-						create {ExpressionCallDescriptor} Result.init (exprDsc, parseCallChain)
-					--when scanner.semicolon_token then
-					--	--scanner.nextToken Keep semicolon till the caller to remove it
-					--	create {ParenthedExpressionDescriptor} Result.init (exprDsc)
-					else
-						create {ParenthedExpressionDescriptor} Result.init (exprDsc)
-					end -- if
-					debug
-						--trace ("#4: (Expr) " + Result.out)
-					end -- debug
-				when scanner.comma_token then
-					-- It is a turple expression !!!!
-					Result := parseTupleExpression (exprDsc)
-					if Result /= Void then
-						if scanner.token = scanner.dot_token then
-							create {ExpressionCallDescriptor} Result.init (Result, parseCallChain)
-						end -- if
-					end -- if
-				else
-					debug
-						--trace ("#3parseExpression1")
-					end -- debug
-					syntax_error (<<scanner.right_paranthesis_token>>)
-				end -- inspect
-			end -- if			
+			
+			-- XXX
+			Result := parseExpressionOrTuple (checkForCommentAfter, checkSemicolonAfter, parseConstExpr)
+			
 		when scanner.ref_token then
 			-- RefExpression
 			scanner.nextToken
@@ -6653,7 +6666,8 @@ end -- debug
 	require
 		valid_token: validToken (<<
 			scanner.type_name_token, scanner.identifier_token, scanner.as_token, scanner.rtn_token,
-			scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
+			scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
+			scanner.left_paranthesis_token
 		>>)
 	do
 		inspect
@@ -6669,6 +6683,12 @@ end -- debug
 			Result := parseLambdaExpression (False)
 		when scanner.identifier_token, scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
 			Result := parseExpression
+		when scanner.left_paranthesis_token then
+			-- A[(expr)....]  or A[(expr1, expr2, ...)...]
+			-- A[ (T1, T2)...]
+			-- ZZZ
+			Result := parseExpressionOrTuple (False, False, False)
+			
 		end -- inspect		
 	end -- parseFactualGenericArgument
 	
@@ -9038,7 +9058,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			inspect
 				scanner.token
 			when scanner.type_name_token, scanner.identifier_token, scanner.as_token, scanner.rtn_token, 
-				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
+				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
+				scanner.left_paranthesis_token
 			then
 				-- Type or some constant (routine or value)
 				if commaFound or else Result.count = 0 then
@@ -9082,7 +9103,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					syntax_error (<<
 						scanner.type_name_token, scanner.identifier_token,
 						scanner.as_token, scanner.rtn_token,
-						scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token						
+						scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token,
+						scanner.left_paranthesis_token
 					>>)
 				elseif scanner.Cmode then
 					Result := Void
