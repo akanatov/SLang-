@@ -62,6 +62,11 @@ feature {Any}
 		i, n: Integer
 		j, m: Integer
 		pos: Integer
+		
+		-- for debugging
+		cntTypDsc: ContextTypeDescriptor
+		unitAliasDsc: UnitAliasDescriptor
+		
 	do
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
@@ -156,6 +161,29 @@ feature {Any}
 					end -- loop
 
 					o.putNL (sysDsc.allUnits.count.out + " units loaded")
+					debug
+						from
+							n := sysDsc.allUnits.count
+							i := 1
+						until
+							i > n					
+						loop
+							cntTypDsc := sysDsc.allUnits.item (i)
+							unitDclDsc ?= cntTypDsc
+							if unitDclDsc /= Void then
+								if unitDclDsc.aliasName = Void then
+									o.putNL ("#" + i.out + " Unit: " + unitDclDsc.fullUnitName)
+								else
+									o.putNL ("#" + i.out + " Unit: " + unitDclDsc.fullUnitName + " alias " + unitDclDsc.aliasName)
+								end -- if
+							end -- if
+							unitAliasDsc ?= cntTypDsc
+							if unitAliasDsc /= Void then
+								o.putNL ("#" + i.out + " Alias: " + unitAliasDsc.aliasName + " unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+							end -- if
+							i := i + 1
+						end -- loop						
+					end -- debug
 
 					-- If all required types loaded 
 					-- 3. Check validity of cuDsc.statements
@@ -436,9 +464,9 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 	do
 		ir_path := path + fs.separator + IRfolderName
 		if fs.folderExists (ir_path) then
-debug
---	trace ("Load units from `" + ir_path + "`")
-end -- debug
+			debug
+			--	trace ("Load units from `" + ir_path + "`")
+			end -- debug
 			from
 				ast_files := fs.getAllFilesWithExtension (ir_path, ASText)
 				i := 1
@@ -450,11 +478,12 @@ end -- debug
 				if fileDsc.name.has_substring (UnitSuffix) then
 					create unitDsc.make (Void)
 					if unitDsc.UnitIR_Loaded (fileDsc.path, o) then
-debug
-	--trace ("Type `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
-end -- debug
-	-- How to ignore alias code ... Or process it ....
-	--					if cuDsc.type.name.is_equal () then
+						debug
+							--trace ("Type `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+						end -- debug
+						-- no need to store code for alias at all !!!
+						-- How to ignore alias code ... Or process it ....
+						--if cuDsc.type.name.is_equal () then
 							-- That is not alias code
 							unitDsc.attachSystemDescription (sysDsc)
 							if unitDsc.unitDclDsc.isInvalid (unitDsc, o) then
@@ -470,7 +499,7 @@ end -- debug
 									j := j + 1
 								end -- loop
 							end -- if
-	--					end -- if
+						--end -- if
 					else
 						Result := True
 					end -- if				
@@ -478,9 +507,9 @@ end -- debug
 					create rtnDsc.make (Void)
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
 						rtnDsc.attachSystemDescription (sysDsc)
-debug
-	--trace ("Standalone routine loaded from file `" + ast_files.item (i).path + "`")
-end -- debug
+						debug
+							--trace ("Standalone routine loaded from file `" + ast_files.item (i).path + "`")
+						end -- debug
 						if rtnDsc.routine.isInvalid (rtnDsc, o) then
 							Result := True
 						else

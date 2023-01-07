@@ -1,7 +1,4 @@
-// Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.15 Janury 7th 2023
-build Kernel from "." // Kernel library is to be built from all SLang files from the current folder
-end
+IO.putNL ("Hello world!") 
 
 val unit Bit
     const: // Bit is just 0 or 1
@@ -414,7 +411,7 @@ unit Memory
 	none
 end // Memory
 
-val unit Pointer alias Ptr
+val unit Pointer
 	/// Unit Pointer allows to introduce address arithmetics in a safe way :-)
 	// WIP!!!
 	const: 

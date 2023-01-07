@@ -542,16 +542,20 @@ feature {Any}
 	local	
 		path: String
 		fileName: String
+		aliasFileName: String
 	do
 		if not clusterDsc.unitOrRoutineExcluded (unitName) then
 			path := clusterDsc.name
 			if path.item (path.count) = '\' or else path.item (path.count) = '/' then
 				fileName := clone(path)
+				aliasFileName := clone (path)
 			else
 				fileName := path + fs.separator
+				aliasFileName := path + fs.separator
 			end -- if
 			fileName.append_string (IRfolderName  + fs.separator + clusterDsc.getNameAfterRenaming (unitName) + UnitSuffix + "." + INText)
-			Result := fs.file_exists (fileName)
+			aliasFileName.append_string (IRfolderName  + fs.separator + "@" + clusterDsc.getNameAfterRenaming (unitName) + UnitSuffix + "." + INText)
+			Result := fs.file_exists (fileName) or else fs.file_exists (aliasFileName)			
 		end -- if
 		debug
 			--if Result then
@@ -1141,21 +1145,53 @@ feature {Any}
 		non_void_path: path /= Void
 		non_void_conext: sysDsc /= Void
 	local	
+		pathPrefix: String
 		fileName: String
+		actualFileName: String
 		cuDsc: CompilationUnitUnit
 	do
 		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
-			fileName := clone(path)
+			pathPrefix := path
 		else
-			fileName := path + fs.separator
+			pathPrefix := path + fs.separator
 		end -- if
-		fileName.append_string (IRfolderName  + fs.separator + unitExternalName + UnitSuffix + "." + INText)
-		create cuDsc.make (Void)
-		if cuDsc.UnitIR_Loaded (fileName, o) then
-			Result := cuDsc.unitDclDsc
-			sysDsc.allUnits.add (Result)
+		fileName := pathPrefix + IRfolderName + fs.separator + unitExternalName + UnitSuffix + "." + INText
+		if fs.file_exists (fileName) then
+			create cuDsc.make (Void)
+			if cuDsc.UnitIR_Loaded (fileName, o) then
+				Result := cuDsc.unitDclDsc
+				sysDsc.allUnits.add (Result)
+			end -- if
+		else
+			-- check for alias
+			fileName := pathPrefix + IRfolderName  + fs.separator + "@" + unitExternalName + UnitSuffix + "." + INText
+			actualFileName := getActualFileName (fileName)
+			if actualFileName /= Void  then
+				fileName := pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText
+				create cuDsc.make (Void)
+				if cuDsc.UnitIR_Loaded (fileName, o) then
+					Result := cuDsc.unitDclDsc
+					sysDsc.allUnits.add (Result)
+				end -- if
+			end -- if
 		end -- if
 	end -- loadUnitInterafceFrom	
+	
+	getActualFileName (fileName: String): String is
+	local
+		file: File
+		wasError: Boolean
+	do
+		if not wasError then
+			create file.make_open_read (fileName)
+			file.read_line
+			Result := clone (file.last_string)
+			file.close
+		end -- if
+	rescue
+		wasError := True
+		retry
+	end -- getActualFileName
 
 	loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): UnitDeclarationDescriptor is
 	require
@@ -1845,11 +1881,16 @@ feature {Any}
 			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc) --, unitDsc.stringPool, unitDsc.typePool)
 			fName := filePrefix  + unitDsc.getExternalName + UnitSuffix + "." + irFileExtension
 			if IRstored (fName, uImg) then
-				if unitDsc.aliasName /= Void then
+				if unitDsc.aliasName /= Void and then irFileExtension.is_equal (INText) then
+					-- Let's store only dummy file interface with the the name of the actual file in it
+
 					-- Straightforward decision to store the full copy of IR for the alias name ... May be optimized
-					-- Like store just a reference to the poriginal IR file ... Need to design better 
-					fName := filePrefix  + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
-					if not IRstored (fName, uImg) then
+					-- Like store just a reference to the original IR file ... Need to design better 
+
+					--fName := filePrefix  + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
+					fName := filePrefix  + "@" + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
+					--if not IRstored (fName, uImg) then
+					if not dummyFileCreated (fName, unitDsc.getExternalName) then
 						o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
 						Result := Result + 1
 					end -- if
@@ -1867,6 +1908,24 @@ feature {Any}
 	end -- saveInternalRepresentation
 
 feature {None}
+
+	dummyFileCreated (fileName, originalFileName: String): Boolean is
+	require
+		non_void_file_name: fileName /= Void
+	local
+		aFile: File
+		wasError: Boolean
+	do	
+		if not wasError then
+			create aFile.make_create_read_write (fileName) 
+			aFile.put_string (originalFileName)
+			aFile.close
+			Result := True
+		end -- if
+	rescue
+		wasError := True
+		retry
+	end -- dummyFileCreated
 
 	IRstored (fileName: String; image: Storable): Boolean is
 	require
@@ -3021,7 +3080,6 @@ feature {Any}
 	isConcurrent,
 	isVirtual,
 	isExtension: Boolean
-	--name: String
 	aliasName: String
 	
 	formalGenerics: Array [FormalGenericDescriptor]
@@ -3037,16 +3095,17 @@ feature {Any}
 		end -- if
 	end -- hasFormalGenericParameter
 
-	getUnitTypeDescriptor: UnitTypeCommonDescriptor is
-	do
-		create {UnitTypeNameDescriptor}Result.init (name, Void)
-		-- Expected generics: Array [TypeOrExpressionDescriptor]
-		-- Here generics: 	formalGenerics: Array [FormalGenericDescriptor]
-		if formalGenerics /= Void and then formalGenerics.count > 0 then
-			print ("%NNOT_IMPLEMENTED_YET: generics!!!%N")
--- not_implemened_yet
-		end --if
-	end -- getUnitTypeDescriptor
+	-- I do not remember why did I need this function :-)
+	--getUnitTypeDescriptor: UnitTypeCommonDescriptor is
+	--do
+	--	create {UnitTypeNameDescriptor}Result.init (name, Void)
+	--	-- Expected generics: Array [TypeOrExpressionDescriptor]
+	--	-- Here generics: 	formalGenerics: Array [FormalGenericDescriptor]
+	--	if formalGenerics /= Void and then formalGenerics.count > 0 then
+	--		print ("%NNOT_IMPLEMENTED_YET: generics!!!%N")
+	--		-- not_implemened_yet
+	--	end --if
+	--end -- getUnitTypeDescriptor
 	
 	getAliasExternalName: String is
 	do
