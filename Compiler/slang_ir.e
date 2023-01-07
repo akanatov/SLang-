@@ -75,44 +75,44 @@ feature {Any}
 
 
 -- No need to do it at all !!!! 
-	getFormalGenerics(generics: Array[TypeOrExpressionDescriptor]): Array [FormalGenericDescriptor] is
-	require
-		non_void_factual_generics: generics /= Void
-	local
-		i, n: Integer
-		fgDsc: FormalGenericDescriptor
-		typDsc: TypeDescriptor
-		exprDsc: ExpressionDescriptor
-	do
-		from
-			i := 1
-			n := generics.count
-			create Result.make (1, n)
-		until
-			i > n
-		loop
-			typDsc ?= generics.item (i)
-			if typDsc = Void then
-				-- A[expression]
-				--create {?????} fg.init ()
-				-- Not_implemented_yet
-				exprDsc ?= generics.item (i)
-				check
-					it_is_expression: exprDsc /= Void
-				end -- check
-				--if exprDsc.isConst then
-				--else
-					-- Ugly temporary ....
-					create {FormalGenericTypeDescriptor}fgDsc.init (exprDsc.out, Void, Void)				
-				---end -- if				
-			else
-				-- A[Type]
-				create {FormalGenericTypeDescriptor}fgDsc.init ("par#" + i.out, Void, Void)				
-			end -- if
-			Result.put (fgDsc, i)
-			i := i + 1
-		end -- loop
-	end -- getFormalGenerics
+	--getFormalGenerics(generics: Array[TypeOrExpressionDescriptor]): Array [FormalGenericDescriptor] is
+	--require
+	--	non_void_factual_generics: generics /= Void
+	--local
+	--	i, n: Integer
+	--	fgDsc: FormalGenericDescriptor
+	--	typDsc: TypeDescriptor
+	--	exprDsc: ExpressionDescriptor
+	--do
+	--	from
+	--		i := 1
+	--		n := generics.count
+	--		create Result.make (1, n)
+	--	until
+	--		i > n
+	--	loop
+	--		typDsc ?= generics.item (i)
+	--		if typDsc = Void then
+	--			-- A[expression]
+	--			--create {?????} fg.init ()
+	--			-- Not_implemented_yet
+	--			exprDsc ?= generics.item (i)
+	--			check
+	--				it_is_expression: exprDsc /= Void
+	--			end -- check
+	--			--if exprDsc.isConst then
+	--			--else
+	--				-- Ugly temporary ....
+	--				create {FormalGenericTypeDescriptor}fgDsc.init (exprDsc.out, Void, Void)				
+	--			---end -- if				
+	--		else
+	--			-- A[Type]
+	--			create {FormalGenericTypeDescriptor}fgDsc.init ("par#" + i.out, Void, Void)				
+	--		end -- if
+	--		Result.put (fgDsc, i)
+	--		i := i + 1
+	--	end -- loop
+	--end -- getFormalGenerics
 	
 	checkSources(o: Output) is
 	-- Check all sources across all clusters
@@ -11196,7 +11196,7 @@ feature {Any}
 	isTuple: Boolean is
 	do
 		Result := True
-	end
+	end -- isTuple
 
 	--fill (f: like fields) is
 	--do
@@ -11554,7 +11554,6 @@ inherit
 	--TupleFieldDescriptor
 	--end
 feature {Any}
---	name: String
 	generics: Array [TypeOrExpressionDescriptor]
 	setNameAndGenerics (aName: like name; g: like generics) is
 	require	
@@ -11618,7 +11617,6 @@ feature {Any}
 	end -- getExternalName
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
 		-- its interface should be loaded first
 		if isNotLoaded (context, o) then
@@ -11642,6 +11640,7 @@ feature {Any}
 		genericsCount: Integer
 		unitDclDsc: UnitDeclarationDescriptor
 		aliasDsc: UnitAliasDescriptor
+		teDsc: TypeOrExpressionDescriptor
 		contextTypes: Sorted_Array [ContextTypeDescriptor]
 		pos: Integer
 		i, n: Integer
@@ -11701,7 +11700,7 @@ feature {Any}
 					unitDeclaration := genericUnits.item (1)
 					genericUnits := Void
 					debug
-						o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+						--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 					end -- debug
 					-- It is not instantiated !!! Should it be?
 					if not foundInPool then 
@@ -11713,16 +11712,22 @@ feature {Any}
 					-- What to do here ????
 					-- if current type has all factual generic parameters as Types then
 					-- there should be only one generic unit declaration with all formal generic type parameters
+					debug
+						--o.putNL (">>>> Generic units: " + genericUnits.count.out)
+					end -- debug				
 					from
 						i := 1
 						n := generics.count 
 					until
 						i > n
 					loop
+						teDsc := generics.item (i)
 						debug
-							--o.putNL ("Debug: factual generic `" + generics.item (i).generating_type + "` isType =  " + generics.item (i).isType.out)
+							--o.putNL ("Debug: factual generic `" + teDsc.out + "` isType =  " + teDsc.isType.out +
+							--	"` isRtn =  " + teDsc.isRoutine.out + "` isTuple =  " + teDsc.isTuple.out
+							--)
 						end
-						minimizeGenericUnits (i, n, not generics.item (i).isType, generics.item (i).isRoutine, generics.item (i).isRoutine)
+						minimizeGenericUnits (i, n, teDsc.isType, teDsc.isRoutine, teDsc.isTuple)
 						inspect
 							genericUnits.count
 						when 0 then -- there is no generic unit which fits the current instantiation !!!
@@ -11733,7 +11738,7 @@ feature {Any}
 							unitDeclaration := genericUnits.item (1)
 							genericUnits := Void
 							debug
-								o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+								--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 							end -- debug
 							if not foundInPool then 
 								if failedToLoadPoolTypesAndAlias (context, o) then
@@ -11748,18 +11753,21 @@ feature {Any}
 					if genericUnits /= Void and then genericUnits.count > 1 then
 						unitDeclaration := Void
 						debug
-							o.putNL ("Debug: more than one generic unit fits instantiation `" + out + "`")
-							from
-								i := 1
-								n := genericUnits.count 
-							until
-								i > n
-							loop
-								o.putNL ("%TUnit `" + genericUnits.item(i).fullUnitName + "`")
-								i := i + 1
-							end -- loop
+							--o.putNL ("Debug: more than one generic unit fits instantiation `" + out + "`")
+							--from
+							--	i := 1
+							--	n := genericUnits.count 
+							--until
+							--	i > n
+							--loop
+							--	o.putNL ("%TUnit `" + genericUnits.item(i).fullUnitName + "`")
+							--	i := i + 1
+							--end -- loop
 						end -- debug
 					end -- if
+					debug
+						--o.putNL ("<<<<<<<<<<<<<<<<<<")
+					end -- debug				
 				end -- if
 			end -- if
 		else
@@ -11798,7 +11806,7 @@ feature {Any}
 		end
 	end -- isNotLoaded
 
-	minimizeGenericUnits (index, factualsCount: Integer; isFactualExpr, isRtn, isTpl: Boolean) is
+	minimizeGenericUnits (index, factualsCount: Integer; isTyp, isRtn, isTpl: Boolean) is
 	require
 		valid_index: index > 0
 		index_in_range: index <= factualsCount
@@ -11818,14 +11826,24 @@ feature {Any}
 			formalsCount := genericUnits.item(i).formalGenerics.count
 			if factualsCount = formalsCount then
 				fgDsc := genericUnits.item(i).formalGenerics.item (index)
+				debug
+					--print ("Formal `" + fgDsc.out + "`: isType=" + fgDsc.isType.out + ", isRtn=" + fgDsc.isRoutine.out + ", isTupl=" + fgDsc.isTuple.out + "%N")
+					--print ("Factual:%T isType=" + isTyp.out + ", isRtn=" + isRtn.out + ", isTupl=" + isTpl.out + "%N")
+				end 
 				if fgDsc.isType then -- and then isFactualExpr or else not isFactualExpr then
-					if isFactualExpr then
+					if not isTyp then
 						m := m + 1
+						debug
+							--print ("Excluding `" + fgDsc.out + "` Type /= non-Type%N")
+						end 
 						genericUnits.put(Void, i)
 						toSkip := True
 					end -- if
-				elseif not isFactualExpr then
+				elseif isTyp then
 					m := m + 1
+					debug
+						--print ("Excluding `" + fgDsc.out + "` non-Type /= Type%N")
+					end 
 					genericUnits.put(Void, i)
 					toSkip := True
 				end -- if
@@ -11833,6 +11851,9 @@ feature {Any}
 					toSkip := False
 				elseif isRtn and then not fgDsc.isRoutine  then
 					m := m + 1
+					debug
+						--print ("Excluding `" + fgDsc.out + "` non-Rtn /= Rtn%N")
+					end 
 					genericUnits.put(Void, i)
 					toSkip := True
 				end -- if
@@ -11840,10 +11861,16 @@ feature {Any}
 					toSkip := False
 				elseif isTpl and then not fgDsc.isTuple then
 					m := m + 1
+					debug
+						--print ("Excluding `" + fgDsc.out + "` non-Tuple /= Tuple%N")
+					end 
 					genericUnits.put(Void, i)
 				end -- if
 			else -- # of factual generic arguments is not eual to # of formal generic parameters
 				m := m + 1
+				debug
+					--print ("Excluding: formal = " +  formalsCount.out + ", factual = " + factualsCount.out + "%N")
+				end 
 				genericUnits.put(Void, i)
 			end -- if
 			i := i + 1

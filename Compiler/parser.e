@@ -2855,7 +2855,7 @@ end -- debug
 			end -- if
 		when scanner.this_token then
 			scanner.nextWithSemicolon (checkSemicolonAfter)
---trace ("this ")
+			--trace ("this ")
 			inspect
 				scanner.token
 			when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token then
@@ -2873,14 +2873,14 @@ end -- debug
 				scanner.nextToken
 				rangeDsc := parseMandatoryRangeExpression (checkForCommentAfter, checkSemicolonAfter)
 				if rangeDsc /= Void then
---trace ("#3<this>: " + thisDsc.out + " in " + rangeDsc.out)
+					--trace ("#3<this>: " + thisDsc.out + " in " + rangeDsc.out)
 					create {InRangeExpression}Result.init (thisDsc, rangeDsc)
 				end -- if
 			when scanner.dot_token, scanner.left_paranthesis_token then
 				-- this. | this( 
---trace ("this.|(")
+				--trace ("this.|(")
 				Result := parseWritableCall (thisDsc)
---trace ("this.|( -> " + Result.out )				
+				--trace ("this.|( -> " + Result.out )				
 			when scanner.period_token, scanner.left_curly_bracket_token then
 				-- this .. Expr kind of range expression
 				Result := parseRangeExpression (thisDsc, checkSemicolonAfter)
@@ -2895,9 +2895,9 @@ end -- debug
 				Result := thisDsc
 			end -- inspect
 		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
-debug
-	--trace ("Expr: const")
-end -- debug
+			debug
+				--trace ("Expr: const")
+			end -- debug
 			constDsc := parseConstant (checkSemicolonAfter)
 			check
 				non_void_constant_dsc: constDsc /= Void
@@ -3233,13 +3233,17 @@ end -- debug
 			inspect
 				scanner.token
 			when scanner.period_token, scanner.left_curly_bracket_token then
+				mayHaveRangeExpr := True
 				Result := parseRangeExpression (left, checkSemicolonAfter)
+				mayHaveRangeExpr := False
 			else
 				Result := left
 			end -- inspect
 		end -- if
 	end -- parseMandatoryRangeExpression
 
+	mayHaveRangeExpr: Boolean
+	
 	parseRangeExpression (left: ExpressionDescriptor; checkSemicolonAfter: Boolean): RangeExpressionDescriptor is
 	--32 Expression [“{”OperatorName ConstantExpression "}"] “..”Expression
 	-- Conflict !!!! a is 5 {} foo do end !!!
@@ -3252,55 +3256,62 @@ end -- debug
 		exprDsc: ExpressionDescriptor	
 		wasError: Boolean
 	do
-		debug
-			--trace (">>> parseRange starting from: " + left.out)
-		end -- debug
-		if scanner.visibilityStart then
-			scanner.nextToken
-			inspect
-				scanner.token
-			when scanner.identifier_token, scanner.operator_token, 
-				scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
-			then
-				operator := scanner.tokenString
+		mayHaveRangeExpr := True  -- Disable localization of ranges as it does not work !!!
+		if mayHaveRangeExpr then
+			mayHaveRangeExpr := False
+			debug
+				--trace (">>> parseRange starting from: " + left.out)
+			end -- debug
+			if scanner.visibilityStart then
 				scanner.nextToken
-				exprDsc := parseConstExpression (checkSemicolonAfter)
-				if exprDsc /= Void then
-					if scanner.visibilityEnd then
-						scanner.nextToken
-					elseif scanner.Cmode then
-						syntax_error (<<scanner.right_square_bracket_token>>)
-						wasError := True
-					else
-						syntax_error (<<scanner.right_curly_bracket_token>>)
-						wasError := True
+				inspect
+					scanner.token
+				when scanner.identifier_token, scanner.operator_token, 
+					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+				then
+					operator := scanner.tokenString
+					scanner.nextToken
+					exprDsc := parseConstExpression (checkSemicolonAfter)
+					if exprDsc /= Void then
+						if scanner.visibilityEnd then
+							scanner.nextToken
+						elseif scanner.Cmode then
+							syntax_error (<<scanner.right_square_bracket_token>>)
+							wasError := True
+						else
+							syntax_error (<<scanner.right_curly_bracket_token>>)
+							wasError := True
+						end -- if
 					end -- if
+				else
+					syntax_error (<<
+						scanner.identifier_token, scanner.operator_token, scanner.implies_token, 
+						scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
+					>>)
+					wasError := True
 				end -- if
-			else
-				syntax_error (<<
-					scanner.identifier_token, scanner.operator_token, scanner.implies_token, 
-					scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token
-				>>)
-				wasError := True
 			end -- if
-		end -- if
-		if not wasError then
-			if scanner.token = scanner.period_token then
-				scanner.nextToken
-				right := parseExpressionWithSemicolon2 (checkSemicolonAfter)
-				if right /= Void then
-					create Result.init (left, operator, exprDsc, right)
+			if not wasError then
+				if scanner.token = scanner.period_token then
+					scanner.nextToken
+					right := parseExpressionWithSemicolon2 (checkSemicolonAfter)
+					if right /= Void then
+						create Result.init (left, operator, exprDsc, right)
+					end -- if
+				else
+	--trace ("#3")
+					syntax_error (<<scanner.period_token>>)
 				end -- if
-			else
---trace ("#3")
-				syntax_error (<<scanner.period_token>>)
 			end -- if
+			debug
+				if Result /= Void then
+					--trace ("<<< parseRange: " + Result.out)
+				end -- if
+			end -- debug
+		else
+			validity_error( "Range expression can't be used here ") 
+			wasError := True
 		end -- if
-		debug
-			if Result /= Void then
-				--trace ("<<< parseRange: " + Result.out)
-			end -- if
-		end -- debug
 	end -- parseRangeExpression
 	
 	parseBinaryOperatorExpression (exprDsc1: ExpressionDescriptor; checkSemicolonAfter: Boolean ): ExpressionCallDescriptor is --ExprOperatorExprDescriptor is
@@ -5887,7 +5898,9 @@ end -- debug
 		values: Array [ExpressionDescriptor]
 		constants: Sorted_Array [ConstantDescriptor]
 	do
+		mayHaveRangeExpr := True
 		exprDsc := parseExpression
+		mayHaveRangeExpr := False
 		if exprDsc /= Void then
 			rangeExprDsc ?= exprDsc
 			if rangeExprDsc = Void then
@@ -7772,7 +7785,9 @@ end -- debug
 				then
 					operator := scanner.tokenString
 					scanner.nextToken
+					mayHaveRangeExpr := True
 					exprDsc := parseExpression
+					mayHaveRangeExpr := False
 					if exprDsc /= Void then
 						if scanner.token = scanner.right_curly_bracket_token then
 							scanner.nextToken
@@ -7846,7 +7861,9 @@ end -- debug
 					then
 						operator := scanner.tokenString
 						scanner.nextToken
+						mayHaveRangeExpr := True
 						exprDsc := parseExpression
+						mayHaveRangeExpr := True
 						if exprDsc /= Void then
 							if scanner.token = scanner.right_curly_bracket_token then
 								scanner.nextToken

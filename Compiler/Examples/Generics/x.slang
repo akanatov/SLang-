@@ -9,7 +9,7 @@ a1 is A[Any]
 any is Any
 a2 is A[any]
 a3 is A[rtn foo]
-a4 is A[Any, a .. b]
+//a4 is A[Any, a .. b]
 a5 is A[Any, (a, b)]
 
 foo do end

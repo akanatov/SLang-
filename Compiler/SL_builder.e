@@ -130,18 +130,18 @@ feature {Any}
 					until
 						i > n					
 					loop
-					--	typePool.add (aliasTypes.item (i))
+						--	typePool.add (aliasTypes.item (i))
 						aliasTypeDsc := aliasTypes.item (i)
 						utcDsc ?= aliasTypeDsc.actualType
 
-						if utcDsc = Void then
+						--if utcDsc = Void then
 							create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, Void)
-						else
-							create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, sysDsc.getFormalGenerics(utcDsc.generics))
-						end -- if
+						--else
+						--	create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, sysDsc.getFormalGenerics(utcDsc.generics))
+						--end -- if
 						
 						-- unitDclDsc should refer to the actualType !!! Alias support is not consistent !!!
-						-- change the type of context types !!! 
+						-- change the type of context types !!!   Alias for generic and non-generic - Not_implement_yet !!!
 
 						pos	:= sysDsc.allUnits.seek (unitDclDsc)
 						--pos	:= sysDsc.allUnits.seek (aliasTypeDsc)
@@ -154,6 +154,8 @@ feature {Any}
 					
 						i := i + 1
 					end -- loop
+
+					o.putNL (sysDsc.allUnits.count.out + " units loaded")
 
 					-- If all required types loaded 
 					-- 3. Check validity of cuDsc.statements
@@ -257,12 +259,10 @@ feature {Any}
 				-- Set of object files from all units and routines of the current folder
 				o.putNL ("Build for all source files")
 				Result := obj_files_build_failed (sysDsc)
---not_implemented_yet ("Building all files")
 			else
 				-- Executable with the entry point
 				o.putNL ("Building executable `" + sysDsc.name + "`")
 				Result := executable_build_failed (sysDsc)
---not_implemented_yet ("Building executable `" + sysDsc.name + "`")
 			end -- if
 		else
 			Result := True
