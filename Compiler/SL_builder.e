@@ -51,9 +51,9 @@ feature {Any}
 		aliasTypes: Sorted_Array [AliasedTypeDescriptor]
 		attachedTypeDsc: AttachedTypeDescriptor
 		unitDclDsc: UnitDeclarationDescriptor
-		utcDsc : UnitTypeCommonDescriptor
+		--utcDsc : UnitTypeCommonDescriptor
 		--unitTypeDsc: UnitTypeNameDescriptor
-		aliasTypeDsc: AliasedTypeDescriptor
+		--aliasTypeDsc: AliasedTypeDescriptor
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
 		--valid_statements: Array [ValidStatementDescriptor]
@@ -61,11 +61,11 @@ feature {Any}
 		generators: Array [CodeGenerator]
 		i, n: Integer
 		j, m: Integer
-		pos: Integer
+		--pos: Integer
+		unitAliasDsc: UnitAliasDescriptor
 		
 		-- for debugging
 		cntTypDsc: ContextTypeDescriptor
-		unitAliasDsc: UnitAliasDescriptor
 		
 	do
 		if fs.folderExists (IRfolderName) then
@@ -113,52 +113,94 @@ feature {Any}
 					elseif typeDsc.aliasName /= Void then
 						attachedTypeDsc ?= typeDsc
 						if attachedTypeDsc /= Void then
-							create aliasTypeDsc.init (typeDsc.aliasName, attachedTypeDsc)
-							if not aliasTypes.added (aliasTypeDsc) then
-								o.putNL ("Error: at least two types has the same alias `" + typeDsc.aliasName + "`")
-								Result := True
-							end -- if
+							check
+								unit_was_loaded: attachedTypeDsc.unitDeclaration /= Void
+								unit_registered: sysDsc.allUnits.seek (attachedTypeDsc.unitDeclaration) > 0
+							end 
+							create unitAliasDsc.init (typeDsc.aliasName, attachedTypeDsc.unitDeclaration)
+							if not sysDsc.allUnits.added (unitAliasDsc) then
+								o.putNL ("Error: at least two types has the same name `" + typeDsc.aliasName + "`")
+								Result := True								
+							end -- if				
 						end -- if
+																	
+						--attachedTypeDsc ?= typeDsc
+						--if attachedTypeDsc /= Void then
+						--	create aliasTypeDsc.init (typeDsc.aliasName, attachedTypeDsc)
+						--	if aliasTypes.added (aliasTypeDsc) then
+						--		check
+						--			unit_was_loaded: attachedTypeDsc.unitDeclaration /= Void
+						--		end 
+						--		create unitAliasDsc.init (typeDsc.aliasName, attachedTypeDsc.unitDeclaration)
+						--		if not sysDsc.allUnits.added (unitAliasDsc) then
+						--			o.putNL ("Error: at least two types has the same name `" + typeDsc.aliasName + "`")
+						--			Result := True								
+						--		end -- if
+						--	else
+						--		o.putNL ("Error: at least two types has the same alias `" + typeDsc.aliasName + "`")
+						--		Result := True
+						--	end -- if
+						--end -- if
 					end -- if
 					i := i + 1
 				end -- loop
 
 				if not Result then
 					
-					-- Need to check that no name clashes with already loaded untis !!!
-					
-					---- Register all alias types 
+					-- Need to check that no name clashes between all alises and already loaded units !!!
 					from
-						typePool := scriptDsc.typePool
-						n := aliasTypes.count
+						n := sysDsc.allUnits.count
 						i := 1
 					until
 						i > n					
 					loop
-						--	typePool.add (aliasTypes.item (i))
-						aliasTypeDsc := aliasTypes.item (i)
-						utcDsc ?= aliasTypeDsc.actualType
-
-						--if utcDsc = Void then
-							create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, Void)
-						--else
-						--	create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, sysDsc.getFormalGenerics(utcDsc.generics))
-						--end -- if
-						
-						-- unitDclDsc should refer to the actualType !!! Alias support is not consistent !!!
-						-- change the type of context types !!!   Alias for generic and non-generic - Not_implement_yet !!!
-
-						pos	:= sysDsc.allUnits.seek (unitDclDsc)
-						--pos	:= sysDsc.allUnits.seek (aliasTypeDsc)
-						if pos > 0 then -- already registered
-							o.putNL ("Warning: type alias `" + typeDsc.aliasName + "` clashes with other unit name and will be ignored")
-						else -- have it registered
-							--sysDsc.allUnits.add_after (aliasTypeDsc, pos)
-							sysDsc.allUnits.add_after (unitDclDsc, pos)
-						end -- if					
+						cntTypDsc := sysDsc.allUnits.item (i)
+						unitAliasDsc ?= cntTypDsc
+						if unitAliasDsc = Void then
+							-- No more aliases!
+							i := n + 1
+						else
+							create unitDclDsc.makeForSearch (unitAliasDsc.aliasName, Void)							
+							if sysDsc.allUnits.seek (unitDclDsc) > 0 then -- already registered
+								o.putNL ("Error: type alias `" + unitAliasDsc.aliasName + "` clashes with other unit name")
+								Result := True
+							end -- if
+							i := i + 1								
+						end -- if				
+					end -- loop						
 					
-						i := i + 1
-					end -- loop
+					------ Register all alias types 
+					--from
+					--	--typePool := scriptDsc.typePool
+					--	n := aliasTypes.count
+					--	i := 1
+					--until
+					--	i > n					
+					--loop
+					--	--	typePool.add (aliasTypes.item (i))
+					--	aliasTypeDsc := aliasTypes.item (i)
+					--	utcDsc ?= aliasTypeDsc.actualType
+					--
+					--	--if utcDsc = Void then
+					--		create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, Void)
+					--	--else
+					--	--	create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, sysDsc.getFormalGenerics(utcDsc.generics))
+					--	--end -- if
+					--	
+					--	-- unitDclDsc should refer to the actualType !!! Alias support is not consistent !!!
+					--	-- change the type of context types !!!   Alias for generic and non-generic - Not_implement_yet !!!
+					--
+					--	pos	:= sysDsc.allUnits.seek (unitDclDsc)
+					--	--pos	:= sysDsc.allUnits.seek (aliasTypeDsc)
+					--	if pos > 0 then -- already registered
+					--		o.putNL ("Warning: type alias `" + typeDsc.aliasName + "` clashes with other unit name and will be ignored")
+					--	else -- have it registered
+					--		--sysDsc.allUnits.add_after (aliasTypeDsc, pos)
+					--		sysDsc.allUnits.add_after (unitDclDsc, pos)
+					--	end -- if					
+					--
+					--	i := i + 1
+					--end -- loop
 
 					o.putNL (sysDsc.allUnits.count.out + " units loaded")
 					debug

@@ -1139,7 +1139,8 @@ feature {Any}
 
 	sysDsc: SystemDescriptor
 
-	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): UnitDeclarationDescriptor is
+	--loadUnitInterafceFrom (path, unitExternalName: String; o: Output): UnitDeclarationDescriptor is
+	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): ContextTypeDescriptor is	
 	require
 		non_void_unit_name: unitExternalName /= Void
 		non_void_path: path /= Void
@@ -1149,6 +1150,7 @@ feature {Any}
 		fileName: String
 		actualFileName: String
 		cuDsc: CompilationUnitUnit
+		unitAliasDsc: UnitAliasDescriptor
 	do
 		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
 			pathPrefix := path
@@ -1159,8 +1161,22 @@ feature {Any}
 		if fs.file_exists (fileName) then
 			create cuDsc.make (Void)
 			if cuDsc.UnitIR_Loaded (fileName, o) then
-				Result := cuDsc.unitDclDsc
-				sysDsc.allUnits.add (Result)
+				Result := sysDsc.allUnits.add_it (cuDsc.unitDclDsc)
+				--check
+				--	valid_unit_type: Result /= Void
+				--end 
+				
+				--Result := cuDsc.unitDclDsc
+				--if sysDsc.allUnits.added (Result) then
+				--	debug
+				--		o.putNL ("Debug: unit `" + unitExternalName + "` loaded and added into the context")
+				--	end 
+				--else
+				--	debug
+				--		o.putNL ("Debug: unit `" + unitExternalName + "` loaded and but it is already in the the context")
+				--	end 
+				--	Result ?= sysDsc.allUnits.add_it (cuDsc.unitDclDsc)
+				--end -- if
 			end -- if
 		else
 			-- check for alias
@@ -1170,8 +1186,9 @@ feature {Any}
 				fileName := pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText
 				create cuDsc.make (Void)
 				if cuDsc.UnitIR_Loaded (fileName, o) then
-					Result := cuDsc.unitDclDsc
-					sysDsc.allUnits.add (Result)
+					-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
+					create unitAliasDsc.init (unitExternalName, cuDsc.unitDclDsc)
+					Result := sysDsc.allUnits.add_it (unitAliasDsc)
 				end -- if
 			end -- if
 		end -- if
@@ -1193,7 +1210,9 @@ feature {Any}
 		retry
 	end -- getActualFileName
 
-	loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): UnitDeclarationDescriptor is
+	--loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): UnitDeclarationDescriptor is
+	--loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [UnitDeclarationDescriptor] is
+	loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [ContextTypeDescriptor] is
 	require
 		non_void_current_unit: unitDsc /= Void
 		--non_generic_unit: unitDsc.generics.count = 0
@@ -1202,6 +1221,8 @@ feature {Any}
 		unitExternalName,
 		unitPrintableName: String
 		genericUnits: Array [UnitDeclarationDescriptor] --CompilationUnitUnit]
+		--unitDcldsc: UnitDeclarationDescriptor
+		cntTypeDsc: ContextTypeDescriptor
 	do
 		unitExternalName := unitDsc.name -- unitDsc.getExternalName
 		unitPrintableName:= unitDsc.out -- unitDsc.name  -- Name[factualGenerics]
@@ -1227,18 +1248,25 @@ feature {Any}
 			-- Load it
 			o.putLine ("Loading unit `" + unitPrintableName + "`")
 			if unitDsc.generics.count = 0 then
-				Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
+				--Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
+				cntTypeDsc := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
+				--unitDcldsc := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
+				--if unitDcldsc /= Void then
+				if cntTypeDsc /= Void then
+					Result := <<cntTypeDsc>>
+				end -- if
 			else
 				-- 
 				genericUnits := loadGenericUnitInterafcesFrom (clusters.item (1).name, unitExternalName, o)
 				if genericUnits /= Void then
 					if genericUnits.count = 1 then
 						-- There is no generic unit name overloading 
-						Result := genericUnits.item (1)
+						Result := <<genericUnits.item (1)>>
 					else
 						-- Several units !!!
-						-- Not_implemented_yet
-						o.putNL ("Error: generic unit name overloading  not supported yet! Unit `" + unitPrintableName + "`")
+						Result := genericUnits
+						---- Not_implemented_yet
+						--o.putNL ("Not_implemented_yet: generic unit name overloading  not supported yet! Unit `" + unitPrintableName + "`")
 					end -- if
 				end -- if
 			end -- if
@@ -1314,6 +1342,7 @@ feature {None}
 		unitIR: CompilationUnitUnit
 		genericUnitNamePrefix: String
 		fileName: String
+		unitDclDsc: UnitDeclarationDescriptor
 	do
 		-- files pattern <unitName>$_*$U.int
 		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
@@ -1338,10 +1367,13 @@ feature {None}
 
 				if fileName.has_substring (genericUnitNamePrefix) and then fileName.has_substring (UnitSuffix) then
 					create unitIR.make (Void)
-					if unitIR.UnitIR_Loaded (fileDsc.path, o) then
-						sysDsc.allUnits.add (unitIR.unitDclDsc) -- register generic unit in the project context
+					if unitIR.UnitIR_Loaded (fileDsc.path, o) then						
+						unitDclDsc ?= sysDsc.allUnits.add_it (unitIR.unitDclDsc) -- register generic unit in the project context
+						check
+							unit_registered: unitDclDsc /= Void
+						end -- 
 						j := j + 1
-						Result.put (unitIR.unitDclDsc, j)
+						Result.put (unitDclDsc, j)
 					else
 						Result := Void
 						i := n
@@ -2970,11 +3002,13 @@ end -- class UseConstBlock
 class UnitAliasDescriptor
 inherit
 	ContextTypeDescriptor
+		rename
+			name as aliasName,
+			setName as makeForSearch
 	end
 create
-	init
+	init, makeForSearch
 feature {Any}
-	aliasName: String
 	unitDclDsc: UnitDeclarationDescriptor
 	init (aName: like aliasName; aType: like unitDclDsc) is
 	require
@@ -2992,6 +3026,11 @@ feature {Any}
 	do
 		Result := aliasName < other.aliasName
 	end -- lessThan
+
+	getUnitDeclaration: UnitDeclarationDescriptor is
+	do
+		Result := unitDclDsc
+	end -- getUnitDeclaration
 
 	--getExternalName: String is
 	--do
@@ -3017,8 +3056,8 @@ feature {Any}
 	--end -- isNotLoaded
 	
 invariant
-	non_void_alias_name: aliasName /= Void
-	non_void_actual_type: unitDclDsc /= Void
+	--non_void_alias_name: aliasName /= Void
+	--non_void_actual_type: unitDclDsc /= Void
 end -- class UnitAliasDescriptor
 
 deferred class ContextTypeDescriptor
@@ -3038,6 +3077,9 @@ inherit
 			is_equal
 	end
 feature
+	getUnitDeclaration: UnitDeclarationDescriptor is
+	deferred
+	end -- getUnitDeclaration
 end -- class ContextTypeDescriptor
 
 class UnitDeclarationDescriptor
@@ -3094,6 +3136,12 @@ feature {Any}
 			Result := fgTypes.seek (fgtDsc) > 0 
 		end -- if
 	end -- hasFormalGenericParameter
+
+	getUnitDeclaration: UnitDeclarationDescriptor is
+	do
+		Result := Current
+	end -- getUnitDeclaration
+
 
 	-- I do not remember why did I need this function :-)
 	--getUnitTypeDescriptor: UnitTypeCommonDescriptor is
@@ -11691,7 +11739,7 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 	
-	genericUnits: Array [UnitDeclarationDescriptor]
+	genericUnits: Array [ContextTypeDescriptor] --UnitDeclarationDescriptor]
 
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -11701,6 +11749,7 @@ feature {Any}
 		aliasDsc: UnitAliasDescriptor
 		teDsc: TypeOrExpressionDescriptor
 		contextTypes: Sorted_Array [ContextTypeDescriptor]
+		loadedUnits: Array [ContextTypeDescriptor]
 		pos: Integer
 		i, n: Integer
 		m: Integer
@@ -11756,7 +11805,7 @@ feature {Any}
 			if genericUnits /= Void then
 				-- We have loaded all generic units for the current generic type
 				if genericUnits.count = 1 then
-					unitDeclaration := genericUnits.item (1)
+					unitDeclaration := genericUnits.item (1).getUnitDeclaration
 					genericUnits := Void
 					debug
 						--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
@@ -11794,7 +11843,7 @@ feature {Any}
 							o.putNL ("Error: there is no generic unit in the provided context which fits the instantiation `" + out + "`")
 							Result := True
 						when 1 then
-							unitDeclaration := genericUnits.item (1)
+							unitDeclaration := genericUnits.item (1).getUnitDeclaration
 							genericUnits := Void
 							debug
 								--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
@@ -11834,29 +11883,78 @@ feature {Any}
 			pos	:= contextTypes.seek (unitDclDsc)
 			if pos > 0 then -- already registered
 				unitDeclaration ?= contextTypes.item (pos)
-				if unitDeclaration = Void then
-					-- It should be the alias then
+				check
+					unitDeclaration_found: unitDeclaration /= Void
+				end 
+				--if unitDeclaration = Void then
+				--	-- It should be the alias then
+				--	aliasDsc ?= contextTypes.item (pos)
+				--	check
+				--		non_void_: aliasDsc /= Void
+				--	end 
+				--	unitDeclaration := aliasDsc.unitDclDsc
+				--end -- if
+				foundInPool := True
+			-- Will register a bit later
+			--else -- have it registered
+			--	contextTypes.add_after (unitDclDsc, pos)
+			else
+				create aliasDsc.makeForSearch (name)
+				pos	:= contextTypes.seek (aliasDsc)
+				if pos > 0 then
 					aliasDsc ?= contextTypes.item (pos)
 					check
 						non_void_: aliasDsc /= Void
 					end 
 					unitDeclaration := aliasDsc.unitDclDsc
-				end -- if
-				foundInPool := True
-			else -- have it registered
-				contextTypes.add_after (unitDclDsc, pos)
+					foundInPool := True
+				end -- if				
 			end -- if
 
 			if not foundInPool then -- let's load it
-				unitDeclaration := context.loadUnitInterface (Current, o)
-				if unitDeclaration = Void then -- failed to load
+				--unitDeclaration := context.loadUnitInterface (Current, o)
+				loadedUnits := context.loadUnitInterface (Current, o)
+				--if unitDeclaration = Void then -- failed to load
+				if loadedUnits = Void then -- failed to load
+					contextTypes.add_after (unitDclDsc, pos) -- register to prevent load attempts again!
 					Result := True
-				else																
+				elseif loadedUnits.count = 1 then
+					unitDeclaration ?= contextTypes.add_it (loadedUnits.item (1).getUnitDeclaration)
+					check
+						loaded: unitDeclaration /= Void
+					end
+					genericUnits := Void
+					--contextTypes.add_after (unitDeclaration, pos)
+					
+					--if unitDeclaration.aliasName /= Void then				
+					--	create aliasDsc.init (unitDeclaration.aliasName, unitDeclaration)
+					--	if not contextTypes.added (aliasDsc) then
+					--		o.putNL ("Error: at least two types has the same name `" + unitDeclaration.aliasName + "`")
+					--		Result := True								
+					--	end -- if
+					--end -- if				
+					
 					-- Check that all types from its type pool and alias are loaded
 					if failedToLoadPoolTypesAndAlias (context, o) then
 						Result := True
 					end -- if
-				end -- if			
+				else
+					genericUnits := loadedUnits
+					unitDeclaration := Void
+					from
+						i := 1
+						n := genericUnits.count
+					until
+						i > n
+					loop
+						contextTypes.add (genericUnits.item (i))
+						i := i + 1
+					end -- loop
+					-- Check that all types from its type pool and alias are loaded
+					if failedToLoadPoolTypesAndAlias (context, o) then
+						Result := True
+					end -- if
+				end -- if
 			end -- if
 		end -- if
 		check
@@ -11874,6 +11972,8 @@ feature {Any}
 		j, m: Integer
 		formalsCount: Integer
 		fgDsc: FormalGenericDescriptor
+		unitDclDsc: UnitDeclarationDescriptor
+		unitAliasDsc: UnitAliasDescriptor
 		toSkip: Boolean
 	do
 		from
@@ -11882,55 +11982,65 @@ feature {Any}
 		until	
 			i > n
 		loop
-			formalsCount := genericUnits.item(i).formalGenerics.count
-			if factualsCount = formalsCount then
-				fgDsc := genericUnits.item(i).formalGenerics.item (index)
-				debug
-					--print ("Formal `" + fgDsc.out + "`: isType=" + fgDsc.isType.out + ", isRtn=" + fgDsc.isRoutine.out + ", isTupl=" + fgDsc.isTuple.out + "%N")
-					--print ("Factual:%T isType=" + isTyp.out + ", isRtn=" + isRtn.out + ", isTupl=" + isTpl.out + "%N")
+			unitDclDsc ?= genericUnits.item(i)
+			if unitDclDsc = Void then
+				unitAliasDsc ?= genericUnits.item(i)
+				check
+					unitAliasDsc /= Void
 				end 
-				if fgDsc.isType then -- and then isFactualExpr or else not isFactualExpr then
-					if not isTyp then
+				unitDclDsc := unitAliasDsc.unitDclDsc
+			end -- if
+			if unitDclDsc /= Void then
+				formalsCount := unitDclDsc.formalGenerics.count
+				if factualsCount = formalsCount then
+					fgDsc := unitDclDsc.formalGenerics.item (index)
+					debug
+						--print ("Formal `" + fgDsc.out + "`: isType=" + fgDsc.isType.out + ", isRtn=" + fgDsc.isRoutine.out + ", isTupl=" + fgDsc.isTuple.out + "%N")
+						--print ("Factual:%T isType=" + isTyp.out + ", isRtn=" + isRtn.out + ", isTupl=" + isTpl.out + "%N")
+					end 
+					if fgDsc.isType then -- and then isFactualExpr or else not isFactualExpr then
+						if not isTyp then
+							m := m + 1
+							debug
+								--print ("Excluding `" + fgDsc.out + "` Type /= non-Type%N")
+							end 
+							genericUnits.put(Void, i)
+							toSkip := True
+						end -- if
+					elseif isTyp then
 						m := m + 1
 						debug
-							--print ("Excluding `" + fgDsc.out + "` Type /= non-Type%N")
+							--print ("Excluding `" + fgDsc.out + "` non-Type /= Type%N")
 						end 
 						genericUnits.put(Void, i)
 						toSkip := True
 					end -- if
-				elseif isTyp then
+					if toSkip then
+						toSkip := False
+					elseif isRtn and then not fgDsc.isRoutine  then
+						m := m + 1
+						debug
+							--print ("Excluding `" + fgDsc.out + "` non-Rtn /= Rtn%N")
+						end 
+						genericUnits.put(Void, i)
+						toSkip := True
+					end -- if
+					if toSkip then
+						toSkip := False
+					elseif isTpl and then not fgDsc.isTuple then
+						m := m + 1
+						debug
+							--print ("Excluding `" + fgDsc.out + "` non-Tuple /= Tuple%N")
+						end 
+						genericUnits.put(Void, i)
+					end -- if
+				else -- # of factual generic arguments is not eual to # of formal generic parameters
 					m := m + 1
 					debug
-						--print ("Excluding `" + fgDsc.out + "` non-Type /= Type%N")
-					end 
-					genericUnits.put(Void, i)
-					toSkip := True
-				end -- if
-				if toSkip then
-					toSkip := False
-				elseif isRtn and then not fgDsc.isRoutine  then
-					m := m + 1
-					debug
-						--print ("Excluding `" + fgDsc.out + "` non-Rtn /= Rtn%N")
-					end 
-					genericUnits.put(Void, i)
-					toSkip := True
-				end -- if
-				if toSkip then
-					toSkip := False
-				elseif isTpl and then not fgDsc.isTuple then
-					m := m + 1
-					debug
-						--print ("Excluding `" + fgDsc.out + "` non-Tuple /= Tuple%N")
+						--print ("Excluding: formal = " +  formalsCount.out + ", factual = " + factualsCount.out + "%N")
 					end 
 					genericUnits.put(Void, i)
 				end -- if
-			else -- # of factual generic arguments is not eual to # of formal generic parameters
-				m := m + 1
-				debug
-					--print ("Excluding: formal = " +  formalsCount.out + ", factual = " + factualsCount.out + "%N")
-				end 
-				genericUnits.put(Void, i)
 			end -- if
 			i := i + 1
 		end -- loop
@@ -11988,10 +12098,13 @@ feature {Any}
 			unitDeclaration.setAliasName (aliasName)
 			-- Create an alias node to ensure it is registred too
 			create aliasDsc.init (aliasName, unitDeclaration)
-			context.sysDsc.allUnits.add (aliasDsc)
+			-- context.sysDsc.allUnits.add (aliasDsc)
+			if not context.sysDsc.allUnits.added (aliasDsc) then
+				o.putNL ("Error: at least two types has the same name `" + aliasName + "`")
+				Result := True								
+			end -- if
 		end -- if
 	end -- failedToLoadPoolTypesAndAlias
-
 
 	unitDeclaration: UnitDeclarationDescriptor
 	
