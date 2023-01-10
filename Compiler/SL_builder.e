@@ -61,12 +61,8 @@ feature {Any}
 		generators: Array [CodeGenerator]
 		i, n: Integer
 		j, m: Integer
-		--pos: Integer
 		unitAliasDsc: UnitAliasDescriptor
-		
-		-- for debugging
-		cntTypDsc: ContextTypeDescriptor
-		
+		cntTypDsc: ContextTypeDescriptor		
 	do
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
@@ -204,27 +200,8 @@ feature {Any}
 
 					o.putNL (sysDsc.allUnits.count.out + " units loaded")
 					debug
-						from
-							n := sysDsc.allUnits.count
-							i := 1
-						until
-							i > n					
-						loop
-							cntTypDsc := sysDsc.allUnits.item (i)
-							unitDclDsc ?= cntTypDsc
-							if unitDclDsc /= Void then
-								if unitDclDsc.aliasName = Void then
-									o.putNL ("#" + i.out + " Unit: " + unitDclDsc.fullUnitName)
-								else
-									o.putNL ("#" + i.out + " Unit: " + unitDclDsc.fullUnitName + " alias " + unitDclDsc.aliasName)
-								end -- if
-							end -- if
-							unitAliasDsc ?= cntTypDsc
-							if unitAliasDsc /= Void then
-								o.putNL ("#" + i.out + " Alias: " + unitAliasDsc.aliasName + " unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
-							end -- if
-							i := i + 1
-						end -- loop						
+						sysDsc.dumpContext (o)
+						
 					end -- debug
 
 					-- If all required types loaded 
@@ -496,7 +473,8 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 		ir_path: String
 		ast_files: Array [Fsys_Dat]
 		fileDsc: Fsys_Dat
-		unitDsc: CompilationUnitUnit
+		fileName: String
+		cuUnitDsc: CompilationUnitUnit
 		rtnDsc: CompilationUnitStandaloneRoutine
 		--rtnsDsc: CompilationUnitStandaloneRoutines
 		--routines: Sorted_Array [StandaloneRoutineDescriptor]
@@ -517,35 +495,42 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 				i > n
 			loop
 				fileDsc := ast_files.item (i) 
-				if fileDsc.name.has_substring (UnitSuffix) then
-					create unitDsc.make (Void)
-					if unitDsc.UnitIR_Loaded (fileDsc.path, o) then
-						debug
-							--trace ("Type `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
-						end -- debug
-						-- no need to store code for alias at all !!!
-						-- How to ignore alias code ... Or process it ....
-						--if cuDsc.type.name.is_equal () then
-							-- That is not alias code
-							unitDsc.attachSystemDescription (sysDsc)
-							if unitDsc.unitDclDsc.isInvalid (unitDsc, o) then
+				fileName := fileDsc.name
+				if fileName.has_substring (UnitSuffix) then
+					if not fileName.has_substring (AliasPrefix) then
+						-- Skip alias files - only unit ones are of interest
+						create cuUnitDsc.make (Void)
+						if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
+							debug
+								--trace ("Type `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+							end -- debug
+							cuUnitDsc.attachSystemDescription (sysDsc)
+							
+							if cuUnitDsc.unitDclDsc.isNotLoaded (cuUnitDsc, o) then
 								Result := True
 							else
-								from
-									j := 1
-									m := generators.count
-								until
-									j > m
-								loop
-									unitDsc.unitDclDsc.generate(generators.item (j))
-									j := j + 1
-								end -- loop
-							end -- if
-						--end -- if
-					else
-						Result := True
-					end -- if				
-				elseif fileDsc.name.has_substring (RoutinesSuffix) then 
+								debug
+									--sysDsc.dumpContext (o)
+								end
+								if cuUnitDsc.unitDclDsc.isInvalid (cuUnitDsc, o) then
+									Result := True
+								else
+									from
+										j := 1
+										m := generators.count
+									until
+										j > m
+									loop
+										cuUnitDsc.unitDclDsc.generate(generators.item (j))
+										j := j + 1
+									end -- loop
+								end -- if
+							end -- if					
+						else
+							Result := True
+						end -- if				
+					end -- if
+				elseif fileName.has_substring (RoutinesSuffix) then 
 					create rtnDsc.make (Void)
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
 						rtnDsc.attachSystemDescription (sysDsc)

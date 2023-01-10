@@ -73,6 +73,37 @@ feature {Any}
 	--allUnits: Sorted_Array [UnitDeclarationDescriptor] 
 	allUnits: Sorted_Array [ContextTypeDescriptor]
 
+	dumpContext (o: Output) is
+	local
+		i, n: Integer
+		unitDclDsc: UnitDeclarationDescriptor
+		unitAliasDsc: UnitAliasDescriptor
+		cntTypDsc: ContextTypeDescriptor
+	do
+		from
+			n := allUnits.count
+			o.putNL ("#### Total: " + n.out + " nodes")
+			i := 1
+		until
+			i > n					
+		loop
+			cntTypDsc := allUnits.item (i)
+			unitDclDsc ?= cntTypDsc
+			if unitDclDsc /= Void then
+				if unitDclDsc.aliasName = Void then
+					o.putNL ("#" + i.out + " Unit: " + unitDclDsc.fullUnitName)
+				else
+					o.putNL ("#" + i.out + " Unit: " + unitDclDsc.fullUnitName + " alias " + unitDclDsc.aliasName)
+				end -- if
+			end -- if
+			unitAliasDsc ?= cntTypDsc
+			if unitAliasDsc /= Void then
+				o.putNL ("#" + i.out + " Alias: " + unitAliasDsc.aliasName + " unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+			end -- if
+			i := i + 1
+		end -- loop						
+		o.putNL ("########################")
+	end -- dumpContext
 
 -- No need to do it at all !!!! 
 	--getFormalGenerics(generics: Array[TypeOrExpressionDescriptor]): Array [FormalGenericDescriptor] is
@@ -554,7 +585,7 @@ feature {Any}
 				aliasFileName := path + fs.separator
 			end -- if
 			fileName.append_string (IRfolderName  + fs.separator + clusterDsc.getNameAfterRenaming (unitName) + UnitSuffix + "." + INText)
-			aliasFileName.append_string (IRfolderName  + fs.separator + "@" + clusterDsc.getNameAfterRenaming (unitName) + UnitSuffix + "." + INText)
+			aliasFileName.append_string (IRfolderName  + fs.separator + AliasPrefix + clusterDsc.getNameAfterRenaming (unitName) + UnitSuffix + "." + INText)
 			Result := fs.file_exists (fileName) or else fs.file_exists (aliasFileName)			
 		end -- if
 		debug
@@ -1148,9 +1179,9 @@ feature {Any}
 	local	
 		pathPrefix: String
 		fileName: String
-		actualFileName: String
+		--actualFileName: String
 		cuDsc: CompilationUnitUnit
-		unitAliasDsc: UnitAliasDescriptor
+		--unitAliasDsc: UnitAliasDescriptor
 	do
 		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
 			pathPrefix := path
@@ -1180,19 +1211,40 @@ feature {Any}
 			end -- if
 		else
 			-- check for alias
-			fileName := pathPrefix + IRfolderName  + fs.separator + "@" + unitExternalName + UnitSuffix + "." + INText
-			actualFileName := getActualFileName (fileName)
-			if actualFileName /= Void  then
-				fileName := pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText
-				create cuDsc.make (Void)
-				if cuDsc.UnitIR_Loaded (fileName, o) then
-					-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
-					create unitAliasDsc.init (unitExternalName, cuDsc.unitDclDsc)
-					Result := sysDsc.allUnits.add_it (unitAliasDsc)
-				end -- if
-			end -- if
+			fileName := pathPrefix + IRfolderName  + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
+			Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
+			--actualFileName := getActualFileName (fileName)
+			--if actualFileName /= Void  then
+			--	fileName := pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText
+			--	create cuDsc.make (Void)
+			--	if cuDsc.UnitIR_Loaded (fileName, o) then
+			--		-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
+			--		create unitAliasDsc.init (unitExternalName, cuDsc.unitDclDsc)
+			--		Result := sysDsc.allUnits.add_it (unitAliasDsc)
+			--	end -- if
+			--end -- if
 		end -- if
 	end -- loadUnitInterafceFrom	
+	
+	loadUnitViaAlias(fileName, pathPrefix, unitExternalName: String; o: Output): UnitAliasDescriptor is
+	local
+		actualFileName: String
+		cuDsc: CompilationUnitUnit
+		unitAliasDsc: UnitAliasDescriptor
+	do	
+		actualFileName := getActualFileName (fileName)
+		if actualFileName /= Void  then
+			create cuDsc.make (Void)
+			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
+				-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
+				create unitAliasDsc.init (unitExternalName, cuDsc.unitDclDsc)
+				Result ?= sysDsc.allUnits.add_it (unitAliasDsc)
+				check
+					alias_regsitered: Result /= Void
+				end
+			end -- if
+		end -- if
+	end -- loadUnitViaAlias
 	
 	getActualFileName (fileName: String): String is
 	local
@@ -1366,17 +1418,30 @@ feature {None}
 				fileName := fileDsc.name
 
 				if fileName.has_substring (genericUnitNamePrefix) and then fileName.has_substring (UnitSuffix) then
-					create unitIR.make (Void)
-					if unitIR.UnitIR_Loaded (fileDsc.path, o) then						
-						unitDclDsc ?= sysDsc.allUnits.add_it (unitIR.unitDclDsc) -- register generic unit in the project context
-						check
-							unit_registered: unitDclDsc /= Void
-						end -- 
-						j := j + 1
-						Result.put (unitDclDsc, j)
+					if fileName.has_substring (AliasPrefix) then
+						-- Це ж алиас !!! XXX
+						unitDclDsc := loadUnitViaAlias (fileName, ir_path, unitName, o)
+						if unitDclDsc /= Void then
+							unitDclDsc ?= sysDsc.allUnits.add_it (unitDclDsc) -- register generic unit in the project context
+							check
+								unit_registered: unitDclDsc /= Void
+							end -- 
+							j := j + 1
+							Result.put (unitDclDsc, j)
+						end -- if
 					else
-						Result := Void
-						i := n
+						create unitIR.make (Void)
+						if unitIR.UnitIR_Loaded (fileDsc.path, o) then						
+							unitDclDsc ?= sysDsc.allUnits.add_it (unitIR.unitDclDsc) -- register generic unit in the project context
+							check
+								unit_registered: unitDclDsc /= Void
+							end -- 
+							j := j + 1
+							Result.put (unitDclDsc, j)
+						else
+							Result := Void
+							i := n
+						end -- if		
 					end -- if		
 				end -- if
 				i := i + 1
@@ -1920,7 +1985,7 @@ feature {Any}
 					-- Like store just a reference to the original IR file ... Need to design better 
 
 					--fName := filePrefix  + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
-					fName := filePrefix  + "@" + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
+					fName := filePrefix  + AliasPrefix + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
 					--if not IRstored (fName, uImg) then
 					if not dummyFileCreated (fName, unitDsc.getExternalName) then
 						o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
@@ -3097,22 +3162,6 @@ inherit
 		redefine
 			out
 	end
-	--Comparable
-	--	redefine
-	--		is_equal, out
-	--end
-	--BuildServer
-	--	undefine
-	--		out, is_equal
-	--end
-	--NamedDescriptor
-	--	undefine
-	--		is_equal
-	--end
-	--Identation
-	--	undefine
-	--		is_equal
-	--end
 create 
 	init, makeForSearch
 feature {Any}
@@ -3364,7 +3413,6 @@ feature {Any}
 			end -- loop
 		end -- if
 
-
 		n := usage.count
 		if n > 0 or else constants.count > 0 then
 			from
@@ -3563,7 +3611,6 @@ feature {Any}
 		aliasName := aName
 	end -- setAliasName
 	
-	--infix "<" (other: like Current): Boolean is
 	lessThan (other: like Current): Boolean is
 	local
 		i, n, m: Integer
@@ -3596,7 +3643,6 @@ feature {Any}
 		end -- if
 	end -- lessThan
 	
-	--is_equal (other: like Current): Boolean is
 	sameAs (other: like Current): Boolean is
 	local
 		i, n: Integer
@@ -3708,10 +3754,30 @@ feature {Any}
 		end -- if
 	end -- hasMember
 	
+	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+		i, n: Integer
+	do
+		from
+			i := 1
+			n := typePool.count
+		until
+			i > n
+		loop
+			if typePool.item(i).isNotLoaded (context, o) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+	end -- isNotLoaded
+
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 		i, n: Integer
 	do
+		debug
+			--o.putNL ("+++Info: unit declaration `" + fullUnitName + "` is_invalid started")
+		end
 		context.setCurrentUnit (Current)
 		from
 			i := 1
@@ -3737,7 +3803,10 @@ feature {Any}
 			i := i + 1
 		end -- loop
 		context.clearCurrentUnit
-	end -- checkValidity
+		debug
+			--o.putNL ("---Info: unit declaration `" + fullUnitName + "` is_invalid fullfilled")
+		end
+	end -- is_invalid
 	
 --feature {CompilationUnitCompound, SLangCompiler}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]

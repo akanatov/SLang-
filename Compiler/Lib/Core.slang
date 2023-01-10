@@ -1209,10 +1209,10 @@ unit DynamicObject
 		end
 	end
 	// Access members by object (address) 
-	final routines() : Array [RoutineDecsriptor] none
+	final routines() : Array [RoutineDescriptor] none
 	final attributes (): Array [AttributeDescriptor] none
 	final call (rtnDsc: ProcedureDescriptor; args: ()) none
-	final call (rtnDsc: FunctionDecsriptor; args: ()): Any none
+	final call (rtnDsc: FunctionDescriptor; args: ()): Any none
 	final get_value (attr: AttributeDescriptor): Any => attr.value
 	final set_value (attr: VariableDescriptor; value: Any) none
 	{ this } final findRoutine (rtn_name: String): ?RoutineDescriptor none
@@ -1247,7 +1247,7 @@ end // Procedure [Arguments -> ()]
 
 final unit FunctionDescriptor extend RoutineDescriptor
 	fType: TypeDescriptor
-	() alias apply (args: Arguments): Any none
+	() alias apply (args: ()): Any none
 		// That is a function call
 	FunctionDescriptor (:= name; := arguments; := fType) none
 end // Function [Arguments -> (), Result]

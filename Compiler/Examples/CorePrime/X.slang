@@ -144,7 +144,7 @@ end // Array
 
 
 unit DynamicObject
-	final routines() : Array [RoutineDecsriptor] none
+	final routines() : Array [RoutineDescriptor] none
 	final attributes (): Array [AttributeDescriptor] none
 	DynamicObject (bytes: Array [Byte]) none
 	

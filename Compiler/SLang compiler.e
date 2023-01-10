@@ -6,6 +6,7 @@ feature
 	ScriptSuffix: String is "$S"
 	RoutinesSuffix: String is "$R"
 	UnitSuffix: String is "$U"
+	AliasPrefix: String is "@"
 	SLangExt: String is "slang"
 	CLangExt: String is "clang"
 	SLNG_LIB: String is "SLNG_LIB"
