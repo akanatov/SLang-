@@ -2213,7 +2213,7 @@ end
 				end -- if
 			end
 		when scanner.type_name_token then
-			-- Module call or asignment into module attribute  - NOT SUPPORTED !!!!
+			-- Module call or asignment into module attribute  - the latter NOT SUPPORTED !!!!
 			name := scanner.tokenString
 			scanner.nextToken
 			if scanner.genericsStart then
@@ -2237,10 +2237,10 @@ end
 					-- parse init call: UnitName(  .... 
 					--create unitTypeDsc.init (name, Void)
 					create {InitCallDescriptor}initCallDsc.init (unitTypeDsc, parseArguments)
-					if currentUnitDsc.name.is_equal (name) then
+					if currentUnitDsc.name.is_equal (name) or else currentUnitDsc.hasParent (unitTypeDsc) then
 						Result := <<initCallDsc>>
 					else
-						validity_error ("Initializer for type `" + name + "` can not be called within the type `" + currentUnitDsc.name + "`")
+						validity_error ("Initializer for unit `" + name + "` can not be called within the unit `" + currentUnitDsc.name + "`")
 					end -- if
 				when scanner.dot_token then
 					-- ModuleName. 
@@ -3645,7 +3645,7 @@ end -- debug
 					forcedType ?= nmdDsc
 					if forcedType = Void then
 						-- Forced type cannot be formal generic
-						validity_error ("Formal generic parameter '" + nmdDsc.name + "` cannot be used asa forced type")
+						validity_error ("Formal generic parameter '" + nmdDsc.name + "` cannot be used as a forced type")
 						toLeave := True
 					end -- if
 				end -- if
@@ -4101,7 +4101,7 @@ end
 				if nmdDsc /= Void then
 					unitTypeDsc ?= nmdDsc
 					if unitTypeDsc = Void then
-						validity_error ("Improper type `" + nmdDsc.out + "` used as a type type")
+						validity_error ("Improper type `" + nmdDsc.out + "` used as a unit type")
 					else
 						if scanner.token = scanner.dot_token then
 							Result := parseWritableCall (unitTypeDsc)				
@@ -5140,7 +5140,7 @@ end -- debug
 							validity_error ( "Importing constants from the formal generic parameter `" + nmdDsc.out + "` is not possible")
 							wasError := True
 						elseif not Result.added (astUnitDsc) then
-							validity_warning ( "Importing constants from the type `" + astUnitDsc.out + "` more than once") -- .name 
+							validity_warning ( "Importing constants from the unit `" + astUnitDsc.out + "` more than once") -- .name 
 							-- wasError := True
 						end -- if 
 						if scanner.token = scanner.comma_token then
@@ -6168,7 +6168,7 @@ end -- debug
 					i > n
 				loop
 					if not members.added (m1.item (i)) then
-						validity_error( "Duplicated type member declaration `" + m1.item (i).name + "`") 
+						validity_error( "Duplicated unit member declaration `" + m1.item (i).name + "`") 
 						wasError := True
 					end -- if
 					i := i + 1
@@ -6488,7 +6488,7 @@ end -- debug
 				typeDsc := register_named_type (utnDsc)
 				utnDsc ?= typeDsc
 				if utnDsc = Void then
-					validity_error ("Improper type `" + typeDsc.out + "` is used as a type type")
+					validity_error ("Improper type `" + typeDsc.out + "` is used as a unit type")
 				else
 					Result := utnDsc
 				end -- if
@@ -6917,7 +6917,7 @@ end -- debug
 								toLeave := True
 							else
 								if theSameUnit1 (unitDsc, utnDsc) then
-									validity_error( "Attempt to inherit from itself. Extending type `" + utnDsc.out + "` in type `" + unitDsc.name + "`")
+									validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
 									--toLeave := True
 									-- Inheritance graph simple cycle
 								else
@@ -6926,7 +6926,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 									end -- if
 									create parentDsc.init (True, utnDsc)
 									if not unitDsc.parents.added (parentDsc) then
-										validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + unitDsc.name + "`")
+										validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
 										--toLeave := True
 										-- Repeated inheritance is prohibited
 									end -- if
@@ -7047,7 +7047,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 					commaFound := False
 					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 						-- attempt to override a member of generic parameter
-						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used in the use clause in type `" + currentUnitDsc.fullUnitName + "`")
+						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used in the use clause in unit `" + currentUnitDsc.fullUnitName + "`")
 						scanner.nextToken
 						toLeave := True
 						wasError := True
@@ -7065,7 +7065,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 								-- 		UnitTypeNameDescriptor [as Identifier]]
 								create eueDsc.init (utnd, Void)
 								if not usage.added (eueDsc) then
-									validity_error( "Duplicated import of consntants from type `" + eueDsc.out + "`") --  in type `" + unitDsc.name + "`")
+									validity_error( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in type `" + unitDsc.name + "`")
 									--toLeave := True
 									wasError := True
 								else
@@ -7078,7 +7078,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 									if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 										-- attempt to override a member of generic parameter
 										validity_error(
-											"Generic parameter name `" + scanner.tokenString + "` can not be used as new name for renaming in type `" +
+											"Generic parameter name `" + scanner.tokenString + "` can not be used as new name for renaming in unit `" +
 											currentUnitDsc.fullUnitName + "`"
 										)
 										scanner.nextToken
@@ -7108,7 +7108,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 								-- 		UnitTypeNameDescriptor [as Identifier]]
 								create eueDsc.init (utnd, Void)
 								if not usage.added (eueDsc) then
-									validity_warning ( "Duplicated import of consntants from type `" + eueDsc.out + "`") --  in type `" + unitDsc.name + "`")
+									validity_warning ( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in type `" + unitDsc.name + "`")
 									--wasError := True
 								end -- if
 								toLeave := True
@@ -7310,7 +7310,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				if not toLeave then
 					create sDsc.init (memberName, signatureDsc)
 					if not unitDsc.memberSelections.added (sDsc) then
-						validity_error( "Duplicated selection of `" + sDsc.out + "` in type `" + unitDsc.name + "`")
+						validity_error( "Duplicated selection of `" + sDsc.out + "` in unit `" + unitDsc.name + "`")
 					end -- if
 				end -- if
 			when scanner.comma_token then
@@ -7346,7 +7346,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		toLeave: Boolean
 	do
 		if unitDsc.findParent (uDsc) = Void then
-			validity_error( "Override refers to the type `" + uDsc.out + "` which is not a parent of type `" + unitDsc.name + "`")
+			validity_error( "Override refers to the unit `" + uDsc.out + "` which is not a parent of unit `" + unitDsc.name + "`")
 		end -- if
 		scanner.nextToken
 		if scanner.token = scanner.identifier_token then
@@ -7362,7 +7362,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			create imoDsc.init (uDsc, ident, signDsc)
 			-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
 			if not unitDsc.inheritedOverrides.added (imoDsc) then
-				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in type `" + unitDsc.name + "`")
+				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + unitDsc.name + "`")
 			end -- if
 			-- Now check for the list 
 			if scanner.token = scanner.comma_token then
@@ -7390,7 +7390,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							if unitDsc.hasFormalGenericParameter (scanner.tokenString) then
 								-- attempt to override a member of generic parameter
 								validity_error(
-									"Member of the generic parameter `" + scanner.tokenString + "` can not be overrided. Only type type members can be overrided"
+									"Member of the generic parameter `" + scanner.tokenString + "` can not be overrided. Only unit type members can be overrided"
 								)
 								scanner.nextToken
 								toLeave := True
@@ -7479,7 +7479,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 			scanner.nextToken
 			if unitDsc.hasFormalGenericParameter (ident) then
 				-- attempt to override a member of generic parameter
-				validity_error( "Member of the generic parameter `" + ident + "` can not be overrided. Only type type members can be overrided")
+				validity_error( "Member of the generic parameter `" + ident + "` can not be overrided. Only unit type members can be overrided")
 			else
 				inspect
 					scanner.token
@@ -7499,7 +7499,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 						if nmdDsc /= Void then
 							utnDsc ?= nmdDsc
 							if utnDsc = Void then
-								validity_error ("Incorrect type `" + nmdDsc.out + "` used as a parent type")
+								validity_error ("Incorrect type `" + nmdDsc.out + "` used as a parent unit")
 							else
 								-- override UnitTypeNameDescriptor.
 								if scanner.token = scanner.dot_token then
@@ -7662,7 +7662,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 							else
 								utnDsc1 := unitDsc.findParent (utnDsc)
 								if utnDsc1 = Void then
-									validity_error( "Initialization procedure can not be inherited from the type `" +  utnDsc.name + "` as it is not a parent of `" + unitDsc.name + "`")
+									validity_error( "Initialization procedure can not be inherited from unit `" +  utnDsc.name + "` as it is not a parent of `" + unitDsc.name + "`")
 								else
 									utnDsc := utnDsc1
 								end -- if
@@ -7678,9 +7678,9 @@ end -- debug
 									create ifpDsc.init (utnDsc, Void)
 								end -- if
 								if theSameUnit1 (unitDsc, utnDsc) then
-									validity_error( "Initialization procedure can not be inherited from the same type `" + unitDsc.name + "`")
+									validity_error( "Initialization procedure can not be inherited from the same unit `" + unitDsc.name + "`")
 								elseif not unitDsc.inhertitedInits.added (ifpDsc) then
-									validity_error( "Duplicated initialization procedure inheritance of `" + ifpDsc.out + "` in type `" + unitDsc.name + "`")
+									validity_error( "Duplicated initialization procedure inheritance of `" + ifpDsc.out + "` in unit `" + unitDsc.name + "`")
 								end -- if
 							end -- if
 						end -- if
@@ -7730,7 +7730,7 @@ end -- debug
 				toLeave := True
 			else
 				if not unitDsc.constObjects.added(cobjDsc) then
-					validity_error( "Duplicated constant declaration `" + cobjDsc.out + "` in type `" + unitDsc.name  +"'") 
+					validity_error( "Duplicated constant declaration `" + cobjDsc.out + "` in unit `" + unitDsc.name  +"'") 
 				end -- if
 				if scanner.token = scanner.comma_token then
 					scanner.nextToken
@@ -7938,22 +7938,22 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 --trace ("Init found for type " + unitDsc.name)
 			if rtnDsc.type /= Void then
 				-- init must be a procedure !!!
-				validity_error ("Initializer of type `" + unitDsc.name + "`" + " should not return a value, procedure expected")
+				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not return a value, procedure expected")
 				wasError := True
 			end -- if
 			if rtnDsc.isVirtual then
 				-- init must be effective !!!
-				validity_error ("Initializer of type `" + unitDsc.name + "`" + " should not be abstract, do-foreign-none expected")
+				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be abstract, do-foreign-none expected")
 				wasError := True
 			end -- if
 			if rtnDsc.isOverriding then
 				-- there is no overrding for init !!!
-				validity_error ("Initializer of type `" + unitDsc.name + "`" + " should not be an overiding")
+				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be an overiding")
 				wasError := True
 			end -- if
 			if rtnDsc.isFinal then
 				-- there is no overrding control for init !!!
-				validity_error ("Initializer of type `" + unitDsc.name + "`" + " should not be marked final")
+				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be marked final")
 				wasError := True
 			end -- if			
 			if not wasError then
@@ -9019,7 +9019,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				end -- if
 				if not unitDsc.unitMembers.added (mdDsc) then
 					--validity_error( "Duplicated declaration of member `" + mdDsc.name + "` in type `" + unitDsc.name + "`") 
-					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in type `" + unitDsc.name + "`") 
+					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in unit `" + unitDsc.name + "`") 
 				end -- if
 				i := i + 1
 			end -- loop
@@ -9419,7 +9419,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						if initDsc /= Void then
 							if not currentUnitDsc.initMembers.added (initDsc) then
 								-- Duplicated init 
-								validityError (initDsc.toSourcePosition, "Duplicated declaration of type  `" + unitName + "` initializer") 
+								validityError (initDsc.toSourcePosition, "Duplicated declaration of unit `" + unitName + "` initializer") 
 							end -- if
 						end -- if
 					else
@@ -9488,7 +9488,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 									if initDsc /= Void then
 										if not currentUnitDsc.initMembers.added (initDsc) then
 											-- Duplicated init 
-											validityError (initDsc.toSourcePosition, "Duplicated declaration of type  `" + unitName + "` initializer") 
+											validityError (initDsc.toSourcePosition, "Duplicated declaration of unit `" + unitName + "` initializer") 
 										end -- if
 									end -- if
 								else
@@ -9616,7 +9616,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			if scanner.blockEnd then
 				-- end of the type
 				if initialErrorsCount = errorsCount and then not ast.units.added (currentUnitDsc) then
-					validity_error( "More than one type with name `" + currentUnitDsc.name + "` in the same compilation source")
+					validity_error( "More than one unit with name `" + currentUnitDsc.name + "` in the same compilation source")
 				end -- if
 				scanner.nextToken
 			else

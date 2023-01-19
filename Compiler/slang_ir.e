@@ -1231,13 +1231,19 @@ feature {Any}
 		actualFileName: String
 		cuDsc: CompilationUnitUnit
 		unitAliasDsc: UnitAliasDescriptor
+		unitDclDsc: UnitDeclarationDescriptor
 	do	
 		actualFileName := getActualFileName (fileName)
 		if actualFileName /= Void  then
 			create cuDsc.make (Void)
 			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
 				-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
-				create unitAliasDsc.init (unitExternalName, cuDsc.unitDclDsc)
+
+				unitDclDsc ?= sysDsc.allUnits.add_it (cuDsc.unitDclDsc) -- register generic unit in the project context
+				check
+					unit_registered: unitDclDsc /= Void
+				end -- check
+				create unitAliasDsc.init (unitExternalName, unitDclDsc)
 				Result ?= sysDsc.allUnits.add_it (unitAliasDsc)
 				check
 					alias_regsitered: Result /= Void
@@ -1395,6 +1401,7 @@ feature {None}
 		genericUnitNamePrefix: String
 		fileName: String
 		unitDclDsc: UnitDeclarationDescriptor
+		unitAliasDsc: UnitAliasDescriptor
 	do
 		-- files pattern <unitName>$_*$U.int
 		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
@@ -1420,15 +1427,21 @@ feature {None}
 				if fileName.has_substring (genericUnitNamePrefix) and then fileName.has_substring (UnitSuffix) then
 					if fileName.has_substring (AliasPrefix) then
 						-- Це ж алиас !!! XXX
-						unitDclDsc := loadUnitViaAlias (fileName, ir_path, unitName, o)
-						if unitDclDsc /= Void then
-							unitDclDsc ?= sysDsc.allUnits.add_it (unitDclDsc) -- register generic unit in the project context
-							check
-								unit_registered: unitDclDsc /= Void
-							end -- 
+						--unitDclDsc := loadUnitViaAlias (fileName, ir_path, unitName, o)
+						unitAliasDsc := loadUnitViaAlias (fileName, ir_path, unitName, o)
+						if unitAliasDsc /= Void then
+							-- To DO WHAT ???
 							j := j + 1
-							Result.put (unitDclDsc, j)
+							Result.put (unitAliasDsc.unitDclDsc, j)
 						end -- if
+						--if unitAliasDsc /= Void then
+						--	unitDclDsc ?= sysDsc.allUnits.add_it (unitDclDsc) -- register generic unit in the project context
+						--	check
+						--		unit_registered: unitDclDsc /= Void
+						--	end -- 
+						--	j := j + 1
+						--	Result.put (unitDclDsc, j)
+						--end -- if
 					else
 						create unitIR.make (Void)
 						if unitIR.UnitIR_Loaded (fileDsc.path, o) then						
@@ -1988,7 +2001,7 @@ feature {Any}
 					fName := filePrefix  + AliasPrefix + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
 					--if not IRstored (fName, uImg) then
 					if not dummyFileCreated (fName, unitDsc.getExternalName) then
-						o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
+						o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
 						Result := Result + 1
 					end -- if
 				end -- if
@@ -1996,7 +2009,7 @@ feature {Any}
 					unitOfInterest.sameUnitFill (uImg.unitDclDsc)
 				end -- if
 			else
-				o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
+				o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
 			i := i + 1
@@ -3247,6 +3260,13 @@ feature {Any}
 		
 	parents: Sorted_Array [ParentDescriptor]
 		-- extend ParentDescriptor {"," ParentDescriptor}
+
+	hasParent (unitTypeDsc: UnitTypeNameDescriptor): Boolean is
+	require
+		parent_name_not_void: unitTypeDsc /= Void
+	do
+		Result := findParent (unitTypeDsc) /= Void
+	end -- hasParent
 	
 	findParent (utnDsc: UnitTypeNameDescriptor): UnitTypeNameDescriptor is
 	require
