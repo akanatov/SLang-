@@ -1211,8 +1211,10 @@ feature {Any}
 			end -- if
 		else
 			-- check for alias
-			fileName := pathPrefix + IRfolderName  + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
-			Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
+			fileName := pathPrefix + IRfolderName + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
+			if fs.file_exists (fileName) then
+				Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
+			end -- if
 			--actualFileName := getActualFileName (fileName)
 			--if actualFileName /= Void  then
 			--	fileName := pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText
@@ -1247,7 +1249,7 @@ feature {Any}
 				Result ?= sysDsc.allUnits.add_it (unitAliasDsc)
 				check
 					alias_regsitered: Result /= Void
-				end
+				end -- check
 			end -- if
 		end -- if
 	end -- loadUnitViaAlias
@@ -1393,6 +1395,7 @@ feature {None}
 	loadGenericUnitInterafcesFrom (path: String; unitName: String; o: Output): Array [UnitDeclarationDescriptor] is --CompilationUnitUnit] is
 	local
 		ir_path: String
+		path1: String
 		ast_files: Array [Fsys_Dat]
 		fileDsc: Fsys_Dat
 		i, n: Integer
@@ -1406,8 +1409,10 @@ feature {None}
 		-- files pattern <unitName>$_*$U.int
 		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
 			ir_path := path + IRfolderName
+			path1 := path
 		else
 			ir_path := path + fs.separator + IRfolderName
+			path1 := path + fs.separator
 		end -- if
 
 		if fs.folderExists (ir_path) then
@@ -1418,6 +1423,9 @@ feature {None}
 				j := 0
 				n := ast_files.count
 				create Result.make (1, n)
+				debug
+					--o.putNL(">>> Looking for files named like: " + genericUnitNamePrefix)
+				end -- debug
 			until
 				i > n
 			loop
@@ -1427,11 +1435,32 @@ feature {None}
 				if fileName.has_substring (genericUnitNamePrefix) and then fileName.has_substring (UnitSuffix) then
 					if fileName.has_substring (AliasPrefix) then
 						-- Це ж алиас !!! XXX
-						--unitDclDsc := loadUnitViaAlias (fileName, ir_path, unitName, o)
-						unitAliasDsc := loadUnitViaAlias (fileName, ir_path, unitName, o)
-						if unitAliasDsc /= Void then
+
+						--fileName := pathPrefix + IRfolderName + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
+						--if fs.file_exists (fileName) then
+						--	Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
+						--end -- if
+
+						
+						--unitAliasDsc := loadUnitViaAlias (fileName, ir_path, unitName, o)
+						
+						unitAliasDsc := loadUnitViaAlias (ir_path + fs.separator + fileName, path1, unitName, o)
+						if unitAliasDsc = Void then
+							debug
+								--o.putNL(">>> File alias - " + fileName + ", real unit NOT loaded !!!")
+							end -- debug
+							-- Failed to load a unit
+							Result := Void
+							i := n
+						else
+							debug
+								-- o.putNL(">>> File alias - " + fileName + ", real unit loaded")
+							end -- debug
 							-- To DO WHAT ???
 							j := j + 1
+							check
+								unit_with_alias_loaded: unitAliasDsc.unitDclDsc /= Void
+							end -- check
 							Result.put (unitAliasDsc.unitDclDsc, j)
 						end -- if
 						--if unitAliasDsc /= Void then
@@ -1443,6 +1472,9 @@ feature {None}
 						--	Result.put (unitDclDsc, j)
 						--end -- if
 					else
+						debug
+							--o.putNL(">>> File unit - " + fileName)
+						end -- debug
 						create unitIR.make (Void)
 						if unitIR.UnitIR_Loaded (fileDsc.path, o) then						
 							unitDclDsc ?= sysDsc.allUnits.add_it (unitIR.unitDclDsc) -- register generic unit in the project context
@@ -1834,10 +1866,10 @@ feature {None}
 			create aFile.make_open_read (fileName)
 			create Result.init_empty
 			Result ?= Result.retrieved (aFile)
-			aFile.close
 			if Result = Void then
 				o.putNL ("Consistency error: file `" + fileName + "` does not contain unit code")
 			end -- if
+			aFile.close
 		end -- if
 	rescue
 		wasError := True
@@ -11860,7 +11892,10 @@ feature {Any}
 				if unitDclDsc /= Void and then unitDclDsc.formalGenerics.count > 0 and then name.is_equal (unitDclDsc.name) then
 					-- get all genericUnits from the context
 					from
-						create genericUnits.make (1, n)
+						create genericUnits.make (1, n - i + 1)
+						debug
+							o.putNL (">>> Generic units named '" + name + "`, 1 found, reserved = " + (n - i + 1).out)
+						end -- debug
 						m := 1
 						genericUnits.put (unitDclDsc, m)
 						i := i + 1
@@ -11877,7 +11912,14 @@ feature {Any}
 						end -- if
 					end -- loop
 					if m < n then
+						debug
+							o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, truncated")
+						end -- debug
 						genericUnits.resize (1, m)
+					else
+						debug
+							o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, no need to truncate")
+						end -- debug
 					end -- if
 					foundInPool := True
 					debug
@@ -12071,6 +12113,9 @@ feature {Any}
 		until	
 			i > n
 		loop
+			check
+				genericUnits.item(i) /= Void
+			end 
 			unitDclDsc ?= genericUnits.item(i)
 			if unitDclDsc = Void then
 				unitAliasDsc ?= genericUnits.item(i)
