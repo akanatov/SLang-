@@ -1084,8 +1084,6 @@ feature {Any}
 	entity_name_not_unique (aName: String): Boolean is
 	require
 		non_void_name: aName /= Void
-	local	
-		memDsc: MemberDeclarationDescriptor
 	do
 		if currentRoutine /= Void then
 			if currentRoutine.hasParameterOrLocal (aName) then			
@@ -1093,8 +1091,7 @@ feature {Any}
 			end -- if
 		end -- if
 		if not Result and then currentUnit /= Void then
-			memDsc := currentUnit.hasMember (aName)
-			if memDsc /= Void then
+			if currentUnit.hasMember (aName) /= Void then
 				Result := True
 			end -- if
 		end -- if
@@ -1255,6 +1252,8 @@ feature {Any}
 	end -- loadUnitViaAlias
 	
 	getActualFileName (fileName: String): String is
+	require
+		file_name_not_void: fileName /= Void
 	local
 		file: File
 		wasError: Boolean
@@ -1292,10 +1291,11 @@ feature {Any}
 			--end -- if
 			--o.putNL (">>> Looking for unit `" + unitPrintableName + "` to be located in file  `" + unitExternalName + "`")
 		end	-- debug
-		o.putLine ("Looking for unit `" + unitPrintableName + "`")
 		if unitDsc.generics.count = 0 then
+			o.putLine ("Looking for unit `" + unitPrintableName + "`")
 			clusters := sysDsc.hasUnit(unitExternalName)
 		else
+			o.putLine ("Looking for generic unit `" + unitPrintableName + "`")
 			clusters := sysDsc.hasGenericUnit(unitExternalName)
 		end -- if
 		if clusters = Void or else clusters.count = 0 then
@@ -1434,7 +1434,7 @@ feature {None}
 
 				if fileName.has_substring (genericUnitNamePrefix) and then fileName.has_substring (UnitSuffix) then
 					if fileName.has_substring (AliasPrefix) then
-						-- Це ж алиас !!! XXX
+						-- Це ж алиас !!!
 
 						--fileName := pathPrefix + IRfolderName + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
 						--if fs.file_exists (fileName) then
@@ -2271,7 +2271,7 @@ feature {Any}
 		decIdent
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	-- when ([Identifier:] UnitTypeDescriptor) | Expression do StatementsList
+	-- when ([identifier:] UnitTypeDescriptor) | Expression do StatementsList
 	local
 		i, n: Integer
 	do
@@ -3329,7 +3329,8 @@ feature {Any}
 	constObjects: Sorted_Array [ConstObjectDescriptor]
 	
 	unitMembers: Sorted_Array [MemberDeclarationDescriptor]
-	initMembers: Sorted_Array [MemberDeclarationDescriptor]
+	initMembers: Sorted_Array [InitDeclarationDescriptor] -- MemberDeclarationDescriptor]
+	memberNames: Sorted_Array [String]
 	
 	invariantPredicates: Array [PredicateDescriptor]
 
@@ -3779,31 +3780,41 @@ feature {Any}
 	--once
 	--end -- initMemberForSearch
 
-	unitAttrForSearch: UnitAttributeDeclarationDescriptor is
-	once
-		create Result.make_for_search ("")
-	end -- unitAttrForSearch
+	--unitAttrForSearch: UnitAttributeDeclarationDescriptor is
+	--once
+	--	create Result.make_for_search ("")
+	--end -- unitAttrForSearch
 
-	unitRtnForSearch: UnitRoutineDeclarationDescriptor is
-	once
-		create Result.make_for_search ("")
-	end -- unitRtnForSearch
+	--unitRtnForSearch: UnitRoutineDeclarationDescriptor is
+	--once
+	--	create Result.make_for_search ("")
+	--end -- unitRtnForSearch
 	
-	hasMember (aName: String): MemberDeclarationDescriptor is
+	--unitInitForSearch: InitDeclarationDescriptor is
+	--once
+	--	create Result.make_for_search ()
+	--end -- unitRtnForSearch
+
+	hasMember (aName: String): Boolean is -- MemberDeclarationDescriptor is
 	require
 		non_void_name: aName /= Void
 	do
-		-- unitMembers: Sorted_Array [MemberDeclarationDescriptor]
-		-- initMembers: Sorted_Array [MemberDeclarationDescriptor]
-		unitRtnForSearch.set_name (aName)
-		Result := unitMembers.search (unitRtnForSearch)
-		if Result = Void then
-			Result := initMembers.search (unitRtnForSearch)
-			if Result = Void then
-				unitAttrForSearch.set_name (aName)
-				Result := unitMembers.search (unitAttrForSearch)
-			end -- if
-		end -- if
+		-- The trick is that we like to search by name not by name + signature !!!
+		Result := memberNames.seek (aName) > 0
+		
+		---- unitMembers: Sorted_Array [MemberDeclarationDescriptor]
+		---- initMembers: Sorted_Array [InitDeclarationDescriptor] --MemberDeclarationDescriptor]
+		--unitRtnForSearch.set_name (aName)
+		--Result := unitMembers.search (unitRtnForSearch)
+		--if Result = Void then
+		--	unitAttrForSearch.set_name (aName)
+		--	Result := unitMembers.search (unitAttrForSearch)
+		--	----Result := initMembers.search (unitInitForSearch)
+		--	--if Result = Void then
+		--	--	unitAttrForSearch.set_name (aName)
+		--	--	Result := unitMembers.search (unitAttrForSearch)
+		--	--end -- if
+		--end -- if
 	end -- hasMember
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -3893,7 +3904,8 @@ feature {None}
 		create inhertitedInits.make	
 		create constObjects.make
 		create unitMembers.make	
-		create initMembers.make	
+		create initMembers.make
+		create memberNames.make
 		create invariantPredicates.make (1, 0)
 	end -- init
 invariant	
@@ -4724,7 +4736,6 @@ feature {Any}
 				until
 					i > n
 				loop
---					if parameters.item (i).sameAs (other.parameters.item (i)) then
 					if parameters.item (i).is_equal (other.parameters.item (i)) then
 						i := i + 1
 					else
@@ -4752,11 +4763,9 @@ feature {Any}
 			until
 				i > n
 			loop
---				if parameters.item (i).lessThan (other.parameters.item (i)) then
 				if parameters.item (i) < other.parameters.item (i) then
 					Result := True
 					i := n + 1
---				elseif parameters.item (i).sameAs (other.parameters.item (i)) then
 				elseif parameters.item (i).is_equal (other.parameters.item (i)) then
 					i := i + 1
 				else
@@ -4975,7 +4984,7 @@ inherit
 			is_equal
 	end
 create
-	init, make_for_search
+	init --, make_for_search
 feature {Any}
 	--name: String
 	aliasName: String
@@ -4984,10 +4993,10 @@ feature {Any}
 	isFinal: Boolean
 	--type: TypeDescriptor
 	--expr: ExpressionDescriptor
-	make_for_search (aName: like name) is
-	do
-		name := aName
-	end -- make_for_search
+	--make_for_search (aName: like name) is
+	--do
+	--	name := aName
+	--end -- make_for_search
 	init (isO, isFi, isP, isS: Boolean; aName: like name; anAliasName: like aliasName; p: like parameters; t: like type; u: like usage; c: like constants; pre: like preconditions; isF, isV: Boolean; b: like innerBlock; e: like expr; post: like postconditions) is
 	require
 		name_not_void: aName /= Void
@@ -5032,7 +5041,7 @@ inherit
 	UnitRoutineDescriptor
 	end
 create
-	init
+	init --, make_for_search
 feature {Any}
 	isVirtual: Boolean is False
 	isOverriding: Boolean is False
@@ -5041,6 +5050,12 @@ feature {Any}
 	do
 		Result := unitDsc.name		
 	end -- name
+	--make_for_search (ud: like unitDsc) is
+	--require
+	--	current_unit_not_void: ud /= Void
+	--do
+	--	unitDsc := ud
+	--end -- make_for_search
 	unitDsc: UnitDeclarationDescriptor
 	init (ud: like unitDsc; currentVisibilityZone: like visibility; p: like parameters; u: like usage; c: like constants; pre: like preconditions; isF: Boolean; b: like innerBlock; post: like postconditions) is
 	require
@@ -5059,39 +5074,6 @@ feature {Any}
 	generate (cg: CodeGenerator) is
 	do
 	end -- generate
--- class interface INITDECLARATIONDESCRIPTOR
--- inherit UNITROUTINEDESCRIPTOR
--- creation init
--- feature 
--- 
---    col: INTEGER
---    row: INTEGER
--- 
---    isVirtual: BOOLEAN
---    isOverriding: BOOLEAN
---    isFinal: BOOLEAN
---    isforeign: BOOLEAN
---    isoneline: BOOLEAN
---    ispure: BOOLEAN
---    issafe: BOOLEAN
--- 
---    unitDsc: UNITDECLARATIONDESCRIPTOR
---    aliasname: STRING
--- 
--- 
---    constants: SORTED_ARRAY [UNITTYPENAMEDESCRIPTOR]
---    usage: SORTED_ARRAY [ENCLOSEDUSEEEMENTDESCRIPTOR]
--- 
---    expr: EXPRESSIONDESCRIPTOR
--- 
---    visibility: MEMBERVISIBILITYDESCRIPTOR
---    parameters: ARRAY [PARAMETERDESCRIPTOR]
---    type: TYPEDESCRIPTOR
---    preconditions: ARRAY [PREDICATEDESCRIPTOR]
---    innerblock: INNERBLOCKDESCRIPTOR
---    postconditions: ARRAY [PREDICATEDESCRIPTOR]
--- 
--- end interface -- class INITDECLARATIONDESCRIPTOR
 
 end -- class InitDeclarationDescriptor
 
@@ -6073,6 +6055,7 @@ feature {Any}
 	--type: TypeDescriptor
 	--expr: ExpressionDescriptor
 
+	-- Overloading for attribute names ????
 	sameAs (other: like Current): Boolean is
 	do
 		Result := name.is_equal (other.name)
@@ -9097,7 +9080,7 @@ feature {RoutineArguments}
 	end -- lessArguments
 end -- class RoutineArguments
 
-class InitCallDescriptor
+deferred class InitCallDescriptor
 inherit
 	--CallDescriptor
 	--	--rename
@@ -9112,15 +9095,59 @@ inherit
 	end
 
 	StatementDescriptor
-		redefine
+		--redefine
+		undefine
 			sameAs, lessThan
 	end
 	RoutineArguments
 		undefine
-			is_equal
-		redefine
-			out
+			is_equal, out
+		--redefine
+		--	out
 	end 
+--create
+--	init
+feature{Any}
+--	unitTypeDsc: UnitTypeNameDescriptor
+--	init (unitDsc: like unitTypeDsc; args: like arguments) is
+--	do
+--		unitTypeDsc := unitDsc
+--		arguments := args
+--	end -- if
+--	
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	local
+--	do
+--		-- unitTypeDsc should have visible constructor and arguments conform to its parameters
+--	end -- isInvalid
+--	generate (cg: CodeGenerator) is
+--	do
+--		-- do nothing so far
+--	end -- generate
+--	
+--	out: String is
+--	do
+--		Result := unitTypeDsc.out
+--		Result.append_string (outArguments)
+--	end -- out
+--	sameAs (other: like Current): Boolean is
+--	do
+--		Result := unitTypeDsc.is_equal (other.unitTypeDsc) and then sameArguments (other)
+--	end -- sameAs
+--	lessThan (other: like Current): Boolean is
+--	do
+--		Result := unitTypeDsc < other.unitTypeDsc
+--		if not Result and then unitTypeDsc.is_equal (other.unitTypeDsc) then
+--			Result := lessArguments (other)
+--		end -- if
+--	end -- lessThan
+end -- class InitCallDescriptor
+
+class ParentInitCallDescriptor
+inherit
+	InitCallDescriptor	
+	end
+
 create
 	init
 feature{Any}
@@ -9134,7 +9161,7 @@ feature{Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
 	do
-		-- unitTypeDsc shoudl have visible constructor and arguments conform to its parameters
+		-- unitTypeDsc should have visible constructor and arguments conform to its parameters
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
 	do
@@ -9157,7 +9184,51 @@ feature{Any}
 			Result := lessArguments (other)
 		end -- if
 	end -- lessThan
-end -- class InitCallDescriptor
+end -- class ParentInitCallDescriptor
+
+class CurrentInitCallDescriptor
+inherit
+	InitCallDescriptor	
+	end
+
+create
+	init
+feature{Any}
+	unitTypeDsc: UnitDeclarationDescriptor
+	init (unitDsc: like unitTypeDsc; args: like arguments) is
+	do
+		unitTypeDsc := unitDsc
+		arguments := args
+	end -- if
+	
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	local
+	do
+		-- unitTypeDsc should have visible constructor and arguments conform to its parameters
+	end -- isInvalid
+	generate (cg: CodeGenerator) is
+	do
+		-- do nothing so far
+	end -- generate
+	
+	out: String is
+	do
+		Result := unitTypeDsc.fullUnitName
+		Result.append_string (outArguments)
+	end -- out
+	sameAs (other: like Current): Boolean is
+	do
+		Result := unitTypeDsc.is_equal (other.unitTypeDsc) and then sameArguments (other)
+	end -- sameAs
+	lessThan (other: like Current): Boolean is
+	do
+		Result := unitTypeDsc < other.unitTypeDsc
+		if not Result and then unitTypeDsc.is_equal (other.unitTypeDsc) then
+			Result := lessArguments (other)
+		end -- if
+	end -- lessThan
+end -- class CurrentInitCallDescriptor
+
 
 class PrecursorCallDescriptor
 -- old ["{"UnitTypeName"}"] [Arguments] {CallChain}
@@ -10305,17 +10376,20 @@ feature {Any}
 		-- TBD: It should be deferred here and implemented in descendants
 	end -- unitDeclaration
 	
-	hasMember (memberName: String): MemberDeclarationDescriptor is
-	require
-		memeber_name_not_void: memberName /= Void
-	local
-		unitDclDsc: UnitDeclarationDescriptor
-	do
-		unitDclDsc := unitDeclaration
-		if unitDclDsc /= Void then
-			Result := unitDclDsc.hasMember (memberName)
-		end -- if
-	end -- hasMember
+	--hasMember (memberName: String): MemberDeclarationDescriptor is
+	--require
+	--	member_name_not_void: memberName /= Void
+	----local
+	----	unitDclDsc: UnitDeclarationDescriptor
+	--do
+	--	--unitDclDsc := unitDeclaration
+	--	--if unitDclDsc /= Void then
+	--	--	Result := unitDclDsc.hasMember (memberName)
+	--	--end -- if
+	--	if unitDeclaration /= Void then
+	--		Result := unitDeclaration.hasMember (memberName)
+	--	end -- if
+	--end -- hasMember
 
 end -- class TypeDescriptor
 
@@ -11894,7 +11968,7 @@ feature {Any}
 					from
 						create genericUnits.make (1, n - i + 1)
 						debug
-							o.putNL (">>> Generic units named '" + name + "`, 1 found, reserved = " + (n - i + 1).out)
+							--o.putNL (">>> Generic units named '" + name + "`, 1 found, reserved = " + (n - i + 1).out)
 						end -- debug
 						m := 1
 						genericUnits.put (unitDclDsc, m)
@@ -11913,12 +11987,12 @@ feature {Any}
 					end -- loop
 					if m < n then
 						debug
-							o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, truncated")
+							--o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, truncated")
 						end -- debug
 						genericUnits.resize (1, m)
 					else
 						debug
-							o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, no need to truncate")
+							--o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, no need to truncate")
 						end -- debug
 					end -- if
 					foundInPool := True

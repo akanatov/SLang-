@@ -7,15 +7,15 @@ val unit Bit
     const: // Bit is just 0 or 1
          0b0, 0b1
     end
-	pure & alias and (other: Bit): as this => if this = 0b0 do 0b0 elsif other = 0b0 do 0b0 else 0b1
+	safe & alias and (other: Bit): as this => if this = 0b0 do 0b0 elsif other = 0b0 do 0b0 else 0b1
 
-	pure | alias or (other: Bit): as this => if this = 0b1 do 0b1 elsif other = 0b1 do 0b1 else 0b0
+	safe | alias or (other: Bit): as this => if this = 0b1 do 0b1 elsif other = 0b1 do 0b1 else 0b0
 
-	pure ^ alias xor (other: Bit): as this => if this = other do 0b0 else 0b1
+	safe ^ alias xor (other: Bit): as this => if this = other do 0b0 else 0b1
 		
-	pure ~ alias not (): Bit => if this = 0b0 do 0b1 else 0b0
+	safe ~ alias not (): Bit => if this = 0b0 do 0b1 else 0b0
 		
-	pure + (other: Bit): Bit do
+	safe + (other: Bit): Bit do
 		/// Definition of addition
 		if this = 0b0 do
 			return other
@@ -25,7 +25,7 @@ val unit Bit
 			return 0b1
 		end
 	end // +
-	pure - (other: Bit): Bit do
+	safe - (other: Bit): Bit do
 		/// Definition of subtraction 
 		if this = other do
 			return 0b0
@@ -72,13 +72,13 @@ abstract unit () extend Enumeration // That is a tuple type
 		fieldIndex(fieldName) > 0 /// Tuple must have this field
 	none
 
-	pure () (pos: Cardinal): Any
+	safe () (pos: Cardinal): Any
 	/// Get tuple element at postion 'pos'
 	require
 		pos in 1 .. count /// Valid element postion 
 	none
 
-	pure () (fieldName: String): Any
+	safe () (fieldName: String): Any
 	/// Get tuple element by fieldName
 	require
 		fieldIndex(fieldName) > 0 /// Tuple must have this field
@@ -94,15 +94,15 @@ abstract unit () extend Enumeration // That is a tuple type
 		return in 0 .. count /// If no such field then 0 otherwise a valid position
 	end // fieldIndex
 
-	override pure succ: as this => this(this.ord + 1)
+	override safe succ: as this => this(this.ord + 1)
 	
-	override pure pred: as this => this(this.ord - 1)
+	override safe pred: as this => this(this.ord - 1)
 	
-	override pure first: as this => this(1)
+	override safe first: as this => this(1)
 	
-	override pure last: as this  => this(count)
+	override safe last: as this  => this(count)
 	
-	pure ord: Cardinal do
+	safe ord: Cardinal do
 		while pos in 1 .. count do
 			if this = this(pos) do
 				return pos
@@ -132,28 +132,28 @@ val unit Bit [bitsCount: Cardinal]
 		// return sizeof in bytes !!!! bitsCount is a number of bits !!!
 		return bitsCount / Platform.bitsInByteCount + if bitsCount \ Platform.bitsInByteCount = 0 do 0 else 1
 	end
-	pure & alias and (other: as this): as this do
+	safe & alias and (other: as this): as this do
 		result is this
 		while pos in 0 .. bitsCount - 1 do
 			result (pos) := if this(pos) = 0 or else other(pos) = 0 do 0 else 1
 		end
 		return result
 	end // and
-	pure | alias or (other: as this): as this do
+	safe | alias or (other: as this): as this do
 		result is this
 		while pos in 0 .. bitsCount - 1 do
 			result (pos) := if this(pos) = 1 or else other (pos) = 1 do 1 else 0
 		end
 		return result
 	end // or
-	pure ^ alias xor (other: as this): as this do
+	safe ^ alias xor (other: as this): as this do
 		result is this
 		while pos in 0 .. bitsCount - 1 do
 			result (pos) := if this (pos) = other(pos) do 0 else 1
 		end
 		return result
 	end
-	pure ~ alias not (): as this do
+	safe ~ alias not (): as this do
 		result is this
 		while pos in 0 .. bitsCount - 1 do
 			result.toggle (pos)
@@ -178,13 +178,13 @@ val unit Bit [bitsCount: Cardinal]
 			data (pos) := 0b1
 		end
 	end // ()
-	pure () (pos: Cardinal): Boolean
+	safe () (pos: Cardinal): Boolean
 	require
 		pos in 0 .. bitsCount - 1 // Valid position
 	do
 		return this (pos) = 0b1
 	end // ()
-	pure () (pos: Cardinal): 0 .. 1
+	safe () (pos: Cardinal): 0 .. 1
 	/// Get bit value at position 'pos'
 	require
 		pos in 0 .. bitsCount - 1 /// Valid position	 
@@ -195,7 +195,7 @@ val unit Bit [bitsCount: Cardinal]
 			return 1
 		end
 	end // ()
-	pure toInteger: Integer do
+	safe toInteger: Integer do
 		/// Build Integer from Bit  - sign bit is not processed !!!!! Negative !!!
 		var result is 0
 		var factor is 1
@@ -207,7 +207,7 @@ val unit Bit [bitsCount: Cardinal]
 		end
 		return result
 	end // ToInteger
-	pure toCardinal: Cardinal do
+	safe toCardinal: Cardinal do
 		/// Build Integer from Bit
 		var result: Cardinal is 0
 		var factor is 1
@@ -219,7 +219,7 @@ val unit Bit [bitsCount: Cardinal]
 		end
 		return result
 	end // toCardinal
-	pure getLowBits (bitsToGet: Cardinal) : Bit [bitsCount]
+	safe getLowBits (bitsToGet: Cardinal) : Bit [bitsCount]
 	require
 		bitsToGet in 1 .. bitsCount /// Valid Bits Count
 	do
@@ -252,16 +252,16 @@ abstract unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ 
 
 
 	/// Shallow equality tests
-    pure = (that: ? as this ): Boolean foreign
-	final pure /= (that: ? as this ): Boolean => not ( this = that);
-    = (that: as this): Boolean foreign 
-	final pure /= (that: as this ): Boolean => not ( this = that);
+    safe = (that: ? as this ): Boolean none
+	final safe /= (that: ? as this ): Boolean => not ( this = that);
+    = (that: as this): Boolean none
+	final safe /= (that: as this ): Boolean => not ( this = that);
 	
 	/// Deep equality tests
-    pure == (that: ? as this ): Boolean foreign
-	final pure != (that: ? as this ): Boolean => not ( this == that);
-    pure == (that: as this): Boolean foreign
-	final pure != (that: as this ): Boolean => not ( this == that)
+    safe == (that: ? as this ): Boolean none
+	final safe != (that: ? as this ): Boolean => not ( this == that);
+    safe == (that: as this): Boolean none
+	final safe != (that: as this ): Boolean => not ( this == that)
 	
 	/// Assignment definition
 	// {} := (that: ? as this ) foreign 
@@ -273,15 +273,15 @@ abstract unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ 
 //	{} := (that: as this ) foreign // No need to define default :=
 	
 	/// Utility
-	pure toString: String none
-	pure sizeOf: Cardinal none
+	safe toString: String none
+	safe sizeOf: Cardinal none
 	
 end // Any
 
 final unit System
-	pure clone (object: Any): as object foreign
+	pure clone (object: Any): as object none
 		/// Shallow version of the object clone operation
-	pure deepClone (object: Any): as object foreign
+	pure deepClone (object: Any): as object none
 		/// Deep version of the object clone operation
 end // System
 
@@ -307,26 +307,26 @@ abstract unit Numeric
 		/// Definition of One
 	pure zero: as this abstract
 		/// Definition of Zero
-	pure + (other: as this): as this abstract
+	safe + (other: as this): as this abstract
 		/// Definition of addition
 	ensure
 		this - other = old this
 	end // +
-	pure - (other: as this): as this abstract
+	safe - (other: as this): as this abstract
 		/// Definition of subtraction 
 	ensure
 		this + other = old this		
 	end // -
-	pure - : as this abstract
+	safe - : as this abstract
 		/// Definition of negation
 	ensure
 		- old this = this
 	end
-	pure / (other: as this): as this abstract
+	safe / (other: as this): as this abstract
 		/// Definition of division
-	pure * (other: as this): as this abstract
+	safe * (other: as this): as this abstract
 		/// Definition of multiplication
-	pure ^ (other: Numeric): as this abstract
+	safe ^ (other: Numeric): as this abstract
 		/// Definition of power
 require
 	this = this * one	/// Multiplication constituent 1
@@ -342,7 +342,7 @@ end // Numeric
 
 abstract unit Comparable 
 	safe < (other: as this ): Boolean abstract
-	override pure = (other: as this ): Boolean => not (this < other) and not (other < this)
+	override safe = (other: as this ): Boolean => not (this < other) and not (other < this)
 	final safe > (other: as this ): Boolean => other < this
 	final safe <= (other: as this ): Boolean => not (other < this)
 	final safe >= (other: as this ): Boolean => not (this < other)
@@ -463,7 +463,7 @@ end // Cardinal
 val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
 	// WIP!!!!
 	// the caveat how to distingush Integer.1 from Cardinal.1 - now Cardinal constants are not imported into Any due to name clash!!! .... 
-	// Cardinal must have := (that: Integer) toi ensure we may assign Integer to Cardinal with proper precondition!!! 
+	// Cardinal must have := (that: Integer) to ensure we may assign Integer to Cardinal with proper precondition!!! 
 	// Need to think more ...
 	// No need for cardinal so far ... But count should return Cardinal not Integer ...
 	// x is y.count
@@ -484,7 +484,6 @@ val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
 	override const last is maxCardinal
 	override const count: Cardinal is maxCardinal
 	override safe ord: Cardinal => this
-
 
 	Cardinal (other: Integer [bitsCount])
 	require
@@ -661,7 +660,7 @@ end // Byte
 abstract unit Rational extend Numeric, Comparable
 	numerator: Integer
 	denominator: Integer
-	pure toReal: Real => numerator / denominator
+	safe toReal: Real => numerator / denominator
 	// TBD!!!
 require
 	denominator /= 0 /// denominator must not be zero
@@ -670,7 +669,7 @@ end // Rational
 abstract unit Fixed extend Numeric, Comparable
 	value: Integer
 	scaleFactor: Integer // if scaleFactor is negative do scale is 1/-scaleFactor otherwise scaleFactor is scaleFactor :-)
-	pure toReal: Real => if scaleFactor < 0 do value / - scaleFactor else value * scaleFactor
+	safe toReal: Real => if scaleFactor < 0 do value / - scaleFactor else value * scaleFactor
 	// TBD!!!
 end // Fixed
 
@@ -1036,7 +1035,7 @@ unit Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray
  ///   One dimentional static array .... WIP !!!
 /*
 	a1 is Array [Real, (10,25)]
-C:\Work\SLang\Compiler\Lib\Core.slang	// That is what we like to have ....
+	// That is what we like to have ....
 */
 	override lower: Integer is arrayBounds(1)
 	override upper: Integer is arrayBounds(2)

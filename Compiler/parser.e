@@ -251,24 +251,24 @@ end
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.extend_token then -- parse extend type
+				when scanner.extend_token then -- parse extend unit
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse type
+					when scanner.unit_token then -- parse unit
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, False, False, True)
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.unit_token then -- parse type
+				when scanner.unit_token then -- parse unit
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.type_name_token then -- parse type
+					when scanner.type_name_token then -- parse unit
 						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
 						parseUnit (False, False, False, False, False, False)
 					else
@@ -2113,6 +2113,8 @@ feature {None}
 		callDsc: CallDescriptor
 		assignDsc: AssignmentStatementDescriptor
 		initCallDsc: InitCallDescriptor
+		parentDsc: UnitTypeNameDescriptor
+		toRegister: Boolean
 	do
 debug
 	--trace (">>>parseStatement1")
@@ -2221,26 +2223,46 @@ end
 				nmdDsc := parseUnitTypeName1 (name, False)
 				if nmdDsc /= Void then
 					unitTypeDsc ?= nmdDsc
+					if unitTypeDsc = Void then
+						validity_error ("Incorrect generic type `" + name + "`")
+					end -- if
 				end -- if				
 				--unitTypeDsc := parseUnitTypeName1 (name, False)
 			else
 				create unitTypeDsc.init (name, Void)
-				unitTypeDsc ?= register_named_type (unitTypeDsc)
-				if unitTypeDsc = Void then
-					validity_error ("Type `" + name + "` cannot be used as a module")
-				end -- if
+				-- Hold on !!! Not a time to register it !!!
+				toRegister := True
 			end -- if 
 			if unitTypeDsc /= Void then
 				inspect
 					scanner.token
 				when scanner.left_paranthesis_token then
 					-- parse init call: UnitName(  .... 
-					--create unitTypeDsc.init (name, Void)
-					create {InitCallDescriptor}initCallDsc.init (unitTypeDsc, parseArguments)
-					if currentUnitDsc.name.is_equal (name) or else currentUnitDsc.hasParent (unitTypeDsc) then
+					if currentUnitDsc.name.is_equal (name) then
+						if toRegister then
+							create {CurrentInitCallDescriptor}initCallDsc.init (currentUnitDsc, parseArguments)
+						else
+							create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, parseArguments)
+						end -- if
 						Result := <<initCallDsc>>
+						if not parsingInit then
+							validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
+						end -- if						
 					else
-						validity_error ("Initializer for unit `" + name + "` can not be called within the unit `" + currentUnitDsc.name + "`")
+						parentDsc := currentUnitDsc.findParent (unitTypeDsc)
+						if parentDsc = Void then
+							validity_error ("Initializer for unit `" + unitTypeDsc.out + "` can not be called within the unit `" + currentUnitDsc.fullUnitName + "`")
+						else
+							if toRegister then
+								create {ParentInitCallDescriptor}initCallDsc.init (parentDsc, parseArguments)
+							else
+								create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, parseArguments)
+							end -- if
+							Result := <<initCallDsc>>
+							if not parsingInit then
+								validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
+							end -- if						
+						end -- if
 					end -- if
 				when scanner.dot_token then
 					-- ModuleName. 
@@ -2249,8 +2271,44 @@ end
 					if stmtDsc /= Void then
 						Result := <<stmtDsc>>
 					end -- if
+					if toRegister then
+						unitTypeDsc ?= register_named_type (unitTypeDsc)
+						if unitTypeDsc = Void then
+							validity_error ("Type `" + name + "` cannot be used as a module")
+						end -- if
+					end -- if
 				else
-					syntax_error (<< scanner.left_paranthesis_token, scanner.dot_token>>)
+					if parsingInit then
+						if currentUnitDsc.name.is_equal (name) then
+							if toRegister then
+								create {CurrentInitCallDescriptor}initCallDsc.init (currentUnitDsc, Void)
+							else
+								create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, Void)
+							end -- if
+							Result := <<initCallDsc>>
+							if not parsingInit then
+								validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
+							end -- if						
+						else
+							parentDsc := currentUnitDsc.findParent (unitTypeDsc)
+							if parentDsc = Void then
+								validity_error ("Initializer for unit `" + unitTypeDsc.out + "` can not be called within the unit `" + currentUnitDsc.fullUnitName + "`")
+							else
+								if toRegister then
+									create {ParentInitCallDescriptor}initCallDsc.init (parentDsc, Void)
+								else
+									create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, Void)
+								end -- if
+								Result := <<initCallDsc>>
+								if not parsingInit then
+									validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
+								end -- if						
+							end -- if
+						end -- if
+					else
+						syntax_error (<<scanner.dot_token>>)
+					end -- if											
+					-- syntax_error (<< scanner.left_paranthesis_token, scanner.dot_token>>)
 				end -- inspect
 			end -- if
 		when scanner.var_token, scanner.rigid_token then
@@ -2729,6 +2787,9 @@ end
 			if utnDsc = Void then
 				toExit := True
 			else
+				debug
+					--trace ("expr: typeName - " + utnDsc.out)
+				end -- debug
 				inspect
 					scanner.token
 				when scanner.dot_token, scanner.left_paranthesis_token then
@@ -6466,7 +6527,7 @@ end -- debug
 		if nmdDsc /= Void then
 			Result ?= nmdDsc
 			if Result = Void then
-				validity_error ("Improper type `" + nmdDsc.out + "` used as a type type")
+				validity_error ("Improper type `" + nmdDsc.out + "` used as a unit type")
 			end -- if
 		end -- if		
 	end -- parseUnitTypeName
@@ -6716,7 +6777,7 @@ end -- debug
 		utnDsc: NamedTypeDescriptor -- UnitTypeNameDescriptor
 		name: String
 		signDsc: SignatureDescriptor
-		tDsc: TypeDescriptor -- NamedTypeDescriptor -- UnitTypeCommonDescriptor
+		tDsc: NamedTypeDescriptor -- TypeDescriptor -- NamedTypeDescriptor -- UnitTypeCommonDescriptor
 		rtnTypeDsc: RoutineTypeDescriptor
 		tupleTypeDsc: TupleTypeDescriptor
 		fgtnDsc: FormalGenericTypeNameDescriptor
@@ -6739,14 +6800,16 @@ end -- debug
 					if utnDsc = Void then
 						validity_error ("Generic parameter constraint is of incorrect type `" + tDsc.out + "`")
 						wasError := True
-					else
+					else					
 						if scanner.token = scanner.new_token then
 							scanner.nextToken
 							inspect
 								scanner.token
 							when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
 								signDsc := parseSignature
-								wasError := signDsc = Void
+								if not wasError then
+									wasError := signDsc = Void
+								end -- if
 							else
 								create signDsc.init (Void, Void)
 							end -- inspect
@@ -6890,6 +6953,7 @@ end -- debug
 		parentDsc: ParentDescriptor
 		utnDsc: UnitTypeNameDescriptor 
 		toLeave: Boolean
+		isNonConformant: Boolean
 		--commaFound: Boolean
 	do
 		from
@@ -6897,105 +6961,162 @@ end -- debug
 		until
 			toLeave
 		loop
-			inspect
-				scanner.token
-			when scanner.tilda_token then
-				--if commaFound or else unitDsc.parents.count = 0 then
-				--	commaFound := False
-					scanner.nextToken
-					if scanner.token = scanner.type_name_token then
-						if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
-							-- attempt to override a member of generic parameter
-							validity_error(
-								"Generic parameter name `" + scanner.tokenString + "` can not be used as a non-conformant parent type `" + currentUnitDsc.fullUnitName + "`"
-							)
-							scanner.nextToken
-							toLeave := True
-						else
-							utnDsc := parseUnitTypeName
-							if utnDsc = Void then
-								toLeave := True
-							else
-								if theSameUnit1 (unitDsc, utnDsc) then
-									validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
-									--toLeave := True
-									-- Inheritance graph simple cycle
-								else
-									if scanner.token = scanner.left_paranthesis_token then
-not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)” ")
-									end -- if
-									create parentDsc.init (True, utnDsc)
-									if not unitDsc.parents.added (parentDsc) then
-										validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
-										--toLeave := True
-										-- Repeated inheritance is prohibited
-									end -- if
-								end -- if
-								if scanner.token = scanner.comma_token then
-									scanner.nextToken
-								else
-									toLeave := True
-								end -- if
-							end -- if
-						end -- if
-					else
-						syntax_error (<<scanner.type_name_token>>)
-						toLeave := True
-					end -- if
-				--else
-				--	syntax_error (<<scanner.comma_token>>)
-				--	toLeave := True
-				--end -- if
-			when scanner.type_name_token then
-				--if commaFound or else unitDsc.parents.count = 0 then
-				--	commaFound := False					
-					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
-						-- attempt to override a member of generic parameter
-						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent type `" + currentUnitDsc.fullUnitName + "`")
-						scanner.nextToken
-						toLeave := True
-					else
-						utnDsc := parseUnitTypeName
-						if utnDsc = Void then
-							toLeave := True
-						else
-							if theSameUnit1 (unitDsc, utnDsc) then
-								validity_error( "Attempt to inherit from itself. Extending type `" + utnDsc.out + "` in type `" + unitDsc.name + "`")
-								--toLeave := True
-								-- Inheritance graph simple cycle
-							else
-								create parentDsc.init (False, utnDsc)
-								if not unitDsc.parents.added (parentDsc) then
-									validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + unitDsc.name + "`")
-									--toLeave := True
-									-- Repeated inheritance is prohibited
-								end -- if
-							end -- if
-							if scanner.token = scanner.comma_token then
-								scanner.nextToken
-							else
-								toLeave := True
-							end -- if
-						end -- if
-					end -- if		
-				--else
-				--	--syntax_error (<<scanner.comma_token>>)
-				--	toLeave := True
-				--end -- if
-			--when scanner.comma_token then
-			--	if commaFound or else unitDsc.parents.count = 0 then
-			--		syntax_error (<<scanner.identifier_token, scanner.tilda_token>>)
-			--		toLeave := True
-			--	else
-			--		commaFound := True
-			--		scanner.nextToken
-			--	end -- if
+			if scanner.token = scanner.tilda_token then
+				scanner.nextToken
+				isNonConformant := True
 			else
-				--if commaFound then
-					syntax_error (<<scanner.type_name_token, scanner.tilda_token>>)
-				--end -- if
+				isNonConformant := False
+			end -- if
+			if scanner.token = scanner.type_name_token then
+				if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
+					-- attempt to override a member of generic parameter
+					validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent type `" + currentUnitDsc.fullUnitName + "`")
+					scanner.nextToken
+					toLeave := True
+				else
+					utnDsc := parseUnitTypeName
+					if utnDsc = Void then
+						toLeave := True
+					else
+						if theSameUnit1 (unitDsc, utnDsc) then
+							validity_error( "Attempt to inherit from itself. Extending type `" + utnDsc.out + "` in type `" + unitDsc.name + "`")
+							--toLeave := True
+							-- Inheritance graph simple cycle
+						else
+							--if utnDsc.name.is_equal (unitDsc.name) then
+							--	validity_error ("Unit `" + unitDsc.name + "` can't extend unit with the same name `" + utnDsc.out + "`")
+							--	-- Prevent unit name overloading in case of inheritance
+							--end -- if
+							-- Cardinal inherits Cardinal [...]
+							-- Huh ...
+							
+							create parentDsc.init (isNonConformant, utnDsc)
+							if not unitDsc.parents.added (parentDsc) then
+								validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + unitDsc.name + "`")
+								--toLeave := True
+								-- Repeated inheritance is prohibited
+							end -- if
+						end -- if
+						if scanner.token = scanner.comma_token then
+							scanner.nextToken
+						else
+							toLeave := True
+						end -- if
+					end -- if
+				end -- if		
+			else
+				syntax_error (<<scanner.type_name_token, scanner.tilda_token>>)
 				toLeave := True
-			end -- inspect
+			end -- if
+
+			
+			--inspect
+			--	scanner.token
+			--when scanner.tilda_token then
+			--	--if commaFound or else unitDsc.parents.count = 0 then
+			--	--	commaFound := False
+			--		scanner.nextToken
+			--		if scanner.token = scanner.type_name_token then
+			--			if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
+			--				-- attempt to override a member of generic parameter
+			--				validity_error(
+			--					"Generic parameter name `" + scanner.tokenString + "` can not be used as a non-conformant parent type `" + currentUnitDsc.fullUnitName + "`"
+			--				)
+			--				scanner.nextToken
+			--				toLeave := True
+			--			else
+			--				utnDsc := parseUnitTypeName
+			--				if utnDsc = Void then
+			--					toLeave := True
+			--				else
+			--					if theSameUnit1 (unitDsc, utnDsc) then
+			--						validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + unitDsc.name + "`")
+			--						--toLeave := True
+			--						-- Inheritance graph simple cycle
+			--					else
+			--						if utnDsc.name.is_equal (unitDsc.name) then
+			--							validity_error ("Unit `" + unitDsc.name + "` can't extend unit with the same name `" + utnDsc.out + "`")
+			--							-- Prevent unit name overloading in case of inheritance
+			--						end -- if
+			--						if scanner.token = scanner.left_paranthesis_token then
+			--							not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)” ")
+			--						end -- if
+			--						create parentDsc.init (True, utnDsc)
+			--						if not unitDsc.parents.added (parentDsc) then
+			--							validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
+			--							--toLeave := True
+			--							-- Repeated inheritance is prohibited
+			--						end -- if
+			--					end -- if
+			--					if scanner.token = scanner.comma_token then
+			--						scanner.nextToken
+			--					else
+			--						toLeave := True
+			--					end -- if
+			--				end -- if
+			--			end -- if
+			--		else
+			--			syntax_error (<<scanner.type_name_token>>)
+			--			toLeave := True
+			--		end -- if
+			--	--else
+			--	--	syntax_error (<<scanner.comma_token>>)
+			--	--	toLeave := True
+			--	--end -- if
+			--when scanner.type_name_token then
+			--	--if commaFound or else unitDsc.parents.count = 0 then
+			--	--	commaFound := False					
+			--		if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
+			--			-- attempt to override a member of generic parameter
+			--			validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent type `" + currentUnitDsc.fullUnitName + "`")
+			--			scanner.nextToken
+			--			toLeave := True
+			--		else
+			--			utnDsc := parseUnitTypeName
+			--			if utnDsc = Void then
+			--				toLeave := True
+			--			else
+			--				if theSameUnit1 (unitDsc, utnDsc) then
+			--					validity_error( "Attempt to inherit from itself. Extending type `" + utnDsc.out + "` in type `" + unitDsc.name + "`")
+			--					--toLeave := True
+			--					-- Inheritance graph simple cycle
+			--				else
+			--					if utnDsc.name.is_equal (unitDsc.name) then
+			--						validity_error ("Unit `" + unitDsc.name + "` can't extend unit with the same name `" + utnDsc.out + "`")
+			--						-- Prevent unit name overloading in case of inheritance
+			--					end -- if
+			--					create parentDsc.init (False, utnDsc)
+			--					if not unitDsc.parents.added (parentDsc) then
+			--						validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + unitDsc.name + "`")
+			--						--toLeave := True
+			--						-- Repeated inheritance is prohibited
+			--					end -- if
+			--				end -- if
+			--				if scanner.token = scanner.comma_token then
+			--					scanner.nextToken
+			--				else
+			--					toLeave := True
+			--				end -- if
+			--			end -- if
+			--		end -- if		
+			--	--else
+			--	--	--syntax_error (<<scanner.comma_token>>)
+			--	--	toLeave := True
+			--	--end -- if
+			----when scanner.comma_token then
+			----	if commaFound or else unitDsc.parents.count = 0 then
+			----		syntax_error (<<scanner.identifier_token, scanner.tilda_token>>)
+			----		toLeave := True
+			----	else
+			----		commaFound := True
+			----		scanner.nextToken
+			----	end -- if
+			--else
+			--	--if commaFound then
+			--		syntax_error (<<scanner.type_name_token, scanner.tilda_token>>)
+			--	--end -- if
+			--	toLeave := True
+			--end -- inspect
 		end -- loop
 	end -- parseInheritanceClause
 
@@ -7539,15 +7660,14 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		end -- inspect
 	end -- parseInheritedMemberOverridingOrMemberDeclaration
 
+	parsingInit: Boolean 
+	
 	parseInitDeclaration (unitDsc: UnitDeclarationDescriptor; currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
 	--75 InitDeclaration: UnitName [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
 	--                    ^     
 	require
 		non_void_current_unit: unitDsc /= Void
 		valid_token: validToken(<<scanner.type_name_token>>)
-	--require
-	--	valid_token: validToken (<<scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.foreign_token,
-	--		scanner.do_token, scanner.left_curly_bracket_token>>)
 	local
 		parameters: Array [ParameterDescriptor]
 		preconditions: Array [PredicateDescriptor]
@@ -7558,6 +7678,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 		isForeign: Boolean
 		wasError: Boolean
 	do
+		parsingInit := True
 		scanner.nextToken
 		if scanner.token = scanner.left_paranthesis_token then
 			-- scanner.nextToken
@@ -7611,6 +7732,7 @@ not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)”
 				end -- if
 			end -- if
 		end -- if	
+		parsingInit := False
 	end -- parseInitDeclaration
 	
 	parseInitProcedureInheritanceOrMemberDeclaration
@@ -8820,7 +8942,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 --trace ("parseMemberDeclaration isOverriding: " + isO.out + " no name")
 			inspect
 				scanner.token
-			when scanner.override_token then	
+			when scanner.override_token then
 				-- routine or attribute
 				scanner.nextToken
 				isOverriding := True
@@ -8970,7 +9092,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			else
 				inspect
 					scanner.token
-				when scanner.alias_token, scanner.left_paranthesis_token, scanner.do_token, scanner.require_token, scanner.one_line_function_token, scanner.final_token then	
+				when scanner.alias_token, scanner.left_paranthesis_token, scanner.do_token, scanner.require_token, scanner.one_line_function_token,
+					scanner.final_token
+				then	
 					-- routine parameters
 					rtnDsc := parseUnitRoutine (isOverriding, isFinal, isPure, isSafe, name, Void, scanner.token = scanner.one_line_function_token)
 					if rtnDsc /= Void then
@@ -9017,7 +9141,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				if mdDsc.visibility = Void then
 					mdDsc.setVisibility (currentVisibilityZone)
 				end -- if
-				if not unitDsc.unitMembers.added (mdDsc) then
+				if unitDsc.unitMembers.added (mdDsc) then
+					unitDsc.memberNames.add (mdDsc.name)
+				else
 					--validity_error( "Duplicated declaration of member `" + mdDsc.name + "` in type `" + unitDsc.name + "`") 
 					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in unit `" + unitDsc.name + "`") 
 				end -- if
@@ -9478,7 +9604,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 								scanner.const_token, scanner.rigid_token, scanner.assignment_token
 							then
 								-- parse MemberDeclaration
---trace ("member with visibility " + mvDsc.out)
+								debug
+									--trace ("member with visibility " + mvDsc.out)
+								end -- debug
 								parseMember (mvDsc, currentUnitDsc, False, Void)
 							when scanner.type_name_token then
 								typeName := scanner.tokenString

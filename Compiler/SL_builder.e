@@ -122,7 +122,7 @@ feature {Any}
 																	
 						--attachedTypeDsc ?= typeDsc
 						--if attachedTypeDsc /= Void then
-						--	create aliasTypeDsc.init (typeDsc.aliasName, attachedTypeDsc)
+						--	create alias	TypeDsc.init (typeDsc.aliasName, attachedTypeDsc)
 						--	if aliasTypes.added (aliasTypeDsc) then
 						--		check
 						--			unit_was_loaded: attachedTypeDsc.unitDeclaration /= Void
