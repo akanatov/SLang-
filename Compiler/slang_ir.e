@@ -73,6 +73,31 @@ feature {Any}
 	--allUnits: Sorted_Array [UnitDeclarationDescriptor] 
 	allUnits: Sorted_Array [ContextTypeDescriptor]
 
+	contextValidated (o: Output): Boolean is
+	local
+		i: Integer
+		unitDclDsc: UnitDeclarationDescriptor
+		--unitAliasDsc: UnitAliasDescriptor
+		--cntTypDsc: ContextTypeDescriptor
+	do
+		from
+			i := allUnits.count
+			Result := True
+		until
+			i <= 0
+		loop
+			unitDclDsc ?= allUnits.item (i)
+			if unitDclDsc = Void then
+				i := 0
+			else
+				if unitDclDsc.hasInvalidateInterface (o) then
+					Result := False
+				end -- if
+				i := i - 1
+			end -- if
+		end -- loop						
+	end -- contextValidated
+	
 	dumpContext (o: Output) is
 	local
 		i, n: Integer
@@ -145,50 +170,26 @@ feature {Any}
 	--	end -- loop
 	--end -- getFormalGenerics
 	
-	checkSources(o: Output) is
+	sourcesActual(o: Output): Boolean is
 	-- Check all sources across all clusters
 	local
-		processedFolders: Sorted_Array [String]
-		folderName: String
-		i, n: Integer
+		i: Integer
 	do
-		if from_paths = Void then
-			from
-				i := 1
-				n := clusters.count
-			until
-				i > n
-			loop
-				parseFolder (clusters.item (i).name, o)
-				i := i + 1
-			end -- loop
-		else
-			from
-				create processedFolders.make
-				i := 1
-				n := from_paths.count
-			until
-				i > n
-			loop
-				folderName := fs.absolute_path (from_paths.item (i))
-				parseFolder (folderName, o)
-				processedFolders.add (folderName)
-				i := i + 1
-			end -- loop
-			from
-				i := 1
-				n := clusters.count
-			until
-				i > n
-			loop
-				folderName := fs.absolute_path (clusters.item (i).name)
-				if processedFolders.search (folderName) = Void then
-					parseFolder (folderName, o)
-				end -- if
-				i := i + 1
-			end -- loop
-		end -- if
-	end -- checkSources
+		from
+			i := clusters.count
+			debug
+				--o.putNL ("Checking actuality of `" + i.out + "` clusters")
+			end -- debug
+			Result := True
+		until
+			i <= 0
+		loop
+			if failedToParseFolder (clusters.item (i).name, o) then
+				Result := False
+			end -- if
+			i := i - 1
+		end -- loop
+	end -- sourcesActual
 
 	safe_file_list (path: String): Array [FSys_Dat] is
 	require	
@@ -237,7 +238,7 @@ feature {Any}
 		end -- loop
 	end -- readMarkers
 
-	parseFolder (path: String; o: Output) is
+	failedToParseFolder (path: String; o: Output): Boolean is
 	require	
 		non_void_path: path /= Void
 		non_void_output: o /= Void
@@ -256,7 +257,6 @@ feature {Any}
 		ext: String
 		slangFileCount: Integer
 		saveErrCount: Integer
-		skipBuild: Boolean
 		toParse: Boolean
 		actualFilesCount: Integer
 		i, n: Integer
@@ -305,24 +305,24 @@ feature {Any}
 		end	-- loop
 		
 		if slangFileCount = 0 then
-			o.putLine ("All sources are up-to-date")
+			o.putLine ("All sources at `" + path + "` are up-to-date")
 		else
 			if slangFileCount < n then
 				files.resize (1, slangFileCount)
 			end -- if
-			inspect
-				actualFilesCount
-			when 0 then
-			when 1 then
-				o.putLine ("1 source file is actual ...")
-			else
-				o.putLine (actualFilesCount.out + " source files are actual ...")
-			end -- inspect
+			--inspect
+			--	actualFilesCount
+			--when 0 then
+			--when 1 then
+			--	o.putLine ("1 source file is actual ...")
+			--else
+			--	o.putLine (actualFilesCount.out + " source files are actual ...")
+			--end -- inspect
 			n := slangFileCount
 			from 
-				if n > 0 then
-					o.putLine (n.out + " files to be parsed to actualize ...")
-				end -- if
+				--if n > 0 then
+				--	o.putLine (n.out + " files to be parsed to actualize ...")
+				--end -- if
 				i := 1
 			until
 				i > n
@@ -360,30 +360,30 @@ feature {Any}
 									"` parsed with no errors. But some parsing results were not stored due to " + 
 									saveErrCount.out + " I/O errors!"
 								)
-								skipBuild := True
+								Result := True
 							end -- if
 						else
 							o.putLine (
 								"Failed to create folder `" + IRfolderName + 
 								"` to store internal files. Parsing results of file `" + fName + "` are not saved!"
 							)
-							skipBuild := True
+							Result := True
 						end -- if
 					when 1 then
 						o.putLine ("File `" + fName + "` parsed with 1 error!")
-						skipBuild := True
+						Result := True
 					else
 						o.putLine ("File `" + fName + "` parsed with " + parser.errorsCount.out + " errors!")
-						skipBuild := True
+						Result := True
 					end -- inspect
 				else
 					o.putLine ("File `" + fName + "` not found or cannot be opened for parsing")
-					skipBuild := True
+					Result := True
 				end -- if
 				i := i + 1
 			end -- loop
 		end -- if
-	end -- parseFolder
+	end -- failedToParseFolder
 		
 	--is_script: Boolean is
 	--do
@@ -3236,7 +3236,6 @@ feature {Any}
 		Result := Current
 	end -- getUnitDeclaration
 
-
 	-- I do not remember why did I need this function :-)
 	--getUnitTypeDescriptor: UnitTypeCommonDescriptor is
 	--do
@@ -3776,45 +3775,12 @@ feature {Any}
 		end -- loop
 	end -- generate
 	
-	--initMemberForSearch: is
-	--once
-	--end -- initMemberForSearch
 
-	--unitAttrForSearch: UnitAttributeDeclarationDescriptor is
-	--once
-	--	create Result.make_for_search ("")
-	--end -- unitAttrForSearch
-
-	--unitRtnForSearch: UnitRoutineDeclarationDescriptor is
-	--once
-	--	create Result.make_for_search ("")
-	--end -- unitRtnForSearch
-	
-	--unitInitForSearch: InitDeclarationDescriptor is
-	--once
-	--	create Result.make_for_search ()
-	--end -- unitRtnForSearch
-
-	hasMember (aName: String): Boolean is -- MemberDeclarationDescriptor is
+	hasMember (aName: String): Boolean is
 	require
 		non_void_name: aName /= Void
 	do
-		-- The trick is that we like to search by name not by name + signature !!!
-		Result := memberNames.seek (aName) > 0
-		
-		---- unitMembers: Sorted_Array [MemberDeclarationDescriptor]
-		---- initMembers: Sorted_Array [InitDeclarationDescriptor] --MemberDeclarationDescriptor]
-		--unitRtnForSearch.set_name (aName)
-		--Result := unitMembers.search (unitRtnForSearch)
-		--if Result = Void then
-		--	unitAttrForSearch.set_name (aName)
-		--	Result := unitMembers.search (unitAttrForSearch)
-		--	----Result := initMembers.search (unitInitForSearch)
-		--	--if Result = Void then
-		--	--	unitAttrForSearch.set_name (aName)
-		--	--	Result := unitMembers.search (unitAttrForSearch)
-		--	--end -- if
-		--end -- if
+		Result := memberNames.seek (aName) > 0		
 	end -- hasMember
 	
 	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
@@ -3833,6 +3799,25 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- isNotLoaded
+
+	isValidated: Boolean
+	isValidating: Boolean
+	hasInvalidateInterface (o: Output): Boolean is
+	do
+		if not isValidated then
+			isValidating := True
+			debug
+				o.putNL (">Info: unit `" + fullUnitName + "` interface validation started")
+			end
+			
+			
+			debug
+				o.putNL ("<Info: unit `" + fullUnitName + "` interface validation done")
+			end
+			isValidated := True
+			isValidating := False
+		end -- if
+	end -- hasInvalidateInterface
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -9082,65 +9067,17 @@ end -- class RoutineArguments
 
 deferred class InitCallDescriptor
 inherit
-	--CallDescriptor
-	--	--rename
-	--	--	outCallChain as out, 
-	--	--	theSameCallChain as sameAs,
-	--	--	lessThanCallChain as lessThan
-	--	redefine
-	--		sameAs, lessThan
-	--end
-
 	ExpressionDescriptor
 	end
-
 	StatementDescriptor
-		--redefine
 		undefine
 			sameAs, lessThan
 	end
 	RoutineArguments
 		undefine
 			is_equal, out
-		--redefine
-		--	out
 	end 
---create
---	init
 feature{Any}
---	unitTypeDsc: UnitTypeNameDescriptor
---	init (unitDsc: like unitTypeDsc; args: like arguments) is
---	do
---		unitTypeDsc := unitDsc
---		arguments := args
---	end -- if
---	
---	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
---	local
---	do
---		-- unitTypeDsc should have visible constructor and arguments conform to its parameters
---	end -- isInvalid
---	generate (cg: CodeGenerator) is
---	do
---		-- do nothing so far
---	end -- generate
---	
---	out: String is
---	do
---		Result := unitTypeDsc.out
---		Result.append_string (outArguments)
---	end -- out
---	sameAs (other: like Current): Boolean is
---	do
---		Result := unitTypeDsc.is_equal (other.unitTypeDsc) and then sameArguments (other)
---	end -- sameAs
---	lessThan (other: like Current): Boolean is
---	do
---		Result := unitTypeDsc < other.unitTypeDsc
---		if not Result and then unitTypeDsc.is_equal (other.unitTypeDsc) then
---			Result := lessArguments (other)
---		end -- if
---	end -- lessThan
 end -- class InitCallDescriptor
 
 class ParentInitCallDescriptor
@@ -9228,7 +9165,6 @@ feature{Any}
 		end -- if
 	end -- lessThan
 end -- class CurrentInitCallDescriptor
-
 
 class PrecursorCallDescriptor
 -- old ["{"UnitTypeName"}"] [Arguments] {CallChain}

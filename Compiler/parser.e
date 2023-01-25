@@ -555,7 +555,7 @@ feature {None}
 					wasError := True
 				end -- inspect
 			else
-				syntax_error (<<scanner.colon_token, scanner.one_line_function_token>>)
+				syntax_error (<<scanner.from_token, scanner.entry_token>>)
 				wasError := True
 			end -- inspect
 			if not wasError then
@@ -576,9 +576,8 @@ feature {None}
 					clusters.add (clusterDsc)
 				end -- if
 				if paths /= Void then
-					-- in case of library all paths from which libarry is to be built is to be added as clusters to look for units
--- Unknown crash of VE !!!
--- TEMPORARY !!!!					addPathsToClusters (paths, clusters)
+					-- in case of library all paths from which libary is to be built is to be added as clusters to look for units
+					addPathsToClusters (paths, clusters)
 				end -- if
 				
 				if scanner.token = scanner.foreign_token then
@@ -612,9 +611,10 @@ feature {None}
 		i, n: Integer
 	do
 		from
+			i := 1
 			n := paths.count
 		until
-			i = n
+			i > n
 		loop
 			create clusterDsc.init (paths.item (i), Void, Void, Void)
 			clusters.add (clusterDsc)

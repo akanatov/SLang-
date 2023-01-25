@@ -51,18 +51,14 @@ feature {Any}
 		aliasTypes: Sorted_Array [AliasedTypeDescriptor]
 		attachedTypeDsc: AttachedTypeDescriptor
 		unitDclDsc: UnitDeclarationDescriptor
-		--utcDsc : UnitTypeCommonDescriptor
-		--unitTypeDsc: UnitTypeNameDescriptor
-		--aliasTypeDsc: AliasedTypeDescriptor
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
-		--valid_statements: Array [ValidStatementDescriptor]
-		--validStmtDsc: ValidStatementDescriptor
 		generators: Array [CodeGenerator]
 		i, n: Integer
 		j, m: Integer
 		unitAliasDsc: UnitAliasDescriptor
 		cntTypDsc: ContextTypeDescriptor		
+		aliasesCount: Integer
 	do
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
@@ -118,31 +114,12 @@ feature {Any}
 								o.putNL ("Error: at least two types has the same name `" + typeDsc.aliasName + "`")
 								Result := True								
 							end -- if				
-						end -- if
-																	
-						--attachedTypeDsc ?= typeDsc
-						--if attachedTypeDsc /= Void then
-						--	create alias	TypeDsc.init (typeDsc.aliasName, attachedTypeDsc)
-						--	if aliasTypes.added (aliasTypeDsc) then
-						--		check
-						--			unit_was_loaded: attachedTypeDsc.unitDeclaration /= Void
-						--		end 
-						--		create unitAliasDsc.init (typeDsc.aliasName, attachedTypeDsc.unitDeclaration)
-						--		if not sysDsc.allUnits.added (unitAliasDsc) then
-						--			o.putNL ("Error: at least two types has the same name `" + typeDsc.aliasName + "`")
-						--			Result := True								
-						--		end -- if
-						--	else
-						--		o.putNL ("Error: at least two types has the same alias `" + typeDsc.aliasName + "`")
-						--		Result := True
-						--	end -- if
-						--end -- if
+						end -- if																	
 					end -- if
 					i := i + 1
 				end -- loop
 
-				if not Result then
-					
+				if not Result then					
 					-- Need to check that no name clashes between all alises and already loaded units !!!
 					from
 						n := sysDsc.allUnits.count
@@ -156,6 +133,7 @@ feature {Any}
 							-- No more aliases!
 							i := n + 1
 						else
+							aliasesCount := aliasesCount + 1
 							create unitDclDsc.makeForSearch (unitAliasDsc.aliasName, Void)							
 							if sysDsc.allUnits.seek (unitDclDsc) > 0 then -- already registered
 								o.putNL ("Error: type alias `" + unitAliasDsc.aliasName + "` clashes with other unit name")
@@ -198,37 +176,36 @@ feature {Any}
 					--	i := i + 1
 					--end -- loop
 
-					o.putNL (sysDsc.allUnits.count.out + " units loaded")
+					o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded")
+					o.newLine
 					debug
-						sysDsc.dumpContext (o)
-						
+						sysDsc.dumpContext (o)						
 					end -- debug
-
-					-- If all required types loaded 
-					-- 3. Check validity of cuDsc.statements
-					from
-						statements := scriptDsc.statements
-						check
-							non_void_statements: statements /= Void
-						end -- check
-						n := statements.count
-						--create valid_statements.make (1, n)
-						i := 1
-					until
-						i > n
-					loop
-						--validStmtDsc := statements.item(i).getValidStatement (cuDsc, o)
-						--if validStmtDsc = Void then
-						if statements.item(i).isInvalid (scriptDsc, o) then
-							debug
-								o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
-							end -- debug
-							Result := True
-						--else
-						--	valid_statements.put (validStmtDsc, i)
-						end -- if
-						i := i + 1
-					end -- loop
+					
+					if sysDsc.contextValidated (o) then
+						-- If all required types loaded and validated
+						-- 3. Check validity of cuDsc.statements
+						from
+							statements := scriptDsc.statements
+							check
+								non_void_statements: statements /= Void
+							end -- check
+							n := statements.count
+							i := 1
+						until
+							i > n
+						loop
+							if statements.item(i).isInvalid (scriptDsc, o) then
+								debug
+									o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
+								end -- debug
+								Result := True
+							end -- if
+							i := i + 1
+						end -- loop
+					else
+						Result := True
+					end -- if
 				end -- if
 				
 				if Result then
@@ -286,31 +263,25 @@ feature {Any}
 	require
 		non_void_sd: sysDsc /= Void
 	local 
-		folderName: String -- name of the folder where object files be stored
+		folderName: String -- short name of the folder where artifacts be stored
 	do
-		folderName := "_$"
-		if sysDsc.name.is_equal ("*") then
-			folderName.append_string ("_OBJ")
-		else
-			folderName.append_string ("$" + sysDsc.name)
-		end -- if
+		folderName := "_$" + sysDsc.name
 		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
 			-- Build the system
-			-- All 'from' sources are to be parsed 
-			sysDsc.checkSources (o)
-			if sysDsc.entry = Void then
-				-- Library
-				o.putNL ("Building library `" + sysDsc.name + "`")
-				Result := library_build_failed (sysDsc)	
-			elseif sysDsc.name.is_equal ("*") then
-				-- Set of object files from all units and routines of the current folder
-				o.putNL ("Build for all source files")
-				Result := obj_files_build_failed (sysDsc)
+			-- All 'from' and 'clusters' sources are to be parsed 
+			if sysDsc.sourcesActual (o) then
+				if sysDsc.entry = Void then
+					-- Library
+					o.putNL ("Building library `" + sysDsc.name + "`")
+					Result := library_build_failed (sysDsc, folderName)	
+				else
+					-- Executable with the entry point
+					o.putNL ("Building executable `" + sysDsc.name + "`")
+					Result := executable_build_failed (sysDsc, folderName)
+				end -- if
 			else
-				-- Executable with the entry point
-				o.putNL ("Building executable `" + sysDsc.name + "`")
-				Result := executable_build_failed (sysDsc)
-			end -- if
+				Result := True
+			end -- if		
 		else
 			Result := True
 			o.putNL ("Error: Not able to create SLang folder with artefacts  `" + folderName + "`")
@@ -369,19 +340,11 @@ feature {None}
 		end -- loop
 	end -- closeCodeGenerators
 
-	obj_files_build_failed (sysDsc: SystemDescriptor): Boolean is
-	require
-		non_void_system_dsc: sysDsc /= Void
-		is_executable: (sysDsc.entry /= Void and then sysDsc.entry.item (1) = '*') and sysDsc.from_paths = Void
-	local
-	do
-		Result := library_build_failed(sysDsc)
-	end -- obj_files_build_failed
-
-	executable_build_failed (sysDsc: SystemDescriptor): Boolean is
+	executable_build_failed (sysDsc: SystemDescriptor; folderName: String): Boolean is
 	require
 		non_void_system_dsc: sysDsc /= Void
 		is_executable: sysDsc.entry /= Void and sysDsc.from_paths = Void
+		non_void_folder_name: folderName /= Void
 	local
 		entryPointName: String
 		clusters: Array [ClusterDescriptor]
@@ -417,52 +380,111 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + s
 			end -- if	
 		else
 not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "`")
-			-- Entry point is the standaloe procedure name!
+			-- Entry point is the standalone procedure name!
 			--sysDsc.findStandAloneRoutine (sysDsc.entry)
 		end -- if
 	end -- executable_build_failed
 	
-	library_build_failed (sysDsc: SystemDescriptor): Boolean is
+	library_build_failed (sysDsc: SystemDescriptor; folderName: String): Boolean is
+		-- short name of the folder where artifacts be stored
 	require
 		non_void_system_dsc: sysDsc /= Void
 		is_library: sysDsc.entry = Void and sysDsc.from_paths /= Void
+		non_void_folder_name: folderName /= Void
 	local
-		folderName: String -- name of the folder where object files be stored
 		from_paths: Sorted_Array [String] -- List of paths to build the library from
 		generators: Array [CodeGenerator]
-		i, n: Integer
+		i: Integer
 	do
-		folderName := "_$"
-		if sysDsc.name.is_equal ("*") then
-			-- Just set of object files to be built
-			folderName.append_string ("_OBJ")
-		else
-			-- All object files are to be put into the library one
-			folderName.append_string ("$" + sysDsc.name)
-		end -- if
-		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
-			generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
-			from_paths := sysDsc.from_paths -- List of paths to build the library from
-			from
-				i := 1
-				n := from_paths.count
-				check
-					non_empty_list_of_paths: n > 0
-				end -- check
-			until
-				i > n
-			loop
-				if libraryBuildFailed (sysDsc, from_paths.item (i), generators) then
-					Result := True
-				end -- if
-				i := i + 1
-			end -- loop
-			closeCodeGenerators (generators)
-		else
-			Result := True
-			o.putNL ("Error: Not able to create SLang folder `" + folderName + "` with artefacts")
-		end -- if
+		from_paths := sysDsc.from_paths -- List of paths to build the library from
+		from
+			i := from_paths.count
+			check
+				non_empty_list_of_paths: i > 0
+			end -- check
+		until
+			i <= 0
+		loop
+			-- Load all interfaces and ensure context is consistent
+			if libraryElementsNotLoaded (sysDsc, from_paths.item (i)) then
+				Result := True
+			end -- if
+			i := i - 1
+		end -- loop
+
+		generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
+		from
+			i := from_paths.count
+			check
+				non_empty_list_of_paths: i > 0
+			end -- check
+		until
+			i <= 0
+		loop
+			if libraryBuildFailed (sysDsc, from_paths.item (i), generators) then
+				Result := True
+			end -- if
+			i := i - 1
+		end -- loop
+		closeCodeGenerators (generators)
 	end -- library_build_failed
+
+	libraryElementsNotLoaded (sysDsc: SystemDescriptor; path: String): Boolean is
+	require
+		non_void_sd: sysDsc /= Void
+		non_void_path: path /= Void
+	local
+		ir_path: String
+		ast_files: Array [Fsys_Dat]
+		fileDsc: Fsys_Dat
+		fileName: String
+		cuUnitDsc: CompilationUnitUnit
+		rtnDsc: CompilationUnitStandaloneRoutine
+		i: Integer
+	do
+		ir_path := path + fs.separator + IRfolderName
+		if fs.folderExists (ir_path) then
+			debug
+				trace ("Loading interfaces from `" + ir_path + "`")
+			end -- debug
+			from
+				ast_files := fs.getAllFilesWithExtension (ir_path, INText)
+				i := ast_files.count
+			until
+				i <= 0
+			loop
+				fileDsc := ast_files.item (i) 
+				fileName := fileDsc.name
+				if fileName.has_substring (UnitSuffix) then
+					if not fileName.has_substring (AliasPrefix) then -- skip alias file
+						create cuUnitDsc.make (Void)
+						if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
+							debug
+								trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+							end -- debug
+							cuUnitDsc.attachSystemDescription (sysDsc)
+							-- ????
+							
+						else
+							Result := True
+						end -- if				
+					end -- if
+				elseif fileName.has_substring (RoutinesSuffix) then 
+					create rtnDsc.make (Void)
+					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
+						rtnDsc.attachSystemDescription (sysDsc)
+						debug
+							trace ("Standalone routine `" + rtnDsc.routine.name + "` loaded from file `" + ast_files.item (i).path + "`")
+						end -- debug
+						-- ????
+					else
+						Result := True
+					end -- if				
+				end -- if
+				i := i - 1
+			end -- loop
+		end -- if
+	end -- libraryElementsNotLoaded
 
 	libraryBuildFailed (sysDsc: SystemDescriptor; path: String; generators: Array [CodeGenerator]): Boolean is
 	require
@@ -476,11 +498,7 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 		fileName: String
 		cuUnitDsc: CompilationUnitUnit
 		rtnDsc: CompilationUnitStandaloneRoutine
-		--rtnsDsc: CompilationUnitStandaloneRoutines
-		--routines: Sorted_Array [StandaloneRoutineDescriptor]
-		i, n: Integer
-		j, m: Integer
-		--k, l: Integer
+		i, j: Integer
 	do
 		ir_path := path + fs.separator + IRfolderName
 		if fs.folderExists (ir_path) then
@@ -489,16 +507,14 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 			end -- debug
 			from
 				ast_files := fs.getAllFilesWithExtension (ir_path, ASText)
-				i := 1
-				n := ast_files.count
+				i := ast_files.count
 			until
-				i > n
+				i <= 0
 			loop
 				fileDsc := ast_files.item (i) 
 				fileName := fileDsc.name
 				if fileName.has_substring (UnitSuffix) then
-					if not fileName.has_substring (AliasPrefix) then
-						-- Skip alias files - only unit ones are of interest
+					--if not fileName.has_substring (AliasPrefix) then -- There is no IMPL files for aliases !!!
 						create cuUnitDsc.make (Void)
 						if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
 							debug
@@ -506,30 +522,30 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 							end -- debug
 							cuUnitDsc.attachSystemDescription (sysDsc)
 							
-							if cuUnitDsc.unitDclDsc.isNotLoaded (cuUnitDsc, o) then
-								Result := True
-							else
-								debug
-									--sysDsc.dumpContext (o)
-								end
+							-- TO REDO! Here load implementation check it and geneatte code !!!
+							--if cuUnitDsc.unitDclDsc.isNotLoaded (cuUnitDsc, o) then
+							--	Result := True
+							--else
+							--	debug
+							--		--sysDsc.dumpContext (o)
+							--	end
 								if cuUnitDsc.unitDclDsc.isInvalid (cuUnitDsc, o) then
 									Result := True
 								else
 									from
-										j := 1
-										m := generators.count
+										j := generators.count
 									until
-										j > m
+										j <= 0
 									loop
 										cuUnitDsc.unitDclDsc.generate(generators.item (j))
-										j := j + 1
+										j := j - 1
 									end -- loop
 								end -- if
-							end -- if					
+							--end -- if					
 						else
 							Result := True
 						end -- if				
-					end -- if
+					--end -- if
 				elseif fileName.has_substring (RoutinesSuffix) then 
 					create rtnDsc.make (Void)
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
@@ -541,43 +557,19 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 							Result := True
 						else
 							from
-								j := 1
-								m := generators.count
+								j := generators.count
 							until
-								j > m
+								j <= 0
 							loop
 								rtnDsc.routine.generate(generators.item (j))
-								j := j + 1
+								j := j - 1
 							end -- loop
 						end -- if
-
-						--from
-						--	routines := rtnsDsc.routines
-						--	k := 1
-						--	l := routines.count
-						--until
-						--	k > l
-						--loop
-						--	if routines.item (k).is_invalid (unitDsc, o) then
-						--		Result := True
-						--	else
-						--		from
-						--			j := 1
-						--			m := generators.count
-						--		until
-						--			j > m
-						--		loop
-						--			routines.item (k).generate(generators.item (j))
-						--			j := j + 1
-						--		end -- loop
-						--	end -- if
-						--	k := k + 1
-						--end -- loop
 					else
 						Result := True
 					end -- if				
 				end -- if
-				i := i + 1
+				i := i - 1
 			end -- loop
 		end -- if
 	end -- libraryBuildFailed

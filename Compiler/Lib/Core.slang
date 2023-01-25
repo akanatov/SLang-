@@ -604,11 +604,9 @@ val unit Integer alias Int [bitsCount: Cardinal] extend Numeric, Enumeration
 		raise "Not implemented!!!"
 		//return data = other.data
 	end */
-	override := (other: val Integer) do
-		Integer (other)
-	end
-	override := (other: ref Integer) do
-		Integer (other)
+	override := (other: Integer) do
+		// Integer (other)
+		data := other.data
 	end
 	:= (other: Real) none /* do
 		// Bit-level implementation of Real assignment
@@ -622,7 +620,7 @@ val unit Integer alias Int [bitsCount: Cardinal] extend Numeric, Enumeration
 		else
 		end*/
 	end */
-	:= (other: Cardinal[bitsCount]) none /* do
+	:= (other: Cardinal) none /* do
 		// Assign cardinal to integer
 		raise "Not implemented!!!"
 	end */
