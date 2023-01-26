@@ -1817,13 +1817,13 @@ feature {Any}
 	--	end -- loop
 	--end -- if
 	
-	instantiate (generics: Array [TypeOrExpressionDescriptor]) is
-	require
-		non_void_generics: generics /= Void
-		non_empty_generics: generics.count > 0
-	do
--- not_implemened_yet - instantiate
-	end -- instantiate
+--	instantiate (generics: Array [TypeOrExpressionDescriptor]) is
+--	require
+--		non_void_generics: generics /= Void
+--		non_empty_generics: generics.count > 0
+--	do
+---- not_implemened_yet - instantiate
+--	end -- instantiate
 	
 	sameUnitFill (unitDsc: UnitDeclarationDescriptor) is
 	require
@@ -1883,8 +1883,6 @@ class CompilationUnitCompound
 -- CompilationUnitCompound: { UseConstDirective }  {StatementsList|StandaloneRoutine|UnitDeclaration}
 inherit
 	CompilationUnitAnonymousRoutine
-		--rename 
-		--	init as anonymous_routine_init
 	end
 	SLangConstants
 	end
@@ -1920,42 +1918,31 @@ feature {Any}
 			loop
 				routines.item (i).attach_use_pool (useConst)
 				i := i + 1
-			end -- loop
-			
-			--from
-			--	i := 1
-			--until
-			--	i > m
-			--loop
-			--	rtn_typePool.add (useConst.item (i))
-			--	i := i + 1
-			--end -- loop			
+			end -- loop			
 		end -- if
 	end -- attach_usage_pool_to_units_and_standalone_routines
 
 	cutImplementation is
 	local
-		i, n: Integer
+		i: Integer
 	do
 		create statements.make (1, 0)
 		create locals.make
 		from
-			i := 1
-			n := units.count
+			i := units.count
 		until
-			i > n
+			i <= 0
 		loop
 			units.item(i).cutImplementation
-			i := i + 1
+			i := i - 1
 		end -- loop
 		from
-			i := 1
-			n := routines.count
+			i := routines.count
 		until
-			i > n
+			i <= 0
 		loop
 			routines.item(i).cutImplementation
-			i := i + 1
+			i := i - 1
 		end -- loop
 	end -- cutImplementation
 	
@@ -1970,7 +1957,7 @@ feature {Any}
 		sImg: AnonymousRoutineImage
 		uImg: UnitImage
 		rImg: RoutineImage
-		i, n: Integer
+		i: Integer
 		fName: String
 		filePrefix: String
 		unitDsc: UnitDeclarationDescriptor
@@ -1987,51 +1974,33 @@ feature {Any}
 		end -- if
 
 		from
-			i := routines.lower
-			n := routines.upper
+			i := routines.count
 		until
-			i > n
+			i <= 0
 		loop
 			-- Per standalone routine: useConst + routine
-			create rImg.init (FullSourceFileName, tStamp, useConst, routines.item (i)) -- , routines.item (i).stringPool, routines.item (i).typePool)
+			create rImg.init (FullSourceFileName, tStamp, useConst, routines.item (i))
 			fName := filePrefix  + routines.item (i).name + RoutinesSuffix + "." + irFileExtension
 			if not IRstored (fName, rImg) then
 				o.putNL ("File open/create/write/close error: unable to store standalone routine IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
-			i := i + 1
+			i := i - 1
 		end -- loop
 
-		--if routines.count > 0 then
-		--	-- Standalone routines: useConst + routines
-		--	create rImg.init (FullSourceFileName, tStamp, useConst, routines, rtn_stringPool, rtn_typePool)
-		--	fName := filePrefix  + "_" + SourceFileName + RoutinesSuffix + "." + irFileExtension
-		--	if not IRstored (fName, rImg) then
-		--		o.putNL ("File open/create/write/close error: unable to store standalone routines IR into file `" + fName + "`")
-		--		Result := Result + 1
-		--	end -- if
-		--end -- if
-
 		from
-			i := units.lower
-			n := units.upper
+			i := units.count
 		until
-			i > n
+			i <= 0
 		loop
-			-- per type: useConst + type
+			-- per unit: useConst + unit
 			unitDsc := units.item(i)
-			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc) --, unitDsc.stringPool, unitDsc.typePool)
+			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc)
 			fName := filePrefix  + unitDsc.getExternalName + UnitSuffix + "." + irFileExtension
 			if IRstored (fName, uImg) then
 				if unitDsc.aliasName /= Void and then irFileExtension.is_equal (INText) then
 					-- Let's store only dummy file interface with the the name of the actual file in it
-
-					-- Straightforward decision to store the full copy of IR for the alias name ... May be optimized
-					-- Like store just a reference to the original IR file ... Need to design better 
-
-					--fName := filePrefix  + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
 					fName := filePrefix  + AliasPrefix + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
-					--if not IRstored (fName, uImg) then
 					if not dummyFileCreated (fName, unitDsc.getExternalName) then
 						o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
 						Result := Result + 1
@@ -2044,9 +2013,8 @@ feature {Any}
 				o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
-			i := i + 1
+			i := i - 1
 		end -- loop
-
 	end -- saveInternalRepresentation
 
 feature {None}
@@ -2089,10 +2057,7 @@ feature {None}
 	end -- IRstored
 
 	init (scn: like scanner) is
-	--make is 
 	do
-		--anonymous_routine_init (scn)
-		--standalone_routines_init (scn)
 		scanner := scn
 		create routines.make
 		create units.make 
@@ -2161,22 +2126,6 @@ feature {CompilationUnitCommon}
 		init_storage (fn, ts, uc, routine.stringPool, routine.typePool) -- sp, tp)
 	end -- init
 end -- class RoutineImage
-
---class RoutinesImage
----- local class to store standalone routines IR
---inherit
---	IR_Storage
---	end
---create	
---	init, init_empty
---feature {CompilationUnitCommon}
---	routines: Sorted_Array [StandaloneRoutineDescriptor]
---	init (fn: like srcFileName; ts: like timeStamp; uc: like useConst; r: like routines; sp: like stringPool; tp: like typePool) is
---	do
---		routines	:= r
---		init_storage (fn, ts, uc, sp, tp)
---	end -- init
---end -- class RoutinesImage
 
 class UnitImage
 -- local class to store unit IR
@@ -2590,13 +2539,13 @@ feature {Any}
 		expr := Void
 	end -- cutImplementation
 
-	instantiate (factualGenerics: Array [TypeOrExpressionDescriptor]) is
-	require
-		non_void_generics: factualGenerics /= Void
-		non_empty_generics: factualGenerics.count > 0
-	do
--- not_implemened_yet - instantiate
-	end -- instantiate
+--	instantiate (factualGenerics: Array [TypeOrExpressionDescriptor]) is
+--	require
+--		non_void_generics: factualGenerics /= Void
+--		non_empty_generics: factualGenerics.count > 0
+--	do
+---- not_implemened_yet - instantiate
+--	end -- instantiate
 	
 	getExternalName: String is
 	local	
