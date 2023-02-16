@@ -170,6 +170,326 @@ feature {Any}
 	--	end -- loop
 	--end -- getFormalGenerics
 	
+		--loadUnitInterafceFrom (path, unitExternalName: String; o: Output): UnitDeclarationDescriptor is
+	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): ContextTypeDescriptor is
+	require
+		non_void_unit_name: unitExternalName /= Void
+		non_void_path: path /= Void
+		--non_void_conext: sysDsc /= Void
+	local	
+		pathPrefix: String
+		fileName: String
+		--actualFileName: String
+		cuDsc: CompilationUnitUnit
+		--unitAliasDsc: UnitAliasDescriptor
+	do
+		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
+			pathPrefix := path
+		else
+			pathPrefix := path + fs.separator
+		end -- if
+		fileName := pathPrefix + IRfolderName + fs.separator + unitExternalName + UnitSuffix + "." + INText
+		if fs.file_exists (fileName) then
+			create cuDsc.make (Void)
+			if cuDsc.UnitIR_Loaded (fileName, o) then
+				Result := allUnits.add_it (cuDsc.unitDclDsc)
+				--check
+				--	valid_unit_type: Result /= Void
+				--end 
+				
+				--Result := cuDsc.unitDclDsc
+				--if sysDsc.allUnits.added (Result) then
+				--	debug
+				--		o.putNL ("Debug: unit `" + unitExternalName + "` loaded and added into the context")
+				--	end 
+				--else
+				--	debug
+				--		o.putNL ("Debug: unit `" + unitExternalName + "` loaded and but it is already in the the context")
+				--	end 
+				--	Result ?= sysDsc.allUnits.add_it (cuDsc.unitDclDsc)
+				--end -- if
+			end -- if
+		else
+			-- check for alias
+			fileName := pathPrefix + IRfolderName + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
+			if fs.file_exists (fileName) then
+				Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
+			end -- if
+			--actualFileName := getActualFileName (fileName)
+			--if actualFileName /= Void  then
+			--	fileName := pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText
+			--	create cuDsc.make (Void)
+			--	if cuDsc.UnitIR_Loaded (fileName, o) then
+			--		-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
+			--		create unitAliasDsc.init (unitExternalName, cuDsc.unitDclDsc)
+			--		Result := sysDsc.allUnits.add_it (unitAliasDsc)
+			--	end -- if
+			--end -- if
+		end -- if
+	end -- loadUnitInterafceFrom	
+	
+	getActualFileName (fileName: String): String is
+	require
+		file_name_not_void: fileName /= Void
+	local
+		file: File
+		wasError: Boolean
+	do
+		if not wasError then
+			create file.make_open_read (fileName)
+			file.read_line
+			Result := clone (file.last_string)
+			file.close
+		end -- if
+	rescue
+		wasError := True
+		retry
+	end -- getActualFileName
+	
+	loadUnitViaAlias(fileName, pathPrefix, unitExternalName: String; o: Output): UnitAliasDescriptor is
+	local
+		actualFileName: String
+		cuDsc: CompilationUnitUnit
+		unitAliasDsc: UnitAliasDescriptor
+		unitDclDsc: UnitDeclarationDescriptor
+	do	
+		actualFileName := getActualFileName (fileName)
+		if actualFileName /= Void  then
+			create cuDsc.make (Void)
+			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
+				-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
+
+				unitDclDsc ?= allUnits.add_it (cuDsc.unitDclDsc) -- register generic unit in the project context
+				check
+					unit_registered: unitDclDsc /= Void
+				end -- check
+				create unitAliasDsc.init (unitExternalName, unitDclDsc)
+				Result ?= allUnits.add_it (unitAliasDsc)
+				check
+					alias_regsitered: Result /= Void
+				end -- check
+			end -- if
+		end -- if
+	end -- loadUnitViaAlias
+	
+	--loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): UnitDeclarationDescriptor is
+	--loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [UnitDeclarationDescriptor] is
+	loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [ContextTypeDescriptor] is
+	require
+		non_void_current_unit: unitDsc /= Void
+		--non_generic_unit: unitDsc.generics.count = 0
+	local
+		clusters_zone: Array [ClusterDescriptor]
+		unitExternalName,
+		unitPrintableName: String
+		genericUnits: Array [UnitDeclarationDescriptor] --CompilationUnitUnit]
+		--unitDcldsc: UnitDeclarationDescriptor
+		cntTypeDsc: ContextTypeDescriptor
+	do
+		unitExternalName := unitDsc.name -- unitDsc.getExternalName
+		unitPrintableName:= unitDsc.out -- unitDsc.name  -- Name[factualGenerics]
+		debug
+			--if unitDsc.aliasName /= Void then
+			--	o.putLine ("Loading unit `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
+			--end -- if
+			--o.putNL (">>> Looking for unit `" + unitPrintableName + "` to be located in file  `" + unitExternalName + "`")
+		end	-- debug
+		if unitDsc.generics.count = 0 then
+			o.putLine ("Looking for unit `" + unitPrintableName + "`")
+			clusters_zone := hasUnit(unitExternalName)
+		else
+			o.putLine ("Looking for generic unit `" + unitPrintableName + "`")
+			clusters_zone := hasGenericUnit(unitExternalName)
+		end -- if
+		if clusters_zone = Void or else clusters_zone.count = 0 then
+			-- Such unit is not found in the search universe !!!
+			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided context")
+		elseif clusters_zone.count > 1 then
+			-- More than one unit is found in the search universe !!!
+			o.putNL ("Error: " + clusters_zone.count.out + " versions of unit `" + unitPrintableName + "` found in the provided context. Select the one to be used in your project")
+		else
+			-- Load it
+			o.putLine ("Loading unit `" + unitPrintableName + "`")
+			if unitDsc.generics.count = 0 then
+				--Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
+				cntTypeDsc := loadUnitInterafceFrom (clusters_zone.item (1).name, unitExternalName, o)
+				--unitDcldsc := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
+				--if unitDcldsc /= Void then
+				if cntTypeDsc /= Void then
+					Result := <<cntTypeDsc>>
+				end -- if
+			else
+				-- 
+				genericUnits := loadGenericUnitInterafcesFrom (clusters_zone.item (1).name, unitExternalName, o)
+				if genericUnits /= Void then
+					if genericUnits.count = 1 then
+						-- There is no generic unit name overloading 
+						Result := <<genericUnits.item (1)>>
+					else
+						-- Several units !!!
+						Result := genericUnits
+						---- Not_implemented_yet
+						--o.putNL ("Not_implemented_yet: generic unit name overloading  not supported yet! Unit `" + unitPrintableName + "`")
+					end -- if
+				end -- if
+			end -- if
+			if Result = Void then
+				-- There was a problem to load type interface 
+				o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
+			else
+				o.putLine ("Unit `" + unitPrintableName + "` loaded")
+			-- No need to check sources actuality here - it was all already done for the whole project when build was started !!!
+			--elseif fs.file_exists(Result.srcFileName) then
+			--	-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
+			--	if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
+			--		-- Source file was modified - parse it to ensure consistency
+			--		debug
+			--			--o.putLine ("Parse file `" + Result.srcFileName + "` to ensure actuality of `" + unitPrintableName + "`")
+			--		end -- debug
+			--		Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
+			--	else
+			--		o.putLine ("Unit `" + unitPrintableName + "` loaded")
+			--	end -- if
+			--else
+			--	o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place, but unit code is loaded")
+			end -- if
+		end -- if
+	end -- loadUnitInterface
+	
+	loadGenericUnits (unitDsc: UnitTypeCommonDescriptor; o: Output): Array [UnitDeclarationDescriptor] is -- CompilationUnitUnit] is
+	require
+		non_void_current_unit: unitDsc /= Void
+		current_unit_is_generic: unitDsc.generics.count > 0		
+	local 
+		unitExternalName,
+		unitPrintableName,
+		unitName : String
+		clusters_zone: Array [ClusterDescriptor]
+	do 
+		unitName := unitDsc.name
+		unitExternalName := unitDsc.getExternalName
+		unitPrintableName:= unitDsc.out  -- Name[factualGenerics]
+		o.putLine ("Looking for generic unit `" + unitName + "` for type `" + unitPrintableName + "`" )
+		clusters_zone := hasGenericUnit(unitName)
+		--clusters := sysDsc.hasUnit(unitName)
+		if clusters_zone = Void or else clusters_zone.count = 0 then
+			-- Such unit is not found in the search universe !!!
+			o.putNL ("Error: generic unit(s) for type `" + unitPrintableName + "` not found in the provided context")
+		elseif clusters_zone.count > 1 then
+			-- More than one unit is found in the search universe !!!
+			o.putNL ("Error: " + clusters_zone.count.out + " folders have versions of generic unit `" + unitName + "` in the provided context. Select the one to be used in your project")
+		else
+			-- Load it
+			o.putLine ("Loading generic unit(s) `" + unitName + "`")
+			Result := loadGenericUnitInterafcesFrom (clusters_zone.item (1).name, unitName, o)
+			if Result = Void then
+				-- There was a problem to load type interface 
+				o.putNL ("Error: generic unit(s) `" + unitName + "` was not loaded correctly")
+			elseif Result.count = 1 then
+				o.putLine ("Generic unit `" + Result.item(1).fullUnitName + "` was loaded")
+			else
+				o.putLine (Result.count.out + " generic units named `" + unitName + "` were loaded")
+			end -- if
+		end -- if
+	end -- loadGenericUnits
+
+	loadGenericUnitInterafcesFrom (path: String; unitName: String; o: Output): Array [UnitDeclarationDescriptor] is
+		--CompilationUnitUnit] is
+	local
+		ir_path: String
+		path1: String
+		ast_files: Array [Fsys_Dat]
+		fileDsc: Fsys_Dat
+		i, n: Integer
+		j: Integer
+		unitIR: CompilationUnitUnit
+		genericUnitNamePrefix: String
+		fileName: String
+		unitDclDsc: UnitDeclarationDescriptor
+		unitAliasDsc: UnitAliasDescriptor
+	do
+		-- files pattern <unitName>$_*$U.int
+		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
+			ir_path := path + IRfolderName
+			path1 := path
+		else
+			ir_path := path + fs.separator + IRfolderName
+			path1 := path + fs.separator
+		end -- if
+
+		if fs.folderExists (ir_path) then
+			from
+				ast_files := fs.getAllFilesWithExtension (ir_path, INText)
+				genericUnitNamePrefix := unitName + "$_"
+				i := 1
+				j := 0
+				n := ast_files.count
+				create Result.make (1, n)
+				debug
+					--o.putNL(">>> Looking for files named like: " + genericUnitNamePrefix)
+				end -- debug
+			until
+				i > n
+			loop
+				fileDsc := ast_files.item (i) 
+				fileName := fileDsc.name
+
+				if fileName.has_substring (genericUnitNamePrefix) and then fileName.has_substring (UnitSuffix) then
+					if fileName.has_substring (AliasPrefix) then
+						-- Це ж алиас !!!						
+						unitAliasDsc := loadUnitViaAlias (ir_path + fs.separator + fileName, path1, unitName, o)
+						if unitAliasDsc = Void then
+							debug
+								--o.putNL(">>> File alias - " + fileName + ", real unit NOT loaded !!!")
+							end -- debug
+							-- Failed to load a unit
+							Result := Void
+							i := n
+						else
+							debug
+								-- o.putNL(">>> File alias - " + fileName + ", real unit loaded")
+							end -- debug
+							-- To DO WHAT ???
+							j := j + 1
+							check
+								unit_with_alias_loaded: unitAliasDsc.unitDclDsc /= Void
+							end -- check
+							Result.put (unitAliasDsc.unitDclDsc, j)
+						end -- if
+						--if unitAliasDsc /= Void then
+						--	unitDclDsc ?= sysDsc.allUnits.add_it (unitDclDsc) -- register generic unit in the project context
+						--	check
+						--		unit_registered: unitDclDsc /= Void
+						--	end -- 
+						--	j := j + 1
+						--	Result.put (unitDclDsc, j)
+						--end -- if
+					else
+						debug
+							--o.putNL(">>> File unit - " + fileName)
+						end -- debug
+						create unitIR.make (Void)
+						if unitIR.UnitIR_Loaded (fileDsc.path, o) then						
+							unitDclDsc ?= allUnits.add_it (unitIR.unitDclDsc) -- register generic unit in the project context
+							check
+								unit_registered: unitDclDsc /= Void
+							end -- 
+							j := j + 1
+							Result.put (unitDclDsc, j)
+						else
+							Result := Void
+							i := n
+						end -- if		
+					end -- if		
+				end -- if
+				i := i + 1
+			end -- loop
+			if Result /= Void and then j > 0 and then j < n then
+				Result.resize (1, j)
+			end -- if
+		end -- if
+	end -- loadGenericUnitInterafcesFrom
+
 	sourcesActual(o: Output): Boolean is
 	-- Check all sources across all clusters
 	local
@@ -1166,337 +1486,8 @@ feature {Any}
 	end -- attachSystemDescription
 
 	sysDsc: SystemDescriptor
-
-	--loadUnitInterafceFrom (path, unitExternalName: String; o: Output): UnitDeclarationDescriptor is
-	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): ContextTypeDescriptor is	
-	require
-		non_void_unit_name: unitExternalName /= Void
-		non_void_path: path /= Void
-		non_void_conext: sysDsc /= Void
-	local	
-		pathPrefix: String
-		fileName: String
-		--actualFileName: String
-		cuDsc: CompilationUnitUnit
-		--unitAliasDsc: UnitAliasDescriptor
-	do
-		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
-			pathPrefix := path
-		else
-			pathPrefix := path + fs.separator
-		end -- if
-		fileName := pathPrefix + IRfolderName + fs.separator + unitExternalName + UnitSuffix + "." + INText
-		if fs.file_exists (fileName) then
-			create cuDsc.make (Void)
-			if cuDsc.UnitIR_Loaded (fileName, o) then
-				Result := sysDsc.allUnits.add_it (cuDsc.unitDclDsc)
-				--check
-				--	valid_unit_type: Result /= Void
-				--end 
-				
-				--Result := cuDsc.unitDclDsc
-				--if sysDsc.allUnits.added (Result) then
-				--	debug
-				--		o.putNL ("Debug: unit `" + unitExternalName + "` loaded and added into the context")
-				--	end 
-				--else
-				--	debug
-				--		o.putNL ("Debug: unit `" + unitExternalName + "` loaded and but it is already in the the context")
-				--	end 
-				--	Result ?= sysDsc.allUnits.add_it (cuDsc.unitDclDsc)
-				--end -- if
-			end -- if
-		else
-			-- check for alias
-			fileName := pathPrefix + IRfolderName + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
-			if fs.file_exists (fileName) then
-				Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
-			end -- if
-			--actualFileName := getActualFileName (fileName)
-			--if actualFileName /= Void  then
-			--	fileName := pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText
-			--	create cuDsc.make (Void)
-			--	if cuDsc.UnitIR_Loaded (fileName, o) then
-			--		-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
-			--		create unitAliasDsc.init (unitExternalName, cuDsc.unitDclDsc)
-			--		Result := sysDsc.allUnits.add_it (unitAliasDsc)
-			--	end -- if
-			--end -- if
-		end -- if
-	end -- loadUnitInterafceFrom	
-	
-	loadUnitViaAlias(fileName, pathPrefix, unitExternalName: String; o: Output): UnitAliasDescriptor is
-	local
-		actualFileName: String
-		cuDsc: CompilationUnitUnit
-		unitAliasDsc: UnitAliasDescriptor
-		unitDclDsc: UnitDeclarationDescriptor
-	do	
-		actualFileName := getActualFileName (fileName)
-		if actualFileName /= Void  then
-			create cuDsc.make (Void)
-			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
-				-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
-
-				unitDclDsc ?= sysDsc.allUnits.add_it (cuDsc.unitDclDsc) -- register generic unit in the project context
-				check
-					unit_registered: unitDclDsc /= Void
-				end -- check
-				create unitAliasDsc.init (unitExternalName, unitDclDsc)
-				Result ?= sysDsc.allUnits.add_it (unitAliasDsc)
-				check
-					alias_regsitered: Result /= Void
-				end -- check
-			end -- if
-		end -- if
-	end -- loadUnitViaAlias
-	
-	getActualFileName (fileName: String): String is
-	require
-		file_name_not_void: fileName /= Void
-	local
-		file: File
-		wasError: Boolean
-	do
-		if not wasError then
-			create file.make_open_read (fileName)
-			file.read_line
-			Result := clone (file.last_string)
-			file.close
-		end -- if
-	rescue
-		wasError := True
-		retry
-	end -- getActualFileName
-
-	--loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): UnitDeclarationDescriptor is
-	--loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [UnitDeclarationDescriptor] is
-	loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [ContextTypeDescriptor] is
-	require
-		non_void_current_unit: unitDsc /= Void
-		--non_generic_unit: unitDsc.generics.count = 0
-	local
-		clusters: Array [ClusterDescriptor]
-		unitExternalName,
-		unitPrintableName: String
-		genericUnits: Array [UnitDeclarationDescriptor] --CompilationUnitUnit]
-		--unitDcldsc: UnitDeclarationDescriptor
-		cntTypeDsc: ContextTypeDescriptor
-	do
-		unitExternalName := unitDsc.name -- unitDsc.getExternalName
-		unitPrintableName:= unitDsc.out -- unitDsc.name  -- Name[factualGenerics]
-		debug
-			--if unitDsc.aliasName /= Void then
-			--	o.putLine ("Loading unit `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
-			--end -- if
-			--o.putNL (">>> Looking for unit `" + unitPrintableName + "` to be located in file  `" + unitExternalName + "`")
-		end	-- debug
-		if unitDsc.generics.count = 0 then
-			o.putLine ("Looking for unit `" + unitPrintableName + "`")
-			clusters := sysDsc.hasUnit(unitExternalName)
-		else
-			o.putLine ("Looking for generic unit `" + unitPrintableName + "`")
-			clusters := sysDsc.hasGenericUnit(unitExternalName)
-		end -- if
-		if clusters = Void or else clusters.count = 0 then
-			-- Such unit is not found in the search universe !!!
-			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided context")
-		elseif clusters.count > 1 then
-			-- More than one unit is found in the search universe !!!
-			o.putNL ("Error: " + clusters.count.out + " versions of unit `" + unitPrintableName + "` found in the provided context. Select the one to be used in your project")
-		else
-			-- Load it
-			o.putLine ("Loading unit `" + unitPrintableName + "`")
-			if unitDsc.generics.count = 0 then
-				--Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
-				cntTypeDsc := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
-				--unitDcldsc := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
-				--if unitDcldsc /= Void then
-				if cntTypeDsc /= Void then
-					Result := <<cntTypeDsc>>
-				end -- if
-			else
-				-- 
-				genericUnits := loadGenericUnitInterafcesFrom (clusters.item (1).name, unitExternalName, o)
-				if genericUnits /= Void then
-					if genericUnits.count = 1 then
-						-- There is no generic unit name overloading 
-						Result := <<genericUnits.item (1)>>
-					else
-						-- Several units !!!
-						Result := genericUnits
-						---- Not_implemented_yet
-						--o.putNL ("Not_implemented_yet: generic unit name overloading  not supported yet! Unit `" + unitPrintableName + "`")
-					end -- if
-				end -- if
-			end -- if
-			if Result = Void then
-				-- There was a problem to load type interface 
-				o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
-			else
-				o.putLine ("Unit `" + unitPrintableName + "` loaded")
-			-- No need to check sources actuality here - it was all already done for the whole project when build was started !!!
-			--elseif fs.file_exists(Result.srcFileName) then
-			--	-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
-			--	if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
-			--		-- Source file was modified - parse it to ensure consistency
-			--		debug
-			--			--o.putLine ("Parse file `" + Result.srcFileName + "` to ensure actuality of `" + unitPrintableName + "`")
-			--		end -- debug
-			--		Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
-			--	else
-			--		o.putLine ("Unit `" + unitPrintableName + "` loaded")
-			--	end -- if
-			--else
-			--	o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place, but unit code is loaded")
-			end -- if
-		end -- if
-	end -- loadUnitInterface
-	
-	loadGenericUnits (unitDsc: UnitTypeCommonDescriptor; o: Output): Array [UnitDeclarationDescriptor] is -- CompilationUnitUnit] is
-	require
-		non_void_current_unit: unitDsc /= Void
-		current_unit_is_generic: unitDsc.generics.count > 0		
-	local 
-		unitExternalName,
-		unitPrintableName,
-		unitName : String
-		clusters: Array [ClusterDescriptor]
-	do 
-		unitName := unitDsc.name
-		unitExternalName := unitDsc.getExternalName
-		unitPrintableName:= unitDsc.out  -- Name[factualGenerics]
-		o.putLine ("Looking for generic unit `" + unitName + "` for type `" + unitPrintableName + "`" )
-		clusters := sysDsc.hasGenericUnit(unitName)
-		--clusters := sysDsc.hasUnit(unitName)
-		if clusters = Void or else clusters.count = 0 then
-			-- Such unit is not found in the search universe !!!
-			o.putNL ("Error: generic unit(s) for type `" + unitPrintableName + "` not found in the provided context")
-		elseif clusters.count > 1 then
-			-- More than one unit is found in the search universe !!!
-			o.putNL ("Error: " + clusters.count.out + " folders have versions of generic unit `" + unitName + "` in the provided context. Select the one to be used in your project")
-		else
-			-- Load it
-			o.putLine ("Loading generic unit(s) `" + unitName + "`")
-			Result := loadGenericUnitInterafcesFrom (clusters.item (1).name, unitName, o)
-			if Result = Void then
-				-- There was a problem to load type interface 
-				o.putNL ("Error: generic unit(s) `" + unitName + "` was not loaded correctly")
-			elseif Result.count = 1 then
-				o.putLine ("Generic unit `" + Result.item(1).fullUnitName + "` was loaded")
-			else
-				o.putLine (Result.count.out + " generic units named `" + unitName + "` were loaded")
-			end -- if
-		end -- if
-	end -- loadGenericUnits	
 	
 feature {None}
-
-	loadGenericUnitInterafcesFrom (path: String; unitName: String; o: Output): Array [UnitDeclarationDescriptor] is --CompilationUnitUnit] is
-	local
-		ir_path: String
-		path1: String
-		ast_files: Array [Fsys_Dat]
-		fileDsc: Fsys_Dat
-		i, n: Integer
-		j: Integer
-		unitIR: CompilationUnitUnit
-		genericUnitNamePrefix: String
-		fileName: String
-		unitDclDsc: UnitDeclarationDescriptor
-		unitAliasDsc: UnitAliasDescriptor
-	do
-		-- files pattern <unitName>$_*$U.int
-		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
-			ir_path := path + IRfolderName
-			path1 := path
-		else
-			ir_path := path + fs.separator + IRfolderName
-			path1 := path + fs.separator
-		end -- if
-
-		if fs.folderExists (ir_path) then
-			from
-				ast_files := fs.getAllFilesWithExtension (ir_path, INText)
-				genericUnitNamePrefix := unitName + "$_"
-				i := 1
-				j := 0
-				n := ast_files.count
-				create Result.make (1, n)
-				debug
-					--o.putNL(">>> Looking for files named like: " + genericUnitNamePrefix)
-				end -- debug
-			until
-				i > n
-			loop
-				fileDsc := ast_files.item (i) 
-				fileName := fileDsc.name
-
-				if fileName.has_substring (genericUnitNamePrefix) and then fileName.has_substring (UnitSuffix) then
-					if fileName.has_substring (AliasPrefix) then
-						-- Це ж алиас !!!
-
-						--fileName := pathPrefix + IRfolderName + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
-						--if fs.file_exists (fileName) then
-						--	Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
-						--end -- if
-
-						
-						--unitAliasDsc := loadUnitViaAlias (fileName, ir_path, unitName, o)
-						
-						unitAliasDsc := loadUnitViaAlias (ir_path + fs.separator + fileName, path1, unitName, o)
-						if unitAliasDsc = Void then
-							debug
-								--o.putNL(">>> File alias - " + fileName + ", real unit NOT loaded !!!")
-							end -- debug
-							-- Failed to load a unit
-							Result := Void
-							i := n
-						else
-							debug
-								-- o.putNL(">>> File alias - " + fileName + ", real unit loaded")
-							end -- debug
-							-- To DO WHAT ???
-							j := j + 1
-							check
-								unit_with_alias_loaded: unitAliasDsc.unitDclDsc /= Void
-							end -- check
-							Result.put (unitAliasDsc.unitDclDsc, j)
-						end -- if
-						--if unitAliasDsc /= Void then
-						--	unitDclDsc ?= sysDsc.allUnits.add_it (unitDclDsc) -- register generic unit in the project context
-						--	check
-						--		unit_registered: unitDclDsc /= Void
-						--	end -- 
-						--	j := j + 1
-						--	Result.put (unitDclDsc, j)
-						--end -- if
-					else
-						debug
-							--o.putNL(">>> File unit - " + fileName)
-						end -- debug
-						create unitIR.make (Void)
-						if unitIR.UnitIR_Loaded (fileDsc.path, o) then						
-							unitDclDsc ?= sysDsc.allUnits.add_it (unitIR.unitDclDsc) -- register generic unit in the project context
-							check
-								unit_registered: unitDclDsc /= Void
-							end -- 
-							j := j + 1
-							Result.put (unitDclDsc, j)
-						else
-							Result := Void
-							i := n
-						end -- if		
-					end -- if		
-				end -- if
-				i := i + 1
-			end -- loop
-			if Result /= Void and then j > 0 and then j < n then
-				Result.resize (1, j)
-			end -- if
-		end -- if
-	end -- loadGenericUnitInterafcesFrom
-
 
 	--fileParsedForUnit (fName: String; o: Output; unitExternalName: String; unitOfInterest: CompilationUnitUnit): CompilationUnitUnit is 
 	--require
@@ -11890,7 +11881,7 @@ feature {Any}
 			end -- loop
 			if not foundInPool then 
 				-- Load all possible generic units named as the current one
-				genericUnits := context.loadGenericUnits (Current, o)
+				genericUnits := context.sysDsc.loadGenericUnits (Current, o)
 			end -- if			
 			if genericUnits /= Void then
 				-- We have loaded all generic units for the current generic type
@@ -12003,7 +11994,7 @@ feature {Any}
 
 			if not foundInPool then -- let's load it
 				--unitDeclaration := context.loadUnitInterface (Current, o)
-				loadedUnits := context.loadUnitInterface (Current, o)
+				loadedUnits := context.sysDsc.loadUnitInterface (Current, o)
 				--if unitDeclaration = Void then -- failed to load
 				if loadedUnits = Void then -- failed to load
 					contextTypes.add_after (unitDclDsc, pos) -- register to prevent load attempts again!

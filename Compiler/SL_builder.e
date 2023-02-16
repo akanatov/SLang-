@@ -348,40 +348,53 @@ feature {None}
 	local
 		entryPointName: String
 		clusters: Array [ClusterDescriptor]
+		rootDsc: ContextTypeDescriptor
 	do
-		-- Find entry point.
+		-- Find an entry point
 		entryPointName := sysDsc.entry
 		if entryPointName.item (1) = entryPointName.item (1).as_upper then
-			-- Entry point is the type name!
+			-- Entry point is the unit name! (It cannot be generic BTW)
 			clusters := sysDsc.hasUnit (entryPointName)
 			if clusters = Void or else clusters.count = 0 then
-				-- Such type is not found in the search universe !!!
+				-- Such unit is not found in the search universe !!!
 				o.putNL ("Error: root unit `" + entryPointName + "` is not found in the provided context")
+				Result := True
 			elseif clusters.count > 1 then
-				-- More than one type is found in the search universe !!!
+				-- More than one unit is found in the search universe !!!
 				o.putNL ("Error: " + clusters.count.out + " versions of the root unit `" + entryPointName + "` found in the provided context. Select only one to be used")
+				Result := True
 			else
-not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "`")
 				-- Load it
---				o.putLine ("Loading root unit `" + entryPointName + "`")
---				Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
---				if Result = Void then
---					-- There was a problem to load type interface 
---					o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
+				o.putLine ("Loading root unit `" + entryPointName + "`")
+				rootDsc := sysDsc.loadUnitInterafceFrom (clusters.item (1).name, entryPointName, o)
+				if Result = Void then
+					-- There was a problem to load root unit interface 
+					o.putNL ("Error: root unit `" + entryPointName + "` was not loaded correctly")
+					Result := True
 --				elseif fs.file_exists(Result.srcFileName) then
 --					-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
 --					if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
 --						-- Ensure source file parsed
 --						Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
 --					end -- if
---				else
---					o.putNL ("Warning: source file of the root unit `" + unitPrintableName + "` is no longer in place")
---				end -- if
+				else
+not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`") 
+				end -- if
 			end -- if	
 		else
-not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "`")
 			-- Entry point is the standalone procedure name!
-			--sysDsc.findStandAloneRoutine (sysDsc.entry)
+			clusters := sysDsc.hasStandAloneRoutine (entryPointName)
+			if clusters = Void or else clusters.count = 0 then
+				-- Such unit is not found in the search universe !!!
+				o.putNL ("Error: routine `" + entryPointName + "` is not found in the provided context")
+				Result := True
+			elseif clusters.count > 1 then
+				-- More than one unit is found in the search universe !!!
+				o.putNL ("Error: " + clusters.count.out + " versions of the routine `" + entryPointName + "` found in the provided context. Select only one to be used")
+				Result := True
+			else
+not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`")
+			end -- if
 		end -- if
 	end -- executable_build_failed
 	
@@ -398,6 +411,9 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 	do
 		from_paths := sysDsc.from_paths -- List of paths to build the library from
 		from
+			check
+				non_void_list_of_paths: from_paths /= Void
+			end -- check
 			i := from_paths.count
 			check
 				non_empty_list_of_paths: i > 0
@@ -406,30 +422,32 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 			i <= 0
 		loop
 			-- Load all interfaces and ensure context is consistent
-			if libraryElementsNotLoaded (sysDsc, from_paths.item (i)) then
+			if interfacesFromPathNotLoaded (sysDsc, from_paths.item (i)) then
 				Result := True
 			end -- if
 			i := i - 1
 		end -- loop
 
-		generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
-		from
-			i := from_paths.count
-			check
-				non_empty_list_of_paths: i > 0
-			end -- check
-		until
-			i <= 0
-		loop
-			if libraryBuildFailed (sysDsc, from_paths.item (i), generators) then
-				Result := True
-			end -- if
-			i := i - 1
-		end -- loop
-		closeCodeGenerators (generators)
+		if not Result then
+			generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
+			from
+				i := from_paths.count
+				check
+					non_empty_list_of_paths: i > 0
+				end -- check
+			until
+				i <= 0
+			loop
+				if libraryBuildFailed (sysDsc, from_paths.item (i), generators) then
+					Result := True
+				end -- if
+				i := i - 1
+			end -- loop
+			closeCodeGenerators (generators)
+		end -- if 
 	end -- library_build_failed
 
-	libraryElementsNotLoaded (sysDsc: SystemDescriptor; path: String): Boolean is
+	interfacesFromPathNotLoaded (sysDsc: SystemDescriptor; path: String): Boolean is
 	require
 		non_void_sd: sysDsc /= Void
 		non_void_path: path /= Void
@@ -484,7 +502,7 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 				i := i - 1
 			end -- loop
 		end -- if
-	end -- libraryElementsNotLoaded
+	end -- interfacesFromPathNotLoaded
 
 	libraryBuildFailed (sysDsc: SystemDescriptor; path: String; generators: Array [CodeGenerator]): Boolean is
 	require
