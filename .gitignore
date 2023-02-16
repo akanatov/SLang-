@@ -4,15 +4,11 @@
 *.lst
 *.rsp
 *.lib
-*.Slang#ast
-*.Slang#int
 *.ff
 *.out
 *.bak
-*.o
 *.xcp
 Docs/~$ang reference.docx
-*.o
 *.o
 Slang.Innopolis/SLang LLVM/
 Slang.Innopolis/SLang Metrics/
@@ -24,4 +20,4 @@ Slang.Innopolis/SLang VS Plugin/
 *.abc
 *.class
 *.msil
-Compiler/HelloWorld
+*.LOG
