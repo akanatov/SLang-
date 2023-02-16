@@ -152,7 +152,7 @@ end
 				when scanner.use_token then
 					-- parse use_const clause
 					parseUseClause
-				-- Unit start: ([final] [ref|val|concurrent])|[abstract]|[extend]
+				-- Unit start: ([final] [ref|val|active])|[abstract]|[extend]
 				when scanner.final_token then -- parse final type
 					ast.start_unit_parsing
 					scanner.nextToken
@@ -163,7 +163,7 @@ end
 						inspect	
 							scanner.token
 						when scanner.unit_token then -- parse type
-							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, True, False, False, False, False)
 						else
 							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
@@ -174,17 +174,17 @@ end
 						inspect	
 							scanner.token
 						when scanner.unit_token then -- parse type
-							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, False, True, False, False, False)
 						else
 							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 						end
-					when scanner.concurrent_token then -- parse concurrent type
+					when scanner.active_token then -- parse active type
 						scanner.nextToken
 						inspect	
 							scanner.token
 						when scanner.unit_token then -- parse type
-							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, False, False, True, False, False)
 						else
 							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
@@ -194,13 +194,13 @@ end
 						inspect	
 							scanner.token
 						when scanner.type_name_token then -- parse type
-							-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, False, False, False, False, False)
 						else
 							syntaxError ("Unit name expected", <<scanner.type_name_token>>,<<>>)
 						end
 					else
-						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.active_token, scanner.unit_token>>, unit_folowers)
 					end -- inspect
 					ast.stop_unit_parsing
 				when scanner.ref_token then -- parse ref type
@@ -209,7 +209,7 @@ end
 					inspect	
 						scanner.token
 					when scanner.unit_token then -- parse type
-						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, True, False, False, False, False)
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
@@ -221,19 +221,19 @@ end
 					inspect	
 						scanner.token
 					when scanner.unit_token then -- parse type
-						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, True, False, False, False)
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.concurrent_token then -- parse concurrent type
+				when scanner.active_token then -- parse active type
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
 					when scanner.unit_token then -- parse type
-						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, False, True, False, False)
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
@@ -245,7 +245,7 @@ end
 					inspect	
 						scanner.token
 					when scanner.unit_token then -- parse type
-						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, False, False, True, False)
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
@@ -257,7 +257,7 @@ end
 					inspect	
 						scanner.token
 					when scanner.unit_token then -- parse unit
-						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, False, False, False, True)
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
@@ -269,7 +269,7 @@ end
 					inspect	
 						scanner.token
 					when scanner.type_name_token then -- parse unit
-						-- is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend
+						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, False, False, False, False)
 					else
 						syntax_error (<<scanner.type_name_token>>)
@@ -495,7 +495,7 @@ feature {None}
 	unit_folowers: Array [Integer] is
 	do
 		Result := <<
-			 scanner.build_token, scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
+			 scanner.build_token, scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.active_token,
 			 scanner.abstract_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
 			 scanner.type_name_token,
 			 scanner.if_token, scanner.while_token, scanner.new_token, scanner.detach_token, scanner.raise_token, scanner.return_token,
@@ -3051,7 +3051,7 @@ end -- debug
 							--scanner.flush
 							scanner.nextToken
 							create {IsDetachedDescriptor} Result.init (Result)
-						when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token then
+						when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token then
 							-- expr is Type
 							--		   ^
 							utnDsc := parseUnitType (checkSemicolonAfter) -- parseUnitType2
@@ -3076,7 +3076,7 @@ end -- debug
 							--	end -- inspect
 							--end -- if
 						else
-							syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.detach_token>>)
+							syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token, scanner.detach_token>>)
 							-- expr is expr :
 							--scanner.revert
 						end -- inspect
@@ -5412,7 +5412,7 @@ end -- debug
 					if commaFound then
 						syntax_error (<<
 							scanner.identifier_token, scanner.as_token, scanner.detach_token, scanner.ref_token, scanner.val_token,
-							scanner.concurrent_token, scanner.rtn_token, scanner.right_paranthesis_token
+							scanner.active_token, scanner.rtn_token, scanner.right_paranthesis_token
 						>>)
 						toLeave := True
 					else
@@ -5629,7 +5629,7 @@ end -- debug
 					wasError := True
 					toLeave := True
 				end -- if
-			--when scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.type_name_token then
+			--when scanner.ref_token, scanner.val_token, scanner.active_token, scanner.type_name_token then
 			--	-- Aha, that is type element - all names already added in were types !!!!
 			--	if commaFound or else names.count = 0 then
 			--		utDsc := parseUnitTypeWithSemicolonAfter
@@ -5699,7 +5699,7 @@ end -- debug
 			when scanner.identifier_token then
 				-- that is a tuple named field (may have several names)
 				if separatorFound then
-					syntax_error (<<scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.type_name_token>>)
+					syntax_error (<<scanner.ref_token, scanner.val_token, scanner.active_token, scanner.type_name_token>>)
 					toLeave := True
 					wasError := True
 				else
@@ -5725,7 +5725,7 @@ end -- debug
 				--	toLeave := True
 				--	wasError := True
 				end -- if
-			when scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.type_name_token then
+			when scanner.ref_token, scanner.val_token, scanner.active_token, scanner.type_name_token then
 				-- Aha, that is a tuple field with no name, utDsc is just a type
 				separatorFound := False
 				tupleFieldType := parseUnitTypeWithSemicolonAfter
@@ -5740,7 +5740,7 @@ end -- debug
 				if separatorFound then
 					syntax_error (<<
 						scanner.identifier_token, 
-						scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.type_name_token
+						scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token, scanner.type_name_token
 					>>)
 					toLeave := True
 					wasError := True
@@ -5753,7 +5753,7 @@ end -- debug
 				--if separatorFound then
 				--	syntax_error (<<
 				--		scanner.identifier_token, 
-				--		scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token, scanner.type_name_token
+				--		scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token, scanner.type_name_token
 				--	>>)
 				--end -- if
 				scanner.nextWithSemicolon (checkSemicolonAfter)
@@ -5761,12 +5761,12 @@ end -- debug
 			else
 				if separatorFound then
 					syntax_error (<<
-						scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token
+						scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token
 					>>)
 				else
 					syntax_error (<<
 						scanner.identifier_token, 
-						scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
+						scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token,
 						scanner.comma_token, scanner.semicolon_token, scanner.right_paranthesis_token
 					>>)
 				end -- if
@@ -6144,7 +6144,7 @@ end -- debug
 				if barFound or else types.count = 1 then
 					inspect
 						scanner.token
-					when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token then
+					when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token then
 						nmdDsc := parseUnitType1 (checkSemicolonAfter)
 						if nmdDsc = Void then
 							if types.count = 1 then
@@ -6163,7 +6163,7 @@ end -- debug
 							barFound := False
 						end -- if
 					else
-						syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)
+						syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token>>)
 						toLeave := True
 					end -- inspect
 				else
@@ -6321,7 +6321,7 @@ end -- debug
 					Result := typeDsc -- nmdDsc
 				end -- inspect
 			end -- if
-		when scanner.ref_token, scanner.val_token, scanner.concurrent_token then
+		when scanner.ref_token, scanner.val_token, scanner.active_token then
 			Result := parseUnitType1 (checkSemicolonAfter)
 		when scanner.as_token then
 			-- AnchorTypeDescriptor
@@ -6353,7 +6353,7 @@ end -- debug
 			-- It is not a type! Result is Void
 			syntax_error (<<
 				scanner.type_name_token, scanner.identifier_token,
-				scanner.ref_token, scanner.val_token, scanner.concurrent_token,
+				scanner.ref_token, scanner.val_token, scanner.active_token,
 				scanner.as_token,
 				scanner.rtn_token,
 				scanner.left_paranthesis_token,
@@ -6564,16 +6564,16 @@ end -- debug
 	do
 		inspect
 			scanner.token
-		when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token then
+		when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token then
 			Result := parseUnitType1 (checkSemicolonAfter)
 		else
-			syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)			
+			syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token>>)			
 		end -- inspect
 	end -- parseUnitType
 	
 	parseUnitType1 (checkSemicolonAfter: Boolean): NamedTypeDescriptor is -- UnitTypeCommonDescriptor
 	require
-		valid_token: validToken (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)
+		valid_token: validToken (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token>>)
 	local
 		isRef,
 		isVal,
@@ -6590,7 +6590,7 @@ end -- debug
 		when scanner.val_token then
 			isVal := True
 			scanner.nextToken
-		when scanner.concurrent_token then
+		when scanner.active_token then
 			isConcurrent := True
 			scanner.nextToken
 		else
@@ -6606,13 +6606,13 @@ end -- debug
 				else
 					utd ?= nmdDsc
 					if utd = Void then
-						-- ref|val|concurrent FormalGenericName
+						-- ref|val|active FormalGenericName
 						if isRef then
 							validity_error ("Formal generic parameter cannot be used as `ref " + nmdDsc.name + "`")
 						elseif isVal then
 							validity_error ("Formal generic parameter cannot be used as `val " + nmdDsc.name + "`")
 						else -- isConcurrent
-							validity_error ("Formal generic parameter cannot be used as `concurrent " + nmdDsc.name + "`")
+							validity_error ("Formal generic parameter cannot be used as `active " + nmdDsc.name + "`")
 						end -- if
 					else
 						create {UnitTypeDescriptor} Result.init (isRef, isVal, isConcurrent, utd.name, utd.generics)
@@ -6729,10 +6729,10 @@ end -- debug
 	do
 		inspect
 			scanner.token
-		when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token then
+		when scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token then
 			Result := parseUnitType1 (True)
 		else
-			syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token>>)			
+			syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token>>)			
 		end -- inspect
 	end -- parseUnitTypeWithSemicolonAfter
 	
@@ -6856,7 +6856,7 @@ end -- debug
 					if tDsc /= Void then
 						create {FormalGenericConstantDescriptor} Result.init (name, tDsc)
 					end -- if
-				when scanner.ref_token, scanner.val_token, scanner.concurrent_token then
+				when scanner.ref_token, scanner.val_token, scanner.active_token then
 					-- Identifier “:” UnitTypeDescriptor
 					tDsc := parseUnitType (False)
 					if tDsc /= Void then
@@ -6878,7 +6878,7 @@ end -- debug
 					end -- if				
 				else
 					syntax_error (<<
-						scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.concurrent_token,
+						scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token,
 						scanner.rtn_token, scanner.left_paranthesis_token
 					>>)
 				end -- inspect
@@ -9340,9 +9340,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		end -- if
 	end -- 	parseFormalGenerics
 
-	parseUnit (is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend: Boolean) is
+	parseUnit (is_final, is_ref, is_val, is_active, is_virtual, is_extend: Boolean) is
 	--87
-	-- [final] [ref|val|concurrent|abstract|extend]
+	-- [final] [ref|val|active|abstract|extend]
 	-- type Identifier 
 	-- alias	[AliasName]
 	-- "["		[FormalGenerics] 
@@ -9398,7 +9398,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			scanner.nextToken
 		end -- if
 		if unitName /= Void then
-			create currentUnitDsc.init (unitName, is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend)
+			create currentUnitDsc.init (unitName, is_final, is_ref, is_val, is_active, is_virtual, is_extend)
 			currentUnitDsc.attach_pools (ast)
 			
 			if scanner.token = scanner.alias_token then

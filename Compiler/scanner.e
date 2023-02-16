@@ -66,12 +66,12 @@ feature
 	char_const_token,
 	illegal_token,	
 	abstract_token,
+	active_token,
 	alias_token,	
 	as_token,	
 	build_token,
 	case_token,
 	cluster_token,
-	concurrent_token,
 	const_token,	
 	do_token,		
 	else_token,
@@ -148,12 +148,12 @@ feature
 			"<char_const>",
 			"<illegal>",
 			"abstract"
+			"active",
 			"alias",
 			"as",
 			"build",
 			"case",
 			"cluster",
-			"concurrent",
 			"const",
 			"do",
 			"else",
@@ -425,7 +425,7 @@ feature {Any}
 		when 'A' .. 'Z' then
 			-- that is a type name and a type!
 			Result := register_buffer_and_return_type_name_token			    
-		when 'a' then -- "abstract" - 8, "alias", "as"
+		when 'a' then -- "abstract" - 8, "active" - 6, "alias" - 5, "as" - 2
 			inspect
 				buff_len
 			when 2 then
@@ -437,6 +437,12 @@ feature {Any}
 			when 5 then
 				if buffer.is_equal (keywords.item (alias_token)) then
 					Result := alias_token
+				else
+					Result := register_buffer_and_return_identifier_token
+				end
+			when 6 then
+				if buffer.is_equal (keywords.item (active_token)) then
+					Result := active_token
 				else
 					Result := register_buffer_and_return_identifier_token
 				end
@@ -455,7 +461,7 @@ feature {Any}
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- if
-		when 'c' then -- "case", "cluster", "concurrent", "const"
+		when 'c' then -- "case", "cluster", "const"
 			inspect
 				buff_len
 			when 4 then
@@ -476,12 +482,6 @@ feature {Any}
 				else
 					Result := register_buffer_and_return_identifier_token
 				end -- if
-			when 10 then
-				if buffer.is_equal (keywords.item (concurrent_token)) then
-					Result := concurrent_token
-				else
-					Result := register_buffer_and_return_identifier_token
-				end
 			else
 				Result := register_buffer_and_return_identifier_token
 			end

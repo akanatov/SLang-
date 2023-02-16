@@ -3142,7 +3142,7 @@ feature
 end -- class ContextTypeDescriptor
 
 class UnitDeclarationDescriptor
--- UnitDeclaration: ([final] [ref|val|concurrent])|[abstract]|[extend]
+-- UnitDeclaration: ([final] [ref|val|active])|[abstract]|[extend]
 -- type Identifier [AliasName] [FormalGenerics] [InheritDirective] [EnclosedUseDirective]
 -- [MemberSelection]
 -- [InheritedMemberOverriding]
@@ -3358,7 +3358,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		-- ([final] [ref|val|concurrent])|[abstract]|[extend]
+		-- ([final] [ref|val|active])|[abstract]|[extend]
 		if isExtension then
 			Result := "extend "
 		else
@@ -3373,7 +3373,7 @@ feature {Any}
 			elseif isVal then
 				Result.append_string ("val ")
 			elseif isConcurrent then
-				Result.append_string ("concurrent ")
+				Result.append_string ("active ")
 			end -- if
 		end -- if
 		Result.append_string ("unit " + name)
@@ -3820,13 +3820,13 @@ feature {None}
 		end -- if
 	end -- makeForSearch
 	
-	init (aName: like name; is_final, is_ref, is_val, is_concurrent, is_virtual, is_extend: Boolean) is
+	init (aName: like name; is_final, is_ref, is_val, is_active, is_virtual, is_extend: Boolean) is
 	do
 		name := aName
 		isFinal		:= is_final
 		isRef		:= is_ref
 		isVal		:= is_val
-		isConcurrent:= is_concurrent
+		isConcurrent:= is_active
 		isVirtual	:= is_virtual
 		isExtension	:= is_extend
 		create formalGenerics.make (1, 0)
@@ -11649,7 +11649,7 @@ invariant
 end -- class NamedTupleFieldDescriptor
 
 class UnitTypeDescriptor
---  [ref|val|concurrent] UnitTypeNameDescriptor
+--  [ref|val|active] UnitTypeNameDescriptor
 inherit
 	UnitTypeCommonDescriptor
 		redefine
@@ -11668,7 +11668,7 @@ feature {Any}
 		elseif isVal then
 			Result := "val "
 		elseif isConcurrent then
-			Result := "concurrent "
+			Result := "active "
 		else	
 			Result := ""
 		end	-- if
@@ -11698,7 +11698,7 @@ feature {Any}
 		general_consistence: ir or else iv or else ic
 		is_ref_consistent: ir implies not iv and then not ic 
 		is_val_consistent: iv implies not ir and then not ic 
-		is_concurrent_consistent: ic implies not iv and then not ir
+		is_active_consistent: ic implies not iv and then not ir
 	do
 		isRef := ir
 		isVal := iv
@@ -11709,7 +11709,7 @@ feature {Any}
 invariant
 	is_ref_consistent: isRef implies not isVal and then not isConcurrent 
 	is_val_consistent: isVal implies not isref and then not isConcurrent 
-	is_concurrent_consistent: isConcurrent implies not isVal and then not isRef
+	is_active_consistent: isConcurrent implies not isVal and then not isRef
 	general_consistence: isRef or else isVal or else isConcurrent
 end -- class UnitTypeDescriptor
 

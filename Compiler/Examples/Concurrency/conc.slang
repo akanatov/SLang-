@@ -1,8 +1,8 @@
 /* 
-1. Every concurrent unit has a queue of activation requests per every 'exported' routine
-2. All concurrent unit attrubutes are ensured being atomic for all read-write requests
+1. Every active unit has a queue of activation requests per every 'exported' routine
+2. All active unit attrubutes are ensured being atomic for all read-write requests
 */
-concurrent unit Producer[G]
+active unit Producer[G]
   Producer (queue :=)
   produce (generateData: rtn: G) do
     while not toStop do
@@ -16,7 +16,7 @@ concurrent unit Producer[G]
   queue: Queue [G]
   toStop: Boolean
 end
-concurrent unit Consumer[G]
+active unit Consumer[G]
   Consumer (queue :=)
   consume (processData: rtn (data: G)) do
     isProcessing := true
@@ -37,7 +37,7 @@ concurrent unit Consumer[G]
   toStop: Boolean
   queue:  Queue [G]
 end
-concurrent unit Queue [G]
+active unit Queue [G]
   put (element: G) do
     queue.resize (queue.count + 1, element)    
   end

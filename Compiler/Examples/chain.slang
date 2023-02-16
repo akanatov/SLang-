@@ -126,11 +126,11 @@ bool := base.isSomething ()
 unit T0
 	foo (<parameters>): Result do return Result end
 end // unit T0
-concurrent unit T1 extend T0
+active unit T1 extend T0
 end
-concurrent unit T2 extend T0
+active unit T2 extend T0
 end
-concurrent unit T3 extend T0
+active unit T3 extend T0
 end
 
 resultingTuple is in (T1, T2, T3) do foo (<arguments>) // Variant #1
