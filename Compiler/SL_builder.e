@@ -97,7 +97,8 @@ feature {Any}
 					debug
 						--o.putNL (">>> Checking if type `" + typeDsc.out + "` is loaded")
 					end -- debug
-					if typeDsc.isNotLoaded (scriptDsc, o) then
+					--if typeDsc.isNotLoaded (scriptDsc, o) then
+					if typeDsc.isNotLoaded (sysDsc, o) then
 						debug
 							--o.putNL ("<<< Failed to load `" + typeDsc.out + "`")
 						end -- debug
@@ -351,6 +352,7 @@ feature {None}
 		rootDsc: ContextTypeDescriptor
 		rootUnitDsc: UnitDeclarationDescriptor
 		typesPool: Sorted_Array[TypeDescriptor]
+		--context: CompilationUnitCommon
 		index: Integer
 	do
 		-- Find an entry point
@@ -385,22 +387,18 @@ feature {None}
 					rootUnitDsc := rootDsc.getUnitDeclaration -- root unit and its alias if any were loaded and registered		
 					typesPool := rootUnitDsc.typePool
 					if typesPool /= Void then
+						--context := sysDsc.
 						from
 							index := typesPool.count
 						until
-							index > 0
+							index <= 0
 						loop
-							if typesPool.item (index).isNotLoaded (sysDsc.context, o) then
+							if typesPool.item (index).isNotLoaded (sysDsc, o) then
 								Result := True
 							end -- if
 							index := index - 1
 						end -- loop
 					end -- if
-
-
-
-
-
 not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`") 
 				end -- if
 			end -- if	

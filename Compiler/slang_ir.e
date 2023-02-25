@@ -3724,7 +3724,8 @@ feature {Any}
 		Result := memberNames.seek (aName) > 0		
 	end -- hasMember
 	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	local
 		i, n: Integer
 	do
@@ -4035,8 +4036,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	local		
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
 		if typeConstraint /= Void and then typeConstraint.isNotLoaded (context, o) then
 			Result := True
@@ -4106,7 +4107,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
 		if type.isNotLoaded (context, o) then
 			Result := True
@@ -6549,9 +6551,11 @@ feature{Any}
 	--require	
 	--	non_void_context: context /= Void
 	--deferred
-	--end -- isInvalid	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--end -- is_invalid
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
+		-- Nothing to load at expression level
 	end -- isNotLoaded
 
 	isConst: Boolean is do end -- isConst
@@ -9912,7 +9916,8 @@ feature
 		Result := clone (name)
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	deferred
 	end -- isNotLoaded
 
@@ -9946,7 +9951,8 @@ feature {Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- checkValidity
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
 		if signature.isNotLoaded (context, o) then
 			Result := True
@@ -9995,8 +10001,10 @@ feature {Any}
 	end -- generate
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
-	end -- checkValidity
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+		-- REDO - porbabl;y oit shoudl be IsInvalid function but not this one !!!
+	end -- is_invalid
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
 		if type.isNotLoaded (context, o) then
 			Result := True
@@ -10214,7 +10222,8 @@ feature {Any}
 		Result := pos.out
 	end -- getFactualGenericExternalName
 	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	require
 		non_void_context: context /= Void
 	deferred
@@ -10325,7 +10334,8 @@ feature {Any}
 		end -- if
 	end -- is_invalid
 	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
 		if actualType.isNotLoaded (context, o) then
 			Result := True
@@ -10427,7 +10437,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	local
 		i, n: Integer
 	do
@@ -10527,14 +10538,12 @@ feature {Any}
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
 	do
-		-- not_implemened_yet
 		if signature.isInvalid (context, o) then
 			Result := True
 		end -- if
 		if not Result then
-			-- TBD
+			-- not_implemened_yet
 		end -- if
 	end -- isInvalid
 	generate (cg: CodeGenerator) is
@@ -10542,7 +10551,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 	
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
 		-- Load types from the signature
 		if signature.isNotLoaded (context, o) then
@@ -10753,12 +10763,13 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	local
 		i, n: Integer
 	do	
 		from
-			-- All parameters are to be valid
+			-- All parameters' types are to be loaded
 			n := parameters.count
 			i := 1
 		until	
@@ -10884,7 +10895,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
 		if left.isNotLoaded (context, o) then
 			Result := True
@@ -10966,7 +10978,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	local
 		i, n: Integer
 	do
@@ -11048,16 +11061,18 @@ feature {Any}
 		Result := "as_this"
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
-
-	is_invalid, isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do	
-		-- Nothing to load, always valid !!!		
-	end -- isInvalid, isNotLoaded
+		-- It is always valid
+	end -- is_invalid
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
+	do
+		-- Nothing to load
+	end -- isNotLoaded
 	generate (cg: CodeGenerator) is
 	do
-		-- do nothing so far
+		-- Nothing so generate
 	end -- generate
-
 end -- class AsThisTypeDescriptor
 
 deferred class AnchoredCommonDescriptor
@@ -11122,7 +11137,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do	
 		-- we need to have signature types loaded ...
 		if anchorSignature /= Void and then anchorSignature.isNotLoaded (context, o) then
@@ -11234,7 +11250,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	local
 		i, n: Integer
 	do
@@ -11350,7 +11367,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
 		if type.isNotLoaded (context, o) then
 			Result := True
@@ -11499,7 +11517,8 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	local
 		i, n: Integer
 	do
@@ -11537,7 +11556,8 @@ feature
 		non_void_external_name: Result /= Void
 	end -- getExternalName
 	type: NamedTypeDescriptor -- UnitTypeCommonDescriptor
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	do
 		if type.isNotLoaded (context, o) then
 			Result := True
@@ -11798,9 +11818,11 @@ feature {Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		-- its interface should be loaded first
-		if isNotLoaded (context, o) then
-			Result := True
-		end -- if		
+
+		-- It should be already loaded !!!
+		--if isNotLoaded (context, o) then
+		--	Result := True
+		--end -- if		
 		if not Result then
 			-- NOT IMPLEMENTED
 		end -- if
@@ -11813,7 +11835,8 @@ feature {Any}
 	
 	genericUnits: Array [ContextTypeDescriptor] --UnitDeclarationDescriptor]
 
-	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
+	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	local
 		foundInPool: Boolean
 		genericsCount: Integer
@@ -11826,7 +11849,8 @@ feature {Any}
 		i, n: Integer
 		m: Integer
 	do
-		contextTypes := context.sysDsc.allUnits
+		--contextTypes := context.sysDsc.allUnits
+		contextTypes := context.allUnits
 		genericsCount := generics.count 
 		if genericsCount > 0 then
 			-- Current could be: A[Type] or A[constExpr] where constExpr can be some const Object or rtn Object
@@ -11882,7 +11906,8 @@ feature {Any}
 			end -- loop
 			if not foundInPool then 
 				-- Load all possible generic units named as the current one
-				genericUnits := context.sysDsc.loadGenericUnits (Current, o)
+				--genericUnits := context.sysDsc.loadGenericUnits (Current, o)
+				genericUnits := context.loadGenericUnits (Current, o)
 			end -- if			
 			if genericUnits /= Void then
 				-- We have loaded all generic units for the current generic type
@@ -11995,7 +12020,8 @@ feature {Any}
 
 			if not foundInPool then -- let's load it
 				--unitDeclaration := context.loadUnitInterface (Current, o)
-				loadedUnits := context.sysDsc.loadUnitInterface (Current, o)
+				--loadedUnits := context.sysDsc.loadUnitInterface (Current, o)
+				loadedUnits := context.loadUnitInterface (Current, o)
 				--if unitDeclaration = Void then -- failed to load
 				if loadedUnits = Void then -- failed to load
 					contextTypes.add_after (unitDclDsc, pos) -- register to prevent load attempts again!
@@ -12156,7 +12182,8 @@ feature {Any}
 		end -- inspect		
 	end -- minimizeGenericUnits
 	
-	failedToLoadPoolTypesAndAlias (context: CompilationUnitCommon; o: Output): Boolean is
+	--failedToLoadPoolTypesAndAlias (context: CompilationUnitCommon; o: Output): Boolean is
+	failedToLoadPoolTypesAndAlias (context: SystemDescriptor; o: Output): Boolean is
 	require
 		non_void_unitDeclaration: unitDeclaration /= Void
 	local
@@ -12184,7 +12211,8 @@ feature {Any}
 			-- Create an alias node to ensure it is registred too
 			create aliasDsc.init (aliasName, unitDeclaration)
 			-- context.sysDsc.allUnits.add (aliasDsc)
-			if not context.sysDsc.allUnits.added (aliasDsc) then
+			--if not context.sysDsc.allUnits.added (aliasDsc) then
+			if not context.allUnits.added (aliasDsc) then
 				o.putNL ("Error: at least two types has the same name `" + aliasName + "`")
 				Result := True								
 			end -- if
@@ -12702,8 +12730,8 @@ feature {Any}
 				-- applicatiopn of operator with constExpr is to be valid
 			end -- if
 		end -- if
-			-- expr should be either Type or value ....
-			-- not_implemented_yet
+		-- expr should be either Type or value ....
+		-- not_implemented_yet
 	end -- is_invalid
 	generate (cg: CodeGenerator) is
 	do
