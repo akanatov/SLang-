@@ -349,6 +349,9 @@ feature {None}
 		entryPointName: String
 		clusters: Array [ClusterDescriptor]
 		rootDsc: ContextTypeDescriptor
+		rootUnitDsc: UnitDeclarationDescriptor
+		typesPool: Sorted_Array[TypeDescriptor]
+		index: Integer
 	do
 		-- Find an entry point
 		entryPointName := sysDsc.entry
@@ -367,10 +370,11 @@ feature {None}
 				-- Load it
 				o.putLine ("Loading root unit `" + entryPointName + "`")
 				rootDsc := sysDsc.loadUnitInterafceFrom (clusters.item (1).name, entryPointName, o)
-				if Result = Void then
+				if rootDsc = Void then
 					-- There was a problem to load root unit interface 
 					o.putNL ("Error: root unit `" + entryPointName + "` was not loaded correctly")
 					Result := True
+-- Not actual any more - source check was done already
 --				elseif fs.file_exists(Result.srcFileName) then
 --					-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
 --					if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
@@ -378,6 +382,25 @@ feature {None}
 --						Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
 --					end -- if
 				else
+					rootUnitDsc := rootDsc.getUnitDeclaration -- root unit and its alias if any were loaded and registered		
+					typesPool := rootUnitDsc.typePool
+					if typesPool /= Void then
+						from
+							index := typesPool.count
+						until
+							index > 0
+						loop
+							if typesPool.item (index).isNotLoaded (sysDsc.context, o) then
+								Result := True
+							end -- if
+							index := index - 1
+						end -- loop
+					end -- if
+
+
+
+
+
 not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`") 
 				end -- if
 			end -- if	

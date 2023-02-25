@@ -90,7 +90,7 @@ feature {Any}
 			if unitDclDsc = Void then
 				i := 0
 			else
-				if unitDclDsc.hasInvalidateInterface (o) then
+				if unitDclDsc.hasInvalidInterface (o) then
 					Result := False
 				end -- if
 				i := i - 1
@@ -3129,6 +3129,8 @@ inherit
 feature
 	getUnitDeclaration: UnitDeclarationDescriptor is
 	deferred
+	ensure
+		unit_declaration_npt_void: Result /= Void
 	end -- getUnitDeclaration
 end -- class ContextTypeDescriptor
 
@@ -3713,8 +3715,7 @@ feature {Any}
 			unitMembers.item (i).generate (cg)
 			i := i + 1
 		end -- loop
-	end -- generate
-	
+	end -- generate	
 
 	hasMember (aName: String): Boolean is
 	require
@@ -3742,7 +3743,7 @@ feature {Any}
 
 	isValidated: Boolean
 	isValidating: Boolean
-	hasInvalidateInterface (o: Output): Boolean is
+	hasInvalidInterface (o: Output): Boolean is
 	do
 		if not isValidated then
 			isValidating := True
@@ -3757,7 +3758,7 @@ feature {Any}
 			isValidated := True
 			isValidating := False
 		end -- if
-	end -- hasInvalidateInterface
+	end -- hasInvalidInterface
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
