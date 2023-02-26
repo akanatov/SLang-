@@ -107,7 +107,7 @@ feature {Any}
 	do
 		from
 			n := allUnits.count
-			o.putNL ("#### Total: " + n.out + " nodes")
+			o.putNL ("#### Total: " + n.out + " type nodes")
 			i := 1
 		until
 			i > n					
@@ -170,18 +170,38 @@ feature {Any}
 	--	end -- loop
 	--end -- getFormalGenerics
 	
-		--loadUnitInterafceFrom (path, unitExternalName: String; o: Output): UnitDeclarationDescriptor is
+	loadStandAloneRoutineFrom (path, routineExternalName: String; o: Output): CompilationUnitStandaloneRoutine is
+	require
+		non_void_routine_name: routineExternalName /= Void
+		non_void_path: path /= Void
+	local	
+		pathPrefix: String
+		fileName: String
+		cuDsc: CompilationUnitStandaloneRoutine
+	do
+		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
+			pathPrefix := path
+		else
+			pathPrefix := path + fs.separator
+		end -- if
+		fileName := pathPrefix + IRfolderName + fs.separator + routineExternalName + RoutinesSuffix + "." + ASText
+		if fs.file_exists (fileName) then
+			create cuDsc.make (Void)
+			if cuDsc.RoutineIR_Loaded (fileName, o) then
+				Result := cuDsc
+			end -- if
+		end -- if
+	end -- loadStandAloneRoutineFrom
+
+	--loadUnitInterafceFrom (path, unitExternalName: String; o: Output): UnitDeclarationDescriptor is
 	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): ContextTypeDescriptor is
 	require
 		non_void_unit_name: unitExternalName /= Void
 		non_void_path: path /= Void
-		--non_void_conext: sysDsc /= Void
 	local	
 		pathPrefix: String
 		fileName: String
-		--actualFileName: String
 		cuDsc: CompilationUnitUnit
-		--unitAliasDsc: UnitAliasDescriptor
 	do
 		if path.item (path.count) = '\' or else path.item (path.count) = '/' then
 			pathPrefix := path
@@ -295,10 +315,10 @@ feature {Any}
 			--o.putNL (">>> Looking for unit `" + unitPrintableName + "` to be located in file  `" + unitExternalName + "`")
 		end	-- debug
 		if unitDsc.generics.count = 0 then
-			o.putLine ("Looking for unit `" + unitPrintableName + "`")
+			--o.putLine ("Looking for unit `" + unitPrintableName + "`")
 			clusters_zone := hasUnit(unitExternalName)
 		else
-			o.putLine ("Looking for generic unit `" + unitPrintableName + "`")
+			--o.putLine ("Looking for generic unit `" + unitPrintableName + "`")
 			clusters_zone := hasGenericUnit(unitExternalName)
 		end -- if
 		if clusters_zone = Void or else clusters_zone.count = 0 then
@@ -1676,7 +1696,6 @@ feature
 	end -- make
 end -- class AnonymousRoutineDescriptor
 
-
 class CompilationUnitAnonymousRoutine
 inherit
 	CompilationUnitCommon
@@ -1686,7 +1705,6 @@ create
 feature {Any}
 	statements: Array [StatementDescriptor]
 	
-
 feature {None}
 	locals: Sorted_Array [LocalAttrDeclarationDescriptor]
 	make (scn: like scanner) is
@@ -1788,7 +1806,6 @@ feature {Any}
 		init_pools (scn)
 		--type := Void -- ????
 	end -- make
-	
 
 	--failedToGenerate (generators: Array [CodeGenerator]): Boolean is
 	--require
@@ -1868,7 +1885,6 @@ feature {None}
 	end -- loadUnitIR
 
 end -- class CompilationUnitUnit
-
 
 class CompilationUnitCompound
 -- CompilationUnitCompound: { UseConstDirective }  {StatementsList|StandaloneRoutine|UnitDeclaration}
@@ -3098,13 +3114,6 @@ feature {Any}
 		end -- if
 	end -- is_invalid
 	
-	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--do
-	--	if unitDclDsc.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
-	
 invariant
 	--non_void_alias_name: aliasName /= Void
 	--non_void_actual_type: unitDclDsc /= Void
@@ -3724,24 +3733,6 @@ feature {Any}
 		Result := memberNames.seek (aName) > 0		
 	end -- hasMember
 	
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--local
-	--	i, n: Integer
-	--do
-	--	from
-	--		i := 1
-	--		n := typePool.count
-	--	until
-	--		i > n
-	--	loop
-	--		if typePool.item(i).isNotLoaded (context, o) then
-	--			Result := True
-	--		end -- if
-	--		i := i + 1
-	--	end -- loop
-	--end -- isNotLoaded
-
 	isValidated: Boolean
 	isValidating: Boolean
 	hasInvalidInterface (o: Output): Boolean is
@@ -3972,8 +3963,6 @@ class FormalGenericTypeDescriptor
 -- Identifier ["extend" Type ] ["new" [Signature]]
 inherit
 	FormalGenericDescriptor
-		--redefine	
-		--	isNotLoaded
 	end
 create
 	init
@@ -4036,17 +4025,6 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 	
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	if typeConstraint /= Void and then typeConstraint.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--	if initConstraint /= Void and then initConstraint.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
-	
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
 	do
@@ -4063,7 +4041,6 @@ class FormalGenericConstantDescriptor
 inherit
 	FormalGenericDescriptor
 		redefine	
-			--isNotLoaded, 
 			isType, isRoutine, isTuple
 	end
 create
@@ -4107,14 +4084,6 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-	
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	if type.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if		
-	--end -- isNotLoaded
 
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -4168,14 +4137,6 @@ end
 --	do
 --		-- do nothing so far
 --	end -- generate
---	
---	isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
---	do
---		if routineType.isNotLoaded (context, o) then
---			Result := True
---		end -- if
---	end -- isNotLoaded
---
 --
 --feature {FormalGenericDescriptor}
 --	sameAs (other: like Current): Boolean is
@@ -6553,12 +6514,6 @@ feature{Any}
 	--	non_void_context: context /= Void
 	--deferred
 	--end -- is_invalid
-	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	-- Nothing to load at expression level
-	--end -- isNotLoaded
 
 	isConst: Boolean is do end -- isConst
 	
@@ -9918,10 +9873,6 @@ feature
 		Result := clone (name)
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--deferred
-	--end -- isNotLoaded
 
 invariant
 	--not_void_name: name /= Void
@@ -9953,13 +9904,6 @@ feature {Any}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- checkValidity
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	if signature.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
 
 feature {MemberDescriptionDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -10005,13 +9949,6 @@ feature {Any}
 	do
 		-- REDO - porbabl;y oit shoudl be IsInvalid function but not this one !!!
 	end -- is_invalid
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	if type.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
 
 feature {MemberDescriptionDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -10223,11 +10160,9 @@ feature {Any}
 		Result := pos.out
 	end -- getFactualGenericExternalName
 	
-	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	require
 		non_void_context: context /= Void
-	--deferred
 	do
 		-- Do nothing
 	end -- isNotLoaded
@@ -10337,14 +10272,6 @@ feature {Any}
 		end -- if
 	end -- is_invalid
 	
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	if actualType.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
-	
 invariant
 	non_void_alias_name: aliasName /= Void
 	-- non_void_actual_type: actualType /= Void
@@ -10440,25 +10367,6 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 	
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--local
-	--	i, n: Integer
-	--do
-	--	from
-	--		i := 1
-	--		n := members.count
-	--		Result := True
-	--	until
-	--		i > n
-	--	loop
-	--		if members.item (i).isNotLoaded (context, o) then
-	--			Result := True
-	--		end -- if
-	--		i := i + 1
-	--	end -- loop
-	--end -- isNotLoaded
-	
 	sameAs (other: like Current): Boolean is
 	local
 		i, n: Integer
@@ -10553,15 +10461,6 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-	
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	-- Load types from the signature
-	--	if signature.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
 	
 	sameAs (other: like Current): Boolean is
 	do
@@ -10766,30 +10665,6 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--local
-	--	i, n: Integer
-	--do	
-	--	from
-	--		-- All parameters' types are to be loaded
-	--		n := parameters.count
-	--		i := 1
-	--	until	
-	--		i > n
-	--	loop
-	--		if parameters.item (i).isNotLoaded (context, o) then
-	--			Result := True
-	--		end -- if
-	--		i := i + 1
-	--	end -- loop
-	--	if returnType /= Void then
-	--		-- Return type is to be be valid
-	--		if returnType.isNotLoaded (context, o) then
-	--			Result := True
-	--		end -- if
-	--	end -- if
-	--end -- isNotLoaded
 	
 invariant
 	non_void_parameters: parameters /= Void
@@ -10897,17 +10772,6 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	if left.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--	if right.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
 	
 invariant
 	non_void_left: left /= Void
@@ -10981,24 +10845,6 @@ feature {Any}
 		-- do nothing so far
 	end -- generate
 
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--local
-	--	i, n: Integer
-	--do
-	--	from
-	--		i := 1
-	--		n := values.count
-	--	until
-	--		i > n
-	--	loop
-	--		if values.item (i).isNotLoaded (context, o) then
-	--			Result := True
-	--		end -- if
-	--		i := i + 1
-	--	end -- loop
-	--end -- isNotLoaded
-
 	sameAs (other: like Current): Boolean is
 	local
 		i, n: Integer
@@ -11068,10 +10914,6 @@ feature {Any}
 	do	
 		-- It is always valid
 	end -- is_invalid
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	-- Nothing to load
-	--end -- isNotLoaded
 	generate (cg: CodeGenerator) is
 	do
 		-- Nothing so generate
@@ -11139,15 +10981,6 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do	
-	--	-- we need to have signature types loaded ...
-	--	if anchorSignature /= Void and then anchorSignature.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
 
 	sameAs (other: like Current): Boolean is
 	do
@@ -11252,24 +11085,6 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--local
-	--	i, n: Integer
-	--do
-	--	from
-	--		i := 1
-	--		n := types.count
-	--	until
-	--		i > n
-	--	loop
-	--		if types.item(i).isNotLoaded (context, o) then
-	--			Result := True
-	--		end -- if
-	--		i := i + 1
-	--	end -- loop
-	--end -- isNotLoaded
 	
 	sameAs (other: like Current): Boolean is
 	local
@@ -11325,8 +11140,6 @@ class DetachableTypeDescriptor
 -- "?" AttachedTypeDescriptor
 inherit
 	TypeDescriptor
-		--redefine
-		--	isNotLoaded
 	end
 create
 	init
@@ -11371,14 +11184,6 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	if type.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
 
 invariant
 	non_void_type: type /= Void
@@ -11521,24 +11326,6 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
-
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--local
-	--	i, n: Integer
-	--do
-	--	from
-	--		i := 1
-	--		n := fields.count
-	--	until
-	--		i > n
-	--	loop
-	--		if fields.item (i).isNotLoaded (context, o) then
-	--			Result := True
-	--		end -- if
-	--		i := i + 1
-	--	end -- loop		
-	--end -- isNotLoaded
 	
 invariant
 	non_void_fields: fields /= Void
@@ -11561,13 +11348,6 @@ feature
 		non_void_external_name: Result /= Void
 	end -- getExternalName
 	type: NamedTypeDescriptor -- UnitTypeCommonDescriptor
-	----isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
-	--isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
-	--do
-	--	if type.isNotLoaded (context, o) then
-	--		Result := True
-	--	end -- if
-	--end -- isNotLoaded
 	generate (cg: CodeGenerator) is
 	do
 		-- do nothing so far
@@ -11822,15 +11602,7 @@ feature {Any}
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
-		-- its interface should be loaded first
-
-		-- It should be already loaded !!!
-		--if isNotLoaded (context, o) then
-		--	Result := True
-		--end -- if		
-		if not Result then
-			-- NOT IMPLEMENTED
-		end -- if
+		-- NOT IMPLEMENTED
 	end -- is_invalid
 	
 	generate (cg: CodeGenerator) is
@@ -11840,7 +11612,6 @@ feature {Any}
 	
 	genericUnits: Array [ContextTypeDescriptor] --UnitDeclarationDescriptor]
 
-	--isNotLoaded (context: CompilationUnitCommon; o: Output): Boolean is
 	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
 	local
 		foundInPool: Boolean
@@ -11854,7 +11625,6 @@ feature {Any}
 		i, n: Integer
 		m: Integer
 	do
-		--contextTypes := context.sysDsc.allUnits
 		contextTypes := context.allUnits
 		genericsCount := generics.count 
 		if genericsCount > 0 then

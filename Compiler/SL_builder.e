@@ -46,19 +46,11 @@ feature {Any}
 		scriptDsc : CompilationUnitAnonymousRoutine
 		sysDsc: SystemDescriptor
 		fileName: String
-		typePool: Sorted_Array[TypeDescriptor]
-		typeDsc: TypeDescriptor
-		aliasTypes: Sorted_Array [AliasedTypeDescriptor]
-		attachedTypeDsc: AttachedTypeDescriptor
-		unitDclDsc: UnitDeclarationDescriptor
 		statements: Array [StatementDescriptor]
 		stmtDsc: StatementDescriptor
 		generators: Array [CodeGenerator]
 		i, n: Integer
 		j, m: Integer
-		unitAliasDsc: UnitAliasDescriptor
-		cntTypDsc: ContextTypeDescriptor		
-		aliasesCount: Integer
 	do
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
@@ -69,120 +61,12 @@ feature {Any}
 				-- 1. Build system description - where to look for units !!! 
 				create sysDsc.init_script (fs.getFileName(fName), getAnonymousRoutineClusters, Void)
 				scriptDsc.attachSystemDescription (sysDsc)
-				
-				-- 2. Process pools - ensure that all units' interfaces used are loaded
-				-- All use const types are registred in the type pool
-				--from
-				--	useConst  := scriptDscDsc.useConst
-				--	n := useConst.count
-				--	i := 1
-				--until
-				--	i > n
-				--loop
-				--	if useConst.item(i).isNotLoaded (scriptDscDsc) then
-				--		skipCodeGen := True
-				--	end -- if
-				--	i := i + 1
-				--end -- loop
-				
-				from
-					typePool := scriptDsc.typePool
-					create aliasTypes.make
-					n := typePool.count
-					i := 1
-				until
-					i > n					
-				loop
-					typeDsc := typePool.item(i) 
-					debug
-						--o.putNL (">>> Checking if type `" + typeDsc.out + "` is loaded")
-					end -- debug
-					--if typeDsc.isNotLoaded (scriptDsc, o) then
-					if typeDsc.isNotLoaded (sysDsc, o) then
-						debug
-							--o.putNL ("<<< Failed to load `" + typeDsc.out + "`")
-						end -- debug
-						Result := True
-					elseif typeDsc.aliasName /= Void then
-						attachedTypeDsc ?= typeDsc
-						if attachedTypeDsc /= Void then
-							check
-								unit_was_loaded: attachedTypeDsc.unitDeclaration /= Void
-								unit_registered: sysDsc.allUnits.seek (attachedTypeDsc.unitDeclaration) > 0
-							end 
-							create unitAliasDsc.init (typeDsc.aliasName, attachedTypeDsc.unitDeclaration)
-							if not sysDsc.allUnits.added (unitAliasDsc) then
-								o.putNL ("Error: at least two types has the same name `" + typeDsc.aliasName + "`")
-								Result := True								
-							end -- if				
-						end -- if																	
-					end -- if
-					i := i + 1
-				end -- loop
-
-				if not Result then					
-					-- Need to check that no name clashes between all alises and already loaded units !!!
-					from
-						n := sysDsc.allUnits.count
-						i := 1
-					until
-						i > n					
-					loop
-						cntTypDsc := sysDsc.allUnits.item (i)
-						unitAliasDsc ?= cntTypDsc
-						if unitAliasDsc = Void then
-							-- No more aliases!
-							i := n + 1
-						else
-							aliasesCount := aliasesCount + 1
-							create unitDclDsc.makeForSearch (unitAliasDsc.aliasName, Void)							
-							if sysDsc.allUnits.seek (unitDclDsc) > 0 then -- already registered
-								o.putNL ("Error: type alias `" + unitAliasDsc.aliasName + "` clashes with other unit name")
-								Result := True
-							end -- if
-							i := i + 1								
-						end -- if				
-					end -- loop						
-					
-					------ Register all alias types 
-					--from
-					--	--typePool := scriptDsc.typePool
-					--	n := aliasTypes.count
-					--	i := 1
-					--until
-					--	i > n					
-					--loop
-					--	--	typePool.add (aliasTypes.item (i))
-					--	aliasTypeDsc := aliasTypes.item (i)
-					--	utcDsc ?= aliasTypeDsc.actualType
-					--
-					--	--if utcDsc = Void then
-					--		create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, Void)
-					--	--else
-					--	--	create unitDclDsc.makeForSearch (aliasTypeDsc.aliasName, sysDsc.getFormalGenerics(utcDsc.generics))
-					--	--end -- if
-					--	
-					--	-- unitDclDsc should refer to the actualType !!! Alias support is not consistent !!!
-					--	-- change the type of context types !!!   Alias for generic and non-generic - Not_implement_yet !!!
-					--
-					--	pos	:= sysDsc.allUnits.seek (unitDclDsc)
-					--	--pos	:= sysDsc.allUnits.seek (aliasTypeDsc)
-					--	if pos > 0 then -- already registered
-					--		o.putNL ("Warning: type alias `" + typeDsc.aliasName + "` clashes with other unit name and will be ignored")
-					--	else -- have it registered
-					--		--sysDsc.allUnits.add_after (aliasTypeDsc, pos)
-					--		sysDsc.allUnits.add_after (unitDclDsc, pos)
-					--	end -- if					
-					--
-					--	i := i + 1
-					--end -- loop
-
-					o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded")
-					o.newLine
-					debug
-						sysDsc.dumpContext (o)						
-					end -- debug
-					
+			
+				Result := failedToLoadRequiredTypes (sysDsc, scriptDsc.typePool)
+				debug
+					sysDsc.dumpContext (o)						
+				end -- debug
+				if not Result then
 					if sysDsc.contextValidated (o) then
 						-- If all required types loaded and validated
 						-- 3. Check validity of cuDsc.statements
@@ -351,9 +235,7 @@ feature {None}
 		clusters: Array [ClusterDescriptor]
 		rootDsc: ContextTypeDescriptor
 		rootUnitDsc: UnitDeclarationDescriptor
-		typesPool: Sorted_Array[TypeDescriptor]
-		--context: CompilationUnitCommon
-		index: Integer
+		entryRtnDsc: CompilationUnitStandaloneRoutine
 	do
 		-- Find an entry point
 		entryPointName := sysDsc.entry
@@ -385,21 +267,15 @@ feature {None}
 --					end -- if
 				else
 					rootUnitDsc := rootDsc.getUnitDeclaration -- root unit and its alias if any were loaded and registered		
-					typesPool := rootUnitDsc.typePool
-					if typesPool /= Void then
-						--context := sysDsc.
-						from
-							index := typesPool.count
-						until
-							index <= 0
-						loop
-							if typesPool.item (index).isNotLoaded (sysDsc, o) then
-								Result := True
-							end -- if
-							index := index - 1
-						end -- loop
-					end -- if
+					Result := failedToLoadRequiredTypes (sysDsc, rootUnitDsc.typePool)
+					debug
+						sysDsc.dumpContext (o)						
+					end -- debug
+					if not Result then
+						if sysDsc.contextValidated (o) then
 not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`") 
+						end -- if
+					end -- if
 				end -- if
 			end -- if	
 		else
@@ -414,10 +290,110 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + s
 				o.putNL ("Error: " + clusters.count.out + " versions of the routine `" + entryPointName + "` found in the provided context. Select only one to be used")
 				Result := True
 			else
+				o.putLine ("Loading entry point routine `" + entryPointName + "`")
+				entryRtnDsc := sysDsc.loadStandAloneRoutineFrom (clusters.item (1).name, entryPointName, o)
+				if entryRtnDsc = Void then
+					-- There was a problem to load entry point routine
+					o.putNL ("Error: entry point routine `" + entryPointName + "` was not loaded correctly")
+					Result := True
+				else
+					entryRtnDsc.attachSystemDescription (sysDsc)
+					Result := failedToLoadRequiredTypes (sysDsc, entryRtnDsc.typePool)
+					debug
+						sysDsc.dumpContext (o)						
+					end -- debug
+					if not Result then
+						if sysDsc.contextValidated (o) then
 not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`")
+						end -- if
+					end -- if
+				end -- if
 			end -- if
 		end -- if
 	end -- executable_build_failed
+	
+	failedToLoadRequiredTypes (sysDsc: SystemDescriptor; typesPool: Sorted_Array[TypeDescriptor]): Boolean is
+	local		
+		typeDsc: TypeDescriptor
+		aliasTypes: Sorted_Array [AliasedTypeDescriptor]
+		attachedTypeDsc: AttachedTypeDescriptor
+		unitDclDsc: UnitDeclarationDescriptor
+		i, n: Integer
+		unitAliasDsc: UnitAliasDescriptor
+		cntTypDsc: ContextTypeDescriptor		
+		aliasesCount: Integer
+		failedToLoadCount: Integer
+	do
+		if typesPool /= Void then
+			from
+				create aliasTypes.make
+				n := typesPool.count
+				i := 1
+			until
+				i > n					
+			loop
+				typeDsc := typesPool.item(i) 
+				debug
+					--o.putNL (">>> Checking if type `" + typeDsc.out + "` is loaded")
+				end -- debug
+				if typeDsc.isNotLoaded (sysDsc, o) then
+					debug
+						--o.putNL ("<<< Failed to load `" + typeDsc.out + "`")
+					end -- debug
+					failedToLoadCount := failedToLoadCount + 1
+					Result := True
+				elseif typeDsc.aliasName /= Void then
+					attachedTypeDsc ?= typeDsc
+					if attachedTypeDsc /= Void then
+						check
+							unit_was_loaded: attachedTypeDsc.unitDeclaration /= Void
+							unit_registered: sysDsc.allUnits.seek (attachedTypeDsc.unitDeclaration) > 0
+						end 
+						create unitAliasDsc.init (typeDsc.aliasName, attachedTypeDsc.unitDeclaration)
+						if not sysDsc.allUnits.added (unitAliasDsc) then
+							o.putNL ("Error: at least two types has the same name `" + typeDsc.aliasName + "`")
+							Result := True								
+						end -- if				
+					end -- if																	
+				end -- if
+				i := i + 1
+			end -- loop
+
+			if not Result then					
+				-- Need to check that no name clashes between all alises and already loaded units !!!
+				from
+					n := sysDsc.allUnits.count
+					i := 1
+				until
+					i > n					
+				loop
+					cntTypDsc := sysDsc.allUnits.item (i)
+					unitAliasDsc ?= cntTypDsc
+					if unitAliasDsc = Void then
+						-- No more aliases!
+						i := n + 1
+					else
+						aliasesCount := aliasesCount + 1
+						create unitDclDsc.makeForSearch (unitAliasDsc.aliasName, Void)							
+						if sysDsc.allUnits.seek (unitDclDsc) > 0 then -- already registered
+							o.putNL ("Error: type alias `" + unitAliasDsc.aliasName + "` clashes with another unit name")
+							Result := True
+						end -- if
+						i := i + 1								
+					end -- if				
+				end -- loop
+			end -- if
+			if Result then
+				if failedToLoadCount > 0 then
+					--o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded, while " + failedToLoadCount.out + " failed to be loaded")
+					--o.newLine
+				end -- if
+			else
+				--o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded")
+				--o.newLine
+			end -- if
+		end -- if		
+	end -- failedToLoadRequiredTypes
 	
 	library_build_failed (sysDsc: SystemDescriptor; folderName: String): Boolean is
 		-- short name of the folder where artifacts be stored
@@ -448,6 +424,9 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 			end -- if
 			i := i - 1
 		end -- loop
+		debug
+			sysDsc.dumpContext (o)						
+		end -- debug
 
 		if not Result then
 			generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
@@ -484,7 +463,7 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 		ir_path := path + fs.separator + IRfolderName
 		if fs.folderExists (ir_path) then
 			debug
-				trace ("Loading interfaces from `" + ir_path + "`")
+				--trace ("Loading interfaces from `" + ir_path + "`")
 			end -- debug
 			from
 				ast_files := fs.getAllFilesWithExtension (ir_path, INText)
@@ -499,11 +478,14 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 						create cuUnitDsc.make (Void)
 						if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
 							debug
-								trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+								--trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
 							end -- debug
 							cuUnitDsc.attachSystemDescription (sysDsc)
-							-- ????
-							
+							-- What to do with unit loaded ?
+							-- Register it in the context
+							-- TBD
+							-- Load all types it uses
+							Result := failedToLoadRequiredTypes (sysDsc, cuUnitDsc.typePool)							
 						else
 							Result := True
 						end -- if				
@@ -513,9 +495,11 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
 						rtnDsc.attachSystemDescription (sysDsc)
 						debug
-							trace ("Standalone routine `" + rtnDsc.routine.name + "` loaded from file `" + ast_files.item (i).path + "`")
+							--trace ("Standalone routine `" + rtnDsc.routine.name + "` loaded from file `" + ast_files.item (i).path + "`")
 						end -- debug
-						-- ????
+						-- What to do with routine loaded ? TBD !!!
+						-- Load all types it uses
+						Result := failedToLoadRequiredTypes (sysDsc, rtnDsc.typePool)
 					else
 						Result := True
 					end -- if				
