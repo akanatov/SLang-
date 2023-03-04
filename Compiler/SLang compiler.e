@@ -66,7 +66,7 @@ feature {None}
 		dumpOutput: Output
 	do
 		create {ScreenOutput}o		
-		o.putNL ("SLang compiler v0.99.15 (Build <AVK March 4th 2023>)")
+		o.putNL ("SLang compiler v0.99.17 (Build <AVK March 4th 2023>)")
 		if args = Void then
 			o.putNL ("Valid usage: slc *|(<file_name1> <file_name2> ...)")
 		else

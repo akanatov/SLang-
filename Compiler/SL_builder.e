@@ -38,6 +38,28 @@ feature {None}
 		end -- if
 	end -- getAnonymousRoutineClusters
 feature {Any}
+
+	checkStatementsValidity (statements: Array [StatementDescriptor]; scriptDsc : CompilationUnitAnonymousRoutine): Boolean is
+	require
+		non_void_statements: statements /= Void	
+	local
+		i, n: Integer
+	do
+		from
+			n := statements.count
+			i := 1
+		until
+			i > n
+		loop
+			if statements.item(i).isInvalid (scriptDsc, o) then
+				debug
+					o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
+				end -- debug
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+	end -- checkStatementsValidity
 	
 	build_script_based_program_failed (fName: String): Boolean is
 	require
@@ -70,24 +92,7 @@ feature {Any}
 					if sysDsc.contextValidated (o) then
 						-- If all required types loaded and validated
 						-- 3. Check validity of cuDsc.statements
-						from
-							statements := scriptDsc.statements
-							check
-								non_void_statements: statements /= Void
-							end -- check
-							n := statements.count
-							i := 1
-						until
-							i > n
-						loop
-							if statements.item(i).isInvalid (scriptDsc, o) then
-								debug
-									o.putNL ("Statement `" + statements.item(i).out + "` invalid!")
-								end -- debug
-								Result := True
-							end -- if
-							i := i + 1
-						end -- loop
+						Result := checkStatementsValidity (scriptDsc.statements, scriptDsc)
 					else
 						Result := True
 					end -- if

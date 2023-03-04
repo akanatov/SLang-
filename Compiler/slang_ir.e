@@ -3743,6 +3743,8 @@ feature {Any}
 	isValidated: Boolean
 	isValidating: Boolean
 	hasInvalidInterface (o: Output): Boolean is
+	local
+		i, n: Integer
 	do
 		if not isValidated then
 			isValidating := True
@@ -3750,6 +3752,151 @@ feature {Any}
 				o.putNL (" >Info: unit `" + fullUnitName + "` interface validation started")
 			end
 			
+			if isExtension then
+			else
+				if isFinal then
+				elseif isVirtual then
+				end -- if
+				if isRef then
+				elseif isVal then
+				elseif isConcurrent then
+				end -- if
+			end -- if
+			-- name
+			if aliasName /= Void then
+			end
+
+			n := formalGenerics.count
+			if n > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- formalGenerics.item (i)
+					i := i + 1
+				end -- loop
+			end -- if
+
+			n := parents.count
+			if n > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- parents.item (i)
+					i := i + 1
+				end -- loop
+			end -- if
+
+			n := usage.count
+			if n > 0 or else constants.count > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- usage.item (i)
+					i := i + 1
+				end -- loop
+
+				n := constants.count
+				if n > 0 then
+					from
+						i := 1
+					until
+						i > n
+					loop
+						-- constants.item (i)
+						i := i + 1
+					end -- loop
+				end -- if
+			end -- if
+		
+			n := memberSelections.count
+			if n > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- memberSelections.item (i)
+					i := i + 1
+				end -- loop
+			end -- if
+
+			n := inheritedOverrides.count
+			if n > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- inheritedOverrides.item (i)
+					i := i + 1
+				end -- loop
+			end -- if
+
+			n := inhertitedInits.count
+			if n > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- inhertitedInits.item (i)
+					i := i + 1
+				end -- loop
+			end -- if
+
+			n := constObjects.count
+			if n > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- constObjects.item (i)
+					i := i + 1
+				end -- loop
+			end -- if
+
+			n := initMembers.count
+			if n > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- initMembers.item (i)
+					i := i + 1
+				end -- loop
+			end -- if
+
+			n := unitMembers.count
+			if n > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- unitMembers.item (i)
+					i := i + 1
+				end -- loop
+			end -- if
+
+			n := invariantPredicates.count
+			if n > 0 then
+				from
+					i := 1
+				until
+					i > n
+				loop
+					-- invariantPredicates.item (i)
+					i := i + 1
+				end -- loop
+			end -- if
 			
 			debug
 				o.putNL (" <Info: unit `" + fullUnitName + "` interface validation done")

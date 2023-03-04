@@ -7244,13 +7244,13 @@ end -- debug
 					-- use EnclosedUseEement const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
 					--                       ^
 					-- 		UnitTypeNameDescriptor [as Identifier]]
-					constants := parseUseConst
+					--constants := parseUseConst
 --trace ("2# parseEnclosedUseDirective use const " + constants.out)
 					toLeave := True
 				else
-					syntax_error (<<scanner.comma_token, scanner.const_token, scanner.as_token>>)
+					--syntax_error (<<scanner.comma_token, scanner.const_token, scanner.as_token>>)
 					toLeave := True
-					wasError := True
+					--wasError := True
 				end -- inspect		
 			end -- loop			
 
