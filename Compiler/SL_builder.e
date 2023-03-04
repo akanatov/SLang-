@@ -153,7 +153,7 @@ feature {Any}
 		folderName := "_$" + sysDsc.name
 		if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
 			-- Build the system
-			-- All 'from' and 'clusters' sources are to be parsed 
+			-- All 	'from' and 'clusters' sources are to be parsed 
 			if sysDsc.sourcesActual (o) then
 				if sysDsc.entry = Void then
 					-- Library
@@ -273,7 +273,7 @@ feature {None}
 					end -- debug
 					if not Result then
 						if sysDsc.contextValidated (o) then
-not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`") 
+not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
 						end -- if
 					end -- if
 				end -- if
@@ -304,7 +304,7 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + s
 					end -- debug
 					if not Result then
 						if sysDsc.contextValidated (o) then
-not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`")
+not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
 						end -- if
 					end -- if
 				end -- if
@@ -429,21 +429,25 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 		end -- debug
 
 		if not Result then
-			generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
-			from
-				i := from_paths.count
-				check
-					non_empty_list_of_paths: i > 0
-				end -- check
-			until
-				i <= 0
-			loop
-				if libraryBuildFailed (sysDsc, from_paths.item (i), generators) then
-					Result := True
-				end -- if
-				i := i - 1
-			end -- loop
-			closeCodeGenerators (generators)
+			if sysDsc.contextValidated (o) then
+				generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
+				from
+					i := from_paths.count
+					check
+						non_empty_list_of_paths: i > 0
+					end -- check
+				until
+					i <= 0
+				loop
+					if libraryBuildFailed (sysDsc, from_paths.item (i), generators) then
+						Result := True
+					end -- if
+					i := i - 1
+				end -- loop
+				closeCodeGenerators (generators)
+			else
+				Result := True
+			end -- if
 		end -- if 
 	end -- library_build_failed
 
@@ -473,31 +477,32 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 			loop
 				fileDsc := ast_files.item (i) 
 				fileName := fileDsc.name
-				if fileName.has_substring (UnitSuffix) then
-					if not fileName.has_substring (AliasPrefix) then -- skip alias file
-						create cuUnitDsc.make (Void)
-						if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
-							debug
-								--trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
-							end -- debug
-							cuUnitDsc.attachSystemDescription (sysDsc)
-							-- What to do with unit loaded ?
-							-- Register it in the context
-							-- TBD
-							-- Load all types it uses
-							Result := failedToLoadRequiredTypes (sysDsc, cuUnitDsc.typePool)							
-						else
-							Result := True
-						end -- if				
-					end -- if
+				if fileName.has_substring (UnitSuffix) and then not fileName.has_substring (AliasPrefix) then
+					-- That is unit but not alias IR file
+					create cuUnitDsc.make (Void)
+					if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
+						debug
+							--trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+						end -- debug
+						cuUnitDsc.attachSystemDescription (sysDsc)
+						-- What to do with unit loaded ?
+						-- Register it in the context
+						sysDsc.registerLoadedUnit (cuUnitDsc.unitDclDsc)
+						-- Load all types it uses
+						Result := failedToLoadRequiredTypes (sysDsc, cuUnitDsc.typePool)							
+					else
+						Result := True
+					end -- if				
 				elseif fileName.has_substring (RoutinesSuffix) then 
+					-- That is standalone routine IR file
 					create rtnDsc.make (Void)
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
 						rtnDsc.attachSystemDescription (sysDsc)
 						debug
 							--trace ("Standalone routine `" + rtnDsc.routine.name + "` loaded from file `" + ast_files.item (i).path + "`")
 						end -- debug
-						-- What to do with routine loaded ? TBD !!!
+						-- What to do with routine loaded ? 
+						-- TBD !!!
 						-- Load all types it uses
 						Result := failedToLoadRequiredTypes (sysDsc, rtnDsc.typePool)
 					else
@@ -545,7 +550,7 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 							end -- debug
 							cuUnitDsc.attachSystemDescription (sysDsc)
 							
-							-- TO REDO! Here load implementation check it and geneatte code !!!
+							-- TO REDO! Here load implementation check it and generate code !!!
 							--if cuUnitDsc.unitDclDsc.isNotLoaded (cuUnitDsc, o) then
 							--	Result := True
 							--else

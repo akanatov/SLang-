@@ -64,14 +64,19 @@ create
 	init_program, init_library, init_script
 feature {Any}
 	--name: String -- Name of the output target
-	from_paths: Sorted_Array [String] -- List of paths to build the library from
-	entry: String -- Name of class or routine to start execution of the program
+	from_paths: Sorted_Array [String] -- List of paths to build the library from, Void if executable
+	entry: String -- Name of class or routine to start execution of the program, Void  if library
 
 	clusters: Sorted_Array [ClusterDescriptor] -- Clusters to search for usage of units and routines
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 
 	--allUnits: Sorted_Array [UnitDeclarationDescriptor] 
 	allUnits: Sorted_Array [ContextTypeDescriptor]
+
+	registerLoadedUnit (unitDclDsc: UnitDeclarationDescriptor) is 
+	do
+		allUnits.add (unitDclDsc)
+	end -- registerLoadedUnit
 
 	contextValidated (o: Output): Boolean is
 	local
@@ -107,7 +112,7 @@ feature {Any}
 	do
 		from
 			n := allUnits.count
-			o.putNL ("#### Total: " + n.out + " type nodes")
+			o.putNL ("#### Context has " + n.out + " type nodes")
 			i := 1
 		until
 			i > n					
@@ -116,18 +121,19 @@ feature {Any}
 			unitDclDsc ?= cntTypDsc
 			if unitDclDsc /= Void then
 				if unitDclDsc.aliasName = Void then
-					o.putNL ("#" + i.out + " Unit: " + unitDclDsc.fullUnitName)
+					o.putNL ("%T#" + i.out + " Unit: " + unitDclDsc.fullUnitName)
 				else
-					o.putNL ("#" + i.out + " Unit: " + unitDclDsc.fullUnitName + " alias " + unitDclDsc.aliasName)
+					o.putNL ("%T#" + i.out + " Unit: " + unitDclDsc.fullUnitName + " alias " + unitDclDsc.aliasName)
 				end -- if
-			end -- if
-			unitAliasDsc ?= cntTypDsc
-			if unitAliasDsc /= Void then
-				o.putNL ("#" + i.out + " Alias: " + unitAliasDsc.aliasName + " unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+			else
+				unitAliasDsc ?= cntTypDsc
+				if unitAliasDsc /= Void then
+					o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+				end -- if
 			end -- if
 			i := i + 1
 		end -- loop						
-		o.putNL ("########################")
+		o.putNL ("#### End of context ####%N")
 	end -- dumpContext
 
 -- No need to do it at all !!!! 
@@ -730,32 +736,33 @@ feature {Any}
 	--	Result := entry /= Void and then entry.is_equal ("*")
 	--end -- is_script
 	
-	init_script (n : String; c: like clusters; l: like libraries) is 
+	init_script (aName : String; c: like clusters; l: like libraries) is 
 	do
-		init_program (n, "*", c, l)
+		init_program (aName, "*", c, l)
 	end -- init_script
 	
-	init_program (n,e : String; c: like clusters; l: like libraries) is
+	init_program (aName, anEntry : String; c: like clusters; l: like libraries) is
 	require
-		name_not_void: n /= Void
-		entry_not_void: e /= Void
+		name_not_void: aName /= Void
+		entry_not_void: anEntry /= Void
 	do
-		name:= n
-		entry:= e
+		name:= aName
+		entry:= anEntry
+		from_paths := Void
 		set_clusters_and_libraries (c, l)
 		create allUnits.make
 	end -- init_program
 	
-	init_library (n : String; fp: like from_paths; c: like clusters; l: like libraries) is
+	init_library (aName : String; fromPaths: like from_paths; c: like clusters; l: like libraries) is
 	require
-		name_not_void: n /= Void
+		name_not_void: aName /= Void
 	do
-		name:= n
+		name:= aName
 		entry := Void
-		if fp = Void then
+		if fromPaths = Void then
 			create from_paths.make
 		else
-			from_paths := fp
+			from_paths := fromPaths
 		end -- if
 		set_clusters_and_libraries (c, l)
 		create allUnits.make
@@ -3740,12 +3747,12 @@ feature {Any}
 		if not isValidated then
 			isValidating := True
 			debug
-				o.putNL (">Info: unit `" + fullUnitName + "` interface validation started")
+				o.putNL (" >Info: unit `" + fullUnitName + "` interface validation started")
 			end
 			
 			
 			debug
-				o.putNL ("<Info: unit `" + fullUnitName + "` interface validation done")
+				o.putNL (" <Info: unit `" + fullUnitName + "` interface validation done")
 			end
 			isValidated := True
 			isValidating := False
