@@ -199,8 +199,8 @@ feature {Any}
 		end -- if
 	end -- loadStandAloneRoutineFrom
 
-	--loadUnitInterafceFrom (path, unitExternalName: String; o: Output): UnitDeclarationDescriptor is
-	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): ContextTypeDescriptor is
+	--loadUnitInterafceFrom (path, unitExternalName: String; o: Output): ContextTypeDescriptor is
+	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): CompilationUnitUnit is
 	require
 		non_void_unit_name: unitExternalName /= Void
 		non_void_path: path /= Void
@@ -218,7 +218,9 @@ feature {Any}
 		if fs.file_exists (fileName) then
 			create cuDsc.make (Void)
 			if cuDsc.UnitIR_Loaded (fileName, o) then
-				Result := allUnits.add_it (cuDsc.unitDclDsc)
+				--Result := allUnits.add_it (cuDsc.unitDclDsc)
+				allUnits.add (cuDsc.unitDclDsc)
+				Result := cuDsc
 				--check
 				--	valid_unit_type: Result /= Void
 				--end 
@@ -239,7 +241,8 @@ feature {Any}
 			-- check for alias
 			fileName := pathPrefix + IRfolderName + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
 			if fs.file_exists (fileName) then
-				Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
+				--Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
+				Result := loadCompilationUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
 			end -- if
 			--actualFileName := getActualFileName (fileName)
 			--if actualFileName /= Void  then
@@ -272,6 +275,28 @@ feature {Any}
 		retry
 	end -- getActualFileName
 	
+	loadCompilationUnitViaAlias (fileName, pathPrefix, unitExternalName: String; o: Output): CompilationUnitUnit is
+	local
+		actualFileName: String
+		cuDsc: CompilationUnitUnit
+		unitAliasDsc: UnitAliasDescriptor
+		unitDclDsc: UnitDeclarationDescriptor
+	do	
+		actualFileName := getActualFileName (fileName)
+		if actualFileName /= Void  then
+			create cuDsc.make (Void)
+			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
+				unitDclDsc ?= allUnits.add_it (cuDsc.unitDclDsc) -- register generic unit in the project context
+				check
+					unit_registered: unitDclDsc /= Void
+				end -- check
+				create unitAliasDsc.init (unitExternalName, unitDclDsc)
+				allUnits.add (unitAliasDsc)
+				Result := cuDsc
+			end -- if
+		end -- if
+	end -- loadCompilationUnitViaAlias	
+	
 	loadUnitViaAlias(fileName, pathPrefix, unitExternalName: String; o: Output): UnitAliasDescriptor is
 	local
 		actualFileName: String
@@ -298,19 +323,16 @@ feature {Any}
 		end -- if
 	end -- loadUnitViaAlias
 	
-	--loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): UnitDeclarationDescriptor is
-	--loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [UnitDeclarationDescriptor] is
 	loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [ContextTypeDescriptor] is
 	require
 		non_void_current_unit: unitDsc /= Void
-		--non_generic_unit: unitDsc.generics.count = 0
 	local
 		clusters_zone: Array [ClusterDescriptor]
 		unitExternalName,
 		unitPrintableName: String
 		genericUnits: Array [UnitDeclarationDescriptor] --CompilationUnitUnit]
-		--unitDcldsc: UnitDeclarationDescriptor
-		cntTypeDsc: ContextTypeDescriptor
+		--cntTypeDsc: ContextTypeDescriptor
+		cntTypeCU: CompilationUnitUnit		
 	do
 		unitExternalName := unitDsc.name -- unitDsc.getExternalName
 		unitPrintableName:= unitDsc.out -- unitDsc.name  -- Name[factualGenerics]
@@ -337,12 +359,12 @@ feature {Any}
 			-- Load it
 			o.putLine ("Loading unit `" + unitPrintableName + "`")
 			if unitDsc.generics.count = 0 then
-				--Result := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
-				cntTypeDsc := loadUnitInterafceFrom (clusters_zone.item (1).name, unitExternalName, o)
-				--unitDcldsc := loadUnitInterafceFrom (clusters.item (1).name, unitExternalName, o)
-				--if unitDcldsc /= Void then
-				if cntTypeDsc /= Void then
-					Result := <<cntTypeDsc>>
+				--cntTypeDsc := loadUnitInterafceFrom (clusters_zone.item (1).name, unitExternalName, o)
+				cntTypeCU := loadUnitInterafceFrom (clusters_zone.item (1).name, unitExternalName, o)
+				--if cntTypeDsc /= Void then
+				if cntTypeCU /= Void then
+					--Result := <<cntTypeDsc>>
+					Result := <<cntTypeCU.unitDclDsc>>
 				end -- if
 			else
 				-- 
@@ -2538,9 +2560,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- generate
---	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
---	do
---	end -- checkValidity
+
+	--is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	--do
+	--end -- is_invalid
 
 	cutImplementation is
 	do
@@ -4729,8 +4752,7 @@ feature {Any}
 		end -- if
 		context.clearCurrentRoutine
 	end -- is_invalid	
-	
-	
+		
 end -- class RoutineDescriptor
 
 deferred class UnitRoutineDescriptor

@@ -240,7 +240,8 @@ feature {None}
 		clusters: Array [ClusterDescriptor]
 		rootDsc: ContextTypeDescriptor
 		rootUnitDsc: UnitDeclarationDescriptor
-		entryRtnDsc: CompilationUnitStandaloneRoutine
+		rootUnitCU: CompilationUnitUnit
+		entryRtnCU: CompilationUnitStandaloneRoutine
 	do
 		-- Find an entry point
 		entryPointName := sysDsc.entry
@@ -258,8 +259,10 @@ feature {None}
 			else
 				-- Load it
 				o.putLine ("Loading root unit `" + entryPointName + "`")
-				rootDsc := sysDsc.loadUnitInterafceFrom (clusters.item (1).name, entryPointName, o)
-				if rootDsc = Void then
+				--rootDsc := sysDsc.loadUnitInterafceFrom (clusters.item (1).name, entryPointName, o)
+				rootUnitCU := sysDsc.loadUnitInterafceFrom (clusters.item (1).name, entryPointName, o)
+				--if rootDsc = Void then
+				if rootUnitCU = Void then
 					-- There was a problem to load root unit interface 
 					o.putNL ("Error: root unit `" + entryPointName + "` was not loaded correctly")
 					Result := True
@@ -271,6 +274,7 @@ feature {None}
 --						Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
 --					end -- if
 				else
+					rootDsc := rootUnitCU.unitDclDsc
 					rootUnitDsc := rootDsc.getUnitDeclaration -- root unit and its alias if any were loaded and registered		
 					Result := failedToLoadRequiredTypes (sysDsc, rootUnitDsc.typePool)
 					debug
@@ -278,7 +282,10 @@ feature {None}
 					end -- debug
 					if not Result then
 						if sysDsc.contextValidated (o) then
-not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+							Result := rootUnitDsc.is_invalid (rootUnitCU, o)
+							if not Result then
+not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+							end -- if
 						end -- if
 					end -- if
 				end -- if
@@ -296,20 +303,23 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + s
 				Result := True
 			else
 				o.putLine ("Loading entry point routine `" + entryPointName + "`")
-				entryRtnDsc := sysDsc.loadStandAloneRoutineFrom (clusters.item (1).name, entryPointName, o)
-				if entryRtnDsc = Void then
+				entryRtnCU := sysDsc.loadStandAloneRoutineFrom (clusters.item (1).name, entryPointName, o)
+				if entryRtnCU = Void then
 					-- There was a problem to load entry point routine
 					o.putNL ("Error: entry point routine `" + entryPointName + "` was not loaded correctly")
 					Result := True
 				else
-					entryRtnDsc.attachSystemDescription (sysDsc)
-					Result := failedToLoadRequiredTypes (sysDsc, entryRtnDsc.typePool)
+					entryRtnCU.attachSystemDescription (sysDsc)
+					Result := failedToLoadRequiredTypes (sysDsc, entryRtnCU.typePool)
 					debug
 						sysDsc.dumpContext (o)						
 					end -- debug
 					if not Result then
 						if sysDsc.contextValidated (o) then
-not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+							Result := entryRtnCU.routine.is_invalid (entryRtnCU, o)
+							if not Result then
+not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+							end -- if
 						end -- if
 					end -- if
 				end -- if
