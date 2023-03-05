@@ -2993,8 +2993,7 @@ feature {Any}
 	end -- init
 invariant
 	non_void_unit_type: unitType /= Void
-end
-
+end -- class EnclosedUseEementDescriptor
 
 -- RequireBlock : require PredicatesList 
 -- EnsureBlock  : ensure PredicatesList

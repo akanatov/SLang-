@@ -7222,7 +7222,11 @@ end -- debug
 								-- 		UnitTypeNameDescriptor [as Identifier]]
 								create eueDsc.init (utnd, Void)
 								if not usage.added (eueDsc) then
-									validity_error( "Duplicated import of consntants from unit `" + eueDsc.out + "`") --  in type `" + unitDsc.name + "`")
+									if currentUnitDsc = Void then
+										validity_error( "Duplicated import of constants from `" + eueDsc.out + "`")
+									else
+										validity_error( "Duplicated import of constants from `" + eueDsc.out + "` in unit `" + currentUnitDsc.name + "`")
+									end -- if
 									--toLeave := True
 									wasError := True
 								else
@@ -7247,7 +7251,7 @@ end -- debug
 											if currentUnitDsc = Void then
 												validity_error( "Duplicated import of constants from `" + eueDsc.out + "`")
 											else
-												validity_error( "Duplicated import of constants from `" + eueDsc.out + "` in type `" + currentUnitDsc.name + "`")
+												validity_error( "Duplicated import of constants from `" + eueDsc.out + "` in unit `" + currentUnitDsc.name + "`")
 											end -- if
 											wasError := True
 										end -- if
