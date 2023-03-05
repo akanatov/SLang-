@@ -7,4 +7,4 @@ unit A alias GA [G]
 end
 unit Any end
 
-// unit X alias X  end // Handled properly !!!
+// unit X alias X  end // CTE: Handled properly !!!

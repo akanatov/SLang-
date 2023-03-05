@@ -324,7 +324,8 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 		attachedTypeDsc: AttachedTypeDescriptor
 		unitDclDsc: UnitDeclarationDescriptor
 		i, n: Integer
-		unitAliasDsc: UnitAliasDescriptor
+		unitAliasDsc,
+		registeredAliasDsc: UnitAliasDescriptor
 		cntTypDsc: ContextTypeDescriptor		
 		aliasesCount: Integer
 		failedToLoadCount: Integer
@@ -350,15 +351,23 @@ not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone 
 				elseif typeDsc.aliasName /= Void then
 					attachedTypeDsc ?= typeDsc
 					if attachedTypeDsc /= Void then
-						check
-							unit_was_loaded: attachedTypeDsc.unitDeclaration /= Void
-							unit_registered: sysDsc.allUnits.seek (attachedTypeDsc.unitDeclaration) > 0
-						end 
-						create unitAliasDsc.init (typeDsc.aliasName, attachedTypeDsc.unitDeclaration)
-						if not sysDsc.allUnits.added (unitAliasDsc) then
-							o.putNL ("Error: at least two types has the same name `" + typeDsc.aliasName + "`")
-							Result := True								
-						end -- if				
+						if attachedTypeDsc.unitDeclaration /= Void then
+							check
+								--unit_was_loaded: attachedTypeDsc.unitDeclaration /= Void
+								unit_registered: sysDsc.allUnits.seek (attachedTypeDsc.unitDeclaration) > 0
+							end 
+							create unitAliasDsc.init (attachedTypeDsc.aliasName, attachedTypeDsc.unitDeclaration)
+							registeredAliasDsc ?= sysDsc.allUnits.add_it (unitAliasDsc)
+							if registeredAliasDsc /= unitAliasDsc and then registeredAliasDsc.unitDclDsc /= unitAliasDsc.unitDclDsc then
+							--if not sysDsc.allUnits.added (unitAliasDsc) then
+								o.putNL ("Error: at least two aliases refer to the same name `" + typeDsc.aliasName + "` for different types")
+								Result := True								
+							end -- if				
+						else
+							debug
+								--o.putNL ("Info: type `" + typeDsc.out + "` has no IR!!!")
+							end -- debug
+						end -- if
 					end -- if																	
 				end -- if
 				i := i + 1

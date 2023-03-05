@@ -1,3 +1,4 @@
+use const UnitA, UnitB, UnitC
 a0 is AAA
 a1 is AAA
 a2 is AAA
@@ -9,6 +10,7 @@ a7 is AAA
 a8 is AAA
 a9 is AAA
 a10 is AAA
+
 rtn1 (parameter: Type1) : Type2 do end
 rtn2 (parameter: Type1) : Type2 do end
 rtn3 (parameter: Type1) : Type2 do end
@@ -21,15 +23,15 @@ rtn9 (parameter: Type1) : Type2 do end
 rtn10 (parameter: Type1) : Type2 do end
 rtn11 (parameter: Type1) : Type2 do end
 rtn12 (parameter: Type1) : Type2 do end
-use const UnitA, UnitB, UnitC
- unit  U
+
+unit  U
 	foo: Type do end
 end
- unit  UnitA
+unit  UnitA
 end
- unit  UnitB
+unit  UnitB
 end
- unit  UnitC
+unit  UnitC
 end
 unit AAA
 end

@@ -2781,8 +2781,7 @@ invariant
 	name_not_void: name /= Void
 	preconditions_not_void: preconditions /= Void
 	postconditions_not_void: postconditions /= Void		
-end 
-
+end -- class StandaloneRoutineDescriptor
 
 deferred class ParameterDescriptor
 inherit	
@@ -12117,7 +12116,8 @@ feature {Any}
 		non_void_unitDeclaration: unitDeclaration /= Void
 	local
 		typesPool: Sorted_Array[TypeDescriptor]
-		aliasDsc: UnitAliasDescriptor
+		aliasDsc,
+		registeredAliasDsc: UnitAliasDescriptor
 		i, n: Integer
 	do
 		typesPool := unitDeclaration.typePool
@@ -12141,8 +12141,11 @@ feature {Any}
 			create aliasDsc.init (aliasName, unitDeclaration)
 			-- context.sysDsc.allUnits.add (aliasDsc)
 			--if not context.sysDsc.allUnits.added (aliasDsc) then
-			if not context.allUnits.added (aliasDsc) then
-				o.putNL ("Error: at least two types has the same name `" + aliasName + "`")
+			registeredAliasDsc ?= context.allUnits.add_it (aliasDsc)
+			if registeredAliasDsc /= aliasDsc and then registeredAliasDsc.unitDclDsc /= aliasDsc.unitDclDsc then
+				o.putNL ("Error: at least two aliases refer to the same name `" + aliasName + "` for different types")
+			--if not context.allUnits.added (aliasDsc) then
+				--o.putNL ("Error: at least two aliases refer to the same name `" + aliasName + "` (1)")
 				Result := True								
 			end -- if
 		end -- if

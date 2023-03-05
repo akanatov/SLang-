@@ -133,7 +133,7 @@ feature {Any}
 			inspect
 				scanner.token
 			when scanner.illegal_token then
-				syntaxError ("Compilation unit start expected", <<scanner.illegal_token>>, unit_folowers)
+				syntaxError ("Valid compilation start expected", <<scanner.illegal_token>>, unit_folowers)
 				toExit := True
 			when scanner.eof_token then
 				toExit := True
@@ -144,14 +144,18 @@ feature {Any}
 				end -- if
 			else
 				scanner.disableSystemMode
-debug
-	--trace ("Start .... ")
-end
+				debug
+					--trace ("Start compialtion parsing .... ")
+				end
 				inspect
 					scanner.token
 				when scanner.use_token then
 					-- parse use_const clause
-					parseUseClause
+					parseUseConstClause
+				when scanner.alias_token then
+					-- parse type aliasing clause
+					parseAliasingClause
+
 				-- Unit start: ([final] [ref|val|active])|[abstract]|[extend]
 				when scanner.final_token then -- parse final type
 					ast.start_unit_parsing
@@ -5226,93 +5230,128 @@ end -- debug
 		end -- if
 	end -- parseUseConst
 	
-	parseUseClause is
-	-- UseDirective: use (const UnitTypeName {“,” UnitTypeName}) | (AttachedType as Identifier) [“;”|newLine]
+	parseAliasingClause is
+		-- GlobalAlias: alias GlobalAliasElement {“,” GlobalAliasElement}
+		-- GlobalAliasElement: AttachedType as UnitName
 	require
-		valid_token : validToken (<<scanner.use_token>>)
+		valid_token : validToken (<<scanner.alias_token>>)
 	local	
-		constants: Sorted_Array [UnitTypeNameDescriptor]
 		typeDsc: TypeDescriptor
 		atDsc: AttachedTypeDescriptor
 		aliasedDsc: AliasedTypeDescriptor
 		aliasName: String
 		pos: Integer
 		wasError: Boolean
+		toLeave: Boolean
+		commaFound: Boolean
 	do
-debug
-	--trace ("0# use ...")
-end -- debug
+		from
+			scanner.nextToken
+		until
+			toLeave
+		loop
+			inspect
+				scanner.token
+			when scanner.type_name_token, scanner.rtn_token, scanner.left_paranthesis_token then
+				commaFound := False
+				typeDsc := parseAttachedType (False)
+				if typeDsc /= Void then
+					atDsc ?= typeDsc
+					if atDsc = Void then
+						-- Formal generic type cann't be aliased
+						validity_error ("Incorrect type `" + typeDsc.out + "` used in the use clause")
+						if scanner.token = scanner.as_token then
+							scanner.nextToken
+							if scanner.token = scanner.type_name_token then
+								scanner.nextToken
+							else
+								syntax_error (<<scanner.type_name_token>>)
+							end -- if					
+						else
+							syntax_error (<<scanner.as_token>>)
+						end -- if
+					else
+						debug
+							--trace ("use " + atDsc.out)
+						end -- debug
+						check
+							alias_anchor_is_registered: ast.typePool.seek (atDsc) > 0 
+						end -- check
+						aliasedDsc ?= atDsc
+						if aliasedDsc /= Void then
+							validity_error( "Aliasing alias `" + aliasedDsc.aliasName + "` is not allowed") 
+							wasError := True
+						end -- if
+						if scanner.token = scanner.as_token then
+							scanner.nextToken
+							if scanner.token = scanner.type_name_token then
+								aliasName := scanner.tokenString
+								create aliasedDsc.init (aliasName, atDsc)
+								pos := ast.typePool.seek (aliasedDsc)
+								if pos > 0 then
+									-- Such alias type is already registered - duplication !!!
+									validity_error( "Duplicated type alias `" + aliasName + "`") 
+								elseif atDsc.aliasName /= Void then
+									validity_error( "Duplicated type alias `" + aliasName + "` for actual type `" + atDsc.out + "`") 
+								elseif wasError then
+									wasError := False
+								else
+									ast.typePool.add_after (aliasedDsc, pos)
+									atDsc.setAliasName (aliasName)
+								end -- if
+								scanner.nextToken
+								if scanner.token = scanner.comma_token then
+									scanner.nextToken									
+									commaFound := True
+								end -- if
+								debug
+									--trace ("use " + atDsc.out + " as " + aliasedDsc.aliasName)
+								end -- debug
+							else
+								syntax_error (<<scanner.type_name_token>>)
+								toLeave := True
+							end -- if					
+						else
+							syntax_error (<<scanner.as_token>>)
+							toLeave := True
+						end -- if
+					end -- if
+				end -- if
+			else
+				if commaFound then
+					syntax_error (<<scanner.type_name_token, scanner.rtn_token, scanner.left_paranthesis_token>>)
+				end -- if
+				toLeave := True
+			end -- inspect		
+		end -- loop
+	end -- parseAliasingClause
+	
+	parseUseConstClause is
+	-- UseDirective: use const UnitTypeName {“,” UnitTypeName} [“;”|newLine]
+	require
+		valid_token : validToken (<<scanner.use_token>>)
+	local	
+		constants: Sorted_Array [UnitTypeNameDescriptor]
+	do
+		debug
+			--trace ("0# use ...")
+		end -- debug
 		scanner.nextToken
-		inspect	
+		inspect
 			scanner.token
 		when scanner.const_token then
 			-- parse const use clause
 			constants := parseUseConst
---trace ("1# use const " + constants.out)
+			debug
+				--trace ("1# use const " + constants.out)
+			end -- debug
 			if constants /= Void then
 				ast.setUseConst (constants)
 			end -- if
-		when scanner.type_name_token, scanner.rtn_token, scanner.left_paranthesis_token then
-			--, scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
-		--then 
-			typeDsc := parseAttachedType (False)
-			if typeDsc /= Void then
-				atDsc ?= typeDsc
-				if atDsc = Void then
-					validity_error ("Incorrect type `" + typeDsc.out + "` used in the use clause")
-					if scanner.token = scanner.as_token then
-						scanner.nextToken
-						if scanner.token = scanner.type_name_token then
-							scanner.nextToken
-						else
-							syntax_error (<<scanner.type_name_token>>)
-						end -- if					
-					else
-						syntax_error (<<scanner.as_token>>)
-					end -- if
-				else
-	debug
-		--trace ("use " + atDsc.out)
-	end -- debug
-					aliasedDsc ?= atDsc
-					if aliasedDsc /= Void then
-						validity_error( "Aliasing alias `" + aliasedDsc.aliasName + "` is not allowed") 
-						wasError := True
-					end -- if
-					if scanner.token = scanner.as_token then
-						scanner.nextToken
-						if scanner.token = scanner.type_name_token then
-							aliasName := scanner.tokenString
-							create aliasedDsc.init (aliasName, atDsc)
-							pos := ast.typePool.seek (aliasedDsc)
-							if pos > 0 then
-								-- Such alias type is already registered - duplication !!!
-								validity_error( "Duplicated type alias `" + aliasName + "`") 
-							elseif atDsc.aliasName /= Void then
-								validity_error( "Duplicated type alias `" + aliasName + "` for actual type `" + atDsc.out + "`") 
-							elseif not wasError then
-								ast.typePool.add_after (aliasedDsc, pos)
-								atDsc.setAliasName (aliasName)
-							end -- if
-							scanner.nextToken
-	debug
-		--trace ("use " + atDsc.out + " as " + aliasedDsc.aliasName)
-	end -- debug
-						else
-							syntax_error (<<scanner.type_name_token>>)
-						end -- if					
-					else
-						syntax_error (<<scanner.as_token>>)
-					end -- if
-				end -- if
-			end -- if
 		else
-			syntax_error (<<scanner.type_name_token, scanner.rtn_token, scanner.left_paranthesis_token>>)
-			--	scanner.const_token, scanner.type_name_token, scanner.rtn_token, scanner.left_paranthesis_token, 
-			--	scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
-			-->>)
+			syntax_error (<<scanner.const_token>>)
 		end -- inspect		
-	end -- parseUseClause
+	end -- parseUseConstClause
 	
 	parseConstant (checkSemicolonAfter: Boolean): ConstantDescriptor is
 	--  Constant : StringConstant |CharacterConstant |IntegerConstant |RealConstant
@@ -6279,7 +6318,7 @@ end -- debug
 				-- Register type in the type pool
 				Result := register_named_type (utnDsc)
 			else
-				Result := parseTypeStartedWithName1 (name, checkSemicolonAfter)
+				typeDsc := parseTypeStartedWithName1 (name, checkSemicolonAfter)
 			end -- if
 			--trace ("<<<parseUnitTypeName2: " + Result.out)
 
@@ -7121,13 +7160,11 @@ end -- debug
 	end -- parseInheritanceClause
 
 	parseEnclosedUseDirective: UseConstBlock is
-	--71
 	-- EnclosedUseDirective: [use [EnclosedUseEement {“,” EnclosedUseEement}] [const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}]]
 	-- usage: Sorted_Array [EnclosedUseEementDescriptor]
 	-- constants: Sorted_Array [FullUnitNameDescriptor]
 	require
 		valid_token: validToken (<<scanner.use_token>>)
-		-- unit_descriptor_not_void: unitDsc /= Void
 	local
 		usage: Sorted_Array [EnclosedUseEementDescriptor]
 		constants: Sorted_Array [UnitTypeNameDescriptor] --FullUnitNameDescriptor]
@@ -7144,7 +7181,6 @@ end -- debug
 			-- use const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
 			-- add to -> constants: Sorted_Array [FullUnitNameDescriptor]
 			constants := parseUseConst
---trace ("4# parseEnclosedUseDirective constants: " + constants.out)			
 		when scanner.type_name_token then
 			-- use [EnclosedUseEement {“,” EnclosedUseEement}] [const FullUnitNameDescriptor {“,” FullUnitNameDescriptor}
 			-- 		UnitTypeNameDescriptor [as Identifier]]
@@ -7245,7 +7281,6 @@ end -- debug
 					--                       ^
 					-- 		UnitTypeNameDescriptor [as Identifier]]
 					--constants := parseUseConst
---trace ("2# parseEnclosedUseDirective use const " + constants.out)
 					toLeave := True
 				else
 					--syntax_error (<<scanner.comma_token, scanner.const_token, scanner.as_token>>)
@@ -7259,14 +7294,12 @@ end -- debug
 				--                                                 ^
 				-- 		UnitTypeNameDescriptor [as Identifier]]
 				constants := parseUseConst
---trace ("3# parseEnclosedUseDirective use const " + constants.out)
 			end -- if
 		else
 			syntax_error (<<scanner.type_name_token, scanner.const_token>>)
 			wasError := True
 		end -- inspect	
 		if not wasError then
---trace ("5# parseEnclosedUseDirective use const " + constants.out)
 			create Result.init (usage, constants)
 		end -- if			
 	end -- parseEnclosedUseDirective
@@ -7663,7 +7696,7 @@ end -- debug
 	parsingInit: Boolean 
 	
 	parseInitDeclaration (unitDsc: UnitDeclarationDescriptor; currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
-	--75 InitDeclaration: UnitName [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
+	--   InitDeclaration: UnitName [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
 	--                    ^     
 	require
 		non_void_current_unit: unitDsc /= Void
@@ -9436,7 +9469,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			end -- if
 
 			if scanner.token = scanner.use_token then
-				-- parse EnclosedUseDirective
+				-- parse unit UseDirective
 				unitUsageAndConst := parseEnclosedUseDirective
 				if unitUsageAndConst /= Void then
 					currentUnitDsc.setUseConstBlock (unitUsageAndConst)
