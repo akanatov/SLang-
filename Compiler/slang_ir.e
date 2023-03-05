@@ -12160,13 +12160,9 @@ feature {Any}
 			unitDeclaration.setAliasName (aliasName)
 			-- Create an alias node to ensure it is registred too
 			create aliasDsc.init (aliasName, unitDeclaration)
-			-- context.sysDsc.allUnits.add (aliasDsc)
-			--if not context.sysDsc.allUnits.added (aliasDsc) then
 			registeredAliasDsc ?= context.allUnits.add_it (aliasDsc)
 			if registeredAliasDsc /= aliasDsc and then registeredAliasDsc.unitDclDsc /= aliasDsc.unitDclDsc then
 				o.putNL ("Error: at least two aliases refer to the same name `" + aliasName + "` for different types")
-			--if not context.allUnits.added (aliasDsc) then
-				--o.putNL ("Error: at least two aliases refer to the same name `" + aliasName + "` (1)")
 				Result := True								
 			end -- if
 		end -- if

@@ -363,13 +363,11 @@ not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalon
 					if attachedTypeDsc /= Void then
 						if attachedTypeDsc.unitDeclaration /= Void then
 							check
-								--unit_was_loaded: attachedTypeDsc.unitDeclaration /= Void
 								unit_registered: sysDsc.allUnits.seek (attachedTypeDsc.unitDeclaration) > 0
 							end 
 							create unitAliasDsc.init (attachedTypeDsc.aliasName, attachedTypeDsc.unitDeclaration)
 							registeredAliasDsc ?= sysDsc.allUnits.add_it (unitAliasDsc)
 							if registeredAliasDsc /= unitAliasDsc and then registeredAliasDsc.unitDclDsc /= unitAliasDsc.unitDclDsc then
-							--if not sysDsc.allUnits.added (unitAliasDsc) then
 								o.putNL ("Error: at least two aliases refer to the same name `" + typeDsc.aliasName + "` for different types")
 								Result := True								
 							end -- if				

@@ -134,87 +134,168 @@ feature
 	greater_token,
 	implies_token
 	: Integer is unique
+
+	eof_string: String is                   "<EOF>" 
+	identifier_string: String is            "<identifier>"
+	type_name_string: String is             "<type name>"
+	comment_string: String is 	            "<comment>"
+	operator_string: String is              "<operator>" 
+	integer_const_string: String is         "<integer_const>"
+	real_const_string: String is            "<real_const>"
+	string_const_string: String is          "<string_const>"
+	char_const_string: String is            "<char_const>"
+	illegal_string: String is 	            "<illegal>"
+	abstract_string: String is              "abstract"
+	active_string: String is                "active"
+	alias_string: String is 	            "alias"
+	as_string: String is 	                "as"
+	build_string: String is                 "build"
+	case_string: String is                  "case"
+	cluster_string: String is               "cluster"
+	const_string: String is 	            "const"
+	do_string: String is 		            "do"
+	else_string: String is                  "else"
+	elsif_string: String is                 "elsif"
+	end_string: String is 		            "end"
+	ensure_string: String is                "ensure"
+	entry_string: String is                 "entry"
+	extend_string: String is                "extend"
+	final_string: String is                 "final"
+	foreign_string: String is               "foreign"
+	from_string: String is                  "from"
+	hide_string: String is                  "hide"
+	if_string: String is 	                "if"
+	in_string: String is                    "in"
+	is_string: String is 		            "is"
+	new_string: String is                   "new"
+	none_string: String is                  "none"
+	old_string: String is                   "old"
+	override_string: String is              "override"
+	pure_string: String is 	                "pure"
+	raise_string: String is                 "raise"
+	ref_string: String is                   "ref"
+	rename_string: String is                "rename"
+	require_string: String is               "require"
+	return_string: String is                "return"
+	rigid_string: String is                 "rigid"
+	rtn_string: String is                   "rtn"
+	safe_string: String is                  "safe"
+	select_string: String is                "select"
+	target_string: String is                "target"
+	this_string: String is                  "this"
+	unit_string: String is                  "unit"
+	use_string: String is                   "use"
+	val_string: String is                   "val"
+	var_string: String is                   "var"
+	when_string: String is                  "when"
+	while_string: String is                 "while"
+	left_paranthesis_string: String is      "(" 
+	right_paranthesis_string: String is     ")" 
+	left_curly_bracket_string: String is    "{" 
+	right_curly_bracket_string: String is   "}" 
+	left_square_bracket_string: String is   "[" 
+	right_square_bracket_string: String is  "]" 
+	tilda_string: String is                 "~" 
+	assignment_string: String is            ":=" 
+	colon_string: String is                 ":" 
+	comma_string: String is                 "" 
+	period_string: String is                ".."
+	dot_string: String is                   "."
+	detach_string: String is                "?"
+	semicolon_string: String is             ";"
+	bar_string: String is                   "|"
+	one_line_function_string: String is     "=>"
+	end_if_string: String is                "end // if"
+	end_block_string: String is             "end // block"
+	end_unit_string: String is              "end // type"
+	end_routine_string: String is           "end // routine"
+	end_loop_string: String is              "end // loop"
+	less_string: String is                  "<"
+	greater_string: String is               ">"
+	implies_string: String is               "->"
+
+
 	keywords: Array[String] is
 	once	
 		Result := <<
-			"<EOF>",
-			"<identifier>", 
-			"<type name>",
-			"<comment>",
-			"<operator>", 
-			"<integer_const>",
-			"<real_const>",
-			"<string_const>",
-			"<char_const>",
-			"<illegal>",
-			"abstract"
-			"active",
-			"alias",
-			"as",
-			"build",
-			"case",
-			"cluster",
-			"const",
-			"do",
-			"else",
-			"elsif",
-			"end",
-			"ensure",
-			"entry",
-			"extend",
-			"final",
-			"foreign",
-			"from",
-			"hide",
-			"if",
-			"in",
-			"is",
-			"new",
-			"none",
-			"old",
-			"override",
-			"pure",
-			"raise",
-			"ref",
-			"rename",
-			"require",
-			"return",
-			"rigid",
-			"rtn",
-			"safe",
-			"select",
-			"target",
-			"this",
-			"unit",
-			"use",
-			"val",
-			"var",
-			"when",
-			"while",
-			"(", 
-			")", 
-			"{", 
-			"}", 
-			"[", 
-			"]", 
-			"~", 
-			":=", 
-			":", 
-			",", 
-			"..",
-			".",
-			"?",
-			";",
-			"|",
-			"=>",
-			"end // if",
-			"end // block",
-			"end // type",
-			"end // routine",
-			"end // loop",
-			"<",
-			">",
-			"->"
+			eof_string,
+			identifier_string, 
+			type_name_string,
+			comment_string,
+			operator_string, 
+			integer_const_string,
+			real_const_string,
+			string_const_string,
+			char_const_string,
+			illegal_string,
+			abstract_string,
+			active_string,
+			alias_string,
+			as_string,
+			build_string,
+			case_string,
+			cluster_string,
+			const_string,
+			do_string,
+			else_string,
+			elsif_string,
+			end_string,
+			ensure_string,
+			entry_string,
+			extend_string,
+			final_string,
+			foreign_string,
+			from_string,
+			hide_string,
+			if_string,
+			in_string,
+			is_string,
+			new_string,
+			none_string,
+			old_string,
+			override_string,
+			pure_string,
+			raise_string,
+			ref_string,
+			rename_string,
+			require_string,
+			return_string,
+			rigid_string,
+			rtn_string,
+			safe_string,
+			select_string,
+			target_string,
+			this_string,
+			unit_string,
+			use_string,
+			val_string,
+			var_string,
+			when_string,
+			while_string,
+			left_paranthesis_string,    
+            right_paranthesis_string,   
+            left_curly_bracket_string,  
+            right_curly_bracket_string, 
+            left_square_bracket_string, 
+            right_square_bracket_string,
+            tilda_string,               
+            assignment_string,          
+            colon_string,               
+            comma_string,               
+            period_string,              
+            dot_string,                 
+            detach_string,              
+            semicolon_string,           
+            bar_string,                 
+            one_line_function_string,   
+            end_if_string,            
+            end_block_string,         
+            end_unit_string,          
+            end_routine_string,       
+            end_loop_string,          
+            less_string,                
+            greater_string,             
+            implies_string
 		>>
 	end
 end -- class SLangLexis
