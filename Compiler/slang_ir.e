@@ -1300,14 +1300,14 @@ end -- class RenamePair
 --1 Compilation : {CompilationUnitCompound}
      
 --deferred
-class CompilationUnitCommon
+deferred class CompilationUnitCommon
 inherit
 	SLangConstants
 	end
 	Server
 	end
-create {None}
-	init_pools
+--create {None}
+--	init_pools
 feature {Any}
 	-- use const UnitTypeName {"," UnitTypeName}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -1325,6 +1325,12 @@ feature {Any}
 		Result ?= typePool.search (utnDsc)
 	end -- getUnitTypeByName
 
+	generationFailed (cg: CodeGenerator): Boolean is
+	require
+		code_generator_npt_void: cg /= Void
+	deferred
+	end -- generationFailed
+	
 	srcFileName: String
 	timeStamp: Integer 
 
@@ -1656,6 +1662,11 @@ create
 feature {Any}
 	routine: StandaloneRoutineDescriptor
 
+	generationFailed (cg: CodeGenerator): Boolean is
+	do
+		Result := routine.generationFailed(cg)
+	end -- generationFailed
+
 	make(scn: like scanner) is
 	do
 		init_pools (scn)
@@ -1733,6 +1744,23 @@ create
 	make -- init
 feature {Any}
 	statements: Array [StatementDescriptor]
+
+	generationFailed (cg: CodeGenerator): Boolean is
+	local
+		i,n: Integer
+	do
+		from
+			i := 1
+			n := statements.count
+		until
+			i > n
+		loop
+			if statements.item (i).generationFailed (cg) then
+				Result := True
+			end -- if
+			i := i + 1
+		end -- loop
+	end -- generationFailed
 	
 feature {None}
 	locals: Sorted_Array [LocalAttrDeclarationDescriptor]
@@ -1836,24 +1864,11 @@ feature {Any}
 		--type := Void -- ????
 	end -- make
 
-	--failedToGenerate (generators: Array [CodeGenerator]): Boolean is
-	--require
-	--	non_void_list_of_code_generators: generators /= Void
-	--local
-	--	j, m: Integer
-	--do
-	--	from
-	--		j := 1
-	--	until
-	--		j > m
-	--	loop
-	--		if unitDclDsc.failedToGenerate(generators.item (j)) then
-	--			Result := True
-	--		end -- if
-	--		j := j + 1
-	--	end -- loop
-	--end -- if
-	
+	generationFailed (cg: CodeGenerator): Boolean is
+	do
+		Result := unitDclDsc.generationFailed(cg)
+	end -- generationFailed
+
 --	instantiate (generics: Array [TypeOrExpressionDescriptor]) is
 --	require
 --		non_void_generics: generics /= Void
@@ -2294,10 +2309,10 @@ feature {Any}
 			-- TBD
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	consistent: unitType /= Void or else exprDsc /= Void
@@ -2379,10 +2394,10 @@ feature {Any}
 			-- TBD
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	cutImplementation is
 	do
@@ -2556,10 +2571,10 @@ feature {Any}
 		end -- loop
 	end -- attach_use_pool
 	
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	--is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	--do
@@ -2831,10 +2846,10 @@ feature {None}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- checkValidity
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 invariant
 	--name_not_void: name /= Void
 end -- class ParameterDescriptor
@@ -3050,9 +3065,9 @@ feature {Any}
 		expr := e
 		tag := s
 	end -- init
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
-	end -- generate
+	end -- generationFailed
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		if expr.isInvalid (context, o) then
@@ -3130,10 +3145,10 @@ feature {Any}
 	--do
 	--	Result := unitDclDsc.getExternalName
 	--end -- getExternalName
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -3729,7 +3744,7 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- attach_use_pool
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	local
 		i, n: Integer
 	do
@@ -3739,7 +3754,9 @@ feature {Any}
 		until
 			i > n
 		loop
-			initMembers.item (i).generate (cg)
+			if initMembers.item (i).generationFailed (cg) then
+				Result := True
+			end -- if
 			i := i + 1
 		end -- loop
 
@@ -3749,10 +3766,12 @@ feature {Any}
 		until
 			i > n
 		loop
-			unitMembers.item (i).generate (cg)
+			if unitMembers.item (i).generationFailed (cg) then
+				Result := True
+			end -- if
 			i := i + 1
 		end -- loop
-	end -- generate	
+	end -- generationFailed	
 
 	hasMember (aName: String): Boolean is
 	require
@@ -4052,6 +4071,7 @@ feature {Any}
 	do
 		if isNonConformant then
 			Result := "~" + parent.out
+			--Result := scanner.tilda_string + parent.out
 		else
 			Result := parent.out
 		end
@@ -4118,10 +4138,10 @@ feature {Any}
 	do
 		-- not_implemened_yet
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -4195,10 +4215,10 @@ feature {Any}
 		end -- if
 	end -- is_invalid
 	
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -4255,10 +4275,10 @@ feature {Any}
 			Result := True
 		end -- if		
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 feature {FormalGenericDescriptor}
 	sameAs (other: like Current): Boolean is
@@ -4308,10 +4328,10 @@ end
 --	do
 --		-- not_implemened_yet
 --	end -- isInvalid
---	generate (cg: CodeGenerator) is
+--	generationFailed(cg: CodeGenerator): Boolean is
 --	do
 --		-- do nothing so far
---	end -- generate
+--	end -- generationFailed
 --
 --feature {FormalGenericDescriptor}
 --	sameAs (other: like Current): Boolean is
@@ -5084,9 +5104,9 @@ feature {Any}
 		isSafe := isS
 		expr := e
 	end -- init
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
-	end -- generate
+	end -- generationFailed
 --	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 --	do
 --	end -- is_invalid
@@ -5135,9 +5155,9 @@ feature {Any}
 		innerBlock := b
 		postconditions := post
 	end -- init
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
-	end -- generate
+	end -- generationFailed
 
 end -- class InitDeclarationDescriptor
 
@@ -5513,9 +5533,9 @@ feature
 		Result := aString.hash_code.out
 		Result := ""
 	end -- buildHash
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	deferred
-	end -- generate
+	end -- generationFailed
 	isInvalid (context: CompilationUnitCommon; o: Output): Boolean is
 	require
 		non_void_contex: context /= Void
@@ -5582,11 +5602,11 @@ end -- class StatementDescriptor
 --	do
 --		stmtDsc := aStmtDsc
 --	end -- init
---	generate (cg: CodeGenerator) is
+--	generationFailed(cg: CodeGenerator): Boolean is
 --	require
 --		code_generator_not_void: cg /= Void
 --	deferred
---	end -- generate
+--	end -- generationFailed
 --end -- class ValidStatementDescriptor
 
 class RepeatWhileDescriptor
@@ -5663,10 +5683,10 @@ feature {Any}
 		
 		-- 'id' should be a valid name of writable attribute or local, set link to declration
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	out: String is
 	do
@@ -5709,10 +5729,10 @@ feature {Any}
 		end -- if
 	end -- isInvalid
 
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	out: String is
 	do
@@ -5755,10 +5775,10 @@ feature {Any}
 			end -- if	
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	out: String is
 	do
@@ -5893,10 +5913,10 @@ feature {Any}
 			Result := True
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	out: String is
 	do
@@ -5963,10 +5983,10 @@ feature {Any}
 -- not_implemented_yet: AssignmentStatementDescriptor.isInvalid
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	out: String is
 	do
@@ -6129,9 +6149,9 @@ feature {Any}
 		Result := name < other.name
 	end -- lessThan
 	
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
-	end -- generate
+	end -- generationFailed
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- is_invalid		
@@ -6245,9 +6265,9 @@ end -- class UnitAttributeDeclarationDescriptor
 --			assigner.cutImplementation
 --		end -- if
 --	end -- cutImplementation
---	generate (cg: CodeGenerator) is
+--	generationFailed(cg: CodeGenerator): Boolean is
 --	do
---	end -- generate
+--	end -- generationFailed
 --	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 --	do
 --	end -- is_invalid
@@ -6283,10 +6303,10 @@ end -- class UnitAttributeDeclarationDescriptor
 --	typePool := context.typePool
 --		-- do nothing so far
 --	end -- isInvalid
---	generate (cg: CodeGenerator) is
+--	generationFailed(cg: CodeGenerator): Boolean is
 --	do
 --		-- do nothing so far
---	end -- generate
+--	end -- generationFailed
 --
 --	init (aName: like name; aType: like type) is
 --	require
@@ -6347,10 +6367,10 @@ feature {Any}
 		
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	--setFlags (tmpDsc: TemporaryLocalAttributeDescriptor) is
 	setFlags (tmpDsc: like Current) is
@@ -6423,10 +6443,10 @@ end -- class LocalAttrDeclarationDescriptor
 --	
 --		-- do nothing so far
 --	end -- isInvalid
---	generate (cg: CodeGenerator) is
+--	generationFailed(cg: CodeGenerator): Boolean is
 --	do
 --		-- do nothing so far
---	end -- generate
+--	end -- generationFailed
 --
 --	out: String is
 --	do
@@ -6489,7 +6509,7 @@ end -- class LocalAttrDeclarationDescriptor
 --		name := aName
 --	end -- init
 --	cutImplementation is do end
---	generate (cg: CodeGenerator) is do end -- generate
+--	generationFailed(cg: CodeGenerator): Boolean is do end -- generationFailed
 --	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is do end -- is_invalid
 --
 --end -- class TemporaryUnitAttributeDescriptor
@@ -6514,9 +6534,9 @@ end -- class LocalAttrDeclarationDescriptor
 --	expr: ExpressionDescriptor
 --
 --	
---	generate (cg: CodeGenerator) is
+--	generationFailed(cg: CodeGenerator): Boolean is
 --	do
---	end -- generate
+--	end -- generationFailed
 --	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 --	do
 --	end -- is_invalid
@@ -6743,10 +6763,10 @@ feature {Any}
 			Result := True
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 end -- class IsDetachedDescriptor
 class IsAttachedDescriptor
@@ -6803,10 +6823,10 @@ feature {Any}
 			Result := True
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 invariant
 	non_void_type: typeDsc /= Void
 end -- class IsAttachedDescriptor
@@ -6861,10 +6881,10 @@ feature
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	forcedType_not_void: forcedType /= Void
@@ -6915,10 +6935,10 @@ feature
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	non_void_expression: expr /= Void
@@ -6994,10 +7014,10 @@ feature
 	typePool := context.typePool
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	sameAs (other: like Current): Boolean is
 	do
@@ -7031,10 +7051,10 @@ feature
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 end -- class ThisDescriptor
 
@@ -7059,10 +7079,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 end -- class ReturnDescriptor
 
@@ -7137,10 +7157,10 @@ feature {Any}
 		--Need to be sure it is visible in the currently active context ... Not_implemented_yet
 		
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 end -- class IdentifierDescriptor
 
@@ -7314,10 +7334,10 @@ feature
 			-- TBD
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	tuple_not_void: tuple /= Void
@@ -7362,10 +7382,10 @@ feature {Any}
 			-- not_implemented_yet
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 invariant
 	non_void_expression: expr /= Void
@@ -7450,10 +7470,10 @@ feature {Any}
 			-- signature: SignatureDescriptor
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	--name_not_void: name /= Void
@@ -7474,7 +7494,7 @@ inherit
 		undefine
 			is_equal, infix "<", sameAs, lessThan
 		redefine	
-			is_invalid, generate
+			is_invalid, generationFailed
 	end
 create
 	init
@@ -7497,10 +7517,10 @@ print ("InlineLambdaExpression.lessThan not_implemented_yet%N")
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 end -- class InlineLambdaExpression
 
@@ -7543,10 +7563,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 invariant
 	non_void_expr: expr /= Void
@@ -7626,10 +7646,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	left_expr_not_void: left /= Void
@@ -7669,10 +7689,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 invariant
 	expr_not_void: expr /= Void
@@ -7835,10 +7855,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 invariant
 	expr_not_void: expr /= Void
@@ -7966,10 +7986,10 @@ feature	{Any}
 			Result := True
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	out: String is
 	local
@@ -8039,10 +8059,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate	
+	end -- generationFailed	
 	
 	getOrder: Integer is
 	do
@@ -8195,10 +8215,10 @@ feature
 		end -- if
 	end -- is_invalid
 
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	non_void_expr: exprDsc /= Void
@@ -8315,10 +8335,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 
 	init (t: like tuple; cc: like callChain) is
@@ -8437,10 +8457,10 @@ feature{Any}
 		-- do nothing so far
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	init (expr: like expression; cc: like callChain) is
 	require
@@ -8564,10 +8584,10 @@ feature{Any}
 			-- Need to check that target(arguments).classChain combination is valid
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	init (ceDsc: like target; args: like arguments; cc: like callChain) is
 	require
@@ -8698,10 +8718,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	init (cd: like constDsc; aName: String; args: like arguments; cc: like callChain) is
 	require
@@ -8825,7 +8845,7 @@ inherit
 			init as UnqualifiedCallInit
 		export {None} UnqualifiedCallInit
 		redefine
-			out, sameAs, lessThan, getOrder, is_invalid, generate
+			out, sameAs, lessThan, getOrder, is_invalid, generationFailed
 	end
 	ServiceRoutines
 		rename	
@@ -8889,10 +8909,10 @@ feature{Any}
 			--	5. if identifier is a procedure call then no callChain present
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate	
+	end -- generationFailed	
 	
 	getOrder: Integer is
 	do
@@ -9013,10 +9033,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	out: String is
 	do
@@ -9041,10 +9061,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	out: String is
 	do
@@ -9176,10 +9196,10 @@ feature{Any}
 	do
 		-- unitTypeDsc should have visible constructor and arguments conform to its parameters
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 	out: String is
 	do
@@ -9219,10 +9239,10 @@ feature{Any}
 	do
 		-- unitTypeDsc should have visible constructor and arguments conform to its parameters
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 	out: String is
 	do
@@ -9265,10 +9285,10 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 
 	init (ut: like unitType; args: like arguments; cc: like callChain) is
@@ -9331,10 +9351,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 	init (ut: like unitType; id: like identifier; args: like arguments) is
 	do
@@ -9412,10 +9432,10 @@ feature {Any}
 		-- check that propoer constructoк is in place 
 		-- arguments conform to parameters
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	non_void_unitType: unitType /= Void
@@ -9472,10 +9492,10 @@ feature {Any}
 			end -- loop
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 	init (eic: like ifParts; ep: like elsePart) is
 	require
@@ -9597,10 +9617,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 	out: String is
 	local
@@ -9712,10 +9732,10 @@ feature {Any}
 	do
 		-- do nothing so far
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 
 	out: String is
@@ -9963,10 +9983,10 @@ feature {Any}
 		end -- loop
 	end -- is_invalid
 
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 invariant
 	statements_not_void: statements /= Void
@@ -10000,10 +10020,10 @@ feature {Any}
 		Result.append_string (expr.out)
 		Result.append_character (' ')
 	end -- out
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -10071,10 +10091,10 @@ feature {Any}
 	do
 		Result := name + " " + signature.out
 	end -- out
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- checkValidity
@@ -10115,10 +10135,10 @@ feature {Any}
 	do
 		Result := name + ": " + type.out
 	end -- out
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		-- REDO - porbabl;y oit shoudl be IsInvalid function but not this one !!!
@@ -10434,10 +10454,10 @@ feature {Any}
 	do
 		Result := actualType.getExternalName
 	end -- getExternalName
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -10536,10 +10556,10 @@ feature {Any}
 	do
 		-- not_implemened_yet
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 	sameAs (other: like Current): Boolean is
 	local
@@ -10631,10 +10651,10 @@ feature {Any}
 			-- not_implemened_yet
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 	sameAs (other: like Current): Boolean is
 	do
@@ -10835,10 +10855,10 @@ feature {Any}
 			-- TBD
 		end -- if
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	non_void_parameters: parameters /= Void
@@ -10942,10 +10962,10 @@ feature {Any}
 	do
 		-- not_implemened_yet
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	non_void_left: left /= Void
@@ -11014,10 +11034,10 @@ feature {Any}
 		-- not_implemened_yet
 		-- Values should be of the same common ancestor type ... ?
 	end -- isInvalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	sameAs (other: like Current): Boolean is
 	local
@@ -11088,10 +11108,10 @@ feature {Any}
 	do	
 		-- It is always valid
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- Nothing so generate
-	end -- generate
+	end -- generationFailed
 end -- class AsThisTypeDescriptor
 
 deferred class AnchoredCommonDescriptor
@@ -11151,10 +11171,10 @@ feature {Any}
 			-- TBD
 		end -- if
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	sameAs (other: like Current): Boolean is
 	do
@@ -11255,10 +11275,10 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 	sameAs (other: like Current): Boolean is
 	local
@@ -11354,10 +11374,10 @@ feature {Any}
 			-- not_implemened_yet
 		end -- if
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 invariant
 	non_void_type: type /= Void
@@ -11496,10 +11516,10 @@ feature {Any}
 			i := i + 1
 		end -- loop		
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	non_void_fields: fields /= Void
@@ -11522,10 +11542,10 @@ feature
 		non_void_external_name: Result /= Void
 	end -- getExternalName
 	type: NamedTypeDescriptor -- UnitTypeCommonDescriptor
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		if type.IsInvalid (context, o) then
@@ -11779,10 +11799,10 @@ feature {Any}
 		-- NOT IMPLEMENTED
 	end -- is_invalid
 	
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 	genericUnits: Array [ContextTypeDescriptor] --UnitDeclarationDescriptor]
 
@@ -12282,10 +12302,10 @@ feature {Any}
 			-- TBD
 		end -- if
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 
 	init (iif: like ifExprLines; e: like elseExpr) is
 	require
@@ -12441,10 +12461,10 @@ feature {Any}
 			-- not_implemented_yet
 		end -- if
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 invariant
 	consistent_is_body: alternatives /= Void
 end -- class IfIsExprLineDescriptor
@@ -12485,10 +12505,10 @@ feature {Any}
 			-- TBD: expr must have type Boolean 
 		end -- if
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 	
 invariant
 	do_expr_not_void: doExpr /= Void
@@ -12546,10 +12566,10 @@ class UnitTypeAlternative
 			Result := True
 		end -- if
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate	
+	end -- generationFailed	
 invariant
 	unit_type_not_void: unitTypeDsc /= Void 
 end -- class UnitTypeAlternative
@@ -12591,10 +12611,10 @@ feature {Any}
 			-- not_implemented_yet
 		end -- if
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 invariant
 	non_void_expression: expression /= Void
 end -- class ExpressionAlternative
@@ -12608,7 +12628,7 @@ inherit
 			init as non_used_init
 		export {None} non_used_init
 		redefine	
-			out, sameAs, lessThan, is_invalid, generate
+			out, sameAs, lessThan, is_invalid, generationFailed
 	end
 create
 	init
@@ -12682,10 +12702,10 @@ feature {Any}
 		-- expr should be either Type or value ....
 		-- not_implemented_yet
 	end -- is_invalid
-	generate (cg: CodeGenerator) is
+	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
-	end -- generate
+	end -- generationFailed
 invariant
 	non_void_upper: upper /= Void
 	consistent_reg_exp: operator /= Void implies constExpr /= Void

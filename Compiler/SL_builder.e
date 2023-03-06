@@ -68,11 +68,11 @@ feature {Any}
 		scriptDsc : CompilationUnitAnonymousRoutine
 		sysDsc: SystemDescriptor
 		fileName: String
-		statements: Array [StatementDescriptor]
-		stmtDsc: StatementDescriptor
-		generators: Array [CodeGenerator]
-		i, n: Integer
-		j, m: Integer
+		--statements: Array [StatementDescriptor]
+		--stmtDsc: StatementDescriptor
+		--generators: Array [CodeGenerator]
+		--i, n: Integer
+		--j, m: Integer
 	do
 		if fs.folderExists (IRfolderName) then
 			-- Build the system			
@@ -102,40 +102,43 @@ feature {Any}
 					o.putNL ("Info: code generation skipped due to errors found")
 				else
 					-- 4. Generate code for cuDsc.statements
-					--generators := initCodeGenerators (IRfolderName + "\_" + fs.getFileName(fName), true)			
-					generators := initCodeGenerators (fs.getFileName(fName), true)			
-					m := generators.count
-					if m > 0 then
-						from						
-							statements := scriptDsc.statements
-							n := statements.count
-							--check
-							--	valid_statements_not_void: valid_statements /= Void
-							--	counter_consistent: n = valid_statements.count
-							--end -- check
-							i := 1
-						until
-							i > n
-						loop
-							stmtDsc := statements.item(i)
-							--validStmtDsc := valid_statements.item (i)
-							from
-								j := 1
-							until
-								j > m
-							loop
-								stmtDsc.generate (generators.item (j))
-								--validStmtDsc.generate (generators.item (j))
-								j := j + 1
-							end -- loop
-							i := i + 1
-						end -- loop
-						closeCodeGenerators (generators)
-						-- 5. Link !!!! How ????
-					else
-						-- No generators
-						o.putNL ("Consistency error: No code generators available")
-					end -- if
+					Result := generationFailed (scriptDsc, fs.getFileName(fName))
+					----generators := initCodeGenerators (IRfolderName + "\_" + fs.getFileName(fName), true)			
+					--generators := initCodeGenerators (fs.getFileName(fName), true)					
+					--m := generators.count
+					--if m > 0 then
+					--	from						
+					--		statements := scriptDsc.statements
+					--		n := statements.count
+					--		--check
+					--		--	valid_statements_not_void: valid_statements /= Void
+					--		--	counter_consistent: n = valid_statements.count
+					--		--end -- check
+					--		i := 1
+					--	until
+					--		i > n
+					--	loop
+					--		stmtDsc := statements.item(i)
+					--		--validStmtDsc := valid_statements.item (i)
+					--		from
+					--			j := 1
+					--		until
+					--			j > m
+					--		loop
+					--			if stmtDsc.generationFailed (generators.item (j)) then
+					--				Result := True
+					--			end -- if
+					--			--validStmtDsc.generate (generators.item (j))
+					--			j := j + 1
+					--		end -- loop
+					--		i := i + 1
+					--	end -- loop
+					--	closeCodeGenerators (generators)
+					--	-- 5. Link !!!! How ????
+					--else
+					--	-- No generators
+					--	o.putNL ("Consistency error: No code generators available")
+					--end -- if
 				end -- if
 			else
 				Result := True
@@ -218,17 +221,43 @@ feature {None}
 	require
 		non_void_list_of_code_generators: generators /= Void
 	local
-		j, m: Integer
+		index: Integer
 	do
 		from
-			j := 1
+			index := generators.count			
 		until
-			j > m
+			index = 0
 		loop
-			generators.item (j).dispose
-			j := j + 1
+			generators.item (index).dispose
+			index := index - 1
 		end -- loop
 	end -- closeCodeGenerators
+
+	generationFailed (cu: CompilationUnitCommon; fileName: String): Boolean is
+	local
+		generators: Array [CodeGenerator]
+		index: Integer
+	do
+		generators := initCodeGenerators (fileName, true)			
+		index := generators.count
+		if index > 0 then
+			from
+			until
+				index <= 0
+			loop
+				if cu.generationFailed (generators.item (index)) then
+					Result := True
+				end -- if
+				index := index - 1
+			end -- loop
+			closeCodeGenerators (generators)
+		else
+			-- No generators
+			o.putNL ("Consistency error: No code generators available")
+			Result := True
+		end -- if
+	end -- 
+
 
 	executable_build_failed (sysDsc: SystemDescriptor; folderName: String): Boolean is
 	require
@@ -284,7 +313,8 @@ feature {None}
 						if sysDsc.contextValidated (o) then
 							Result := rootUnitDsc.is_invalid (rootUnitCU, o)
 							if not Result then
-not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+								Result := generationFailed (rootUnitCU, sysDsc.name)
+								--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
 							end -- if
 						end -- if
 					end -- if
@@ -318,7 +348,9 @@ not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" +
 						if sysDsc.contextValidated (o) then
 							Result := entryRtnCU.routine.is_invalid (entryRtnCU, o)
 							if not Result then
-not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+								-- entryRtnCU.routine.generate (generator)
+								Result := generationFailed (entryRtnCU, sysDsc.name)
+								--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
 							end -- if
 						end -- if
 					end -- if
@@ -511,7 +543,10 @@ not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalon
 						-- Register it in the context
 						sysDsc.registerLoadedUnit (cuUnitDsc.unitDclDsc)
 						-- Load all types it uses
-						Result := failedToLoadRequiredTypes (sysDsc, cuUnitDsc.typePool)							
+						if failedToLoadRequiredTypes (sysDsc, cuUnitDsc.typePool) then
+							Result :=  True
+						else
+						end -- if
 					else
 						Result := True
 					end -- if				
@@ -526,7 +561,12 @@ not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalon
 						-- What to do with routine loaded ? 
 						-- TBD !!!
 						-- Load all types it uses
-						Result := failedToLoadRequiredTypes (sysDsc, rtnDsc.typePool)
+						if failedToLoadRequiredTypes (sysDsc, rtnDsc.typePool) then
+							Result := True
+						else
+							-- Validity
+							-- Code generation
+						end -- if
 					else
 						Result := True
 					end -- if				
@@ -587,7 +627,9 @@ not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalon
 									until
 										j <= 0
 									loop
-										cuUnitDsc.unitDclDsc.generate(generators.item (j))
+										if cuUnitDsc.unitDclDsc.generationFailed(generators.item (j)) then
+											Result := True
+										end -- if
 										j := j - 1
 									end -- loop
 								end -- if
@@ -611,7 +653,9 @@ not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalon
 							until
 								j <= 0
 							loop
-								rtnDsc.routine.generate(generators.item (j))
+								if rtnDsc.routine.generationFailed(generators.item (j)) then
+									Result := True
+								end -- if									
 								j := j - 1
 							end -- loop
 						end -- if
