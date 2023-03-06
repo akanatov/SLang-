@@ -545,7 +545,6 @@ feature {None}
 						-- Load all types it uses
 						if failedToLoadRequiredTypes (sysDsc, cuUnitDsc.typePool) then
 							Result :=  True
-						else
 						end -- if
 					else
 						Result := True
@@ -563,9 +562,6 @@ feature {None}
 						-- Load all types it uses
 						if failedToLoadRequiredTypes (sysDsc, rtnDsc.typePool) then
 							Result := True
-						else
-							-- Validity
-							-- Code generation
 						end -- if
 					else
 						Result := True
