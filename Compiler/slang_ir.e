@@ -2599,6 +2599,27 @@ feature {Any}
 ---- not_implemened_yet - instantiate
 --	end -- instantiate
 	
+	namefullRoutineName: String is
+	local	
+		i, n: Integer
+	do
+		Result := clone (name)
+		n := generics.count
+		if n > 0 then
+			Result.append_character('[')
+			from
+				i := 1
+			until
+				i > n
+			loop
+				Result.append_character (',')
+				Result.append_string (generics.item (i).out)
+				i := i + 1
+			end
+			Result.append_character (']')
+		end -- if		
+	end -- namefullRoutineName
+	
 	getExternalName: String is
 	local	
 		i, n: Integer

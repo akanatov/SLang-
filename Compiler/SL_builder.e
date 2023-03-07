@@ -256,7 +256,7 @@ feature {None}
 			o.putNL ("Consistency error: No code generators available")
 			Result := True
 		end -- if
-	end -- 
+	end -- generationFailed
 
 
 	executable_build_failed (sysDsc: SystemDescriptor; folderName: String): Boolean is
@@ -288,33 +288,30 @@ feature {None}
 			else
 				-- Load it
 				o.putLine ("Loading root unit `" + entryPointName + "`")
-				--rootDsc := sysDsc.loadUnitInterafceFrom (clusters.item (1).name, entryPointName, o)
 				rootUnitCU := sysDsc.loadUnitInterafceFrom (clusters.item (1).name, entryPointName, o)
-				--if rootDsc = Void then
 				if rootUnitCU = Void then
 					-- There was a problem to load root unit interface 
 					o.putNL ("Error: root unit `" + entryPointName + "` was not loaded correctly")
 					Result := True
--- Not actual any more - source check was done already
---				elseif fs.file_exists(Result.srcFileName) then
---					-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
---					if fs.file_time(Result.srcFileName).rounded /= Result.timeStamp then
---						-- Ensure source file parsed
---						Result := fileParsedForUnit (Result.srcFileName, o, unitExternalName, Result)
---					end -- if
 				else
 					rootDsc := rootUnitCU.unitDclDsc
-					rootUnitDsc := rootDsc.getUnitDeclaration -- root unit and its alias if any were loaded and registered		
-					Result := failedToLoadRequiredTypes (sysDsc, rootUnitDsc.typePool)
-					debug
-						sysDsc.dumpContext (o)						
-					end -- debug
-					if not Result then
-						if sysDsc.contextValidated (o) then
-							Result := rootUnitDsc.is_invalid (rootUnitCU, o)
-							if not Result then
-								Result := generationFailed (rootUnitCU, sysDsc.name)
-								--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+					rootUnitDsc := rootDsc.getUnitDeclaration -- root unit and its alias if any were loaded and registered
+					if rootUnitDsc.formalGenerics.count > 0 then
+						o.putNL ("Error: entry point `" + entryPointName + "` is in fact generic unit `" + rootUnitDsc.fullUnitName + 
+							"` and cannot be used as the root unit")
+						Result := True
+					else
+						Result := failedToLoadRequiredTypes (sysDsc, rootUnitDsc.typePool)
+						debug
+							sysDsc.dumpContext (o)						
+						end -- debug
+						if not Result then
+							if sysDsc.contextValidated (o) then
+								Result := rootUnitDsc.is_invalid (rootUnitCU, o)
+								if not Result then
+									Result := generationFailed (rootUnitCU, sysDsc.name)
+									--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+								end -- if
 							end -- if
 						end -- if
 					end -- if
@@ -339,18 +336,26 @@ feature {None}
 					o.putNL ("Error: entry point routine `" + entryPointName + "` was not loaded correctly")
 					Result := True
 				else
-					entryRtnCU.attachSystemDescription (sysDsc)
-					Result := failedToLoadRequiredTypes (sysDsc, entryRtnCU.typePool)
-					debug
-						sysDsc.dumpContext (o)						
-					end -- debug
-					if not Result then
-						if sysDsc.contextValidated (o) then
-							Result := entryRtnCU.routine.is_invalid (entryRtnCU, o)
-							if not Result then
-								-- entryRtnCU.routine.generate (generator)
-								Result := generationFailed (entryRtnCU, sysDsc.name)
-								--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+					if entryRtnCU.routine.generics.count > 0 then
+						o.putNL ("Error: entry point `" + entryPointName + "` is in fact generic rotuine `" + entryRtnCU.routine.namefullRoutineName + 
+							"` and cannot be used as the entry point")
+						Result := True
+					elseif entryRtnCU.routine.type /= Void then
+						o.putNL ("Error: entry point `" + entryPointName + "` is in fact a function, only procedures can be used as the entry point")
+						Result := True
+					else
+						entryRtnCU.attachSystemDescription (sysDsc)
+						Result := failedToLoadRequiredTypes (sysDsc, entryRtnCU.typePool)
+						debug
+							sysDsc.dumpContext (o)						
+						end -- debug
+						if not Result then
+							if sysDsc.contextValidated (o) then
+								Result := entryRtnCU.routine.is_invalid (entryRtnCU, o)
+								if not Result then
+									Result := generationFailed (entryRtnCU, sysDsc.name)
+									--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+								end -- if
 							end -- if
 						end -- if
 					end -- if
