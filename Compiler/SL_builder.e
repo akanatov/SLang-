@@ -306,6 +306,9 @@ feature {None}
 					elseif rootUnitDsc.isExtension then
 						o.putNL ("Error: root unit `" + entryPointName + "` is unit extension and cannot be used as the root unit")
 						Result := True
+					elseif rootUnitDsc.hasNoEntryPointInitProcedure then
+						o.putNL ("Error: root unit `" + entryPointName + "` has no proper initialization procedure which can be used as the entry point")
+						Result := True
 					else
 						Result := failedToLoadRequiredTypes (sysDsc, rootUnitDsc.typePool)
 						debug
@@ -313,7 +316,7 @@ feature {None}
 						end -- debug
 						if not Result then
 							if sysDsc.allUnitInterfacesAreValid (o) then
-								-- We need to load implementation one by one and validate and generate code
+								-- We need to start with root unit implementation validate and generate code and then do the same for its constructor actual usage 
 								Result := rootUnitDsc.is_invalid (rootUnitCU, o)
 								if not Result then
 									Result := generationFailed (rootUnitCU, sysDsc.name)

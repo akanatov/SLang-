@@ -2862,6 +2862,7 @@ feature {Any}
 	ensure
 		non_void_external_name: Result /= Void
 	end -- getExternalName
+	isOfStringType: Boolean is once end
 feature {None}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -2875,15 +2876,27 @@ invariant
 end -- class ParameterDescriptor
 
 class NamedParameterDescriptor
--- Parameter: [[rigid] Identifier ":" Type
+-- Parameter: [[rigid] identifier ":" Type
 inherit	
 	ParameterDescriptor
+		redefine
+			isOfStringType
 	end
 create 
 	init
 feature {Any}
 	isRigid: Boolean
 	type: TypeDescriptor
+	isOfStringType: Boolean is
+	local
+		unitTypDsc: UnitTypeCommonDescriptor
+	do
+		unitTypDsc ?= type
+		if unitTypDsc /= Void then
+			Result := unitTypDsc.name.is_equal ("String") and then unitTypDsc.generics.count = 0
+		end -- if
+	end -- isOfStringType
+
 	out: String is
 	do
 		if isRigid then
@@ -3344,6 +3357,31 @@ feature {Any}
 	unitMembers: Sorted_Array [MemberDeclarationDescriptor]
 	initMembers: Sorted_Array [InitDeclarationDescriptor] -- MemberDeclarationDescriptor]
 	memberNames: Sorted_Array [String]
+	
+	hasNoEntryPointInitProcedure: Boolean is
+	local
+		index: Integer
+		initDclDsc,
+		noParametersInit,
+		arrayOfStringsInit: InitDeclarationDescriptor
+	do
+		from
+			index := initMembers.count
+		until
+			index = 0
+		loop
+			initDclDsc := initMembers.item (index)
+			if initDclDsc.parameters.count = 0 then
+				noParametersInit := initDclDsc
+			elseif initDclDsc.parameters.count = 1 and then initDclDsc.parameters.item (1).isOfStringType then
+				arrayOfStringsInit := initDclDsc
+			end -- if
+			index := index - 1
+		end -- loop
+		Result := noParametersInit = Void and then arrayOfStringsInit = Void
+		or else
+		noParametersInit /= Void and then arrayOfStringsInit /= Void
+	end -- hasNoEntryPointInitProcedure	
 	
 	invariantPredicates: Array [PredicateDescriptor]
 
