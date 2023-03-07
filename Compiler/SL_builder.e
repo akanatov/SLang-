@@ -552,12 +552,11 @@ feature {None}
 				fileName := fileDsc.name
 				if fileName.has_substring (UnitSuffix) and then not fileName.has_substring (AliasPrefix) then
 					-- That is unit but not alias IR file
-					create cuUnitDsc.make (Void)
+					create cuUnitDsc.init (sysDsc)
 					if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
 						debug
 							--trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
 						end -- debug
-						cuUnitDsc.attachSystemDescription (sysDsc)
 						-- What to do with unit loaded ?
 						-- Register it in the context
 						sysDsc.registerLoadedUnit (cuUnitDsc.unitDclDsc)
@@ -570,9 +569,8 @@ feature {None}
 					end -- if				
 				elseif fileName.has_substring (RoutinesSuffix) then 
 					-- That is standalone routine IR file
-					create rtnDsc.make (Void)
+					create rtnDsc.init (sysDsc)
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
-						rtnDsc.attachSystemDescription (sysDsc)
 						debug
 							--trace ("Standalone routine `" + rtnDsc.routine.name + "` loaded from file `" + ast_files.item (i).path + "`")
 						end -- debug
@@ -618,45 +616,41 @@ feature {None}
 			loop
 				fileDsc := ast_files.item (i) 
 				fileName := fileDsc.name
-				if fileName.has_substring (UnitSuffix) then
-					--if not fileName.has_substring (AliasPrefix) then -- There is no IMPL files for aliases !!!
-						create cuUnitDsc.make (Void)
-						if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
-							debug
-								--trace ("Type `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
-							end -- debug
-							cuUnitDsc.attachSystemDescription (sysDsc)
-							
-							-- TO REDO! Here load implementation check it and generate code !!!
-							--if cuUnitDsc.unitDclDsc.isNotLoaded (cuUnitDsc, o) then
-							--	Result := True
-							--else
-							--	debug
-							--		--sysDsc.dumpContext (o)
-							--	end
-								if cuUnitDsc.unitDclDsc.isInvalid (cuUnitDsc, o) then
-									Result := True
-								else
-									from
-										j := generators.count
-									until
-										j <= 0
-									loop
-										if cuUnitDsc.unitDclDsc.generationFailed(generators.item (j)) then
-											Result := True
-										end -- if
-										j := j - 1
-									end -- loop
-								end -- if
-							--end -- if					
-						else
-							Result := True
-						end -- if				
-					--end -- if
+				if fileName.has_substring (UnitSuffix) and then not fileName.has_substring (AliasPrefix) then
+					create cuUnitDsc.init (sysDsc)
+					if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
+						debug
+							--trace ("Type `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+						end -- debug
+						
+						-- TO REDO! Here load implementation check it and generate code !!!
+						--if cuUnitDsc.unitDclDsc.isNotLoaded (cuUnitDsc, o) then
+						--	Result := True
+						--else
+						--	debug
+						--		--sysDsc.dumpContext (o)
+						--	end
+							if cuUnitDsc.unitDclDsc.isInvalid (cuUnitDsc, o) then
+								Result := True
+							else
+								from
+									j := generators.count
+								until
+									j <= 0
+								loop
+									if cuUnitDsc.unitDclDsc.generationFailed(generators.item (j)) then
+										Result := True
+									end -- if
+									j := j - 1
+								end -- loop
+							end -- if
+						--end -- if					
+					else
+						Result := True
+					end -- if				
 				elseif fileName.has_substring (RoutinesSuffix) then 
-					create rtnDsc.make (Void)
+					create rtnDsc.init (sysDsc)
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
-						rtnDsc.attachSystemDescription (sysDsc)
 						debug
 							--trace ("Standalone routine loaded from file `" + ast_files.item (i).path + "`")
 						end -- debug

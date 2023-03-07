@@ -1298,15 +1298,12 @@ end -- class RenamePair
 
 --1 Compilation : {CompilationUnitCompound}
      
---deferred
 deferred class CompilationUnitCommon
 inherit
 	SLangConstants
 	end
 	Server
 	end
---create {None}
---	init_pools
 feature {Any}
 	-- use const UnitTypeName {"," UnitTypeName}
 	useConst: Sorted_Array [UnitTypeNameDescriptor]
@@ -1538,6 +1535,17 @@ feature {Any}
 	do
 		sysDsc := sDsc		
 	end -- attachSystemDescription
+	
+	make (scn: like scanner) is
+	do
+		init_pools (scn)
+	end -- make
+	
+	init (sDsc: like sysDsc) is
+	do
+		init_pools (Void)
+		sysDsc := sDsc
+	end -- make
 
 	sysDsc: SystemDescriptor
 	
@@ -1657,7 +1665,7 @@ inherit
 	CompilationUnitCommon
 	end
 create	
-	make
+	make, init
 feature {Any}
 	routine: StandaloneRoutineDescriptor
 
@@ -1665,11 +1673,6 @@ feature {Any}
 	do
 		Result := routine.generationFailed(cg)
 	end -- generationFailed
-
-	make(scn: like scanner) is
-	do
-		init_pools (scn)
-	end -- init
 
 	RoutineIR_Loaded (fileName: String; o: Output): Boolean is
 	local
@@ -1738,9 +1741,11 @@ end -- class AnonymousRoutineDescriptor
 class CompilationUnitAnonymousRoutine
 inherit
 	CompilationUnitCommon
+		redefine
+			make, init
 	end
 create	
-	make -- init
+	make, init
 feature {Any}
 	statements: Array [StatementDescriptor]
 
@@ -1769,6 +1774,14 @@ feature {None}
 		create locals.make
 		init_pools (scn)
 	end -- make
+	init (sDsc: like sysDsc) is
+	do
+		create statements.make (1, 0)
+		create locals.make
+		init_pools (Void)
+		sysDsc := sDsc
+	end -- make
+
 feature {Any}
 	addStatement (stmtDsc: StatementDescriptor) is
 	require
@@ -1853,15 +1866,9 @@ inherit
 	CompilationUnitCommon
 	end
 create	
-	make
+	make, init
 feature {Any}
 	unitDclDsc: UnitDeclarationDescriptor
-
-	make (scn: like scanner) is
-	do
-		init_pools (scn)
-		--type := Void -- ????
-	end -- make
 
 	generationFailed (cg: CodeGenerator): Boolean is
 	do
@@ -1933,6 +1940,7 @@ class CompilationUnitCompound
 -- CompilationUnitCompound: { UseConstDirective }  {StatementsList|StandaloneRoutine|UnitDeclaration}
 inherit
 	CompilationUnitAnonymousRoutine
+		rename init as rtnInit
 	end
 	SLangConstants
 	end
