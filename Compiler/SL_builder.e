@@ -311,17 +311,19 @@ feature {None}
 						Result := True
 					else
 						Result := failedToLoadRequiredTypes (sysDsc, rootUnitDsc.typePool)
-						debug
-							sysDsc.dumpContext (o)						
-						end -- debug
 						if not Result then
 							if sysDsc.allUnitInterfacesAreValid (o) then
-								-- We need to start with root unit implementation validate and generate code and then do the same for its constructor actual usage 
+								debug
+									sysDsc.dumpContext (o)						
+								end -- debug
+								-- We need to start with the root unit implementation validate and generate code and then do the same for its constructor actual usage 
 								Result := rootUnitDsc.is_invalid (rootUnitCU, o)
 								if not Result then
 									Result := generationFailed (rootUnitCU, sysDsc.name)
 									--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
 								end -- if
+							else
+								Result := True
 							end -- if
 						end -- if
 					end -- if
@@ -356,16 +358,18 @@ feature {None}
 					else
 						entryRtnCU.attachSystemDescription (sysDsc)
 						Result := failedToLoadRequiredTypes (sysDsc, entryRtnCU.typePool)
-						debug
-							sysDsc.dumpContext (o)						
-						end -- debug
 						if not Result then
 							if sysDsc.allUnitInterfacesAreValid (o) then
+								debug
+									sysDsc.dumpContext (o)						
+								end -- debug
 								Result := entryRtnCU.routine.is_invalid (entryRtnCU, o)
 								if not Result then
 									Result := generationFailed (entryRtnCU, sysDsc.name)
 									--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
 								end -- if
+							else
+								Result := True
 							end -- if
 						end -- if
 					end -- if
@@ -493,12 +497,12 @@ feature {None}
 			end -- if
 			i := i - 1
 		end -- loop
-		debug
-			sysDsc.dumpContext (o)						
-		end -- debug
 
 		if not Result then
 			if sysDsc.allUnitInterfacesAreValid (o) then
+				debug
+					sysDsc.dumpContext (o)						
+				end -- debug
 				generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
 				from
 					i := from_paths.count
