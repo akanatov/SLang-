@@ -89,7 +89,7 @@ feature {Any}
 					sysDsc.dumpContext (o)						
 				end -- debug
 				if not Result then
-					if sysDsc.contextValidated (o) then
+					if sysDsc.allUnitInterfacesAreValid (o) then
 						-- If all required types loaded and validated
 						-- 3. Check validity of cuDsc.statements
 						Result := checkStatementsValidity (scriptDsc.statements, scriptDsc)
@@ -300,13 +300,20 @@ feature {None}
 						o.putNL ("Error: entry point `" + entryPointName + "` is in fact generic unit `" + rootUnitDsc.fullUnitName + 
 							"` and cannot be used as the root unit")
 						Result := True
+					elseif rootUnitDsc.isVirtual then
+						o.putNL ("Error: root unit `" + entryPointName + "` is abstract and cannot be used as the root unit")
+						Result := True
+					elseif rootUnitDsc.isExtension then
+						o.putNL ("Error: root unit `" + entryPointName + "` is unit extension and cannot be used as the root unit")
+						Result := True
 					else
 						Result := failedToLoadRequiredTypes (sysDsc, rootUnitDsc.typePool)
 						debug
 							sysDsc.dumpContext (o)						
 						end -- debug
 						if not Result then
-							if sysDsc.contextValidated (o) then
+							if sysDsc.allUnitInterfacesAreValid (o) then
+								-- We need to load implementation one by one and validate and generate code
 								Result := rootUnitDsc.is_invalid (rootUnitCU, o)
 								if not Result then
 									Result := generationFailed (rootUnitCU, sysDsc.name)
@@ -350,7 +357,7 @@ feature {None}
 							sysDsc.dumpContext (o)						
 						end -- debug
 						if not Result then
-							if sysDsc.contextValidated (o) then
+							if sysDsc.allUnitInterfacesAreValid (o) then
 								Result := entryRtnCU.routine.is_invalid (entryRtnCU, o)
 								if not Result then
 									Result := generationFailed (entryRtnCU, sysDsc.name)
@@ -488,7 +495,7 @@ feature {None}
 		end -- debug
 
 		if not Result then
-			if sysDsc.contextValidated (o) then
+			if sysDsc.allUnitInterfacesAreValid (o) then
 				generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
 				from
 					i := from_paths.count

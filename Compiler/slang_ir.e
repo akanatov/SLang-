@@ -78,18 +78,16 @@ feature {Any}
 		allUnits.add (unitDclDsc)
 	end -- registerLoadedUnit
 
-	contextValidated (o: Output): Boolean is
+	allUnitInterfacesAreValid (o: Output): Boolean is
 	local
 		i: Integer
 		unitDclDsc: UnitDeclarationDescriptor
-		--unitAliasDsc: UnitAliasDescriptor
-		--cntTypDsc: ContextTypeDescriptor
 	do
 		from
 			i := allUnits.count
 			Result := True
 		until
-			i <= 0
+			i = 0
 		loop
 			unitDclDsc ?= allUnits.item (i)
 			if unitDclDsc = Void then
@@ -100,8 +98,8 @@ feature {Any}
 				end -- if
 				i := i - 1
 			end -- if
-		end -- loop						
-	end -- contextValidated
+		end -- loop
+	end -- allUnitInterfacesAreValid
 	
 	dumpContext (o: Output) is
 	local
@@ -127,9 +125,10 @@ feature {Any}
 				end -- if
 			else
 				unitAliasDsc ?= cntTypDsc
-				if unitAliasDsc /= Void then
-					o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
-				end -- if
+				check
+					unkown_object_in_the_context: unitAliasDsc /= Void
+				end -- check
+				o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
 			end -- if
 			i := i + 1
 		end -- loop						
