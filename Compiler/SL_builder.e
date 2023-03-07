@@ -289,6 +289,7 @@ feature {None}
 				-- Load it
 				o.putLine ("Loading root unit `" + entryPointName + "`")
 				rootUnitCU := sysDsc.loadUnitInterafceFrom (clusters.item (1).name, entryPointName, o)
+--		!!! LoadUnitFrom instead !!!
 				if rootUnitCU = Void then
 					-- There was a problem to load root unit interface 
 					o.putNL ("Error: root unit `" + entryPointName + "` was not loaded correctly")
@@ -535,7 +536,7 @@ feature {None}
 		fileName: String
 		cuUnitDsc: CompilationUnitUnit
 		rtnDsc: CompilationUnitStandaloneRoutine
-		i: Integer
+		index: Integer
 	do
 		ir_path := path + fs.separator + IRfolderName
 		if fs.folderExists (ir_path) then
@@ -543,22 +544,21 @@ feature {None}
 				--trace ("Loading interfaces from `" + ir_path + "`")
 			end -- debug
 			from
-				ast_files := fs.getAllFilesWithExtension (ir_path, INText)
-				i := ast_files.count
+				ast_files := fs.getAllFilesWithExtension (ir_path, INText) -- Get all interface IR files
+				index := ast_files.count
 			until
-				i <= 0
+				index = 0
 			loop
-				fileDsc := ast_files.item (i) 
+				fileDsc := ast_files.item (index)
 				fileName := fileDsc.name
 				if fileName.has_substring (UnitSuffix) and then not fileName.has_substring (AliasPrefix) then
 					-- That is unit but not alias IR file
 					create cuUnitDsc.init (sysDsc)
 					if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
 						debug
-							--trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
+							--trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (index).path + "`")
 						end -- debug
-						-- What to do with unit loaded ?
-						-- Register it in the context
+						-- Register unit in the context
 						sysDsc.registerLoadedUnit (cuUnitDsc.unitDclDsc)
 						-- Load all types it uses
 						if failedToLoadRequiredTypes (sysDsc, cuUnitDsc.typePool) then
@@ -572,19 +572,17 @@ feature {None}
 					create rtnDsc.init (sysDsc)
 					if rtnDsc.RoutineIR_Loaded (fileDsc.path, o) then
 						debug
-							--trace ("Standalone routine `" + rtnDsc.routine.name + "` loaded from file `" + ast_files.item (i).path + "`")
+							--trace ("Standalone routine `" + rtnDsc.routine.name + "` loaded from file `" + ast_files.item (index).path + "`")
 						end -- debug
-						-- What to do with routine loaded ? 
-						-- TBD !!!
-						-- Load all types it uses
+						-- Load all types routine uses
 						if failedToLoadRequiredTypes (sysDsc, rtnDsc.typePool) then
 							Result := True
 						end -- if
 					else
 						Result := True
-					end -- if				
+					end -- if
 				end -- if
-				i := i - 1
+				index := index - 1
 			end -- loop
 		end -- if
 	end -- interfacesFromPathNotLoaded
@@ -609,10 +607,10 @@ feature {None}
 			--	trace ("Load units from `" + ir_path + "`")
 			end -- debug
 			from
-				ast_files := fs.getAllFilesWithExtension (ir_path, ASText)
+				ast_files := fs.getAllFilesWithExtension (ir_path, ASText) -- Get IR implementation files
 				i := ast_files.count
 			until
-				i <= 0
+				i = 0
 			loop
 				fileDsc := ast_files.item (i) 
 				fileName := fileDsc.name
@@ -621,30 +619,21 @@ feature {None}
 					if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
 						debug
 							--trace ("Type `" + unitDsc.type.fullUnitName + "` loaded from file `" + ast_files.item (i).path + "`")
-						end -- debug
-						
-						-- TO REDO! Here load implementation check it and generate code !!!
-						--if cuUnitDsc.unitDclDsc.isNotLoaded (cuUnitDsc, o) then
-						--	Result := True
-						--else
-						--	debug
-						--		--sysDsc.dumpContext (o)
-						--	end
-							if cuUnitDsc.unitDclDsc.isInvalid (cuUnitDsc, o) then
-								Result := True
-							else
-								from
-									j := generators.count
-								until
-									j <= 0
-								loop
-									if cuUnitDsc.unitDclDsc.generationFailed(generators.item (j)) then
-										Result := True
-									end -- if
-									j := j - 1
-								end -- loop
-							end -- if
-						--end -- if					
+						end -- debug						
+						if cuUnitDsc.unitDclDsc.isInvalid (cuUnitDsc, o) then
+							Result := True
+						else
+							from
+								j := generators.count
+							until
+								j = 0
+							loop
+								if cuUnitDsc.unitDclDsc.generationFailed(generators.item (j)) then
+									Result := True
+								end -- if
+								j := j - 1
+							end -- loop
+						end -- if
 					else
 						Result := True
 					end -- if				
@@ -660,7 +649,7 @@ feature {None}
 							from
 								j := generators.count
 							until
-								j <= 0
+								j = 0
 							loop
 								if rtnDsc.routine.generationFailed(generators.item (j)) then
 									Result := True

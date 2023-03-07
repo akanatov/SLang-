@@ -198,7 +198,6 @@ feature {Any}
 		end -- if
 	end -- loadStandAloneRoutineFrom
 
-	--loadUnitInterafceFrom (path, unitExternalName: String; o: Output): ContextTypeDescriptor is
 	loadUnitInterafceFrom (path, unitExternalName: String; o: Output): CompilationUnitUnit is
 	require
 		non_void_unit_name: unitExternalName /= Void
@@ -217,42 +216,15 @@ feature {Any}
 		if fs.file_exists (fileName) then
 			create cuDsc.make (Void)
 			if cuDsc.UnitIR_Loaded (fileName, o) then
-				--Result := allUnits.add_it (cuDsc.unitDclDsc)
 				allUnits.add (cuDsc.unitDclDsc)
 				Result := cuDsc
-				--check
-				--	valid_unit_type: Result /= Void
-				--end 
-				
-				--Result := cuDsc.unitDclDsc
-				--if sysDsc.allUnits.added (Result) then
-				--	debug
-				--		o.putNL ("Debug: unit `" + unitExternalName + "` loaded and added into the context")
-				--	end 
-				--else
-				--	debug
-				--		o.putNL ("Debug: unit `" + unitExternalName + "` loaded and but it is already in the the context")
-				--	end 
-				--	Result ?= sysDsc.allUnits.add_it (cuDsc.unitDclDsc)
-				--end -- if
 			end -- if
 		else
 			-- check for alias
 			fileName := pathPrefix + IRfolderName + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
 			if fs.file_exists (fileName) then
-				--Result := loadUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
 				Result := loadCompilationUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
 			end -- if
-			--actualFileName := getActualFileName (fileName)
-			--if actualFileName /= Void  then
-			--	fileName := pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText
-			--	create cuDsc.make (Void)
-			--	if cuDsc.UnitIR_Loaded (fileName, o) then
-			--		-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
-			--		create unitAliasDsc.init (unitExternalName, cuDsc.unitDclDsc)
-			--		Result := sysDsc.allUnits.add_it (unitAliasDsc)
-			--	end -- if
-			--end -- if
 		end -- if
 	end -- loadUnitInterafceFrom	
 	
@@ -285,10 +257,11 @@ feature {Any}
 		if actualFileName /= Void  then
 			create cuDsc.make (Void)
 			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
-				unitDclDsc ?= allUnits.add_it (cuDsc.unitDclDsc) -- register generic unit in the project context
+				unitDclDsc ?= allUnits.add_it (cuDsc.unitDclDsc) -- register unit in the context
 				check
 					unit_registered: unitDclDsc /= Void
 				end -- check
+				cuDsc.setUnitDcl (unitDclDsc)
 				create unitAliasDsc.init (unitExternalName, unitDclDsc)
 				allUnits.add (unitAliasDsc)
 				Result := cuDsc
@@ -313,6 +286,8 @@ feature {Any}
 				check
 					unit_registered: unitDclDsc /= Void
 				end -- check
+				cuDsc.setUnitDcl (unitDclDsc)
+				
 				create unitAliasDsc.init (unitExternalName, unitDclDsc)
 				Result ?= allUnits.add_it (unitAliasDsc)
 				check
@@ -358,11 +333,8 @@ feature {Any}
 			-- Load it
 			o.putLine ("Loading unit `" + unitPrintableName + "`")
 			if unitDsc.generics.count = 0 then
-				--cntTypeDsc := loadUnitInterafceFrom (clusters_zone.item (1).name, unitExternalName, o)
 				cntTypeCU := loadUnitInterafceFrom (clusters_zone.item (1).name, unitExternalName, o)
-				--if cntTypeDsc /= Void then
 				if cntTypeCU /= Void then
-					--Result := <<cntTypeDsc>>
 					Result := <<cntTypeCU.unitDclDsc>>
 				end -- if
 			else
@@ -441,7 +413,6 @@ feature {Any}
 	end -- loadGenericUnits
 
 	loadGenericUnitInterafcesFrom (path: String; unitName: String; o: Output): Array [UnitDeclarationDescriptor] is
-		--CompilationUnitUnit] is
 	local
 		ir_path: String
 		path1: String
@@ -1870,6 +1841,11 @@ create
 feature {Any}
 	unitDclDsc: UnitDeclarationDescriptor
 
+	setUnitDcl (uDclDsc: like unitDclDsc) is
+	do
+		unitDclDsc := uDclDsc
+	end -- setUnitDcl
+	
 	generationFailed (cg: CodeGenerator): Boolean is
 	do
 		Result := unitDclDsc.generationFailed(cg)
@@ -10420,9 +10396,9 @@ feature {Any}
 		Result := pos.out
 	end -- getFactualGenericExternalName
 	
-	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
+	isNotLoaded (sysDsc: SystemDescriptor; o: Output): Boolean is
 	require
-		non_void_context: context /= Void
+		non_void_system_descriptor: sysDsc /= Void
 	do
 		-- Do nothing
 	end -- isNotLoaded
@@ -11870,9 +11846,9 @@ feature {Any}
 		-- do nothing so far
 	end -- generationFailed
 	
-	genericUnits: Array [ContextTypeDescriptor] --UnitDeclarationDescriptor]
+	genericUnits: Array [ContextTypeDescriptor]
 
-	isNotLoaded (context: SystemDescriptor; o: Output): Boolean is
+	isNotLoaded (sysDsc: SystemDescriptor; o: Output): Boolean is
 	local
 		foundInPool: Boolean
 		genericsCount: Integer
@@ -11885,7 +11861,7 @@ feature {Any}
 		i, n: Integer
 		m: Integer
 	do
-		contextTypes := context.allUnits
+		contextTypes := sysDsc.allUnits
 		genericsCount := generics.count 
 		if genericsCount > 0 then
 			-- Current could be: A[Type] or A[constExpr] where constExpr can be some const Object or rtn Object
@@ -11942,7 +11918,7 @@ feature {Any}
 			if not foundInPool then 
 				-- Load all possible generic units named as the current one
 				--genericUnits := context.sysDsc.loadGenericUnits (Current, o)
-				genericUnits := context.loadGenericUnits (Current, o)
+				genericUnits := sysDsc.loadGenericUnits (Current, o)
 			end -- if			
 			if genericUnits /= Void then
 				-- We have loaded all generic units for the current generic type
@@ -11954,7 +11930,7 @@ feature {Any}
 					end -- debug
 					-- It is not instantiated !!! Should it be?
 					if not foundInPool then 
-						if failedToLoadPoolTypesAndAlias (context, o) then
+						if failedToLoadPoolTypesAndAlias (sysDsc, o) then
 							Result := True
 						end -- if
 					end -- if
@@ -11991,7 +11967,7 @@ feature {Any}
 								--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 							end -- debug
 							if not foundInPool then 
-								if failedToLoadPoolTypesAndAlias (context, o) then
+								if failedToLoadPoolTypesAndAlias (sysDsc, o) then
 									Result := True
 								end -- if
 							end -- if
@@ -12054,10 +12030,7 @@ feature {Any}
 			end -- if
 
 			if not foundInPool then -- let's load it
-				--unitDeclaration := context.loadUnitInterface (Current, o)
-				--loadedUnits := context.sysDsc.loadUnitInterface (Current, o)
-				loadedUnits := context.loadUnitInterface (Current, o)
-				--if unitDeclaration = Void then -- failed to load
+				loadedUnits := sysDsc.loadUnitInterface (Current, o)
 				if loadedUnits = Void then -- failed to load
 					contextTypes.add_after (unitDclDsc, pos) -- register to prevent load attempts again!
 					Result := True
@@ -12078,7 +12051,7 @@ feature {Any}
 					--end -- if				
 					
 					-- Check that all types from its type pool and alias are loaded
-					if failedToLoadPoolTypesAndAlias (context, o) then
+					if failedToLoadPoolTypesAndAlias (sysDsc, o) then
 						Result := True
 					end -- if
 				else
@@ -12094,7 +12067,7 @@ feature {Any}
 						i := i + 1
 					end -- loop
 					-- Check that all types from its type pool and alias are loaded
-					if failedToLoadPoolTypesAndAlias (context, o) then
+					if failedToLoadPoolTypesAndAlias (sysDsc, o) then
 						Result := True
 					end -- if
 				end -- if
