@@ -2791,7 +2791,11 @@ feature {Any}
 		name_not_void: aName /= Void
 	do
 		name := aName
-		generics := fg
+		if fg = Void then
+			create generics.make (1, 0)
+		else
+			generics := fg
+		end -- if
 		fgTypes := fgt
 		if params = Void then
 			create parameters.make (1, 0)
@@ -2846,7 +2850,7 @@ feature {Any}
 	ensure
 		non_void_external_name: Result /= Void
 	end -- getExternalName
-	isOfStringType: Boolean is once end
+	isOfArrayOfStringType: Boolean is once end
 feature {None}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -2864,22 +2868,30 @@ class NamedParameterDescriptor
 inherit	
 	ParameterDescriptor
 		redefine
-			isOfStringType
+			isOfArrayOfStringType
 	end
 create 
 	init
 feature {Any}
 	isRigid: Boolean
 	type: TypeDescriptor
-	isOfStringType: Boolean is
+	isOfArrayOfStringType: Boolean is
 	local
 		unitTypDsc: UnitTypeCommonDescriptor
 	do
 		unitTypDsc ?= type
 		if unitTypDsc /= Void then
-			Result := unitTypDsc.name.is_equal ("String") and then unitTypDsc.generics.count = 0
+			Result := unitTypDsc.name.is_equal ("Array") and then unitTypDsc.generics.count = 1
+			if Result then
+				unitTypDsc ?= unitTypDsc.generics.item (1)
+				if unitTypDsc = Void then
+					Result := False
+				else
+					Result := unitTypDsc.name.is_equal ("String") and then unitTypDsc.generics.count = 0
+				end -- if
+			end -- if
 		end -- if
-	end -- isOfStringType
+	end -- isOfArrayOfStringType
 
 	out: String is
 	do
@@ -3355,9 +3367,11 @@ feature {Any}
 			index = 0
 		loop
 			initDclDsc := initMembers.item (index)
-			if initDclDsc.parameters.count = 0 then
+			if initDclDsc.parameters = Void then
 				noParametersInit := initDclDsc
-			elseif initDclDsc.parameters.count = 1 and then initDclDsc.parameters.item (1).isOfStringType then
+			elseif initDclDsc.parameters.count = 0 then
+				noParametersInit := initDclDsc
+			elseif initDclDsc.parameters.count = 1 and then initDclDsc.parameters.item (1).isOfArrayOfStringType then
 				arrayOfStringsInit := initDclDsc
 			end -- if
 			index := index - 1

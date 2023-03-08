@@ -1,16 +1,19 @@
 build Library from "."
 end
 
-build ExecutableOne entry main
+build ExecutableWithRoutineEntry entry main
 end
 
-build ExecutableTwo entry Any
+build ExecutableWithUnitEntry entry Root
 end
 
-// Anonymous routine
-any is Any
+// Anonymous routine(script) code
+root is Root
 
-// Unit Any
+unit Root
+	Root do end  // Init procedure (constructor) with no parameters
+end
+
 unit Any
 end
 

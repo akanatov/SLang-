@@ -67,7 +67,9 @@ feature {Any}
 	local 
 		scriptDsc : CompilationUnitAnonymousRoutine
 		sysDsc: SystemDescriptor
-		fileName: String
+		fullFileName: String
+		outputName: String
+		folderName: String
 		--statements: Array [StatementDescriptor]
 		--stmtDsc: StatementDescriptor
 		--generators: Array [CodeGenerator]
@@ -75,13 +77,14 @@ feature {Any}
 		--j, m: Integer
 	do
 		if fs.folderExists (IRfolderName) then
+			outputName := fs.getFileName(fName)
 			-- Build the system			
 			create scriptDsc.make (Void)
-			fileName := IRfolderName + "\_" + fs.getFileName(fName) + ScriptSuffix + "." + ASText
-			if scriptDsc.AnonymousRoutineIR_Loaded (fileName, o) then
+			fullFileName := IRfolderName + fs.separator + "_" + outputName + ScriptSuffix + "." + ASText
+			if scriptDsc.AnonymousRoutineIR_Loaded (fullFileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
 				-- 1. Build system description - where to look for units !!! 
-				create sysDsc.init_script (fs.getFileName(fName), getAnonymousRoutineClusters, Void)
+				create sysDsc.init_script (outputName, getAnonymousRoutineClusters, Void)
 				scriptDsc.attachSystemDescription (sysDsc)
 			
 				Result := failedToLoadRequiredTypes (sysDsc, scriptDsc.typePool)
@@ -101,8 +104,14 @@ feature {Any}
 				if Result then
 					o.putNL ("Info: code generation skipped due to errors found")
 				else
-					-- 4. Generate code for cuDsc.statements
-					Result := generationFailed (scriptDsc, fs.getFileName(fName))
+					folderName := "_$" + outputName
+					if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
+						-- 4. Generate code for cuDsc.statements
+						Result := generationFailed (scriptDsc, folderName + fs.separator + outputName)
+					else
+						Result := True
+						o.putNL ("Error: project folder `" + folderName + "` cannot be created")
+					end -- if
 					----generators := initCodeGenerators (IRfolderName + "\_" + fs.getFileName(fName), true)			
 					--generators := initCodeGenerators (fs.getFileName(fName), true)					
 					--m := generators.count
@@ -190,6 +199,7 @@ feature {None}
 		codeGenerator: CodeGenerator	
 	do
 		create Result.make (1, 0)		
+		
 		-- LLVM Windows generation activation
 		if buildExecutable then
 			create {LLVM_CodeGenerator}codeGenerator.init (outputFileName + ".exe", "x86_64-pc-windows-msvc", buildExecutable)
@@ -197,22 +207,27 @@ feature {None}
 			create {LLVM_CodeGenerator}codeGenerator.init (outputFileName + ".lib", "x86_64-pc-windows-msvc", buildExecutable)
 			-- not_implemented_yet .dll !!!
 		end -- if
-		registerCodeGenerator (codeGenerator, Result, "Generation 'LLVM - x86_64-pc-windows-msvc' failed to start")
+		registerCodeGenerator (codeGenerator, Result, "'LLVM - x86_64-pc-windows-msvc' generation failed to start")
+		
 		-- LLVM Linux generation activation
 		create {LLVM_CodeGenerator}codeGenerator.init (outputFileName, "x86_64-pc-linux-gnu", buildExecutable)
-		registerCodeGenerator (codeGenerator, Result, "Generation 'LLVM - x86_64-pc-linux-gnu' failed to start")
+		registerCodeGenerator (codeGenerator, Result, "'LLVM - x86_64-pc-linux-gnu' generation failed to start")
+		
 		-- MSIL generation activation
 		create {MSIL_CodeGenerator}codeGenerator.init (outputFileName + ".msil", buildExecutable)
-		registerCodeGenerator (codeGenerator, Result, "Generation 'MSIL' failed to start")
+		registerCodeGenerator (codeGenerator, Result, "'MSIL' generation failed to start")
+		
 		-- JVM generation activation
 		create {JVM_CodeGenerator}codeGenerator.init (outputFileName + ".class", buildExecutable)
-		registerCodeGenerator (codeGenerator, Result, "Generation 'JVM' failed to start")
+		registerCodeGenerator (codeGenerator, Result, "'JVM' generation failed to start")
+		
 		-- ARK generation activation
 		create {ARK_CodeGenerator}codeGenerator.init (outputFileName + ".abc", buildExecutable)
-		registerCodeGenerator (codeGenerator, Result, "Generation 'ARK' failed to start")
+		registerCodeGenerator (codeGenerator, Result, "'ARK' generation failed to start")
+		
 		-- C-code generation activation
 		create {C_CodeGenerator}codeGenerator.init (outputFileName + ".c", buildExecutable)
-		registerCodeGenerator (codeGenerator, Result, "Generation 'C' failed to start")
+		registerCodeGenerator (codeGenerator, Result, "'C' generation failed to start")
 	ensure
 		non_void_list_of_code_generators: Result /= Void
 	end -- initCodeGenerators
@@ -258,7 +273,6 @@ feature {None}
 		end -- if
 	end -- generationFailed
 
-
 	executable_build_failed (sysDsc: SystemDescriptor; folderName: String): Boolean is
 	require
 		non_void_system_dsc: sysDsc /= Void
@@ -267,10 +281,10 @@ feature {None}
 	local
 		entryPointName: String
 		clusters: Array [ClusterDescriptor]
-		rootDsc: ContextTypeDescriptor
 		rootUnitDsc: UnitDeclarationDescriptor
 		rootUnitCU: CompilationUnitUnit
 		entryRtnCU: CompilationUnitStandaloneRoutine
+		rtnDsc: StandaloneRoutineDescriptor
 	do
 		-- Find an entry point
 		entryPointName := sysDsc.entry
@@ -287,16 +301,10 @@ feature {None}
 				Result := True
 			else
 				-- Load it
-				o.putLine ("Loading root unit `" + entryPointName + "`")
-				rootUnitCU := sysDsc.loadUnitInterafceFrom (clusters.item (1).name, entryPointName, o)
---		!!! LoadUnitFrom instead !!!
-				if rootUnitCU = Void then
-					-- There was a problem to load root unit interface 
-					o.putNL ("Error: root unit `" + entryPointName + "` was not loaded correctly")
-					Result := True
-				else
-					rootDsc := rootUnitCU.unitDclDsc
-					rootUnitDsc := rootDsc.getUnitDeclaration -- root unit and its alias if any were loaded and registered
+				o.putLine ("Loading root unit `" + entryPointName + "`")				
+				create rootUnitCU.init (sysDsc)
+				if rootUnitCU.UnitIR_Loaded (clusters.item (1).name + fs.separator + IRfolderName + fs.separator + entryPointName + UnitSuffix + "." + ASText, o) then
+					rootUnitDsc := rootUnitCU.unitDclDsc.getUnitDeclaration -- root unit and its alias if any were loaded and registered
 					if rootUnitDsc.formalGenerics.count > 0 then
 						o.putNL ("Error: entry point `" + entryPointName + "` is in fact generic unit `" + rootUnitDsc.fullUnitName + 
 							"` and cannot be used as the root unit")
@@ -311,24 +319,32 @@ feature {None}
 						o.putNL ("Error: root unit `" + entryPointName + "` has no proper initialization procedure which can be used as the entry point")
 						Result := True
 					else
+						-- Register root in the context
+						sysDsc.registerLoadedUnit (rootUnitDsc)
 						Result := failedToLoadRequiredTypes (sysDsc, rootUnitDsc.typePool)
 						if not Result then
 							if sysDsc.allUnitInterfacesAreValid (o) then
 								debug
 									sysDsc.dumpContext (o)						
 								end -- debug
-								-- We need to start with the root unit implementation validate and generate code and then do the same for its constructor actual usage 
+								-- We need to start with the root unit implementation validate and generate code
+								-- and then do the same for its constructor actual usage 
 								Result := rootUnitDsc.is_invalid (rootUnitCU, o)
 								if not Result then
-									Result := generationFailed (rootUnitCU, sysDsc.name)
-									--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+									Result := generationFailed (rootUnitCU, "_$" + sysDsc.name + fs.separator + sysDsc.name)
+									if not Result then
+										not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+									end -- if
 								end -- if
 							else
 								Result := True
 							end -- if
 						end -- if
 					end -- if
-				end -- if
+				else
+					o.putNL ("Error: root unit `" + entryPointName + "` was not loaded correctly")
+					Result := True
+				end -- if			
 			end -- if	
 		else
 			-- Entry point is the standalone procedure name!
@@ -349,11 +365,16 @@ feature {None}
 					o.putNL ("Error: entry point routine `" + entryPointName + "` was not loaded correctly")
 					Result := True
 				else
-					if entryRtnCU.routine.generics.count > 0 then
+					rtnDsc := entryRtnCU.routine
+					check
+						routine_not_void: rtnDsc /= Void
+						routine_generics_not_void: rtnDsc.generics /= Void
+					end -- check
+					if rtnDsc.generics.count > 0 then
 						o.putNL ("Error: entry point `" + entryPointName + "` is in fact generic rotuine `" + entryRtnCU.routine.namefullRoutineName + 
 							"` and cannot be used as the entry point")
 						Result := True
-					elseif entryRtnCU.routine.type /= Void then
+					elseif rtnDsc.type /= Void then
 						o.putNL ("Error: entry point `" + entryPointName + "` is in fact a function, only procedures can be used as the entry point")
 						Result := True
 					else
@@ -366,8 +387,10 @@ feature {None}
 								end -- debug
 								Result := entryRtnCU.routine.is_invalid (entryRtnCU, o)
 								if not Result then
-									Result := generationFailed (entryRtnCU, sysDsc.name)
-									--not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+									Result := generationFailed (entryRtnCU, "_$" + sysDsc.name + fs.separator + sysDsc.name)
+									if not Result then
+										not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+									end -- if
 								end -- if
 							else
 								Result := True
@@ -423,10 +446,10 @@ feature {None}
 								o.putNL ("Error: at least two aliases refer to the same name `" + typeDsc.aliasName + "` for different types")
 								Result := True								
 							end -- if				
-						else
-							debug
-								--o.putNL ("Info: type `" + typeDsc.out + "` has no IR!!!")
-							end -- debug
+						--else
+						--	debug
+						--		o.putNL ("Info: type `" + typeDsc.out + "` has no IR!!!")
+						--	end -- debug
 						end -- if
 					end -- if																	
 				end -- if
@@ -457,15 +480,15 @@ feature {None}
 					end -- if				
 				end -- loop
 			end -- if
-			if Result then
-				if failedToLoadCount > 0 then
-					--o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded, while " + failedToLoadCount.out + " failed to be loaded")
-					--o.newLine
-				end -- if
-			else
-				--o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded")
-				--o.newLine
-			end -- if
+			--if Result then
+			--	if failedToLoadCount > 0 then
+			--		o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded, while " + failedToLoadCount.out + " failed to be loaded")
+			--		o.newLine
+			--	end -- if
+			--else
+			--	o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded")
+			--	o.newLine
+			--end -- if
 		end -- if		
 	end -- failedToLoadRequiredTypes
 	
