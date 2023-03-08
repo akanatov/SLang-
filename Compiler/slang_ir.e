@@ -103,9 +103,17 @@ feature {Any}
 	
 	lookForUnitAny: UnitDeclarationDescriptor is
 	do
+		create Result.makeForSearch ("Any", Void)
+		Result ?= allUnits.search (Result)
 	end -- lookForUnitAny
 	lookForUnit (unitDsc: UnitTypeNameDescriptor): UnitDeclarationDescriptor is
 	do
+		if unitDsc.generics.count = 0 then
+			create Result.makeForSearch (unitDsc.name, Void)
+			Result ?= allUnits.search (Result)
+		else
+			-- Copy code from load process ...
+		end -- if
 	end -- lookForUnit	
 	
 	dumpContext (o: Output) is
@@ -3848,6 +3856,8 @@ feature {Any}
 	hasInvalidInterface (sysDsc: SystemDescriptor; o: Output): Boolean is
 	local
 		parentDsc: ParentDescriptor
+		registeredParents: Sorted_Array [UnitDeclarationDescriptor]
+		tmpArray: Array [UnitDeclarationDescriptor]
 		unitDclDsc: UnitDeclarationDescriptor
 		i, n: Integer
 	do
@@ -3885,18 +3895,56 @@ feature {Any}
 
 			n := parents.count
 			if n = 0 then
-				-- Look for Any and ensure is it valid
-				unitDclDsc := sysDsc.lookForUnitAny
+				if name.is_equal ("Any") then
+					create registeredParents.make
+				else
+					-- Look for Any and ensure is it valid
+					unitDclDsc := sysDsc.lookForUnitAny
+					if unitDclDsc = Void then
+						Result := True
+						o.putNL ("Error: unit `Any` is not loaded. It must be part of any SLang system")
+					else
+						if not unitDclDsc.isValidated then
+							if unitDclDsc.isValidating then
+								o.putNL ("Error: inheritance graph cycle detected. Starting from unit `" + fullUnitName + "` and reaching `" + unitDclDsc.fullUnitName + "`")
+								Result := True
+							elseif unitDclDsc.hasInvalidInterface (sysDsc, o) then
+								Result := True
+							end -- if
+						end -- if
+						create registeredParents.fill (<<unitDclDsc>>)
+					end -- if
+				end -- if
 			else
 				from
+					create tmpArray.make (1, n)
 					i := 1
 				until
 					i > n
 				loop
 					parentDsc := parents.item (i)
-					unitDclDsc := sysDsc.lookForUnit (parentDsc.parent) -- UnitTypeNameDescriptor
+					unitDclDsc := sysDsc.lookForUnit (parentDsc.parent)
+					if unitDclDsc = Void then
+						-- Inconsistency !!! Parent is not found among loaded types !!!
+						o.putNL ("Error: unit `" + parentDsc.parent.out + "` is not loaded though it is a parent of `" + fullUnitName + "` unit. Inconsistency detected")
+						Result := True
+					else
+						if not unitDclDsc.isValidated then
+							if unitDclDsc.isValidating then
+								o.putNL ("Error: inheritance graph cycle detected. Starting from unit `" + fullUnitName + "` and reaching `" + unitDclDsc.fullUnitName + "`")
+								Result := True
+							elseif unitDclDsc.hasInvalidInterface (sysDsc, o) then
+								Result := True
+							end -- if
+						end -- if
+						tmpArray.put (unitDclDsc, i)
+					end -- if
+					tmpArray.put (unitDclDsc, i)
 					i := i + 1
 				end -- loop
+				if not Result then
+					create registeredParents.fill (tmpArray)
+				end -- if
 			end -- if
 
 			n := usage.count
@@ -12325,7 +12373,6 @@ inherit
 create
 	init
 end -- class UnitTypeNameDescriptor
-
 
 -----------------------------------------------------------------
 class IfExpressionDescriptor
