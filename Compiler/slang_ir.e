@@ -3868,6 +3868,8 @@ feature {Any}
 			end
 			
 			if isExtension then
+				Result := True
+				o.putNL ("Error: unit extension `" + fullUnitName + "` should have been merged with the main unit. Inconsistency found")
 			else
 				if isFinal then
 				elseif isVirtual then
@@ -3912,6 +3914,10 @@ feature {Any}
 								Result := True
 							end -- if
 						end -- if
+						if unitDclDsc.isFinal then
+							o.putNL ("Error: `" + fullUnitName + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
+							Result := True
+						end -- if
 						create registeredParents.fill (<<unitDclDsc>>)
 					end -- if
 				end -- if
@@ -3936,6 +3942,10 @@ feature {Any}
 							elseif unitDclDsc.hasInvalidInterface (sysDsc, o) then
 								Result := True
 							end -- if
+						end -- if
+						if unitDclDsc.isFinal then
+							o.putNL ("Error: `" + fullUnitName + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
+							Result := True
 						end -- if
 						tmpArray.put (unitDclDsc, i)
 					end -- if
