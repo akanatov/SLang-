@@ -93,13 +93,20 @@ feature {Any}
 			if unitDclDsc = Void then
 				i := 0
 			else
-				if unitDclDsc.hasInvalidInterface (o) then
+				if unitDclDsc.hasInvalidInterface (Current, o) then
 					Result := False
 				end -- if
 				i := i - 1
 			end -- if
 		end -- loop
 	end -- allUnitInterfacesAreValid
+	
+	lookForUnitAny: UnitDeclarationDescriptor is
+	do
+	end -- lookForUnitAny
+	lookForUnit (unitDsc: UnitTypeNameDescriptor): UnitDeclarationDescriptor is
+	do
+	end -- lookForUnit	
 	
 	dumpContext (o: Output) is
 	local
@@ -3838,8 +3845,10 @@ feature {Any}
 	
 	isValidated: Boolean
 	isValidating: Boolean
-	hasInvalidInterface (o: Output): Boolean is
+	hasInvalidInterface (sysDsc: SystemDescriptor; o: Output): Boolean is
 	local
+		parentDsc: ParentDescriptor
+		unitDclDsc: UnitDeclarationDescriptor
 		i, n: Integer
 	do
 		if not isValidated then
@@ -3875,13 +3884,17 @@ feature {Any}
 			end -- if
 
 			n := parents.count
-			if n > 0 then
+			if n = 0 then
+				-- Look for Any and ensure is it valid
+				unitDclDsc := sysDsc.lookForUnitAny
+			else
 				from
 					i := 1
 				until
 					i > n
 				loop
-					-- parents.item (i)
+					parentDsc := parents.item (i)
+					unitDclDsc := sysDsc.lookForUnit (parentDsc.parent) -- UnitTypeNameDescriptor
 					i := i + 1
 				end -- loop
 			end -- if
