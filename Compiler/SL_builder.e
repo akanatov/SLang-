@@ -70,11 +70,6 @@ feature {Any}
 		fullFileName: String
 		outputName: String
 		folderName: String
-		--statements: Array [StatementDescriptor]
-		--stmtDsc: StatementDescriptor
-		--generators: Array [CodeGenerator]
-		--i, n: Integer
-		--j, m: Integer
 	do
 		if fs.folderExists (IRfolderName) then
 			outputName := fs.getFileName(fName)
@@ -86,15 +81,16 @@ feature {Any}
 				-- 1. Build system description - where to look for units !!! 
 				create sysDsc.init_script (outputName, getAnonymousRoutineClusters, Void)
 				scriptDsc.attachSystemDescription (sysDsc)
-			
+				-- 2.Load all units used
 				Result := failedToLoadRequiredTypes (sysDsc, scriptDsc.typePool)
 				debug
 					sysDsc.dumpContext (o)						
 				end -- debug
 				if not Result then
+					-- 3. Check project context validity
 					if sysDsc.allUnitInterfacesAreValid (o) then
 						-- If all required types loaded and validated
-						-- 3. Check validity of cuDsc.statements
+						-- 4. Check validity of cuDsc.statements
 						Result := checkStatementsValidity (scriptDsc.statements, scriptDsc)
 					else
 						Result := True
@@ -106,48 +102,17 @@ feature {Any}
 				else
 					folderName := "_$" + outputName
 					if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
-						-- 4. Generate code for cuDsc.statements
+						-- 5. Generate code for cuDsc.statements
 						Result := generationFailed (scriptDsc, folderName + fs.separator + outputName)
+						if not Result then
+							not_implemented_yet ("Building executable `" + sysDsc.name + "` from script `" + fname + "`%N")
+							-- 6.Check validity and code generation for used CUs
+							-- 7. Build executable
+						end -- if
 					else
 						Result := True
 						o.putNL ("Error: project folder `" + folderName + "` cannot be created")
 					end -- if
-					----generators := initCodeGenerators (IRfolderName + "\_" + fs.getFileName(fName), true)			
-					--generators := initCodeGenerators (fs.getFileName(fName), true)					
-					--m := generators.count
-					--if m > 0 then
-					--	from						
-					--		statements := scriptDsc.statements
-					--		n := statements.count
-					--		--check
-					--		--	valid_statements_not_void: valid_statements /= Void
-					--		--	counter_consistent: n = valid_statements.count
-					--		--end -- check
-					--		i := 1
-					--	until
-					--		i > n
-					--	loop
-					--		stmtDsc := statements.item(i)
-					--		--validStmtDsc := valid_statements.item (i)
-					--		from
-					--			j := 1
-					--		until
-					--			j > m
-					--		loop
-					--			if stmtDsc.generationFailed (generators.item (j)) then
-					--				Result := True
-					--			end -- if
-					--			--validStmtDsc.generate (generators.item (j))
-					--			j := j + 1
-					--		end -- loop
-					--		i := i + 1
-					--	end -- loop
-					--	closeCodeGenerators (generators)
-					--	-- 5. Link !!!! How ????
-					--else
-					--	-- No generators
-					--	o.putNL ("Consistency error: No code generators available")
-					--end -- if
 				end -- if
 			else
 				Result := True
@@ -333,7 +298,9 @@ feature {None}
 								if not Result then
 									Result := generationFailed (rootUnitCU, "_$" + sysDsc.name + fs.separator + sysDsc.name)
 									if not Result then
-										not_implemented_yet ("Generating executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+										not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+										-- 6.Check validity and code generation for used CUs
+										-- 7. Build executable
 									end -- if
 								end -- if
 							else
@@ -389,7 +356,9 @@ feature {None}
 								if not Result then
 									Result := generationFailed (entryRtnCU, "_$" + sysDsc.name + fs.separator + sysDsc.name)
 									if not Result then
-										not_implemented_yet ("Generating executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+										not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
+										-- 6.Check validity and code generation for used CUs
+										-- 7. Build executable
 									end -- if
 								end -- if
 							else
@@ -542,6 +511,9 @@ feature {None}
 					i := i - 1
 				end -- loop
 				closeCodeGenerators (generators)
+				if not Result then
+					not_implemented_yet ("Building library `" + sysDsc.name + "` from folder `" + folderName + "`%N")
+				end -- if
 			else
 				Result := True
 			end -- if
