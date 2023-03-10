@@ -72,6 +72,7 @@ feature {Any}
 
 	--allUnits: Sorted_Array [UnitDeclarationDescriptor] 
 	allUnits: Sorted_Array [ContextTypeDescriptor]
+	matrix: Sorted_Array [ContextUnit]
 
 	registerLoadedUnit (unitDclDsc: UnitDeclarationDescriptor) is 
 	do
