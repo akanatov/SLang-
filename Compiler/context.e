@@ -4,6 +4,8 @@ inherit
 		redefine
 			is_equal
 	end
+creation
+	init
 feature
 	id: Integer
 	unitDsc: UnitDeclarationDescriptor

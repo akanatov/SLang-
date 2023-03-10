@@ -107,6 +107,7 @@ feature {Any}
 		create Result.makeForSearch ("Any", Void)
 		Result ?= allUnits.search (Result)
 	end -- lookForUnitAny
+	
 	lookForUnit (unitDsc: UnitTypeNameDescriptor): UnitDeclarationDescriptor is
 	do
 		if unitDsc.generics.count = 0 then
@@ -759,6 +760,7 @@ feature {Any}
 		from_paths := Void
 		set_clusters_and_libraries (c, l)
 		create allUnits.make
+		create matrix.make
 	end -- init_program
 	
 	init_library (aName : String; fromPaths: like from_paths; c: like clusters; l: like libraries) is
@@ -774,6 +776,7 @@ feature {Any}
 		end -- if
 		set_clusters_and_libraries (c, l)
 		create allUnits.make
+		create matrix.make
 	end -- init_library
 
 	set_clusters_and_libraries (c: like clusters; l: like libraries) is
@@ -3860,6 +3863,7 @@ feature {Any}
 		registeredParents: Sorted_Array [UnitDeclarationDescriptor]
 		tmpArray: Array [UnitDeclarationDescriptor]
 		unitDclDsc: UnitDeclarationDescriptor
+		currentContextUnit: ContextUnit
 		i, n: Integer
 	do
 		if not isValidated then
@@ -3896,6 +3900,8 @@ feature {Any}
 				end -- loop
 			end -- if
 
+			create currentContextUnit.init (Current)
+			
 			n := parents.count
 			if n = 0 then
 				if name.is_equal ("Any") then
@@ -3906,7 +3912,7 @@ feature {Any}
 					if unitDclDsc = Void then
 						Result := True
 						o.putNL ("Error: unit `Any` is not loaded. It must be part of any SLang system")
-					else
+					else						
 						if not unitDclDsc.isValidated then
 							if unitDclDsc.isValidating then
 								o.putNL ("Error: inheritance graph cycle detected. Starting from unit `" + fullUnitName + "` and reaching `" + unitDclDsc.fullUnitName + "`")
