@@ -6879,8 +6879,8 @@ end -- class CustomAttributeAssignerDescriptor
 
 ------------------- Expressions --------------
 deferred class ExpressionDescriptor
---29 IfExpression | MemberCallOrCreation | Expression Operator Expression | Operator Expression | Constant | TypeOfExpression | OldExpression
---    | RangeExpression | LambdaExpression | TupleExpression | RefExpression | “(”Expression“)”{CallChain}
+-- IfExpression | MemberCallOrCreation | Expression Operator Expression | Operator Expression | Constant | TypeOfExpression | OldExpression
+--    | RangeExpression | LambdaExpression | TupleExpression | RefExpression | "(" Expression ")" {CallChain}
 inherit	
 	TypeOrExpressionDescriptor
 	end
@@ -8093,13 +8093,13 @@ inherit
 			is_equal, out
 	end
 create
-	init
+	make -- ,init
 feature	{Any}
 	unitPrefix: UnitTypeNameDescriptor
-	token: Integer
-	value: Any
+	--token: Integer
+	value: Comparable -- Any
 
-	type: UnitTypeNameDescriptor
+	--type: UnitTypeNameDescriptor
 
 	isConst: Boolean is True
 	
@@ -8124,74 +8124,80 @@ feature	{Any}
 		non_void_value: v /= Void
 		non_void_unit: up /= Void
 	do
-		unitPrefix:= up
-		token:= 0
+		unitPrefix := up
+		--token:= 0
 		value:= v
 	end -- make
-	init (t: Integer; v: like value) is
-	require
-		non_void_value: v /= Void
-	do
-		unitPrefix:= Void
-		token:= t
-		value:= v
-	end -- init
+	--init (t: Integer; v: like value) is
+	--require
+	--	non_void_value: v /= Void
+	--do
+	--	unitPrefix:= Void
+	--	token:= t
+	--	value:= v
+	--end -- init
 	sameAs (other: like Current): Boolean is
 	do
-		Result := token = other.token and then value.is_equal (other.value)
+		--Result := token = other.token and then value.is_equal (other.value)
+		Result := unitPrefix.is_equal (other.unitPrefix) and then value.is_equal (other.value)
 	end -- sameAs
 	lessThan (other: like Current): Boolean is
-	local	
-		aString: String
-		anInteger: Integer_Ref
-		aReal: Real_Ref
-		aChar: Character_Ref
-		otherString: String
-		otherInteger: Integer_Ref
-		otherReal: Real_Ref
-		otherChar: Character_Ref
+	--local	
+	--	aString: String
+	--	anInteger: Integer_Ref
+	--	aReal: Real_Ref
+	--	aChar: Character_Ref
+	--	otherString: String
+	--	otherInteger: Integer_Ref
+	--	otherReal: Real_Ref
+	--	otherChar: Character_Ref
 	do
-		Result := token < other.token
-		if not Result and then token = other.token then
-			aString ?= value
-			anInteger ?= value
-			aReal ?= value
-			aChar ?= value
-			if aChar /= Void then
-				otherChar ?= other.value
-				Result := aChar.item < otherChar.item
-			elseif  anInteger /= Void then
-				otherInteger ?= other.value
-				Result := anInteger.item < otherInteger.item
-			elseif aReal /= Void then
-				otherReal ?= other.value
-				Result := aReal.item < otherReal.item
-			elseif aString /= Void then
-				otherString ?= other.value
-				Result := aString < otherString
-			end -- if
+		Result := unitPrefix < other.unitPrefix
+		if not Result and unitPrefix.is_equal (other.unitPrefix) then
+			Result := value < other.value
 		end -- if
+		
+		--Result := token < other.token
+		--if not Result and then token = other.token then
+		--	aString ?= value
+		--	anInteger ?= value
+		--	aReal ?= value
+		--	aChar ?= value
+		--	if aChar /= Void then
+		--		otherChar ?= other.value
+		--		Result := aChar.item < otherChar.item
+		--	elseif  anInteger /= Void then
+		--		otherInteger ?= other.value
+		--		Result := anInteger.item < otherInteger.item
+		--	elseif aReal /= Void then
+		--		otherReal ?= other.value
+		--		Result := aReal.item < otherReal.item
+		--	elseif aString /= Void then
+		--		otherString ?= other.value
+		--		Result := aString < otherString
+		--	end -- if
+		--end -- if
 	end -- lessThan	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
-		-- Let's check that proper type is registered
-		inspect
-			token
-		when string_const_token then
-			type := context.getUnitTypeByName ("String")
-		when char_const_token then
-			type := context.getUnitTypeByName ("Character")
-		when integer_const_token then
-			type := context.getUnitTypeByName ("Integer")
-		when real_const_token then
-			type := context.getUnitTypeByName ("Real")
-		else
-			type := unitPrefix
-		end -- if		
-		if type = Void then
-			-- constant type is not registered
-			Result := True
-		end -- if
+		---- Let's check that proper type is registered
+		--inspect
+		--	token
+		--when string_const_token then
+		--	type := context.getUnitTypeByName ("String")
+		--when char_const_token then
+		--	type := context.getUnitTypeByName ("Character")
+		--when integer_const_token then
+		--	type := context.getUnitTypeByName ("Integer")
+		--when real_const_token then
+		--	type := context.getUnitTypeByName ("Real")
+		--else
+		--	type := unitPrefix
+		--end -- if		
+		--if type = Void then
+		--	-- constant type is not registered
+		--	Result := True
+		--end -- if
 	end -- isInvalid
 	generationFailed(cg: CodeGenerator): Boolean is
 	do
@@ -8217,13 +8223,14 @@ feature	{Any}
 	end -- out
 invariant
 	non_void_value: value /= Void
-	consistent_1: unitPrefix /= Void implies token = 0
-	consistent_1: unitPrefix = Void implies (token = string_const_token or else
-		token = char_const_token or else
-		token = integer_const_token or else
-		token = real_const_token or else
-		token = string_const_token or else
-		token = identifier_token)
+	non_void_unitPrefix: unitPrefix /= Void
+	--consistent_1: unitPrefix /= Void implies token = 0
+	--consistent_1: unitPrefix = Void implies (token = string_const_token or else
+	--	token = char_const_token or else
+	--	token = integer_const_token or else
+	--	token = real_const_token or else
+	--	token = string_const_token or else
+	--	token = identifier_token)
 end -- class ConstantDescriptor
 
 class CallChainElement

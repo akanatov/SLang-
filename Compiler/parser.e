@@ -2071,7 +2071,10 @@ feature {None}
 					arguments := parseArguments
 					callChain := parseCallChain
 					create {QualifiedCallDescriptor}Result.init (ceDsc, name1, arguments, callChain)
-				when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+				when
+					scanner.bit_const_token, scanner.integer_const_token, scanner.real_const_token,
+					scanner.string_const_token, scanner.char_const_token
+				then
 					constDsc := parseConstant (False)
 					check
 						npon_void_const_dsc: constDsc /= Void
@@ -2567,7 +2570,7 @@ end
 				create {CallChainElement} cceDsc.init (operator, Void)
 				create {ExpressionCallDescriptor} Result.init (returnDsc, <<cceDsc>>)
 			end -- inspect
-		when scanner.integer_const_token, scanner.real_const_token then
+		when scanner.bit_const_token, scanner.integer_const_token, scanner.real_const_token then
 			if operator.is_equal ("+") then
 				-- ignore plus sign
 				Result := parseConstant (checkSemicolonAfter)				
@@ -2959,7 +2962,7 @@ end -- debug
 				-- Just this
 				Result := thisDsc
 			end -- inspect
-		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
+		when scanner.bit_const_token, scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
 			debug
 				--trace ("Expr: const")
 			end -- debug
@@ -5356,36 +5359,56 @@ end -- debug
 	parseConstant (checkSemicolonAfter: Boolean): ConstantDescriptor is
 	--  Constant : StringConstant |CharacterConstant |IntegerConstant |RealConstant
 	require
-		valid_token: validToken (<<scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token>>)
+		valid_token: validToken (<<
+			scanner.string_const_token, scanner.char_const_token,
+			scanner.bit_const_token, scanner.integer_const_token, scanner.real_const_token
+		>>)
 	local
 		utnDsc: UnitTypeNameDescriptor
+		value: Comparable
+		intConstDsc: ConstantDescriptor
 	do
 		inspect
 			scanner.token
 		when scanner.string_const_token then
-			-- Register type String
+			-- Require unit String
 			create utnDsc.init ("String", Void)
-			utnDsc ?= register_named_type (utnDsc)
-			create Result.init (scanner.token, scanner.tokenString)
+			value := scanner.tokenString
 		when scanner.char_const_token then
-			-- Register type Character
+			-- Require unit Character
 			create utnDsc.init ("Character", Void)
-			utnDsc ?= register_named_type (utnDsc)
-			create Result.init (scanner.token, scanner.tokenString)
-		when scanner.integer_const_token then
-			-- Register type Integer
+			value := scanner.tokenString.item (1)
+		when scanner.bit_const_token then
+			-- Require unit Bit [bitsCount]
+			--debug
+			--	print ('%N') print (scanner.tokenString) print ('%N')
+			--end 			
 			create utnDsc.init ("Integer", Void)
 			utnDsc ?= register_named_type (utnDsc)
-			create Result.init (scanner.token, scanner.integer_value)
+			check
+				type_regsitered: utnDsc /= Void
+			end -- check
+			create intConstDsc.make (utnDsc, scanner.tokenString.count)
+			create utnDsc.init ("Bit", <<intConstDsc>>)
+			value := scanner.integer_value
+		when scanner.integer_const_token then
+			-- Require unit Integer
+			create utnDsc.init ("Integer", Void)
+			value := scanner.integer_value
 		when scanner.real_const_token then
-			-- Register type Real
+			-- Require unit Real
 			create utnDsc.init ("Real", Void)
-			utnDsc ?= register_named_type (utnDsc)
-			create Result.init (scanner.token, scanner.tokenString.to_real)
+			value := scanner.tokenString.to_real
 		end -- if
-		--scanner.nextToken
+		utnDsc ?= register_named_type (utnDsc)
+		check
+			type_regsitered: utnDsc /= Void
+		end -- check
+		create Result.make (utnDsc, value)
 		scanner.nextWithSemicolon (checkSemicolonAfter)
---trace ("constant parsed: " + Result.out)		
+		debug
+			--trace ("constant parsed: " + Result.out)
+		end
 	ensure
 		non_void_constant_dsc: Result /= Void
 	end -- parseConstant
@@ -7987,7 +8010,7 @@ end -- debug
 							create {ConstWithInitDescriptor} cwiDsc.init (name, arguments)
 							create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
 						end -- if
-					when scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token then
+					when scanner.bit_const_token, scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token then
 						constDsc := parseConstant (False)
 						if constDsc = Void then
 							Result := Void
@@ -8006,7 +8029,10 @@ end -- debug
 					wasError:= True 
 				end -- if
 			end -- if
-		when scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token then
+		when
+			scanner.string_const_token, scanner.char_const_token,
+			scanner.bit_const_token, scanner.integer_const_token, scanner.real_const_token
+		then
 			constDsc := parseConstant (False)
 			Result := constDsc
 			if Result /= Void then
@@ -8049,7 +8075,10 @@ end -- debug
 							scanner.nextToken
 							create {ConstWithInitDescriptor} cwiDsc.init (name, parseArguments)
 							create {ConstRangeObjectDescriptor} Result.init (Result, cwiDsc)
-						when scanner.string_const_token, scanner.char_const_token, scanner.integer_const_token, scanner.real_const_token then
+						when
+							scanner.string_const_token, scanner.char_const_token,
+							scanner.bit_const_token, scanner.integer_const_token, scanner.real_const_token
+						then
 							constDsc := parseConstant (False)
 							if constDsc = Void then
 								Result := Void

@@ -60,6 +60,7 @@ feature
 	type_name_token,
 	comment_token,	
 	operator_token,
+	bit_const_token,
 	integer_const_token,
 	real_const_token,
 	string_const_token,
@@ -140,6 +141,7 @@ feature
 	type_name_string: String is             "<type name>"
 	comment_string: String is 	            "<comment>"
 	operator_string: String is              "<operator>" 
+	bit_const_string: String is         	"<bit_const>"
 	integer_const_string: String is         "<integer_const>"
 	real_const_string: String is            "<real_const>"
 	string_const_string: String is          "<string_const>"
@@ -223,6 +225,7 @@ feature
 			type_name_string,
 			comment_string,
 			operator_string, 
+			bit_const_string,
 			integer_const_string,
 			real_const_string,
 			string_const_string,
@@ -1502,14 +1505,14 @@ feature {Any}
 								when '0', '1' then
 									buffer.append_character (ch)
 								else
-									token := integer_const_token
+									token := bit_const_token
 									convertBitToDecimal
 									toRead := False
 									toLeave := True
 								end
 							end
 							if pos > size then
-								token := integer_const_token
+								token := bit_const_token
 								convertBitToDecimal
 								toRead := False
 							elseif buffer.count = 0 then
@@ -1914,6 +1917,7 @@ feature {None}
 		end -- loop
 		if token = integer_const_token then
 			if isBitConst then
+				token := bit_const_token
 				convertBitToDecimal
 			elseif isOctaConst then
 				convertOctaToDecimal

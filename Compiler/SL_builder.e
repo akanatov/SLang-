@@ -84,7 +84,7 @@ feature {Any}
 				-- 2.Load all units used
 				Result := failedToLoadRequiredTypes (sysDsc, scriptDsc.typePool)
 				debug
-					--sysDsc.dumpContext (o)						
+					sysDsc.dumpContext (o)						
 				end -- debug
 				if not Result then
 					-- 3. Check project context validity
@@ -290,7 +290,7 @@ feature {None}
 						if not Result then
 							if sysDsc.allUnitInterfacesAreValid (o) then
 								debug
-									--sysDsc.dumpContext (o)						
+									sysDsc.dumpContext (o)						
 								end -- debug
 								-- We need to start with the root unit implementation validate and generate code
 								-- and then do the same for its constructor actual usage 
@@ -350,7 +350,7 @@ feature {None}
 						if not Result then
 							if sysDsc.allUnitInterfacesAreValid (o) then
 								debug
-									--sysDsc.dumpContext (o)						
+									sysDsc.dumpContext (o)						
 								end -- debug
 								Result := entryRtnCU.routine.is_invalid (entryRtnCU, o)
 								if not Result then
@@ -494,7 +494,7 @@ feature {None}
 		if not Result then
 			if sysDsc.allUnitInterfacesAreValid (o) then
 				debug
-					--sysDsc.dumpContext (o)						
+					sysDsc.dumpContext (o)						
 				end -- debug
 				generators := initCodeGenerators (folderName + fs.separator + sysDsc.name, false)
 				from
