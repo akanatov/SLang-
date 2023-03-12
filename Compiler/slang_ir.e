@@ -92,6 +92,7 @@ feature {Any}
 	local
 		i, n: Integer
 		unitDclDsc: UnitDeclarationDescriptor
+		instantiationDsc: InstantiationDescriptor
 		currentID: Integer_Ref
 	do
 		from
@@ -102,7 +103,15 @@ feature {Any}
 		loop
 			unitDclDsc ?= allUnits.item (i)
 			if unitDclDsc = Void then
-				i := 0
+				instantiationDsc ?= allUnits.item (i)
+				if instantiationDsc = Void then
+					i := 0
+				else
+					if instantiationDsc.hasInvalidInterface (Current, o) then
+						Result := False
+					end -- if
+					i := i - 1
+				end -- if
 			else
 				if unitDclDsc.hasInvalidInterface (Current, o) then
 					Result := False
@@ -158,20 +167,36 @@ feature {Any}
 		end -- if		
 	end -- assignID
 
+	anyDclDsc: UnitDeclarationDescriptor is
+	once
+		create Result.makeForSearch ("Any", Void)
+	end -- anyDclDsc
 	
 	lookForUnitAny: UnitDeclarationDescriptor is
 	do
-		create Result.makeForSearch ("Any", Void)
-		Result ?= allUnits.search (Result)
+		--create Result.makeForSearch ("Any", Void)
+		--Result ?= allUnits.search (Result)
+		Result ?= allUnits.search (anyDclDsc)		
 	end -- lookForUnitAny
 	
 	lookForUnit (unitDsc: UnitTypeNameDescriptor): UnitDeclarationDescriptor is
+	local
+		instantiationDsc: InstantiationDescriptor
+		cntTypDsc: ContextTypeDescriptor
 	do
 		if unitDsc.generics.count = 0 then
 			create Result.makeForSearch (unitDsc.name, Void)
 			Result ?= allUnits.search (Result)
 		else
-			-- Copy code from load process ...
+			create instantiationDsc.make_for_search (unitDsc)
+			cntTypDsc := allUnits.search (instantiationDsc)
+			if cntTypDsc = Void then
+				debug
+					print ("Template for the instantiation `" + unitDsc.out + "` not found")
+				end -- debug
+			else
+				Result := cntTypDsc.getUnitDeclaration
+			end -- if
 		end -- if
 	end -- lookForUnit	
 	
@@ -3227,7 +3252,8 @@ inherit
 	ContextTypeDescriptor
 		rename
 			name as aliasName,
-			setName as makeForSearch
+			setName as makeForSearch,
+			fullUnitName as aliasName
 	end
 create
 	init, makeForSearch
@@ -3241,6 +3267,7 @@ feature {Any}
 		aliasName := aName
 		unitDclDsc := aType
 	end -- init
+
 	sameAs (other: like Current) : Boolean is
 	do
 		Result := aliasName.is_equal (other.aliasName)
@@ -3279,9 +3306,11 @@ end -- class UnitAliasDescriptor
 class InstantiationDescriptor
 inherit
 	ContextTypeDescriptor
+		rename
+			fullUnitName as name
 	end
 create
-	init
+	init, make_for_search
 feature {Any}
 	templateUnitDsc: UnitDeclarationDescriptor
 	instantiationDsc: UnitTypeCommonDescriptor
@@ -3295,6 +3324,14 @@ feature {Any}
 		instantiationDsc := instantiation
 		name := instantiationDsc.out
 	end -- init
+	
+	make_for_search (instantiation: like instantiationDsc) is
+	require
+		non_void_instantiation: instantiation /= Void
+	do
+		instantiationDsc := instantiation
+		name := instantiationDsc.out
+	end -- make_for_search
 	
 	sameAs (other: like Current) : Boolean is
 	do
@@ -3326,10 +3363,17 @@ feature {Any}
 		--	Result := True
 		--end -- if
 	end -- is_invalid
+
+	hasInvalidInterface (sysDsc: SystemDescriptor; o: Output): Boolean is
+	local
+		currentContextUnit: ContextUnit
+	do
+		create currentContextUnit.init (Current)
+		currentContextUnit := sysDsc.matrix.add_it (currentContextUnit)
+	end -- hasInvalidInterface
 	
 invariant
 	non_void_instantiation: instantiationDsc /= Void
-	non_void_template: templateUnitDsc /= Void
 end -- class InstantiationDescriptor
 
 deferred class ContextTypeDescriptor
@@ -3354,6 +3398,11 @@ feature
 	ensure
 		unit_declaration_npt_void: Result /= Void
 	end -- getUnitDeclaration
+	fullUnitName: String is
+	deferred
+	ensure
+		unit_declaration_npt_void: Result /= Void
+	end -- fullUnitName
 end -- class ContextTypeDescriptor
 
 class UnitDeclarationDescriptor
@@ -3982,8 +4031,6 @@ feature {Any}
 	hasInvalidInterface (sysDsc: SystemDescriptor; o: Output): Boolean is
 	local
 		parentDsc: ParentDescriptor
-		--registeredParents: Sorted_Array [UnitDeclarationDescriptor]
-		--tmpArray: Array [UnitDeclarationDescriptor]
 		unitDclDsc: UnitDeclarationDescriptor
 		currentContextUnit: ContextUnit
 		parentContextUnit: ContextUnit
@@ -3993,8 +4040,8 @@ feature {Any}
 			isValidating := True
 			debug
 				--o.putNL (" >Info: unit `" + fullUnitName + "` interface validation started")
-			end
-			
+			end -- debug			
+
 			if isExtension then
 				Result := True
 				o.putNL ("Error: unit extension `" + fullUnitName + "` should have been merged with the main unit. Inconsistency found")

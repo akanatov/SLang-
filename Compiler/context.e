@@ -8,7 +8,7 @@ creation
 	init
 feature
 	id: Integer
-	unitDsc: UnitDeclarationDescriptor
+	unitDsc: ContextTypeDescriptor -- UnitDeclarationDescriptor
 	parents: Sorted_Array [like Current]
 	children:  Sorted_Array [like Current]
 	out: String is
@@ -46,7 +46,7 @@ feature
 			end -- loop	
 			Result.append_character (';')
 		end -- if
-		inheritedOverrides := unitDsc.inheritedOverrides
+		inheritedOverrides := unitDsc.getUnitDeclaration.inheritedOverrides
 		index := inheritedOverrides.count
 		if index > 0 then
 			from
@@ -61,7 +61,7 @@ feature
 				end -- if
 			end -- loop	
 		end -- if
-		unitMembers := unitDsc.unitMembers
+		unitMembers := unitDsc.getUnitDeclaration.unitMembers
 		index := unitMembers.count
 		if index > 0 then
 			from
