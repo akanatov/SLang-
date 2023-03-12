@@ -12427,7 +12427,16 @@ feature {Any}
 					end -- if
 					if toSkip then
 						toSkip := False
-					elseif isRtn and then not fgDsc.isRoutine  then
+					elseif isRtn then -- and then not fgDsc.isRoutine  then
+						if not fgDsc.isRoutine then
+							m := m + 1
+							debug
+								--print ("Excluding `" + fgDsc.out + "` non-Rtn /= Rtn%N")
+							end 
+							genericUnits.put(Void, i)
+							toSkip := True
+						end -- if
+					elseif fgDsc.isRoutine then
 						m := m + 1
 						debug
 							--print ("Excluding `" + fgDsc.out + "` non-Rtn /= Rtn%N")
@@ -12437,7 +12446,15 @@ feature {Any}
 					end -- if
 					if toSkip then
 						toSkip := False
-					elseif isTpl and then not fgDsc.isTuple then
+					elseif isTpl then --  and then not fgDsc.isTuple then
+						if not fgDsc.isTuple then
+							m := m + 1
+							debug
+								--print ("Excluding `" + fgDsc.out + "` non-Tuple /= Tuple%N")
+							end 
+							genericUnits.put(Void, i)
+						end -- if
+					elseif fgDsc.isTuple then
 						m := m + 1
 						debug
 							--print ("Excluding `" + fgDsc.out + "` non-Tuple /= Tuple%N")
