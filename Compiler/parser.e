@@ -59,6 +59,8 @@ class SLang_Parser
 inherit
 	ServiceRoutines
 	end
+	Server
+	end
 create
 	init
 feature {None}
@@ -2681,7 +2683,6 @@ end
 			end -- inspect
 		end -- if			
 	end -- parseExpressionOrTuple
-
 
 	parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, returnType, parseConstExpr: Boolean): ExpressionDescriptor is
 	--50 Expression:
@@ -7005,7 +7006,7 @@ end -- debug
 		--end -- if
 	end -- theSameUnit
 	
-	parseInheritanceClause (unitDsc: UnitDeclarationDescriptor) is
+	parseInheritanceClause is
 	-- extend ParentDescriptor {“,” ParentDescriptor}
 	-- [“~”] UnitTypeNameDescriptor 
 	--  ^^^^ obsolete 
@@ -7014,10 +7015,9 @@ end -- debug
 	-- MemberName: Identifier|(RoutineName [Signature])
 	require
 		valid_token: validToken (<<scanner.extend_token>>)
-		unit_descriptor_not_void: unitDsc /= Void
 	local
 		parentDsc: ParentDescriptor
-		utnDsc: UnitTypeNameDescriptor 
+		utnDsc: UnitTypeNameDescriptor
 		toLeave: Boolean
 		isNonConformant: Boolean
 		--commaFound: Boolean
@@ -7044,8 +7044,8 @@ end -- debug
 					if utnDsc = Void then
 						toLeave := True
 					else
-						if theSameUnit1 (unitDsc, utnDsc) then
-							validity_error( "Attempt to inherit from itself. Extending type `" + utnDsc.out + "` in type `" + unitDsc.name + "`")
+						if theSameUnit1 (currentUnitDsc, utnDsc) then
+							validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + currentUnitDsc.name + "`")
 							--toLeave := True
 							-- Inheritance graph simple cycle
 						else
@@ -7057,8 +7057,8 @@ end -- debug
 							-- Huh ...
 							
 							create parentDsc.init (isNonConformant, utnDsc)
-							if not unitDsc.parents.added (parentDsc) then
-								validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + unitDsc.name + "`")
+							if not currentUnitDsc.parents.added (parentDsc) then
+								validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in unit `" + currentUnitDsc.name + "`")
 								--toLeave := True
 								-- Repeated inheritance is prohibited
 							end -- if
@@ -9443,6 +9443,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		initDsc: InitDeclarationDescriptor
 		toLeave: Boolean
 		initialErrorsCount: Integer
+		parentDsc: ParentDescriptor
+		utnDsc: UnitTypeNameDescriptor
 	do
 		initialErrorsCount := errorsCount
 		if scanner.token = scanner.unit_token then
@@ -9502,7 +9504,15 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 
 			if scanner.token = scanner.extend_token then
 				-- parse inheritance clause
-				parseInheritanceClause (currentUnitDsc)
+				parseInheritanceClause
+			elseif not currentUnitDsc.name.is_equal ("Any") then
+				-- Let's add inheritance from Any
+				utnDsc ?= register_type (unitAnyDsc)
+				check
+					unit_any_registered: utnDsc /= Void
+				end -- check
+				create parentDsc.init (False, utnDsc)
+				currentUnitDsc.parents.add (parentDsc)
 			end -- if
 
 			if scanner.token = scanner.use_token then

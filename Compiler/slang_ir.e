@@ -105,7 +105,7 @@ feature {Any}
 			if unitDclDsc = Void then
 				instantiationDsc ?= allUnits.item (i)
 				if instantiationDsc = Void then
-					i := 0
+					-- i := 0
 				else
 					if instantiationDsc.hasInvalidInterface (Current, o) then
 						Result := False
@@ -152,7 +152,7 @@ feature {Any}
 	do
 		if currentUnit.id = 0 then
 			if currentUnit.isVirtual or else currentUnit.isTemplate then
-				currentUnit.setID(-1)
+				currentUnit.setID(-1) -- No objects of this type 
 			else
 				currentUnit.setID(currentID.item)
 				currentID.set_item (currentID.item + 1)
@@ -1698,11 +1698,6 @@ feature {None}
 	--	end -- if
 	--end -- fileParsedForUnit
 
-	--unitAnyDsc: UnitTypeNameDescriptor is
-	--once
-	--	create Result.init ("Any", Void)
-	--end -- unitAnyDsc
-	
 	scanner: SLang_Scanner
 	init_pools (scn: like scanner) is
 	do
@@ -3319,7 +3314,13 @@ create
 	init, make_for_search
 feature {Any}
 	templateUnitDsc: UnitDeclarationDescriptor
+		--formalGenerics: Array [FormalGenericDescriptor]
+		--parents: Sorted_Array [ParentDescriptor]
 	instantiationDsc: UnitTypeCommonDescriptor
+		-- factual 
+		-- 	generics: Array [TypeOrExpressionDescriptor]
+
+	parents: Array [ParentDescriptor]	
 
 	isTemplate: Boolean is
 	do
@@ -3379,8 +3380,17 @@ feature {Any}
 	local
 		currentContextUnit: ContextUnit
 	do
-		create currentContextUnit.init (Current)
-		currentContextUnit := sysDsc.matrix.add_it (currentContextUnit)
+		if not templateUnitDsc.hasInvalidInterface (sysDsc, o) then
+			if parents = Void then
+				create currentContextUnit.init (Current)
+				currentContextUnit := sysDsc.matrix.add_it (currentContextUnit)
+				parents := templateUnitDsc.buildParents (instantiationDsc.generics)				
+			end -- if
+		else
+			debug
+				o.putNL ("Instantiation `" + name + "` has invalid template `" + templateUnitDsc.fullUnitName + "`")
+			end -- dedug
+		end -- if
 	end -- hasInvalidInterface
 	
 invariant
@@ -3538,6 +3548,22 @@ feature {Any}
 			Result := parDsc.parent
 		end -- i f
 	end -- findParent
+
+	buildParents (factualGenerics: Array [TypeOrExpressionDescriptor]): Array [ParentDescriptor] is
+	local
+		index: Integer
+		parentsCount: Integer
+	do
+		parentsCount := parents.count
+		--formalGenerics: Array [FormalGenericDescriptor]
+		--parents: Sorted_Array [ParentDescriptor]
+		create Result.make (1, parents.count)
+		-- XXX
+	ensure
+		valid_list_of_parents: Result /= Void
+		consistent_parents_any : parents.count = 0 implies Result.count = 1
+		consistent_parents_other : parents.count > 0 implies Result.count = parents.count
+	end -- buildParents		
 
 	usage: Sorted_Array [EnclosedUseEementDescriptor]
 	constants: Sorted_Array [UnitTypeNameDescriptor] --FullUnitNameDescriptor]
@@ -4096,7 +4122,6 @@ feature {Any}
 			if n = 0 then
 				if name.is_equal ("Any") then
 					sysDsc.setAny (currentContextUnit)
-					--create registeredParents.make
 				else
 					-- Look for Any and ensure is it valid
 					unitDclDsc := sysDsc.lookForUnitAny
@@ -4119,12 +4144,10 @@ feature {Any}
 						create parentContextUnit.init (unitDclDsc)
 						parentContextUnit := sysDsc.matrix.add_it (parentContextUnit)
 						currentContextUnit.addParent (parentContextUnit)
-						--create registeredParents.fill (<<unitDclDsc>>)
 					end -- if
 				end -- if
 			else
 				from
-					--create tmpArray.make (1, n)
 					i := 1
 				until
 					i > n
@@ -4151,13 +4174,9 @@ feature {Any}
 						create parentContextUnit.init (unitDclDsc)
 						parentContextUnit := sysDsc.matrix.add_it (parentContextUnit)
 						currentContextUnit.addParent (parentContextUnit)
-						--tmpArray.put (unitDclDsc, i)
 					end -- if
 					i := i + 1
 				end -- loop
-				--if not Result then
-				--	create registeredParents.fill (tmpArray)
-				--end -- if
 			end -- if
 
 			n := usage.count
@@ -12306,7 +12325,7 @@ feature {Any}
 					unitDeclaration := genericUnits.item (1).getUnitDeclaration
 					genericUnits := Void
 					create instDsc.init (Current, unitDeclaration)
-					instDsc ?= contextTypes.add_it (instDsc) -- XXX
+					contextTypes.add (instDsc) -- Register instantiation
 					debug
 						-- o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 					end -- debug
@@ -12346,7 +12365,7 @@ feature {Any}
 							unitDeclaration := genericUnits.item (1).getUnitDeclaration
 							genericUnits := Void
 							create instDsc.init (Current, unitDeclaration)
-							instDsc ?= contextTypes.add_it (instDsc) -- XXX
+							contextTypes.add (instDsc)  -- Register instantiation
 							debug
 								--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 							end -- debug
