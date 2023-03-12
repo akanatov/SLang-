@@ -72,7 +72,16 @@ feature {Any}
 
 	--allUnits: Sorted_Array [UnitDeclarationDescriptor] 
 	allUnits: Sorted_Array [ContextTypeDescriptor]
+
 	matrix: Sorted_Array [ContextUnit]
+	anyDsc: ContextUnit
+	
+	setAny (any: like anyDsc) is
+	require
+		any_not_void: any /= Void
+	do
+		anyDsc := any
+	end -- setAny
 
 	registerLoadedUnit (unitDclDsc: UnitDeclarationDescriptor) is 
 	do
@@ -81,8 +90,9 @@ feature {Any}
 
 	allUnitInterfacesAreValid (o: Output): Boolean is
 	local
-		i: Integer
+		i, n: Integer
 		unitDclDsc: UnitDeclarationDescriptor
+		currentID: Integer_Ref
 	do
 		from
 			i := allUnits.count
@@ -100,7 +110,54 @@ feature {Any}
 				i := i - 1
 			end -- if
 		end -- loop
+		if Result then
+			-- Let's number units starting from Any
+			create currentID -- Any ID is 0
+			anyDsc.setSortByChildrenCount
+			assignID (anyDsc, currentID)			
+			anyDsc.setSortByID
+			matrix.qsort
+			--debug
+				from
+					i := 1
+					n := matrix.count
+					o.putNL (">>>> Context has `" + n.out + "` units")
+				until
+					i = n
+				loop
+					o.putNL (matrix.item (i).out)				
+					i := i + 1
+				end -- loop
+				o.putNL ("<<<< End of context")
+			--end -- debug
+		end -- if
 	end -- allUnitInterfacesAreValid
+
+	assignID (currentUnit: ContextUnit; currentID: Integer_Ref) is
+	require
+		non_void_current_unit: currentUnit /= Void
+		valid_id: currentID /= Void and then currentID.item >= 0
+	local
+		children: Sorted_Array [ContextUnit]
+		i, n: Integer
+	do
+		if currentUnit.id = 0 then
+			currentUnit.setID(currentID.item)
+			currentID.set_item (currentID.item + 1)
+			children := currentUnit.children
+			children.qsort -- resort children by the number of their children
+			from
+				i := 1
+				n := children.count
+			until
+				i > n
+			loop
+				assignID (children.item (i), currentID)
+				i := i + 1
+			end -- loop
+		end -- if		
+	end -- assignID
+
 	
 	lookForUnitAny: UnitDeclarationDescriptor is
 	do
@@ -3860,16 +3917,17 @@ feature {Any}
 	hasInvalidInterface (sysDsc: SystemDescriptor; o: Output): Boolean is
 	local
 		parentDsc: ParentDescriptor
-		registeredParents: Sorted_Array [UnitDeclarationDescriptor]
-		tmpArray: Array [UnitDeclarationDescriptor]
+		--registeredParents: Sorted_Array [UnitDeclarationDescriptor]
+		--tmpArray: Array [UnitDeclarationDescriptor]
 		unitDclDsc: UnitDeclarationDescriptor
 		currentContextUnit: ContextUnit
+		parentContextUnit: ContextUnit
 		i, n: Integer
 	do
 		if not isValidated then
 			isValidating := True
 			debug
-				o.putNL (" >Info: unit `" + fullUnitName + "` interface validation started")
+				--o.putNL (" >Info: unit `" + fullUnitName + "` interface validation started")
 			end
 			
 			if isExtension then
@@ -3901,11 +3959,13 @@ feature {Any}
 			end -- if
 
 			create currentContextUnit.init (Current)
+			currentContextUnit := sysDsc.matrix.add_it (currentContextUnit)
 			
 			n := parents.count
 			if n = 0 then
 				if name.is_equal ("Any") then
-					create registeredParents.make
+					sysDsc.setAny (currentContextUnit)
+					--create registeredParents.make
 				else
 					-- Look for Any and ensure is it valid
 					unitDclDsc := sysDsc.lookForUnitAny
@@ -3925,12 +3985,15 @@ feature {Any}
 							o.putNL ("Error: `" + fullUnitName + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
 							Result := True
 						end -- if
-						create registeredParents.fill (<<unitDclDsc>>)
+						create parentContextUnit.init (unitDclDsc)
+						parentContextUnit := sysDsc.matrix.add_it (parentContextUnit)
+						currentContextUnit.addParent (parentContextUnit)
+						--create registeredParents.fill (<<unitDclDsc>>)
 					end -- if
 				end -- if
 			else
 				from
-					create tmpArray.make (1, n)
+					--create tmpArray.make (1, n)
 					i := 1
 				until
 					i > n
@@ -3954,14 +4017,16 @@ feature {Any}
 							o.putNL ("Error: `" + fullUnitName + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
 							Result := True
 						end -- if
-						tmpArray.put (unitDclDsc, i)
+						create parentContextUnit.init (unitDclDsc)
+						parentContextUnit := sysDsc.matrix.add_it (parentContextUnit)
+						currentContextUnit.addParent (parentContextUnit)
+						--tmpArray.put (unitDclDsc, i)
 					end -- if
-					tmpArray.put (unitDclDsc, i)
 					i := i + 1
 				end -- loop
-				if not Result then
-					create registeredParents.fill (tmpArray)
-				end -- if
+				--if not Result then
+				--	create registeredParents.fill (tmpArray)
+				--end -- if
 			end -- if
 
 			n := usage.count
@@ -4073,7 +4138,7 @@ feature {Any}
 			end -- if
 			
 			debug
-				o.putNL (" <Info: unit `" + fullUnitName + "` interface validation done")
+				--o.putNL (" <Info: unit `" + fullUnitName + "` interface validation done")
 			end
 			isValidated := True
 			isValidating := False
@@ -4607,7 +4672,7 @@ feature {Any}
 	out: String is
 	do
 		Result:= parent.out
-		Result.append_string (".")
+		Result.append_character ('.')
 		Result.append_string (memberName)
 		if signature /= Void then
 			Result.append_string (signature.out)
@@ -4766,6 +4831,14 @@ feature {Any}
 			Result.append_string ("final ")
 		end -- if
 	end -- out
+	fullMemberName: String is
+	do
+		Result := ""
+		if isOverriding then
+			Result.append_string ("override ")
+		end -- if
+		Result.append_string (name)
+	end -- fullMemberName
 	
 	cutImplementation is
 	deferred

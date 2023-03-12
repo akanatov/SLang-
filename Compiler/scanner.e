@@ -882,7 +882,7 @@ feature {Any}
 					ch
 				when ';' then
 					if returnSemicolon then
-						setToken (semicolon_token)
+						setToken (semicolon_token) 
 						returnSemicolon := False
 					else
 						setTokenNoRead (eof_token)
