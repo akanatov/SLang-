@@ -11,6 +11,17 @@ feature
 	unitDsc: ContextTypeDescriptor -- UnitDeclarationDescriptor
 	parents: Sorted_Array [like Current]
 	children:  Sorted_Array [like Current]
+
+	isVirtual: Boolean is
+	do
+		Result := unitDsc.getUnitDeclaration.isVirtual
+	end	-- isVirtual
+	
+	isTemplate: Boolean is
+	do
+		Result := unitDsc.isTemplate
+	end -- isTemplate
+
 	out: String is
 	local
 		index: Integer
@@ -112,9 +123,9 @@ feature
 	end -- infix "<"
 	setID(an_id: Integer) is
 	require
-		valid_id: an_id >= 0	
+		valid_id: an_id >= -1	
 	do
-		id :=an_id
+		id := an_id
 	end -- setID
 	addParent (parentUnit:like Current) is
 	require
@@ -141,7 +152,7 @@ feature {None}
 	idMode: Character is '#'
 	childrenMode: Character is 'C'
 invariant
-	valid_id: id >= 0
+	valid_id: id >= -1
 	non_void_unit: unitDsc /= Void
 	non_void_parents: parents /= Void
 	non_void_children: children /= Void

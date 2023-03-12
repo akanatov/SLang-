@@ -151,8 +151,12 @@ feature {Any}
 		i, n: Integer
 	do
 		if currentUnit.id = 0 then
-			currentUnit.setID(currentID.item)
-			currentID.set_item (currentID.item + 1)
+			if currentUnit.isVirtual or else currentUnit.isTemplate then
+				currentUnit.setID(-1)
+			else
+				currentUnit.setID(currentID.item)
+				currentID.set_item (currentID.item + 1)
+			end -- if
 			children := currentUnit.children
 			children.qsort -- resort children by the number of their children
 			from
@@ -3268,6 +3272,11 @@ feature {Any}
 		unitDclDsc := aType
 	end -- init
 
+	isTemplate: Boolean is
+	do
+		Result := unitDclDsc.isTemplate
+	end -- 	isTemplate
+
 	sameAs (other: like Current) : Boolean is
 	do
 		Result := aliasName.is_equal (other.aliasName)
@@ -3298,9 +3307,6 @@ feature {Any}
 		end -- if
 	end -- is_invalid
 	
-invariant
-	--non_void_alias_name: aliasName /= Void
-	--non_void_actual_type: unitDclDsc /= Void
 end -- class UnitAliasDescriptor
 
 class InstantiationDescriptor
@@ -3314,6 +3320,11 @@ create
 feature {Any}
 	templateUnitDsc: UnitDeclarationDescriptor
 	instantiationDsc: UnitTypeCommonDescriptor
+
+	isTemplate: Boolean is
+	do
+		Result := instantiationDsc.isTemplate
+	end -- 	isTemplate
 
 	init (instantiation: like instantiationDsc; template: like templateUnitDsc) is
 	require
@@ -3403,6 +3414,9 @@ feature
 	ensure
 		unit_declaration_npt_void: Result /= Void
 	end -- fullUnitName
+	isTemplate: Boolean is
+	deferred 
+	end -- isTemplate
 end -- class ContextTypeDescriptor
 
 class UnitDeclarationDescriptor
@@ -3620,6 +3634,11 @@ feature {Any}
 		end -- loop
 		create invariantPredicates.make (1, 0)
 	end -- cutImplementation
+
+	isTemplate: Boolean is
+	do
+		Result := formalGenerics.count > 0
+	end -- isTemplate
 
 	fullUnitName: String is
 	local
@@ -10658,9 +10677,9 @@ feature
 	isType: Boolean is
 	deferred
 	end -- isType
-	isRoutine: Boolean is do end
-	isTuple: Boolean is do end
-
+	isRoutine: Boolean is do end -- isRoutine
+	isTuple: Boolean is do end -- isTuple
+	isGeneric: Boolean is do end -- isGeneric
 end -- class TypeOrExpressionDescriptor
 
 deferred class TypeDescriptor
@@ -10737,12 +10756,11 @@ feature {Any}
 
 end -- class TypeDescriptor
 
-
 class AliasedTypeDescriptor
 inherit
 	TypeDescriptor
 		redefine
-			aliasName
+			aliasName, isGeneric
 	end
 create
 	init, make
@@ -10763,6 +10781,11 @@ feature {Any}
 	do
 		aliasName := aName
 	end -- make
+	isGeneric: Boolean is
+	do
+		Result := actualType.isGeneric
+	end -- isGeneric
+
 	out: String is
 	do
 		Result := aliasName + " alias for " + actualType.out
@@ -11531,6 +11554,8 @@ class MultiTypeDescriptor
 -- UnitTypeDescriptor {"|" UnitTypeDescriptor} 
 inherit
 	AttachedTypeDescriptor
+		redefine
+			isGeneric
 	end
 create
 	init
@@ -11543,6 +11568,24 @@ feature {Any}
 	do
 		types := t
 	end -- init
+	isGeneric: Boolean is
+	local
+		index: Integer
+	do
+		from
+			index := types.count
+		until
+			index = 0
+		loop
+			if types.item(index).isGeneric then
+				Result := True
+				index := 0
+			else
+				index := index - 1
+			end -- if
+		end -- loop
+	end -- isGeneric
+
 	getExternalName: String is
 	local
 		i, n: Integer
@@ -11660,6 +11703,8 @@ class DetachableTypeDescriptor
 -- "?" AttachedTypeDescriptor
 inherit
 	TypeDescriptor
+		redefine
+			isGeneric
 	end
 create
 	init
@@ -11671,6 +11716,11 @@ feature {Any}
 	do
 		type := t
 	end -- init
+	isGeneric: Boolean is
+	do
+		Result := type.isGeneric
+	end -- isGeneric
+
 	out: String is
 	do
 		result := "?" + type.out
@@ -11714,7 +11764,7 @@ class TupleTypeDescriptor
 inherit
 	AttachedTypeDescriptor
 		redefine
-			isTuple
+			isTuple, isGeneric
 	end
 create
 	init --, fill
@@ -11724,6 +11774,24 @@ feature {Any}
 	do
 		Result := True
 	end -- isTuple
+
+	isGeneric: Boolean is
+	local
+		index : Integer
+	do
+		from
+			index := fields.count
+		until
+			index = 0
+		loop
+			if fields.item (index).isGeneric then
+				Result := True
+				index := 0
+			else
+				index := index - 1
+			end -- if
+		end -- loop
+	end -- isGeneric
 
 	--fill (f: like fields) is
 	--do
@@ -11878,6 +11946,10 @@ feature
 			Result := True
 		end -- if
 	end -- checkValidity
+	isGeneric: Boolean is
+	do
+		Result := type.isGeneric
+	end -- isGeneric
 invariant
 	non_void_type: type /= Void
 end -- class TupleFieldDescriptor
@@ -12053,12 +12125,33 @@ deferred class UnitTypeCommonDescriptor
 inherit
 	NamedTypeDescriptor
 		redefine
-			unitDeclaration, isNotLoaded
+			unitDeclaration, isNotLoaded, isGeneric
 	end
 	--TupleFieldDescriptor
 	--end
 feature {Any}
 	generics: Array [TypeOrExpressionDescriptor]
+
+	isTemplate, isGeneric : Boolean is
+	local
+		index: Integer
+	do
+		index := generics.count
+		if index > 0 then
+			from
+			until
+				index = 0
+			loop
+				if generics.item (index).isGeneric then
+					Result := True
+					index := 0
+				else
+					index := index - 1
+				end -- if
+			end -- loop
+		end -- if
+	end -- isTemplate
+
 	setNameAndGenerics (aName: like name; g: like generics) is
 	require	
 		non_void_unit_type_name: aName /= Void
