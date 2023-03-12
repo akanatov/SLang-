@@ -121,14 +121,14 @@ feature {Any}
 				from
 					i := 1
 					n := matrix.count
-					o.putNL (">>>> Context has `" + n.out + "` units")
+					o.putNL (">>>> Incidence matrix has `" + n.out + "` units")
 				until
-					i = n
+					i > n
 				loop
 					o.putNL (matrix.item (i).out)				
 					i := i + 1
 				end -- loop
-				o.putNL ("<<<< End of context")
+				o.putNL ("<<<< End of matrix")
 			--end -- debug
 		end -- if
 	end -- allUnitInterfacesAreValid
@@ -180,6 +180,7 @@ feature {Any}
 		i, n: Integer
 		unitDclDsc: UnitDeclarationDescriptor
 		unitAliasDsc: UnitAliasDescriptor
+		instantiationDsc: InstantiationDescriptor
 		cntTypDsc: ContextTypeDescriptor
 	do
 		from
@@ -199,10 +200,15 @@ feature {Any}
 				end -- if
 			else
 				unitAliasDsc ?= cntTypDsc
-				check
-					unkown_object_in_the_context: unitAliasDsc /= Void
-				end -- check
-				o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+				if unitAliasDsc /= Void then
+					o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+				else
+					instantiationDsc ?= cntTypDsc
+					check
+						unkown_object_in_the_context: instantiationDsc /= Void
+					end -- check
+					o.putNL ("%T#" + i.out + " Instantiation: " + instantiationDsc.name + " for template " + instantiationDsc.templateUnitDsc.fullUnitName)
+				end -- if
 			end -- if
 			i := i + 1
 		end -- loop						
@@ -664,7 +670,8 @@ feature {Any}
 		srcFileTime: Real
 		tagFileTime: Real
 		fName: String
-		sName: String		
+		sName: String	
+		irFolder: String
 		tsfName: String
 		ext: String
 		slangFileCount: Integer
@@ -676,7 +683,8 @@ feature {Any}
 		o.putLine ("Checking sources actuality at `" + path + "`")
 		from
 			files := safe_file_list (path)
-			markerFiles := readMarkers (path + fs.separator + IRfolderName)
+			irFolder := path + fs.separator + IRfolderName
+			markerFiles := readMarkers (irFolder)
 			markerCount := markerFiles.count
 			i := 1
 			n := files.count
@@ -755,7 +763,8 @@ feature {Any}
 					inspect 
 						parser.errorsCount
 					when 0 then
-						if fs.folderExists (IRfolderName) or else fs.folderCreated (IRfolderName) then
+						if fs.folderExists (irFolder) or else fs.folderCreated (irFolder) then
+							sName := fs.getFileName(fName)
 							saveErrCount := parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, ASText, o, Void)
 							parser.ast.cutImplementation
 							saveErrCount := saveErrCount + parser.ast.saveInternalRepresentation (fName, scanner.timeStamp, sName, INText, o, Void)
@@ -776,7 +785,7 @@ feature {Any}
 							end -- if
 						else
 							o.putLine (
-								"Failed to create folder `" + IRfolderName + 
+								"Failed to create folder `" + irFolder + 
 								"` to store internal files. Parsing results of file `" + fName + "` are not saved!"
 							)
 							Result := True
@@ -3266,6 +3275,62 @@ invariant
 	--non_void_alias_name: aliasName /= Void
 	--non_void_actual_type: unitDclDsc /= Void
 end -- class UnitAliasDescriptor
+
+class InstantiationDescriptor
+inherit
+	ContextTypeDescriptor
+	end
+create
+	init
+feature {Any}
+	templateUnitDsc: UnitDeclarationDescriptor
+	instantiationDsc: UnitTypeCommonDescriptor
+
+	init (instantiation: like instantiationDsc; template: like templateUnitDsc) is
+	require
+		non_void_instantiation: instantiation /= Void
+		non_void_template: template /= Void
+	do
+		templateUnitDsc  := template
+		instantiationDsc := instantiation
+		name := instantiationDsc.out
+	end -- init
+	
+	sameAs (other: like Current) : Boolean is
+	do
+		Result := instantiationDsc.is_equal (other.instantiationDsc)
+	end -- sameAs
+	
+	lessThan (other: like Current) : Boolean is
+	do
+		Result := instantiationDsc < other.instantiationDsc
+	end -- lessThan
+
+	getUnitDeclaration: UnitDeclarationDescriptor is
+	do
+		Result := templateUnitDsc
+	end -- getUnitDeclaration
+
+	--getExternalName: String is
+	--do
+	--	Result := unitDclDsc.getExternalName
+	--end -- getExternalName
+	generationFailed(cg: CodeGenerator): Boolean is
+	do
+		-- do nothing so far
+	end -- generationFailed
+
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+		--if unitDclDsc.isInvalid (context, o) then
+		--	Result := True
+		--end -- if
+	end -- is_invalid
+	
+invariant
+	non_void_instantiation: instantiationDsc /= Void
+	non_void_template: templateUnitDsc /= Void
+end -- class InstantiationDescriptor
 
 deferred class ContextTypeDescriptor
 inherit
@@ -12027,6 +12092,7 @@ feature {Any}
 		unitDclDsc: UnitDeclarationDescriptor
 		aliasDsc: UnitAliasDescriptor
 		teDsc: TypeOrExpressionDescriptor
+		instDsc: InstantiationDescriptor
 		contextTypes: Sorted_Array [ContextTypeDescriptor]
 		loadedUnits: Array [ContextTypeDescriptor]
 		pos: Integer
@@ -12037,6 +12103,8 @@ feature {Any}
 		genericsCount := generics.count 
 		if genericsCount > 0 then
 			-- Current could be: A[Type] or A[constExpr] where constExpr can be some const Object or rtn Object
+
+-- The problem instantiation itself is not registered anyware !!!
 			
 			-- Check if such generic units were already loaded or not yet ...
 			-- Think how to speed up the scan !!!
@@ -12097,8 +12165,10 @@ feature {Any}
 				if genericUnits.count = 1 then
 					unitDeclaration := genericUnits.item (1).getUnitDeclaration
 					genericUnits := Void
+					create instDsc.init (Current, unitDeclaration)
+					instDsc ?= contextTypes.add_it (instDsc) -- XXX
 					debug
-						--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+						-- o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 					end -- debug
 					-- It is not instantiated !!! Should it be?
 					if not foundInPool then 
@@ -12135,6 +12205,8 @@ feature {Any}
 						when 1 then
 							unitDeclaration := genericUnits.item (1).getUnitDeclaration
 							genericUnits := Void
+							create instDsc.init (Current, unitDeclaration)
+							instDsc ?= contextTypes.add_it (instDsc) -- XXX
 							debug
 								--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 							end -- debug
@@ -12151,16 +12223,16 @@ feature {Any}
 					if genericUnits /= Void and then genericUnits.count > 1 then
 						unitDeclaration := Void
 						debug
-							--o.putNL ("Debug: more than one generic unit fits instantiation `" + out + "`")
-							--from
-							--	i := 1
-							--	n := genericUnits.count 
-							--until
-							--	i > n
-							--loop
-							--	o.putNL ("%TUnit `" + genericUnits.item(i).fullUnitName + "`")
-							--	i := i + 1
-							--end -- loop
+							o.putNL ("Debug: more than one generic unit template fits the instantiation `" + out + "`")
+							from
+								i := 1
+								n := genericUnits.count 
+							until
+								i > n
+							loop
+								o.putNL ("%TUnit `" + genericUnits.item(i).getUnitDeclaration.fullUnitName + "`")
+								i := i + 1
+							end -- loop
 						end -- debug
 					end -- if
 					debug

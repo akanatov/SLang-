@@ -65,7 +65,7 @@ feature {Any}
 	require
 		non_void_file_name: fName /= Void
 	local 
-		scriptDsc : CompilationUnitAnonymousRoutine
+		scriptCU : CompilationUnitAnonymousRoutine
 		sysDsc: SystemDescriptor
 		fullFileName: String
 		outputName: String
@@ -74,45 +74,51 @@ feature {Any}
 		if fs.folderExists (IRfolderName) then
 			outputName := fs.getFileName(fName)
 			-- Build the system			
-			create scriptDsc.make (Void)
+			create scriptCU.make (Void)
 			fullFileName := IRfolderName + fs.separator + "_" + outputName + ScriptSuffix + "." + ASText
-			if scriptDsc.AnonymousRoutineIR_Loaded (fullFileName, o) then
+			if scriptCU.AnonymousRoutineIR_Loaded (fullFileName, o) then
 				o.putNL ("Building a program from file `" + fName + "`")
 				-- 1. Build system description - where to look for units !!! 
 				create sysDsc.init_script (outputName, getAnonymousRoutineClusters, Void)
-				scriptDsc.attachSystemDescription (sysDsc)
-				-- 2.Load all units used
-				Result := failedToLoadRequiredTypes (sysDsc, scriptDsc.typePool)
-				debug
-					sysDsc.dumpContext (o)						
-				end -- debug
-				if not Result then
-					-- 3. Check project context validity
-					if sysDsc.allUnitInterfacesAreValid (o) then
-						-- If all required types loaded and validated
-						-- 4. Check validity of cuDsc.statements
-						Result := checkStatementsValidity (scriptDsc.statements, scriptDsc)
-					else
-						Result := True
-					end -- if
-				end -- if
-				
-				if Result then
-					o.putNL ("Info: code generation skipped due to errors found")
-				else
-					folderName := "_$" + outputName
-					if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
-						-- 5. Generate code for cuDsc.statements
-						Result := generationFailed (scriptDsc, folderName + fs.separator + outputName)
-						if not Result then
-							not_implemented_yet ("Building executable `" + sysDsc.name + "` from script `" + fname + "`%N")
-							-- 6.Check validity and code generation for used CUs
-							-- 7. Build executable
+				scriptCU.attachSystemDescription (sysDsc)
+				-- 1.1 Check that spources are actual
+				if sysDsc.sourcesActual (o) then
+					-- 2.Load all units used
+					Result := failedToLoadRequiredTypes (sysDsc, scriptCU.typePool)
+					debug
+						sysDsc.dumpContext (o)						
+					end -- debug
+					if not Result then
+						-- 3. Check project context validity
+						if sysDsc.allUnitInterfacesAreValid (o) then
+							-- If all required types loaded and validated
+							-- 4. Check validity of cuDsc.statements
+							Result := checkStatementsValidity (scriptCU.statements, scriptCU)
+						else
+							Result := True
 						end -- if
-					else
-						Result := True
-						o.putNL ("Error: project folder `" + folderName + "` cannot be created")
 					end -- if
+					
+					if Result then
+						o.putNL ("Info: code generation skipped due to errors found")
+					else
+						folderName := "_$" + outputName
+						if fs.folderExists (folderName) or else fs.folderCreated (folderName) then
+							-- 5. Generate code for cuDsc.statements
+							Result := generationFailed (scriptCU, folderName + fs.separator + outputName)
+							if not Result then
+								not_implemented_yet ("Building executable `" + sysDsc.name + "` from script `" + fname + "`%N")
+								-- 6.Check validity and code generation for used CUs
+								-- 7. Build executable
+							end -- if
+						else
+							Result := True
+							o.putNL ("Error: project folder `" + folderName + "` cannot be created")
+						end -- if
+					end -- if
+				else
+					Result := True
+					o.putNL ("Info: compilation aborted due to parser error")
 				end -- if
 			else
 				Result := True
@@ -394,7 +400,7 @@ feature {None}
 			loop
 				typeDsc := typesPool.item(i) 
 				debug
-					--o.putNL (">>> Checking if type `" + typeDsc.out + "` is loaded")
+					--o.putNL ("%T!!! Checking if type `" + typeDsc.out + "` was loaded")
 				end -- debug
 				if typeDsc.isNotLoaded (sysDsc, o) then
 					debug

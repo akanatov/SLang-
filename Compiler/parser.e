@@ -526,7 +526,9 @@ feature {None}
 		wasError: Boolean
 		src_pos: expanded SourcePosition		
 	do
--- trace (">>parseSystemDescription")
+		debug
+			-- trace (">>parseSystemDescription")
+		end -- debug
 		scanner.nextToken
 		inspect
 			scanner.token
@@ -539,7 +541,9 @@ feature {None}
 			wasError := True
 		end -- inspect
 		if not wasError then
--- trace ("%TparseSystemDescription: " + name)
+			debug
+				-- trace ("%TparseSystemDescription: " + name)
+			end -- debug
 			inspect
 				scanner.token
 			when scanner.from_token then
@@ -603,7 +607,9 @@ feature {None}
 				end -- if
 			end -- if
 		end -- if 
--- trace ("<<parseSystemDescription")
+		debug
+			-- trace ("<<parseSystemDescription")
+		end -- debug
 	end -- parseSystemDescription
 
 	addPathsToClusters (paths: Sorted_Array [String]; clusters: Sorted_Array [ClusterDescriptor]) is
@@ -5380,17 +5386,15 @@ end -- debug
 			value := scanner.tokenString.item (1)
 		when scanner.bit_const_token then
 			-- Require unit Bit [bitsCount]
-			--debug
-			--	print ('%N') print (scanner.tokenString) print ('%N')
-			--end 			
 			create utnDsc.init ("Integer", Void)
 			utnDsc ?= register_named_type (utnDsc)
 			check
 				type_regsitered: utnDsc /= Void
 			end -- check
+			-- Scanner buffer has just 0 and 1 in it
 			create intConstDsc.make (utnDsc, scanner.tokenString.count)
 			create utnDsc.init ("Bit", <<intConstDsc>>)
-			value := scanner.integer_value
+			value := scanner.integer_value -- bit const value is an integer value
 		when scanner.integer_const_token then
 			-- Require unit Integer
 			create utnDsc.init ("Integer", Void)
