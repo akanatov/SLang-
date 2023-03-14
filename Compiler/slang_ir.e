@@ -1697,7 +1697,7 @@ feature {None}
 	--		o.putLine ("Changed file `" + fName + "` not found or cannot be opened for parsing")
 	--	end -- if
 	--end -- fileParsedForUnit
-
+	
 	scanner: SLang_Scanner
 	init_pools (scn: like scanner) is
 	do
@@ -3379,12 +3379,51 @@ feature {Any}
 	hasInvalidInterface (sysDsc: SystemDescriptor; o: Output): Boolean is
 	local
 		currentContextUnit: ContextUnit
+
+		parentDsc: ParentDescriptor
+		unitDclDsc: UnitDeclarationDescriptor
+		parentContextUnit: ContextUnit
+		i, n: Integer	
 	do
 		if not templateUnitDsc.hasInvalidInterface (sysDsc, o) then
 			if parents = Void then
 				create currentContextUnit.init (Current)
 				currentContextUnit := sysDsc.matrix.add_it (currentContextUnit)
-				parents := templateUnitDsc.buildParents (instantiationDsc.generics)				
+				parents := templateUnitDsc.buildParents (sysDsc, instantiationDsc.generics, o)
+				
+				from
+					i := 1
+					n := parents.count
+				until
+					i > n
+				loop
+					parentDsc := parents.item (i)
+					unitDclDsc := sysDsc.lookForUnit (parentDsc.parent)
+					if unitDclDsc = Void then
+						-- Inconsistency !!! Parent is not found among loaded types !!!
+						o.putNL ("Error: unit `" + parentDsc.parent.out + "` is not loaded though it is a parent of `" + name + "` unit. Inconsistency detected")
+						Result := True
+					else
+						if not unitDclDsc.isValidated then
+							if unitDclDsc.isValidating then
+								o.putNL ("Error: inheritance graph cycle detected. Starting from unit `" + name + "` and reaching `" + unitDclDsc.fullUnitName + "`")
+								Result := True
+							elseif unitDclDsc.hasInvalidInterface (sysDsc, o) then
+								Result := True
+							end -- if
+						end -- if
+						if unitDclDsc.isFinal then
+							o.putNL ("Error: `" + name + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
+							Result := True
+						end -- if
+						create parentContextUnit.init (unitDclDsc)
+						parentContextUnit := sysDsc.matrix.add_it (parentContextUnit)
+						currentContextUnit.addParent (parentContextUnit)
+					end -- if
+					i := i + 1
+				end -- loop				
+				
+				
 			end -- if
 		else
 			debug
@@ -3549,16 +3588,23 @@ feature {Any}
 		end -- i f
 	end -- findParent
 
-	buildParents (factualGenerics: Array [TypeOrExpressionDescriptor]): Array [ParentDescriptor] is
+	buildParents (sysDsc: SystemDescriptor; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): Array [ParentDescriptor] is
+	require
+		non_void_factual_generics: factualGenerics /= Void
 	local
 		index: Integer
-		parentsCount: Integer
 	do
-		parentsCount := parents.count
-		--formalGenerics: Array [FormalGenericDescriptor]
-		--parents: Sorted_Array [ParentDescriptor]
-		create Result.make (1, parents.count)
-		-- XXX
+		from
+			index := parents.count
+			--formalGenerics: Array [FormalGenericDescriptor]
+			--parents: Sorted_Array [ParentDescriptor]
+			create Result.make (1, index)			
+		until
+			index = 0
+		loop
+			Result.put (parents.item(index).applyGenerics(sysDsc, formalGenerics, factualGenerics, o), index)
+			index := index - 1
+		end -- loop
 	ensure
 		valid_list_of_parents: Result /= Void
 		consistent_parents_any : parents.count = 0 implies Result.count = 1
@@ -4408,6 +4454,26 @@ feature {Any}
 		isNonConformant:= inc
 		parent:= p
 	end -- init
+	
+	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): ParentDescriptor is
+	require
+		non_void_factual_generics: factualGenerics /= Void
+		non_void_formal_generics: formalGenerics /= Void
+		consistent_generics: factualGenerics.count = formalGenerics.count
+	local
+		newParent: UnitTypeNameDescriptor
+	do
+		newParent ?= parent.applyGenerics (sysDsc, formalGenerics, factualGenerics, o)
+		check
+			parent_type_not_void: newParent /= Void
+		end -- check
+		if newParent = parent then	
+			Result := Current
+		else
+			create Result.init (isNonConformant, newParent)
+		end -- if
+	end -- if
+
 	is_equal (other: like Current): Boolean is
 	do
 		Result := parent.is_equal (other.parent)
@@ -4461,6 +4527,8 @@ class FormalGenericTypeNameDescriptor
 -- Identifier
 inherit
 	FormalGenericDescriptor
+		redefine
+			applyGenerics
 	end
 create
 	init
@@ -4483,10 +4551,37 @@ feature {Any}
 		name := n
 	end -- init
 
+	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
+	local
+		i, n: Integer
+	do
+		Result := Current
+		debug
+			o.putNL ("====> FormalGenericTypeNameDescriptor: " + out)
+		end -- debug
+		from
+			i := 1
+			n := formalGenerics.count
+		until
+			i > n
+		loop
+			if formalGenerics.item(i).is_equal (Current) then
+				debug
+					o.putNl("%Tformal: " + formalGenerics.item (i).out + " <- factual " + factualGenerics.item (i).out)
+				end -- debug
+				Result := factualGenerics.item (i)
+				i := n + 1
+			else
+				i := i + 1
+			end -- if
+		end -- loop
+	end -- applyGenerics
+
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		-- not_implemened_yet
 	end -- isInvalid
+
 	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
@@ -4507,6 +4602,8 @@ class FormalGenericTypeDescriptor
 -- Identifier ["extend" Type ] ["new" [Signature]]
 inherit
 	FormalGenericDescriptor
+		redefine
+			applyGenerics
 	end
 create
 	init
@@ -4542,6 +4639,32 @@ feature {Any}
 		--end -- if
 		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
+
+	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
+	local
+		i, n: Integer
+	do
+		Result := Current
+		debug
+			o.putNL ("====> FormalGenericTypeDescriptor: " + out)
+		end -- debug
+		from
+			i := 1
+			n := formalGenerics.count
+		until
+			i > n
+		loop
+			if formalGenerics.item(i).is_equal (Current) then
+				debug
+					o.putNl("%Tformal: " + formalGenerics.item (i).out + " <- factual " + factualGenerics.item (i).out)
+				end -- debug
+				Result := factualGenerics.item (i)
+				i := n + 1
+			else
+				i := i + 1
+			end -- if
+		end -- loop
+	end -- applyGenerics
 	
 	init (n: like name; tc: like typeConstraint; ic: like initConstraint) is
 	require
@@ -4585,7 +4708,7 @@ class FormalGenericConstantDescriptor
 inherit
 	FormalGenericDescriptor
 		redefine	
-			isType, isRoutine, isTuple
+			isType, isRoutine, isTuple, applyGenerics
 	end
 create
 	init
@@ -4609,6 +4732,31 @@ feature {Any}
 	do
 		Result := type.isTuple
 	end -- isTuple
+	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
+	local
+		i, n: Integer
+	do
+		Result := Current
+		debug
+			o.putNL ("====> FormalGenericConstantDescriptor: " + out)
+		end -- debug
+		from
+			i := 1
+			n := formalGenerics.count
+		until
+			i > n
+		loop
+			if formalGenerics.item(i).is_equal (Current) then
+				debug
+					o.putNl("%Tformal: " + formalGenerics.item (i).out + " <- factual " + factualGenerics.item (i).out)
+				end -- debug
+				Result := factualGenerics.item (i)
+				i := n + 1
+			else
+				i := i + 1
+			end -- if
+		end -- loop
+	end -- applyGenerics
 
 	init (aName: String; ut: like type) is
 	require
@@ -5370,7 +5518,11 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			Result.append_string (getIdent + "end // " + name + "%N")	
+			if name.is_equal ("<>") then
+				Result.append_string (getIdent + "end%N")
+			else
+				Result.append_string (getIdent + "end // " + name + "%N")
+			end -- if
 		end -- if
 	end -- out
 	cutImplementation is
@@ -10699,6 +10851,14 @@ feature
 	isRoutine: Boolean is do end -- isRoutine
 	isTuple: Boolean is do end -- isTuple
 	isGeneric: Boolean is do end -- isGeneric
+	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
+	require
+		non_void_factual_generics: factualGenerics /= Void
+		non_void_formal_generics: formalGenerics /= Void
+		consistent_generics: factualGenerics.count = formalGenerics.count
+	do
+		Result := Current
+	end -- applyGenerics
 end -- class TypeOrExpressionDescriptor
 
 deferred class TypeDescriptor
@@ -11587,6 +11747,7 @@ feature {Any}
 	do
 		types := t
 	end -- init
+
 	isGeneric: Boolean is
 	local
 		index: Integer
@@ -12714,9 +12875,53 @@ inherit
 			setNameAndGenerics as init,
 			sameNameAndGenerics as sameAs,
 			lessNameAndGenerics as lessThan
+		redefine
+			applyGenerics
 	end
 create
 	init
+feature
+	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
+	local
+		index: Integer
+		newGenerics: like generics
+			--generics: Array [TypeOrExpressionDescriptor]
+		newTypeOrExpr: TypeOrExpressionDescriptor
+		hasInstantiated: Boolean
+		utnDsc: UnitTypeNameDescriptor
+	do
+		index := generics.count
+		if index = 0 then
+			Result := Current
+		else
+			debug 
+				o.putNL ("===> Applying generics to `" + out + "`")
+			end -- debug
+			from
+				create newGenerics.make (1, index)
+			until
+				index = 0
+			loop
+				newTypeOrExpr := generics.item (index).applyGenerics (sysDsc, formalGenerics, factualGenerics, o)
+				if newTypeOrExpr /= generics.item (index) then
+					hasInstantiated := True
+				end -- if
+				newGenerics.put (newTypeOrExpr, index)
+				index := index - 1
+			end -- loop
+			if hasInstantiated then
+				create utnDsc.init (name, newGenerics)
+				if utnDsc.isNotLoaded (sysDsc, o) then
+					debug 
+						o.putNL ("Error: Failed to load `" + utnDsc.out + "`")
+					end -- debug
+				end -- if
+				Result := utnDsc
+			else
+				Result := Current
+			end -- if
+		end -- if
+	end -- applyGenerics
 end -- class UnitTypeNameDescriptor
 
 -----------------------------------------------------------------

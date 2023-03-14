@@ -28,7 +28,7 @@ feature
 		inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]
 		unitMembers: Sorted_Array [MemberDeclarationDescriptor]	
 	do
-		Result := "%T#:" + id.out + " unit `" + unitDsc.fullUnitName + "`"
+		Result := "%T#" + id.out + " - `" + unitDsc.fullUnitName + "`"
 		index := parents.count
 		if index > 0 then
 			from
