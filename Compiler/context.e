@@ -8,19 +8,24 @@ creation
 	init
 feature
 	id: Integer
-	unitDsc: ContextTypeDescriptor -- UnitDeclarationDescriptor
+	contextTypeDsc: ContextTypeDescriptor -- UnitDeclarationDescriptor
 	parents: Sorted_Array [like Current]
 	children:  Sorted_Array [like Current]
 
 	isVirtual: Boolean is
 	do
-		Result := unitDsc.getUnitDeclaration.isVirtual
+		Result := contextTypeDsc.getUnitDeclaration.isVirtual
 	end	-- isVirtual
 	
 	isTemplate: Boolean is
 	do
-		Result := unitDsc.isTemplate
+		Result := contextTypeDsc.isTemplate
 	end -- isTemplate
+	
+	isGeneric: Boolean is
+	do
+		Result := contextTypeDsc.isGeneric
+	end -- isGeneric
 
 	out: String is
 	local
@@ -28,7 +33,7 @@ feature
 		inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]
 		unitMembers: Sorted_Array [MemberDeclarationDescriptor]	
 	do
-		Result := "%T#" + id.out + " - `" + unitDsc.fullUnitName + "`"
+		Result := "%T#" + id.out + " - `" + contextTypeDsc.fullUnitName + "`"
 		index := parents.count
 		if index > 0 then
 			from
@@ -37,7 +42,7 @@ feature
 				index = 0
 			loop
 				Result.append_character (' ')
-				Result.append_string (parents.item(index).unitDsc.fullUnitName)
+				Result.append_string (parents.item(index).contextTypeDsc.fullUnitName)
 				index := index - 1
 			end -- loop
 			Result.append_character (';')
@@ -49,7 +54,7 @@ feature
 			until
 				index = 0
 			loop
-				Result.append_string (children.item(index).unitDsc.fullUnitName + "/" + children.item(index).children.count.out)
+				Result.append_string (children.item(index).contextTypeDsc.fullUnitName + "/" + children.item(index).children.count.out)
 				index := index - 1
 				if index /= 0 then
 					Result.append_character (',')
@@ -57,7 +62,7 @@ feature
 			end -- loop	
 			Result.append_character (';')
 		end -- if
-		inheritedOverrides := unitDsc.getUnitDeclaration.inheritedOverrides
+		inheritedOverrides := contextTypeDsc.getUnitDeclaration.inheritedOverrides
 		index := inheritedOverrides.count
 		if index > 0 then
 			from
@@ -72,7 +77,7 @@ feature
 				end -- if
 			end -- loop	
 		end -- if
-		unitMembers := unitDsc.getUnitDeclaration.unitMembers
+		unitMembers := contextTypeDsc.getUnitDeclaration.unitMembers
 		index := unitMembers.count
 		if index > 0 then
 			from
@@ -86,6 +91,7 @@ feature
 			end -- loop	
 		end -- if
 	end -- out
+	
 	setSortByChildrenCount is
 	do
 		sortMode.setMode (childrenMode)
@@ -99,7 +105,7 @@ feature
 		inspect 
 			sortMode.mode
 		when defaultMode then
-			Result := unitDsc.is_equal (other.unitDsc)
+			Result := contextTypeDsc.is_equal (other.contextTypeDsc)
 		when idMode then
 			Result := id = other.id
 		when childrenMode then
@@ -111,7 +117,7 @@ feature
 		inspect 
 			sortMode.mode
 		when defaultMode then
-			Result := unitDsc < other.unitDsc
+			Result := contextTypeDsc < other.contextTypeDsc
 		when idMode then
 			Result := id < other.id
 		when childrenMode then
@@ -139,11 +145,11 @@ feature {None}
 	once
 		create Result
 	end -- sortMode
-	init (unit:like unitDsc) is
+	init (unit: like contextTypeDsc) is
 	require
 		non_void_unit: unit /= Void
 	do
-		unitDsc := unit
+		contextTypeDsc := unit
 		create parents.make
 		create children.make
 		sortMode.setMode(defaultMode)
@@ -153,7 +159,7 @@ feature {None}
 	childrenMode: Character is 'C'
 invariant
 	valid_id: id >= -1
-	non_void_unit: unitDsc /= Void
+	non_void_context_type: contextTypeDsc /= Void
 	non_void_parents: parents /= Void
 	non_void_children: children /= Void
 end -- class ContextUnit

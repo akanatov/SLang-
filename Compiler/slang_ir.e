@@ -126,7 +126,7 @@ feature {Any}
 			assignID (anyDsc, currentID)			
 			anyDsc.setSortByID
 			matrix.qsort
-			--debug
+			debug
 				from
 					i := 1
 					n := matrix.count
@@ -138,7 +138,7 @@ feature {Any}
 					i := i + 1
 				end -- loop
 				o.putNL ("<<<< End of matrix")
-			--end -- debug
+			end -- debug
 		end -- if
 	end -- allUnitInterfacesAreValid
 
@@ -151,7 +151,7 @@ feature {Any}
 		i, n: Integer
 	do
 		if currentUnit.id = 0 then
-			if currentUnit.isVirtual or else currentUnit.isTemplate then
+			if currentUnit.isVirtual or else currentUnit.isTemplate or else currentUnit.isGeneric then
 				currentUnit.setID(-1) -- No objects of this type 
 			else
 				currentUnit.setID(currentID.item)
@@ -3272,6 +3272,12 @@ feature {Any}
 		Result := unitDclDsc.isTemplate
 	end -- 	isTemplate
 
+	isGeneric: Boolean is
+	do
+		Result := unitDclDsc.isGeneric
+	end -- isGeneric	
+
+
 	sameAs (other: like Current) : Boolean is
 	do
 		Result := aliasName.is_equal (other.aliasName)
@@ -3321,6 +3327,11 @@ feature {Any}
 		-- 	generics: Array [TypeOrExpressionDescriptor]
 
 	parents: Array [ParentDescriptor]	
+
+	isGeneric: Boolean is
+	do
+		Result := instantiationDsc.isGeneric
+	end -- isGeneric	
 
 	isTemplate: Boolean is
 	do
@@ -3421,9 +3432,7 @@ feature {Any}
 						currentContextUnit.addParent (parentContextUnit)
 					end -- if
 					i := i + 1
-				end -- loop				
-				
-				
+				end -- loop
 			end -- if
 		else
 			debug
@@ -3466,6 +3475,9 @@ feature
 	isTemplate: Boolean is
 	deferred 
 	end -- isTemplate
+	isGeneric: Boolean is
+	deferred 
+	end -- isGeneric	
 end -- class ContextTypeDescriptor
 
 class UnitDeclarationDescriptor
@@ -3511,6 +3523,12 @@ feature {Any}
 	do
 		Result := Current
 	end -- getUnitDeclaration
+
+	isGeneric: Boolean is
+	do
+		Result := formalGenerics.count > 0
+	end -- isGeneric	
+
 
 	-- I do not remember why did I need this function :-)
 	--getUnitTypeDescriptor: UnitTypeCommonDescriptor is
@@ -3607,8 +3625,9 @@ feature {Any}
 		end -- loop
 	ensure
 		valid_list_of_parents: Result /= Void
-		consistent_parents_any : parents.count = 0 implies Result.count = 1
-		consistent_parents_other : parents.count > 0 implies Result.count = parents.count
+		consistent_parents: Result.count = parents.count
+		-- consistent_parents_any : parents.count = 0 implies Result.count = 1
+		-- consistent_parents_other : parents.count > 0 implies Result.count = parents.count
 	end -- buildParents		
 
 	usage: Sorted_Array [EnclosedUseEementDescriptor]
@@ -4507,8 +4526,11 @@ inherit
 			getExternalName as uselessGetExternalName
 		export
 			{None} uselessGetExternalName
+		redefine
+			isGeneric, applyGenerics
 	end 
 feature {Any}
+
 	getExternalName (pos: Integer): String is
 	require
 		valid_formal_generic_position: pos > 0
@@ -4516,9 +4538,37 @@ feature {Any}
 	ensure
 		external_name_not_void: Result /= Void
 	end -- getExternalName
+	
 	uselessGetExternalName: String is
 	do
 	end -- uselessGetExternalName
+
+	isGeneric: Boolean is True
+
+	
+	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
+	local
+		i, n: Integer
+	do
+		Result := Current
+		from
+			i := 1
+			n := formalGenerics.count
+		until
+			i > n
+		loop
+			if formalGenerics.item(i).is_equal (Current) then
+				debug
+					o.putNL("formal: " + formalGenerics.item (i).out + " <- factual " + factualGenerics.item (i).out)
+				end -- debug
+				Result := factualGenerics.item (i)
+				i := n + 1
+			else
+				i := i + 1
+			end -- if
+		end -- loop
+	end -- applyGenerics
+
 invariant
 	name_not_void: name /= Void
 end -- class FormalGenericDescriptor
@@ -4527,8 +4577,6 @@ class FormalGenericTypeNameDescriptor
 -- Identifier
 inherit
 	FormalGenericDescriptor
-		redefine
-			applyGenerics
 	end
 create
 	init
@@ -4550,32 +4598,6 @@ feature {Any}
 	do
 		name := n
 	end -- init
-
-	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
-	local
-		i, n: Integer
-	do
-		Result := Current
-		debug
-			o.putNL ("====> FormalGenericTypeNameDescriptor: " + out)
-		end -- debug
-		from
-			i := 1
-			n := formalGenerics.count
-		until
-			i > n
-		loop
-			if formalGenerics.item(i).is_equal (Current) then
-				debug
-					o.putNl("%Tformal: " + formalGenerics.item (i).out + " <- factual " + factualGenerics.item (i).out)
-				end -- debug
-				Result := factualGenerics.item (i)
-				i := n + 1
-			else
-				i := i + 1
-			end -- if
-		end -- loop
-	end -- applyGenerics
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -4602,8 +4624,6 @@ class FormalGenericTypeDescriptor
 -- Identifier ["extend" Type ] ["new" [Signature]]
 inherit
 	FormalGenericDescriptor
-		redefine
-			applyGenerics
 	end
 create
 	init
@@ -4639,32 +4659,6 @@ feature {Any}
 		--end -- if
 		--Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
-
-	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
-	local
-		i, n: Integer
-	do
-		Result := Current
-		debug
-			o.putNL ("====> FormalGenericTypeDescriptor: " + out)
-		end -- debug
-		from
-			i := 1
-			n := formalGenerics.count
-		until
-			i > n
-		loop
-			if formalGenerics.item(i).is_equal (Current) then
-				debug
-					o.putNl("%Tformal: " + formalGenerics.item (i).out + " <- factual " + factualGenerics.item (i).out)
-				end -- debug
-				Result := factualGenerics.item (i)
-				i := n + 1
-			else
-				i := i + 1
-			end -- if
-		end -- loop
-	end -- applyGenerics
 	
 	init (n: like name; tc: like typeConstraint; ic: like initConstraint) is
 	require
@@ -4708,7 +4702,7 @@ class FormalGenericConstantDescriptor
 inherit
 	FormalGenericDescriptor
 		redefine	
-			isType, isRoutine, isTuple, applyGenerics
+			isType, isRoutine, isTuple
 	end
 create
 	init
@@ -4732,31 +4726,6 @@ feature {Any}
 	do
 		Result := type.isTuple
 	end -- isTuple
-	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
-	local
-		i, n: Integer
-	do
-		Result := Current
-		debug
-			o.putNL ("====> FormalGenericConstantDescriptor: " + out)
-		end -- debug
-		from
-			i := 1
-			n := formalGenerics.count
-		until
-			i > n
-		loop
-			if formalGenerics.item(i).is_equal (Current) then
-				debug
-					o.putNl("%Tformal: " + formalGenerics.item (i).out + " <- factual " + factualGenerics.item (i).out)
-				end -- debug
-				Result := factualGenerics.item (i)
-				i := n + 1
-			else
-				i := i + 1
-			end -- if
-		end -- loop
-	end -- applyGenerics
 
 	init (aName: String; ut: like type) is
 	require
@@ -4766,12 +4735,14 @@ feature {Any}
 		name := aName
 		type := ut
 	end -- init
+
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 		if type.isInvalid (context, o) then
 			Result := True
 		end -- if		
 	end -- isInvalid
+
 	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
@@ -12886,6 +12857,7 @@ feature
 		index: Integer
 		newGenerics: like generics
 			--generics: Array [TypeOrExpressionDescriptor]
+		oldTypeOrExpr: TypeOrExpressionDescriptor
 		newTypeOrExpr: TypeOrExpressionDescriptor
 		hasInstantiated: Boolean
 		utnDsc: UnitTypeNameDescriptor
@@ -12902,8 +12874,9 @@ feature
 			until
 				index = 0
 			loop
-				newTypeOrExpr := generics.item (index).applyGenerics (sysDsc, formalGenerics, factualGenerics, o)
-				if newTypeOrExpr /= generics.item (index) then
+				oldTypeOrExpr := generics.item (index)
+				newTypeOrExpr := oldTypeOrExpr.applyGenerics (sysDsc, formalGenerics, factualGenerics, o)
+				if newTypeOrExpr /= oldTypeOrExpr then
 					hasInstantiated := True
 				end -- if
 				newGenerics.put (newTypeOrExpr, index)
