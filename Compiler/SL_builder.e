@@ -537,6 +537,7 @@ feature {None}
 		fileName: String
 		cuUnitDsc: CompilationUnitUnit
 		rtnDsc: CompilationUnitStandaloneRoutine
+		unitAliasDsc: UnitAliasDescriptor
 		index: Integer
 	do
 		ir_path := path + fs.separator + IRfolderName
@@ -552,22 +553,35 @@ feature {None}
 			loop
 				fileDsc := ast_files.item (index)
 				fileName := fileDsc.name
-				if fileName.has_substring (UnitSuffix) and then not fileName.has_substring (AliasPrefix) then
-					-- That is unit but not alias IR file
-					create cuUnitDsc.init (sysDsc)
-					if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
-						debug
-							--trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (index).path + "`")
-						end -- debug
-						-- Register unit in the context
-						sysDsc.registerLoadedUnit (cuUnitDsc.unitDclDsc)
-						-- Load all types it uses
-						if failedToLoadRequiredTypes (sysDsc, cuUnitDsc.typePool) then
-							Result :=  True
-						end -- if
+				if fileName.has_substring (UnitSuffix) then
+					if fileName.has_substring (AliasPrefix) then
 					else
-						Result := True
-					end -- if				
+						-- That is unit but not alias IR file
+						create cuUnitDsc.init (sysDsc)
+						if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
+							debug
+								--trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (index).path + "`")
+							end -- debug
+							-- Register unit in the context
+							sysDsc.registerLoadedUnit (cuUnitDsc.unitDclDsc)
+							
+							if cuUnitDsc.unitDclDsc.aliasName /= Void then				
+								-- We need to process alias as well !!! To have it registered !!!  XXX
+								create unitAliasDsc.init (cuUnitDsc.unitDclDsc.aliasName, cuUnitDsc.unitDclDsc)
+								unitAliasDsc ?= sysDsc.allUnits.add_it (unitAliasDsc)
+								check
+									aliad_registered: unitAliasDsc /= Void
+								end -- check
+							end -- if
+							
+							-- Load all types it uses
+							if failedToLoadRequiredTypes (sysDsc, cuUnitDsc.typePool) then
+								Result :=  True
+							end -- if
+						else
+							Result := True
+						end -- if				
+					end -- if
 				elseif fileName.has_substring (RoutinesSuffix) then 
 					-- That is standalone routine IR file
 					create rtnDsc.init (sysDsc)

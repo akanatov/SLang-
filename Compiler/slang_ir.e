@@ -355,7 +355,8 @@ feature {Any}
 			-- check for alias
 			fileName := pathPrefix + IRfolderName + fs.separator + AliasPrefix + unitExternalName + UnitSuffix + "." + INText
 			if fs.file_exists (fileName) then
-				Result := loadCompilationUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
+				--Result := loadCompilationUnitViaAlias (fileName, pathPrefix, unitExternalName, o)
+				Result := loadCompilationUnitViaAlias (fileName, pathPrefix, o)
 			end -- if
 		end -- if
 	end -- loadUnitInterafceFrom	
@@ -378,7 +379,8 @@ feature {Any}
 		retry
 	end -- getActualFileName
 	
-	loadCompilationUnitViaAlias (fileName, pathPrefix, unitExternalName: String; o: Output): CompilationUnitUnit is
+	--loadCompilationUnitViaAlias (fileName, pathPrefix, unitExternalName: String; o: Output): CompilationUnitUnit is
+	loadCompilationUnitViaAlias (fileName, pathPrefix: String; o: Output): CompilationUnitUnit is
 	local
 		actualFileName: String
 		cuDsc: CompilationUnitUnit
@@ -392,9 +394,11 @@ feature {Any}
 				unitDclDsc ?= allUnits.add_it (cuDsc.unitDclDsc) -- register unit in the context
 				check
 					unit_registered: unitDclDsc /= Void
+					it_has_alias: unitDclDsc.aliasName /= Void
 				end -- check
 				cuDsc.setUnitDcl (unitDclDsc)
-				create unitAliasDsc.init (unitExternalName, unitDclDsc)
+				--create unitAliasDsc.init (unitExternalName, unitDclDsc)
+				create unitAliasDsc.init (unitDclDsc.aliasName, unitDclDsc)
 				allUnits.add (unitAliasDsc)
 				Result := cuDsc
 			end -- if
@@ -3334,140 +3338,140 @@ feature {Any}
 	
 end -- class UnitAliasDescriptor
 
-class InstantiationDescriptor
-inherit
-	ContextTypeDescriptor
-		rename
-			fullUnitName as name
-	end
-create
-	init, make_for_search
-feature {Any}
-	templateUnitDsc: UnitDeclarationDescriptor
-		--formalGenerics: Array [FormalGenericDescriptor]
-		--parents: Sorted_Array [ParentDescriptor]
-	instantiationDsc: UnitTypeCommonDescriptor
-		-- factual 
-		-- 	generics: Array [TypeOrExpressionDescriptor]
-
-	parents: Array [ParentDescriptor]	
-
-	isGeneric: Boolean is
-	do
-		Result := instantiationDsc.isGeneric
-	end -- isGeneric	
-
-	isTemplate: Boolean is
-	do
-		Result := instantiationDsc.isTemplate
-	end -- 	isTemplate
-
-	init (instantiation: like instantiationDsc; template: like templateUnitDsc) is
-	require
-		non_void_instantiation: instantiation /= Void
-		non_void_template: template /= Void
-	do
-		templateUnitDsc  := template
-		instantiationDsc := instantiation
-		name := instantiationDsc.out
-	end -- init
-	
-	make_for_search (instantiation: like instantiationDsc) is
-	require
-		non_void_instantiation: instantiation /= Void
-	do
-		instantiationDsc := instantiation
-		name := instantiationDsc.out
-	end -- make_for_search
-	
-	sameAs (other: like Current) : Boolean is
-	do
-		Result := instantiationDsc.is_equal (other.instantiationDsc)
-	end -- sameAs
-	
-	lessThan (other: like Current) : Boolean is
-	do
-		Result := instantiationDsc < other.instantiationDsc
-	end -- lessThan
-
-	getUnitDeclaration: UnitDeclarationDescriptor is
-	do
-		Result := templateUnitDsc
-	end -- getUnitDeclaration
-
-	--getExternalName: String is
-	--do
-	--	Result := unitDclDsc.getExternalName
-	--end -- getExternalName
-	generationFailed(cg: CodeGenerator): Boolean is
-	do
-		-- do nothing so far
-	end -- generationFailed
-
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	do
-		--if unitDclDsc.isInvalid (context, o) then
-		--	Result := True
-		--end -- if
-	end -- is_invalid
-
-	hasInvalidInterface (sysDsc: SystemDescriptor; o: Output): Boolean is
-	local
-		currentContextUnit: ContextUnit
-
-		parentDsc: ParentDescriptor
-		unitDclDsc: UnitDeclarationDescriptor
-		parentContextUnit: ContextUnit
-		i, n: Integer	
-	do
-		if not templateUnitDsc.hasInvalidInterface (sysDsc, o) then
-			if parents = Void then
-				create currentContextUnit.init (Current)
-				currentContextUnit := sysDsc.matrix.add_it (currentContextUnit)
-				parents := templateUnitDsc.buildParents (sysDsc, instantiationDsc.generics, o)
-				
-				from
-					i := 1
-					n := parents.count
-				until
-					i > n
-				loop
-					parentDsc := parents.item (i)
-					unitDclDsc := sysDsc.lookForUnit (parentDsc.parent)
-					if unitDclDsc = Void then
-						-- Inconsistency !!! Parent is not found among loaded types !!!
-						o.putNL ("Error: unit `" + parentDsc.parent.out + "` is not loaded though it is a parent of `" + name + "` unit. Inconsistency detected")
-						Result := True
-					else
-						if not unitDclDsc.isValidated then
-							if unitDclDsc.isValidating then
-								o.putNL ("Error: inheritance graph cycle detected. Starting from unit `" + name + "` and reaching `" + unitDclDsc.fullUnitName + "`")
-								Result := True
-							elseif unitDclDsc.hasInvalidInterface (sysDsc, o) then
-								Result := True
-							end -- if
-						end -- if
-						if unitDclDsc.isFinal then
-							o.putNL ("Error: `" + name + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
-							Result := True
-						end -- if
-						create parentContextUnit.init (unitDclDsc)
-						parentContextUnit := sysDsc.matrix.add_it (parentContextUnit)
-						currentContextUnit.addParent (parentContextUnit)
-					end -- if
-					i := i + 1
-				end -- loop
-			end -- if
-		else
-			debug
-				o.putNL ("Instantiation `" + name + "` has invalid template `" + templateUnitDsc.fullUnitName + "`")
-			end -- dedug
-		end -- if
-	end -- hasInvalidInterface
-	
-invariant
-	non_void_instantiation: instantiationDsc /= Void
-end -- class InstantiationDescriptor
+--class InstantiationDescriptor
+--inherit
+--	ContextTypeDescriptor
+--		rename
+--			fullUnitName as name
+--	end
+--create
+--	init, make_for_search
+--feature {Any}
+--	templateUnitDsc: UnitDeclarationDescriptor
+--		--formalGenerics: Array [FormalGenericDescriptor]
+--		--parents: Sorted_Array [ParentDescriptor]
+--	instantiationDsc: UnitTypeCommonDescriptor
+--		-- factual 
+--		-- 	generics: Array [TypeOrExpressionDescriptor]--
+--
+--	parents: Array [ParentDescriptor]	
+--
+--	isGeneric: Boolean is
+--	do
+--		Result := instantiationDsc.isGeneric
+--	end -- isGeneric	
+--
+--	isTemplate: Boolean is
+--	do
+--		Result := instantiationDsc.isTemplate
+--	end -- 	isTemplate
+--
+--	init (instantiation: like instantiationDsc; template: like templateUnitDsc) is
+--	require
+--		non_void_instantiation: instantiation /= Void
+--		non_void_template: template /= Void
+--	do
+--		templateUnitDsc  := template
+--		instantiationDsc := instantiation
+--		name := instantiationDsc.out
+--	end -- init
+--	
+--	make_for_search (instantiation: like instantiationDsc) is
+--	require
+--		non_void_instantiation: instantiation /= Void
+--	do
+--		instantiationDsc := instantiation
+--		name := instantiationDsc.out
+--	end -- make_for_search
+--	
+--	sameAs (other: like Current) : Boolean is
+--	do
+--		Result := instantiationDsc.is_equal (other.instantiationDsc)
+--	end -- sameAs
+--	
+--	lessThan (other: like Current) : Boolean is
+--	do
+--		Result := instantiationDsc < other.instantiationDsc
+--	end -- lessThan
+--
+--	getUnitDeclaration: UnitDeclarationDescriptor is
+--	do
+--		Result := templateUnitDsc
+--	end -- getUnitDeclaration
+--
+--	--getExternalName: String is
+--	--do
+--	--	Result := unitDclDsc.getExternalName
+--	--end -- getExternalName
+--	generationFailed(cg: CodeGenerator): Boolean is
+--	do
+--		-- do nothing so far
+--	end -- generationFailed
+--
+--	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+--	do
+--		--if unitDclDsc.isInvalid (context, o) then
+--		--	Result := True
+--		--end -- if
+--	end -- is_invalid
+--
+--	hasInvalidInterface (sysDsc: SystemDescriptor; o: Output): Boolean is
+--	local
+--		currentContextUnit: ContextUnit
+--
+--		parentDsc: ParentDescriptor
+--		unitDclDsc: UnitDeclarationDescriptor
+--		parentContextUnit: ContextUnit
+--		i, n: Integer	
+--	do
+--		if not templateUnitDsc.hasInvalidInterface (sysDsc, o) then
+--			if parents = Void then
+--				create currentContextUnit.init (Current)
+--				currentContextUnit := sysDsc.matrix.add_it (currentContextUnit)
+--				parents := templateUnitDsc.buildParents (sysDsc, instantiationDsc.generics, o)
+--				
+--				from
+--					i := 1
+--					n := parents.count
+--				until
+--					i > n
+--				loop
+--					parentDsc := parents.item (i)
+--					unitDclDsc := sysDsc.lookForUnit (parentDsc.parent)
+--					if unitDclDsc = Void then
+--						-- Inconsistency !!! Parent is not found among loaded types !!!
+--						o.putNL ("Error: unit `" + parentDsc.parent.out + "` is not loaded though it is a parent of `" + name + "` unit. Inconsistency detected")
+--						Result := True
+--					else
+--						if not unitDclDsc.isValidated then
+--							if unitDclDsc.isValidating then
+--								o.putNL ("Error: inheritance graph cycle detected. Starting from unit `" + name + "` and reaching `" + unitDclDsc.fullUnitName + "`")
+--								Result := True
+--							elseif unitDclDsc.hasInvalidInterface (sysDsc, o) then
+--								Result := True
+--							end -- if
+--						end -- if
+--						if unitDclDsc.isFinal then
+--							o.putNL ("Error: `" + name + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
+--							Result := True
+--						end -- if
+--						create parentContextUnit.init (unitDclDsc)
+--						parentContextUnit := sysDsc.matrix.add_it (parentContextUnit)
+--						currentContextUnit.addParent (parentContextUnit)
+--					end -- if
+--					i := i + 1
+--				end -- loop
+--			end -- if
+--		else
+--			debug
+--				o.putNL ("Instantiation `" + name + "` has invalid template `" + templateUnitDsc.fullUnitName + "`")
+--			end -- dedug
+--		end -- if
+--	end -- hasInvalidInterface
+--	
+--invariant
+--	non_void_instantiation: instantiationDsc /= Void
+--end -- class InstantiationDescriptor
 
 deferred class ContextTypeDescriptor
 inherit
