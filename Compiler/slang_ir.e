@@ -12409,6 +12409,7 @@ feature {Any}
 		i, n: Integer
 		m: Integer
 	do
+		-- Think how to speed up the scan !!!
 		from
 			i := 1
 			n := contextTypes.count
@@ -12480,29 +12481,6 @@ feature {Any}
 			else
 				i := i + 1
 			end -- if
-			--inspect
-			--	genericUnits.count
-			--when 0 then -- there is no generic unit which fits the current instantiation !!!
-			--	i := n + 1
-			--	o.putNL ("Error: there is no generic unit in the provided context which fits the instantiation `" + out + "`")
-			--	Result := True
-			--when 1 then
-			--	unitDeclaration := genericUnits.item (1).getUnitDeclaration
-			--	genericUnits := Void
-			--	--create instDsc.init (Current, unitDeclaration)
-			--	--contextTypes.add (instDsc)  -- Register instantiation
-			--	debug
-			--		--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
-			--	end -- debug
-			--	if not foundInPool then 
-			--		if failedToLoadPoolTypesAndAlias (sysDsc, o) then
-			--			Result := True
-			--		end -- if
-			--	end -- if
-			--	i := n + 1
-			--else
-			--	i := i + 1
-			--end -- if
 		end -- loop
 	end -- packGenericTemplates
 
@@ -12512,7 +12490,6 @@ feature {Any}
 		genericsCount: Integer
 		unitDclDsc: UnitDeclarationDescriptor
 		aliasDsc: UnitAliasDescriptor
-		--factualGenericDsc: TypeOrExpressionDescriptor
 		--instDsc: InstantiationDescriptor
 		contextTypes: Sorted_Array [ContextTypeDescriptor]
 		loadedUnits: Array [UnitDeclarationDescriptor]
@@ -12524,14 +12501,12 @@ feature {Any}
 		if genericsCount > 0 then
 			-- Current could be: A[Type] or A[constExpr] where constExpr can be some const Object or rtn Object
 
--- The problem instantiation itself is not registered anyware !!! Is it a problem ??? :-)
+			-- The problem instantiation itself is not registered anyware !!! Is it a problem ??? :-) NOOOO!
 			
 			-- Check if such generic units were already loaded or not yet ...
-			-- Think how to speed up the scan !!!
 			genericUnits := getGenericUnitByName (name, contextTypes)
 			if genericUnits = Void then
 				-- Load all possible generic units named as the current one
-				--genericUnits := context.sysDsc.loadGenericUnits (Current, o)
 				genericUnits := sysDsc.loadGenericUnits (Current, o)
 			else
 				foundInPool := True
@@ -12562,48 +12537,6 @@ feature {Any}
 						--o.putNL (">>>> Generic units: " + genericUnits.count.out)
 					end -- debug
 					packGenericTemplates (genericUnits, generics)
-					--from
-					--	i := 1
-					--	n := generics.count 
-					--until
-					--	i > n
-					--loop
-					--	factualGenericDsc := generics.item (i)
-					--	debug
-					--		--o.putNL ("Debug: factual generic `" + factualGenericDsc.out + "` isType =  " + factualGenericDsc.isType.out +
-					--		--	"` isRtn =  " + factualGenericDsc.isRoutine.out + "` isTuple =  " + factualGenericDsc.isTuple.out
-					--		--)
-					--	end
-					--	minimizeGenericUnits (genericUnits, i, n, factualGenericDsc)
-					--	if genericUnits.count = 0 then
-					--		i := n + 1
-					--	else
-					--		i := i + 1
-					--	end -- if
-					--	--inspect
-					--	--	genericUnits.count
-					--	--when 0 then -- there is no generic unit which fits the current instantiation !!!
-					--	--	i := n + 1
-					--	--	o.putNL ("Error: there is no generic unit in the provided context which fits the instantiation `" + out + "`")
-					--	--	Result := True
-					--	--when 1 then
-					--	--	unitDeclaration := genericUnits.item (1).getUnitDeclaration
-					--	--	genericUnits := Void
-					--	--	--create instDsc.init (Current, unitDeclaration)
-					--	--	--contextTypes.add (instDsc)  -- Register instantiation
-					--	--	debug
-					--	--		--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
-					--	--	end -- debug
-					--	--	if not foundInPool then 
-					--	--		if failedToLoadPoolTypesAndAlias (sysDsc, o) then
-					--	--			Result := True
-					--	--		end -- if
-					--	--	end -- if
-					--	--	i := n + 1
-					--	--else
-					--	--	i := i + 1
-					--	--end -- if
-					--end -- loop
 					inspect 
 						genericUnits.count
 					when 0 then
@@ -12859,7 +12792,6 @@ feature {Any}
 		end -- inspect		
 	end -- minimizeGenericUnits
 	
-	--failedToLoadPoolTypesAndAlias (context: CompilationUnitCommon; o: Output): Boolean is
 	failedToLoadPoolTypesAndAlias (context: SystemDescriptor; o: Output): Boolean is
 	require
 		non_void_unitDeclaration: unitDeclaration /= Void
