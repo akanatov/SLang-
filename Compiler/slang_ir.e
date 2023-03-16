@@ -379,7 +379,6 @@ feature {Any}
 		retry
 	end -- getActualFileName
 	
-	--loadCompilationUnitViaAlias (fileName, pathPrefix, unitExternalName: String; o: Output): CompilationUnitUnit is
 	loadCompilationUnitViaAlias (fileName, pathPrefix: String; o: Output): CompilationUnitUnit is
 	local
 		actualFileName: String
@@ -3308,11 +3307,14 @@ feature {Any}
 
 	sameAs (other: like Current) : Boolean is
 	do
-		Result := aliasName.is_equal (other.aliasName)
+		Result := aliasName.is_equal (other.aliasName) and then unitDclDsc.is_equal (other.unitDclDsc)
 	end -- sameAs
 	lessThan (other: like Current) : Boolean is
 	do
 		Result := aliasName < other.aliasName
+		if not Result and then aliasName.is_equal (other.aliasName) then
+			Result := unitDclDsc < other.unitDclDsc
+		end -- if
 	end -- lessThan
 
 	getUnitDeclaration: UnitDeclarationDescriptor is
