@@ -92,7 +92,7 @@ feature {Any}
 	local
 		i, n: Integer
 		unitDclDsc: UnitDeclarationDescriptor
-		instantiationDsc: InstantiationDescriptor
+		--instantiationDsc: InstantiationDescriptor
 		currentID: Integer_Ref
 	do
 		from
@@ -103,15 +103,16 @@ feature {Any}
 		loop
 			unitDclDsc ?= allUnits.item (i)
 			if unitDclDsc = Void then
-				instantiationDsc ?= allUnits.item (i)
-				if instantiationDsc = Void then
-					-- i := 0
-				else
-					if instantiationDsc.hasInvalidInterface (Current, o) then
-						Result := False
-					end -- if
-					i := i - 1
-				end -- if
+				i := 0
+				--instantiationDsc ?= allUnits.item (i)
+				--if instantiationDsc = Void then
+				--	-- i := 0
+				--else
+				--	if instantiationDsc.hasInvalidInterface (Current, o) then
+				--		Result := False
+				--	end -- if
+				--	i := i - 1
+				--end -- if
 			else
 				if unitDclDsc.hasInvalidInterface (Current, o) then
 					Result := False
@@ -151,7 +152,7 @@ feature {Any}
 		i, n: Integer
 	do
 		if currentUnit.id = 0 then
-			if currentUnit.isVirtual or else currentUnit.isTemplate or else currentUnit.isGeneric then
+			if currentUnit.isVirtual then -- or else currentUnit.isTemplate or else currentUnit.isGeneric then
 				currentUnit.setID(-1) -- No objects of this type 
 			else
 				currentUnit.setID(currentID.item)
@@ -185,22 +186,40 @@ feature {Any}
 	
 	lookForUnit (unitDsc: UnitTypeNameDescriptor): UnitDeclarationDescriptor is
 	local
-		instantiationDsc: InstantiationDescriptor
-		cntTypDsc: ContextTypeDescriptor
+		--instantiationDsc: InstantiationDescriptor
+		--cntTypDsc: ContextTypeDescriptor
+		templates: Array [UnitDeclarationDescriptor]
 	do
 		if unitDsc.generics.count = 0 then
 			create Result.makeForSearch (unitDsc.name, Void)
 			Result ?= allUnits.search (Result)
 		else
-			create instantiationDsc.make_for_search (unitDsc)
-			cntTypDsc := allUnits.search (instantiationDsc)
-			if cntTypDsc = Void then
-				debug
-					print ("Template for the instantiation `" + unitDsc.out + "` not found")
-				end -- debug
-			else
-				Result := cntTypDsc.getUnitDeclaration
+			-- Get tempale dsc from unitDsc 
+			templates := unitDsc.getGenericUnitByName (unitDsc.name, allUnits)
+			if templates /= Void then
+				unitDsc.packGenericTemplates (templates, unitDsc.generics)
+				inspect
+					templates.count
+				when 0 then
+					-- No tempaltes available
+				when 1 then
+					Result ?= allUnits.search (templates.item (1))
+				else
+					-- Several templates available !!!
+				end -- if
 			end -- if
+
+
+			
+			--create instantiationDsc.make_for_search (unitDsc)
+			--cntTypDsc := allUnits.search (instantiationDsc)
+			--if cntTypDsc = Void then
+			--	debug
+			--		print ("Template for the instantiation `" + unitDsc.out + "` not found")
+			--	end -- debug
+			--else
+			--	Result := cntTypDsc.getUnitDeclaration
+			--end -- if
 		end -- if
 	end -- lookForUnit	
 	
@@ -209,7 +228,7 @@ feature {Any}
 		i, n: Integer
 		unitDclDsc: UnitDeclarationDescriptor
 		unitAliasDsc: UnitAliasDescriptor
-		instantiationDsc: InstantiationDescriptor
+		--instantiationDsc: InstantiationDescriptor
 		cntTypDsc: ContextTypeDescriptor
 	do
 		from
@@ -229,15 +248,19 @@ feature {Any}
 				end -- if
 			else
 				unitAliasDsc ?= cntTypDsc
-				if unitAliasDsc /= Void then
-					o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
-				else
-					instantiationDsc ?= cntTypDsc
-					check
-						unkown_object_in_the_context: instantiationDsc /= Void
-					end -- check
-					o.putNL ("%T#" + i.out + " Instantiation: " + instantiationDsc.name + " for template " + instantiationDsc.templateUnitDsc.fullUnitName)
-				end -- if
+				check
+					unkown_object_in_the_context: unitAliasDsc /= Void
+				end -- check
+				o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+				--if unitAliasDsc /= Void then
+				--	o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+				--else
+				--	instantiationDsc ?= cntTypDsc
+				--	check
+				--		unkown_object_in_the_context: instantiationDsc /= Void
+				--	end -- check
+				--	o.putNL ("%T#" + i.out + " Instantiation: " + instantiationDsc.name + " for template " + instantiationDsc.templateUnitDsc.fullUnitName)
+				--end -- if
 			end -- if
 			i := i + 1
 		end -- loop						
@@ -406,7 +429,8 @@ feature {Any}
 		end -- if
 	end -- loadUnitViaAlias
 	
-	loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [ContextTypeDescriptor] is
+	--loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [ContextTypeDescriptor] is
+	loadUnitInterface (unitDsc:UnitTypeCommonDescriptor; o: Output): Array [UnitDeclarationDescriptor] is	
 	require
 		non_void_current_unit: unitDsc /= Void
 	local
@@ -12374,7 +12398,113 @@ feature {Any}
 		-- do nothing so far
 	end -- generationFailed
 	
-	genericUnits: Array [ContextTypeDescriptor]
+	genericUnits: Array [UnitDeclarationDescriptor]
+
+	getGenericUnitByName (unitName: String; contextTypes: Sorted_Array [ContextTypeDescriptor]): Array [UnitDeclarationDescriptor] is
+	require
+		unit_name_not_void: unitName /= Void
+		context_types_not_void: contextTypes /= Void
+	local
+		unitDclDsc: UnitDeclarationDescriptor
+		i, n: Integer
+		m: Integer
+	do
+		from
+			i := 1
+			n := contextTypes.count
+		until
+			i > n
+		loop
+			unitDclDsc ?= contextTypes.item (i)
+			if unitDclDsc /= Void and then unitDclDsc.formalGenerics.count > 0 and then unitName.is_equal (unitDclDsc.name) then
+				-- get all genericUnits from the context
+				from
+					create Result.make (1, n - i + 1)
+					debug
+						--o.putNL (">>> Generic units named '" + name + "`, 1 found, reserved = " + (n - i + 1).out)
+					end -- debug
+					m := 1
+					Result.put (unitDclDsc, m)
+					i := i + 1
+				until
+					i > n
+				loop
+					unitDclDsc ?= contextTypes.item (i)
+					if unitDclDsc /= Void and then unitDclDsc.formalGenerics.count > 0 and then name.is_equal (unitDclDsc.name) then
+						m := m + 1
+						Result.put (unitDclDsc, m)
+						i := i + 1
+					else
+						i := n + 1
+					end -- if
+				end -- loop
+				if m < n then
+					debug
+						--o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, truncated")
+					end -- debug
+					Result.resize (1, m)
+				else
+					debug
+						--o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, no need to truncate")
+					end -- debug
+				end -- if
+				debug
+					--o.putNL (">>> Generic units taken from context: " + genericUnits.out)
+				end -- debug
+			else
+				i := i + 1
+			end -- if
+		end -- loop
+	end -- getGenericUnitByName
+	
+	packGenericTemplates (templates: Array [UnitDeclarationDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]) is 
+	local
+		factualGenericDsc: TypeOrExpressionDescriptor
+		i, n: Integer
+	do
+		from
+			i := 1
+			n := factualGenerics.count 
+		until
+			i > n
+		loop
+			factualGenericDsc := factualGenerics.item (i)
+			debug
+				--o.putNL ("Debug: factual generic `" + factualGenericDsc.out + "` isType =  " + factualGenericDsc.isType.out +
+				--	"` isRtn =  " + factualGenericDsc.isRoutine.out + "` isTuple =  " + factualGenericDsc.isTuple.out
+				--)
+			end
+			minimizeGenericUnits (templates, i, n, factualGenericDsc)
+			if templates.count = 0 then
+				i := n + 1
+			else
+				i := i + 1
+			end -- if
+			--inspect
+			--	genericUnits.count
+			--when 0 then -- there is no generic unit which fits the current instantiation !!!
+			--	i := n + 1
+			--	o.putNL ("Error: there is no generic unit in the provided context which fits the instantiation `" + out + "`")
+			--	Result := True
+			--when 1 then
+			--	unitDeclaration := genericUnits.item (1).getUnitDeclaration
+			--	genericUnits := Void
+			--	--create instDsc.init (Current, unitDeclaration)
+			--	--contextTypes.add (instDsc)  -- Register instantiation
+			--	debug
+			--		--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+			--	end -- debug
+			--	if not foundInPool then 
+			--		if failedToLoadPoolTypesAndAlias (sysDsc, o) then
+			--			Result := True
+			--		end -- if
+			--	end -- if
+			--	i := n + 1
+			--else
+			--	i := i + 1
+			--end -- if
+		end -- loop
+	end -- packGenericTemplates
 
 	isNotLoaded (sysDsc: SystemDescriptor; o: Output): Boolean is
 	local
@@ -12382,86 +12512,43 @@ feature {Any}
 		genericsCount: Integer
 		unitDclDsc: UnitDeclarationDescriptor
 		aliasDsc: UnitAliasDescriptor
-		teDsc: TypeOrExpressionDescriptor
-		instDsc: InstantiationDescriptor
+		--factualGenericDsc: TypeOrExpressionDescriptor
+		--instDsc: InstantiationDescriptor
 		contextTypes: Sorted_Array [ContextTypeDescriptor]
-		loadedUnits: Array [ContextTypeDescriptor]
+		loadedUnits: Array [UnitDeclarationDescriptor]
 		pos: Integer
 		i, n: Integer
-		m: Integer
 	do
 		contextTypes := sysDsc.allUnits
 		genericsCount := generics.count 
 		if genericsCount > 0 then
 			-- Current could be: A[Type] or A[constExpr] where constExpr can be some const Object or rtn Object
 
--- The problem instantiation itself is not registered anyware !!!
+-- The problem instantiation itself is not registered anyware !!! Is it a problem ??? :-)
 			
 			-- Check if such generic units were already loaded or not yet ...
 			-- Think how to speed up the scan !!!
-			from
-				i := 1
-				n := contextTypes.count
-			until
-				i > n
-			loop
-				unitDclDsc ?= contextTypes.item (i)
-				if unitDclDsc /= Void and then unitDclDsc.formalGenerics.count > 0 and then name.is_equal (unitDclDsc.name) then
-					-- get all genericUnits from the context
-					from
-						create genericUnits.make (1, n - i + 1)
-						debug
-							--o.putNL (">>> Generic units named '" + name + "`, 1 found, reserved = " + (n - i + 1).out)
-						end -- debug
-						m := 1
-						genericUnits.put (unitDclDsc, m)
-						i := i + 1
-					until
-						i > n
-					loop
-						unitDclDsc ?= contextTypes.item (i)
-						if unitDclDsc /= Void and then unitDclDsc.formalGenerics.count > 0 and then name.is_equal (unitDclDsc.name) then
-							m := m + 1
-							genericUnits.put (unitDclDsc, m)
-							i := i + 1
-						else
-							i := n + 1
-						end -- if
-					end -- loop
-					if m < n then
-						debug
-							--o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, truncated")
-						end -- debug
-						genericUnits.resize (1, m)
-					else
-						debug
-							--o.putNL (">>> Generic units named '" + name + "`, " + m.out + " found, no need to truncate")
-						end -- debug
-					end -- if
-					foundInPool := True
-					debug
-						--o.putNL (">>> Generic units taken from context: " + genericUnits.out)
-					end -- debug
-				else
-					i := i + 1
-				end -- if
-			end -- loop
-			if not foundInPool then 
+			genericUnits := getGenericUnitByName (name, contextTypes)
+			if genericUnits = Void then
 				-- Load all possible generic units named as the current one
 				--genericUnits := context.sysDsc.loadGenericUnits (Current, o)
 				genericUnits := sysDsc.loadGenericUnits (Current, o)
-			end -- if			
-			if genericUnits /= Void then
+			else
+				foundInPool := True
+			end -- if
+			if genericUnits = Void then
+				Result := True
+			else
 				-- We have loaded all generic units for the current generic type
 				if genericUnits.count = 1 then
 					unitDeclaration := genericUnits.item (1).getUnitDeclaration
 					genericUnits := Void
-					create instDsc.init (Current, unitDeclaration)
-					contextTypes.add (instDsc) -- Register instantiation
+					--create instDsc.init (Current, unitDeclaration)
+					--contextTypes.add (instDsc) -- Register instantiation
 					debug
 						-- o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 					end -- debug
-					-- It is not instantiated !!! Should it be?
+					-- It is not instantiated !!! Should it be? NOOOO !
 					if not foundInPool then 
 						if failedToLoadPoolTypesAndAlias (sysDsc, o) then
 							Result := True
@@ -12473,45 +12560,69 @@ feature {Any}
 					-- there should be only one generic unit declaration with all formal generic type parameters
 					debug
 						--o.putNL (">>>> Generic units: " + genericUnits.count.out)
-					end -- debug				
-					from
-						i := 1
-						n := generics.count 
-					until
-						i > n
-					loop
-						teDsc := generics.item (i)
+					end -- debug
+					packGenericTemplates (genericUnits, generics)
+					--from
+					--	i := 1
+					--	n := generics.count 
+					--until
+					--	i > n
+					--loop
+					--	factualGenericDsc := generics.item (i)
+					--	debug
+					--		--o.putNL ("Debug: factual generic `" + factualGenericDsc.out + "` isType =  " + factualGenericDsc.isType.out +
+					--		--	"` isRtn =  " + factualGenericDsc.isRoutine.out + "` isTuple =  " + factualGenericDsc.isTuple.out
+					--		--)
+					--	end
+					--	minimizeGenericUnits (genericUnits, i, n, factualGenericDsc)
+					--	if genericUnits.count = 0 then
+					--		i := n + 1
+					--	else
+					--		i := i + 1
+					--	end -- if
+					--	--inspect
+					--	--	genericUnits.count
+					--	--when 0 then -- there is no generic unit which fits the current instantiation !!!
+					--	--	i := n + 1
+					--	--	o.putNL ("Error: there is no generic unit in the provided context which fits the instantiation `" + out + "`")
+					--	--	Result := True
+					--	--when 1 then
+					--	--	unitDeclaration := genericUnits.item (1).getUnitDeclaration
+					--	--	genericUnits := Void
+					--	--	--create instDsc.init (Current, unitDeclaration)
+					--	--	--contextTypes.add (instDsc)  -- Register instantiation
+					--	--	debug
+					--	--		--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+					--	--	end -- debug
+					--	--	if not foundInPool then 
+					--	--		if failedToLoadPoolTypesAndAlias (sysDsc, o) then
+					--	--			Result := True
+					--	--		end -- if
+					--	--	end -- if
+					--	--	i := n + 1
+					--	--else
+					--	--	i := i + 1
+					--	--end -- if
+					--end -- loop
+					inspect 
+						genericUnits.count
+					when 0 then
+						o.putNL ("Error: there is no generic unit in the provided context which fits the instantiation `" + out + "`")
+						Result := True
+					when 1 then
+						unitDeclaration := genericUnits.item (1)
+						genericUnits := Void
+						--create instDsc.init (Current, unitDeclaration)
+						--contextTypes.add (instDsc)  -- Register instantiation
 						debug
-							--o.putNL ("Debug: factual generic `" + teDsc.out + "` isType =  " + teDsc.isType.out +
-							--	"` isRtn =  " + teDsc.isRoutine.out + "` isTuple =  " + teDsc.isTuple.out
-							--)
-						end
-						minimizeGenericUnits (i, n, teDsc.isType, teDsc.isRoutine, teDsc.isTuple)
-						inspect
-							genericUnits.count
-						when 0 then -- there is no generic unit which fits the current instantiation !!!
-							i := n + 1
-							o.putNL ("Error: there is no generic unit in the provided context which fits the instantiation `" + out + "`")
-							Result := True
-						when 1 then
-							unitDeclaration := genericUnits.item (1).getUnitDeclaration
-							genericUnits := Void
-							create instDsc.init (Current, unitDeclaration)
-							contextTypes.add (instDsc)  -- Register instantiation
-							debug
-								--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
-							end -- debug
-							if not foundInPool then 
-								if failedToLoadPoolTypesAndAlias (sysDsc, o) then
-									Result := True
-								end -- if
+							--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+						end -- debug
+						if not foundInPool then 
+							if failedToLoadPoolTypesAndAlias (sysDsc, o) then
+								Result := True
 							end -- if
-							i := n + 1
-						else
-							i := i + 1
 						end -- if
-					end -- loop
-					if genericUnits /= Void and then genericUnits.count > 1 then
+					else
 						unitDeclaration := Void
 						debug
 							o.putNL ("Debug: more than one generic unit template fits the instantiation `" + out + "`")
@@ -12521,11 +12632,11 @@ feature {Any}
 							until
 								i > n
 							loop
-								o.putNL ("%TUnit `" + genericUnits.item(i).getUnitDeclaration.fullUnitName + "`")
+								o.putNL ("%TUnit `" + genericUnits.item(i).fullUnitName + "`")
 								i := i + 1
 							end -- loop
 						end -- debug
-					end -- if
+					end -- inspect
 					debug
 						--o.putNL ("<<<<<<<<<<<<<<<<<<")
 					end -- debug				
@@ -12614,10 +12725,12 @@ feature {Any}
 		end
 	end -- isNotLoaded
 
-	minimizeGenericUnits (index, factualsCount: Integer; isTyp, isRtn, isTpl: Boolean) is
+	minimizeGenericUnits (templates: Array [ContextTypeDescriptor]; index, factualsCount: Integer; factualGenericDsc: TypeOrExpressionDescriptor) is
 	require
 		valid_index: index > 0
 		index_in_range: index <= factualsCount
+		non_void_templates: templates /= Void
+		non_void_factual_generic_type: factualGenericDsc /= Void
 	local
 		i, n: Integer
 		j, m: Integer
@@ -12626,19 +12739,23 @@ feature {Any}
 		unitDclDsc: UnitDeclarationDescriptor
 		unitAliasDsc: UnitAliasDescriptor
 		toSkip: Boolean
+		isTyp, isRtn, isTpl: Boolean
 	do
+		isTyp := factualGenericDsc.isType
+		isRtn := factualGenericDsc.isRoutine
+		isTpl := factualGenericDsc.isTuple
 		from
 			i := 1
-			n := genericUnits.count
+			n := templates.count
 		until	
 			i > n
 		loop
 			check
-				genericUnits.item(i) /= Void
+				templates.item(i) /= Void
 			end 
-			unitDclDsc ?= genericUnits.item(i)
+			unitDclDsc ?= templates.item(i)
 			if unitDclDsc = Void then
-				unitAliasDsc ?= genericUnits.item(i)
+				unitAliasDsc ?= templates.item(i)
 				check
 					unitAliasDsc /= Void
 				end 
@@ -12658,7 +12775,7 @@ feature {Any}
 							debug
 								--print ("Excluding `" + fgDsc.out + "` Type /= non-Type%N")
 							end 
-							genericUnits.put(Void, i)
+							templates.put(Void, i)
 							toSkip := True
 						end -- if
 					elseif isTyp then
@@ -12666,7 +12783,7 @@ feature {Any}
 						debug
 							--print ("Excluding `" + fgDsc.out + "` non-Type /= Type%N")
 						end 
-						genericUnits.put(Void, i)
+						templates.put(Void, i)
 						toSkip := True
 					end -- if
 					if toSkip then
@@ -12677,7 +12794,7 @@ feature {Any}
 							debug
 								--print ("Excluding `" + fgDsc.out + "` non-Rtn /= Rtn%N")
 							end 
-							genericUnits.put(Void, i)
+							templates.put(Void, i)
 							toSkip := True
 						end -- if
 					elseif fgDsc.isRoutine then
@@ -12685,7 +12802,7 @@ feature {Any}
 						debug
 							--print ("Excluding `" + fgDsc.out + "` non-Rtn /= Rtn%N")
 						end 
-						genericUnits.put(Void, i)
+						templates.put(Void, i)
 						toSkip := True
 					end -- if
 					if toSkip then
@@ -12696,21 +12813,21 @@ feature {Any}
 							debug
 								--print ("Excluding `" + fgDsc.out + "` non-Tuple /= Tuple%N")
 							end 
-							genericUnits.put(Void, i)
+							templates.put(Void, i)
 						end -- if
 					elseif fgDsc.isTuple then
 						m := m + 1
 						debug
 							--print ("Excluding `" + fgDsc.out + "` non-Tuple /= Tuple%N")
 						end 
-						genericUnits.put(Void, i)
+						templates.put(Void, i)
 					end -- if
-				else -- # of factual generic arguments is not eual to # of formal generic parameters
+				else -- # of factual generic arguments is not equal to # of formal generic parameters
 					m := m + 1
 					debug
 						--print ("Excluding: formal = " +  formalsCount.out + ", factual = " + factualsCount.out + "%N")
 					end 
-					genericUnits.put(Void, i)
+					templates.put(Void, i)
 				end -- if
 			end -- if
 			i := i + 1
@@ -12719,26 +12836,26 @@ feature {Any}
 			-- nothing removed
 		elseif m = n then
 			-- all removed
-			genericUnits.resize(1, 0)
+			templates.resize(1, 0)
 		else
 			--m := n - m -- now m is the number of elements left
 			-- pack Void and resize
 			from
 				i := 1
 				j := 0
-				n := genericUnits.count
+				n := templates.count
 			until
 				i > n --or else j > m
 			loop
-				if genericUnits.item(i) /= Void then
+				if templates.item(i) /= Void then
 					j := j + 1
 					if j < i then
-						genericUnits.put(genericUnits.item(i), j)
+						templates.put(templates.item(i), j)
 					end -- if
 				end -- if
 				i := i + 1
 			end -- loop
-			genericUnits.resize(1, j) -- n - m)
+			templates.resize(1, j) -- n - m)
 		end -- inspect		
 	end -- minimizeGenericUnits
 	
@@ -12852,6 +12969,26 @@ inherit
 create
 	init
 feature
+	--getFormalGenerics: Array [FormalGenericDescriptor] is
+	--local
+	--	index: Integer
+	--do
+	--	index := generics.count
+	--	if index > 0 then
+	--		debug 
+	--			o.putNL ("===> Building formal geenrics for `" + out + "`")
+	--		end -- debug
+	--		from
+	--			create Result.make (1, index)
+	--		until
+	--			index = 0
+	--		loop
+	--			Result.put (generics.item (index).getFormalGeneric, index)
+	--			index := index - 1
+	--		end -- loop
+	--	end -- if
+	--end -- getFormalGenerics
+
 	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
 	local
 		index: Integer
