@@ -72,6 +72,7 @@ feature {Any}
 
 	--allUnits: Sorted_Array [UnitDeclarationDescriptor] 
 	allUnits: Sorted_Array [ContextTypeDescriptor]
+	--allInstantiations: Sorted_Array [InstantiationDescriptor]
 
 	matrix: Sorted_Array [ContextUnit]
 	anyDsc: ContextUnit
@@ -103,7 +104,8 @@ feature {Any}
 		loop
 			unitDclDsc ?= allUnits.item (i)
 			if unitDclDsc = Void then
-				i := 0
+				-- Need to optimize the sorting to stop earlier ...
+				--i := 0
 				--instantiationDsc ?= allUnits.item (i)
 				--if instantiationDsc = Void then
 				--	-- i := 0
@@ -117,12 +119,13 @@ feature {Any}
 				if unitDclDsc.hasInvalidInterface (Current, o) then
 					Result := False
 				end -- if
-				i := i - 1
+				--i := i - 1
 			end -- if
+			i := i - 1
 		end -- loop
 		if Result then
 			-- Let's number units starting from Any
-			create currentID -- Any ID is 0
+			create currentID -- First non-virtual unit will get 0 ID
 			anyDsc.setSortByChildrenCount
 			assignID (anyDsc, currentID)			
 			anyDsc.setSortByID
@@ -186,7 +189,7 @@ feature {Any}
 	
 	lookForUnit (unitDsc: UnitTypeNameDescriptor): UnitDeclarationDescriptor is
 	local
-		--instantiationDsc: InstantiationDescriptor
+		instantiationDsc: InstantiationDescriptor
 		--cntTypDsc: ContextTypeDescriptor
 		templates: Array [UnitDeclarationDescriptor]
 	do
@@ -194,22 +197,26 @@ feature {Any}
 			create Result.makeForSearch (unitDsc.name, Void)
 			Result ?= allUnits.search (Result)
 		else
-			-- Get tempale dsc from unitDsc 
-			templates := unitDsc.getGenericUnitByName (unitDsc.name, allUnits)
-			if templates /= Void then
-				unitDsc.packGenericTemplates (templates, unitDsc.generics)
-				inspect
-					templates.count
-				when 0 then
-					-- No tempaltes available
-				when 1 then
-					Result ?= allUnits.search (templates.item (1))
-				else
-					-- Several templates available !!!
+			create instantiationDsc.make_for_search (unitDsc)
+			instantiationDsc ?= allUnits.search (instantiationDsc)
+			if instantiationDsc /= Void then
+				Result := instantiationDsc.templateUnitDsc
+			else
+				-- Get tempale dsc from unitDsc 
+				templates := unitDsc.getGenericUnitByName (unitDsc.name, allUnits)
+				if templates /= Void then
+					unitDsc.packGenericTemplates (templates, unitDsc.generics)
+					inspect
+						templates.count
+					when 0 then
+						-- No tempaltes available
+					when 1 then
+						Result ?= allUnits.search (templates.item (1))
+					else
+						-- Several templates available !!!
+					end -- if
 				end -- if
 			end -- if
-
-
 			
 			--create instantiationDsc.make_for_search (unitDsc)
 			--cntTypDsc := allUnits.search (instantiationDsc)
@@ -228,12 +235,12 @@ feature {Any}
 		i, n: Integer
 		unitDclDsc: UnitDeclarationDescriptor
 		unitAliasDsc: UnitAliasDescriptor
-		--instantiationDsc: InstantiationDescriptor
+		instantiationDsc: InstantiationDescriptor
 		cntTypDsc: ContextTypeDescriptor
 	do
 		from
 			n := allUnits.count
-			o.putNL ("#### Context has " + n.out + " type nodes")
+			o.putNL ("#### Context has " + n.out + " types")
 			i := 1
 		until
 			i > n					
@@ -244,23 +251,19 @@ feature {Any}
 				if unitDclDsc.aliasName = Void then
 					o.putNL ("%T#" + i.out + " Unit: " + unitDclDsc.fullUnitName)
 				else
-					o.putNL ("%T#" + i.out + " Unit: " + unitDclDsc.fullUnitName + " alias " + unitDclDsc.aliasName)
+					o.putNL ("%T#" + i.out + " Unit: " + unitDclDsc.fullUnitName + " with alias: " + unitDclDsc.aliasName)
 				end -- if
 			else
 				unitAliasDsc ?= cntTypDsc
-				check
-					unkown_object_in_the_context: unitAliasDsc /= Void
-				end -- check
-				o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
-				--if unitAliasDsc /= Void then
-				--	o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
-				--else
-				--	instantiationDsc ?= cntTypDsc
-				--	check
-				--		unkown_object_in_the_context: instantiationDsc /= Void
-				--	end -- check
-				--	o.putNL ("%T#" + i.out + " Instantiation: " + instantiationDsc.name + " for template " + instantiationDsc.templateUnitDsc.fullUnitName)
-				--end -- if
+				if unitAliasDsc /= Void then
+					o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+				else
+					instantiationDsc ?= cntTypDsc
+					check
+						unkown_object_in_the_context: instantiationDsc /= Void
+					end -- check
+					o.putNL ("%T#" + i.out + " Instantiation: " + instantiationDsc.name + " of template: " + instantiationDsc.templateUnitDsc.fullUnitName)
+				end -- if
 			end -- if
 			i := i + 1
 		end -- loop						
@@ -866,7 +869,8 @@ feature {Any}
 	--do
 	--	Result := entry /= Void and then entry.is_equal ("*")
 	--end -- is_script
-	
+
+	feature {None}
 	init_script (aName : String; c: like clusters; l: like libraries) is 
 	do
 		init_program (aName, "*", c, l)
@@ -877,29 +881,33 @@ feature {Any}
 		name_not_void: aName /= Void
 		entry_not_void: anEntry /= Void
 	do
-		name:= aName
+		init_common (aName, c, l)
 		entry:= anEntry
 		from_paths := Void
-		set_clusters_and_libraries (c, l)
-		create allUnits.make
-		create matrix.make
 	end -- init_program
 	
 	init_library (aName : String; fromPaths: like from_paths; c: like clusters; l: like libraries) is
 	require
 		name_not_void: aName /= Void
 	do
-		name:= aName
+		init_common (aName, c, l)
 		entry := Void
 		if fromPaths = Void then
 			create from_paths.make
 		else
 			from_paths := fromPaths
 		end -- if
+	end -- init_library
+	
+	init_common (aName : String;c: like clusters; l: like libraries) is
+	do
+		name:= aName
 		set_clusters_and_libraries (c, l)
 		create allUnits.make
+		--create allInstantiations.make
 		create matrix.make
-	end -- init_library
+	end -- init_common
+	feature {Any}
 
 	set_clusters_and_libraries (c: like clusters; l: like libraries) is
 	do
@@ -3340,83 +3348,83 @@ feature {Any}
 	
 end -- class UnitAliasDescriptor
 
---class InstantiationDescriptor
---inherit
---	ContextTypeDescriptor
---		rename
---			fullUnitName as name
---	end
---create
---	init, make_for_search
---feature {Any}
---	templateUnitDsc: UnitDeclarationDescriptor
---		--formalGenerics: Array [FormalGenericDescriptor]
---		--parents: Sorted_Array [ParentDescriptor]
---	instantiationDsc: UnitTypeCommonDescriptor
---		-- factual 
---		-- 	generics: Array [TypeOrExpressionDescriptor]--
---
+class InstantiationDescriptor
+inherit
+	ContextTypeDescriptor
+		rename
+			fullUnitName as name
+	end
+create
+	init, make_for_search
+feature {Any}
+	templateUnitDsc: UnitDeclarationDescriptor
+		--formalGenerics: Array [FormalGenericDescriptor]
+		--parents: Sorted_Array [ParentDescriptor]
+	instantiationDsc: UnitTypeCommonDescriptor
+		-- factual 
+		-- 	generics: Array [TypeOrExpressionDescriptor]--
+
 --	parents: Array [ParentDescriptor]	
---
---	isGeneric: Boolean is
---	do
---		Result := instantiationDsc.isGeneric
---	end -- isGeneric	
---
---	isTemplate: Boolean is
---	do
---		Result := instantiationDsc.isTemplate
---	end -- 	isTemplate
---
---	init (instantiation: like instantiationDsc; template: like templateUnitDsc) is
---	require
---		non_void_instantiation: instantiation /= Void
---		non_void_template: template /= Void
---	do
---		templateUnitDsc  := template
---		instantiationDsc := instantiation
---		name := instantiationDsc.out
---	end -- init
---	
---	make_for_search (instantiation: like instantiationDsc) is
---	require
---		non_void_instantiation: instantiation /= Void
---	do
---		instantiationDsc := instantiation
---		name := instantiationDsc.out
---	end -- make_for_search
---	
---	sameAs (other: like Current) : Boolean is
---	do
---		Result := instantiationDsc.is_equal (other.instantiationDsc)
---	end -- sameAs
---	
---	lessThan (other: like Current) : Boolean is
---	do
---		Result := instantiationDsc < other.instantiationDsc
---	end -- lessThan
---
---	getUnitDeclaration: UnitDeclarationDescriptor is
---	do
---		Result := templateUnitDsc
---	end -- getUnitDeclaration
---
---	--getExternalName: String is
---	--do
---	--	Result := unitDclDsc.getExternalName
---	--end -- getExternalName
---	generationFailed(cg: CodeGenerator): Boolean is
---	do
---		-- do nothing so far
---	end -- generationFailed
---
---	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
---	do
---		--if unitDclDsc.isInvalid (context, o) then
---		--	Result := True
---		--end -- if
---	end -- is_invalid
---
+
+	isGeneric: Boolean is
+	do
+		Result := instantiationDsc.isGeneric
+	end -- isGeneric	
+
+	isTemplate: Boolean is
+	do
+		Result := instantiationDsc.isTemplate
+	end -- 	isTemplate
+
+	init (instantiation: like instantiationDsc; template: like templateUnitDsc) is
+	require
+		non_void_instantiation: instantiation /= Void
+		non_void_template: template /= Void
+	do
+		templateUnitDsc  := template
+		instantiationDsc := instantiation
+		name := instantiationDsc.out
+	end -- init
+	
+	make_for_search (instantiation: like instantiationDsc) is
+	require
+		non_void_instantiation: instantiation /= Void
+	do
+		instantiationDsc := instantiation
+		name := instantiationDsc.out
+	end -- make_for_search
+	
+	sameAs (other: like Current) : Boolean is
+	do
+		Result := instantiationDsc.is_equal (other.instantiationDsc)
+	end -- sameAs
+	
+	lessThan (other: like Current) : Boolean is
+	do
+		Result := instantiationDsc < other.instantiationDsc
+	end -- lessThan
+
+	getUnitDeclaration: UnitDeclarationDescriptor is
+	do
+		Result := templateUnitDsc
+	end -- getUnitDeclaration
+
+	--getExternalName: String is
+	--do
+	--	Result := unitDclDsc.getExternalName
+	--end -- getExternalName
+	generationFailed(cg: CodeGenerator): Boolean is
+	do
+		-- do nothing so far
+	end -- generationFailed
+
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+		--if unitDclDsc.isInvalid (context, o) then
+		--	Result := True
+		--end -- if
+	end -- is_invalid
+
 --	hasInvalidInterface (sysDsc: SystemDescriptor; o: Output): Boolean is
 --	local
 --		currentContextUnit: ContextUnit
@@ -3471,9 +3479,9 @@ end -- class UnitAliasDescriptor
 --		end -- if
 --	end -- hasInvalidInterface
 --	
---invariant
---	non_void_instantiation: instantiationDsc /= Void
---end -- class InstantiationDescriptor
+invariant
+	non_void_instantiation: instantiationDsc /= Void
+end -- class InstantiationDescriptor
 
 deferred class ContextTypeDescriptor
 inherit
@@ -4250,7 +4258,7 @@ feature {Any}
 					parentDsc := parents.item (i)
 					unitDclDsc := sysDsc.lookForUnit (parentDsc.parent)
 					if unitDclDsc = Void then
-						-- Inconsistency !!! Parent is not found among loaded types !!!
+						-- Inconsistency !!! Parent is not found among loaded units or aliases.Let's check instantiatiosn then
 						o.putNL ("Error: unit `" + parentDsc.parent.out + "` is not loaded though it is a parent of `" + fullUnitName + "` unit. Inconsistency detected")
 						Result := True
 					else
@@ -12496,7 +12504,7 @@ feature {Any}
 		genericsCount: Integer
 		unitDclDsc: UnitDeclarationDescriptor
 		aliasDsc: UnitAliasDescriptor
-		--instDsc: InstantiationDescriptor
+		instDsc: InstantiationDescriptor
 		contextTypes: Sorted_Array [ContextTypeDescriptor]
 		loadedUnits: Array [UnitDeclarationDescriptor]
 		pos: Integer
@@ -12508,7 +12516,6 @@ feature {Any}
 			-- Current could be: A[Type] or A[constExpr] where constExpr can be some const Object or rtn Object
 
 			-- The problem instantiation itself is not registered anyware !!! Is it a problem ??? :-) NOOOO!
-			
 			-- Check if such generic units were already loaded or not yet ...
 			genericUnits := getGenericUnitByName (name, contextTypes)
 			if genericUnits = Void then
@@ -12524,8 +12531,8 @@ feature {Any}
 				if genericUnits.count = 1 then
 					unitDeclaration := genericUnits.item (1).getUnitDeclaration
 					genericUnits := Void
-					--create instDsc.init (Current, unitDeclaration)
-					--contextTypes.add (instDsc) -- Register instantiation
+					create instDsc.init (Current, unitDeclaration)
+					contextTypes.add (instDsc) -- Register instantiation
 					debug
 						-- o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 					end -- debug
@@ -12551,8 +12558,8 @@ feature {Any}
 					when 1 then
 						unitDeclaration := genericUnits.item (1)
 						genericUnits := Void
-						--create instDsc.init (Current, unitDeclaration)
-						--contextTypes.add (instDsc)  -- Register instantiation
+						create instDsc.init (Current, unitDeclaration)
+						contextTypes.add (instDsc) -- Register instantiation
 						debug
 							--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
 						end -- debug
