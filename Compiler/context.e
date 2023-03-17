@@ -66,7 +66,7 @@ feature
 		index := inheritedOverrides.count
 		if index > 0 then
 			from
-				Result.append_string (" override ")
+				Result.append_string (" override: ")
 			until
 				index = 0
 			loop
@@ -81,7 +81,7 @@ feature
 		index := unitMembers.count
 		if index > 0 then
 			from
-				Result.append_string (" members")
+				Result.append_string (" members:")
 			until
 				index = 0
 			loop

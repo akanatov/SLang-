@@ -413,10 +413,10 @@ feature {None}
 					if attachedTypeDsc /= Void then
 						if attachedTypeDsc.unitDeclaration /= Void then
 							check
-								unit_registered: sysDsc.allUnits.seek (attachedTypeDsc.unitDeclaration) > 0
+								unit_registered: sysDsc.allContextTypes.seek (attachedTypeDsc.unitDeclaration) > 0
 							end 
 							create unitAliasDsc.init (attachedTypeDsc.aliasName, attachedTypeDsc.unitDeclaration)
-							registeredAliasDsc ?= sysDsc.allUnits.add_it (unitAliasDsc)
+							registeredAliasDsc ?= sysDsc.allContextTypes.add_it (unitAliasDsc)
 							if registeredAliasDsc /= unitAliasDsc and then registeredAliasDsc.unitDclDsc /= unitAliasDsc.unitDclDsc then
 								o.putNL ("Error: at least two aliases refer to the same name `" + typeDsc.aliasName + "` for different types")
 								Result := True								
@@ -434,12 +434,12 @@ feature {None}
 			if not Result then					
 				-- Need to check that no name clashes between all alises and already loaded units !!!
 				from
-					n := sysDsc.allUnits.count
+					n := sysDsc.allContextTypes.count
 					i := 1
 				until
 					i > n					
 				loop
-					cntTypDsc := sysDsc.allUnits.item (i)
+					cntTypDsc := sysDsc.allContextTypes.item (i)
 					unitAliasDsc ?= cntTypDsc
 					if unitAliasDsc = Void then
 						-- No more aliases!
@@ -447,7 +447,7 @@ feature {None}
 					else
 						aliasesCount := aliasesCount + 1
 						create unitDclDsc.makeForSearch (unitAliasDsc.aliasName, Void)							
-						if sysDsc.allUnits.seek (unitDclDsc) > 0 then -- already registered
+						if sysDsc.allContextTypes.seek (unitDclDsc) > 0 then -- already registered
 							o.putNL ("Error: type alias `" + unitAliasDsc.aliasName + "` clashes with another unit name")
 							Result := True
 						end -- if
@@ -457,11 +457,11 @@ feature {None}
 			end -- if
 			--if Result then
 			--	if failedToLoadCount > 0 then
-			--		o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded, while " + failedToLoadCount.out + " failed to be loaded")
+			--		o.putLine ((sysDsc.allContextTypes.count - aliasesCount).out + " units loaded, while " + failedToLoadCount.out + " failed to be loaded")
 			--		o.newLine
 			--	end -- if
 			--else
-			--	o.putLine ((sysDsc.allUnits.count - aliasesCount).out + " units loaded")
+			--	o.putLine ((sysDsc.allContextTypes.count - aliasesCount).out + " units loaded")
 			--	o.newLine
 			--end -- if
 		end -- if		
@@ -568,7 +568,7 @@ feature {None}
 							if cuUnitDsc.unitDclDsc.aliasName /= Void then				
 								-- We need to process alias as well !!! To have it registered !!!  XXX
 								create unitAliasDsc.init (cuUnitDsc.unitDclDsc.aliasName, cuUnitDsc.unitDclDsc)
-								unitAliasDsc ?= sysDsc.allUnits.add_it (unitAliasDsc)
+								unitAliasDsc ?= sysDsc.allContextTypes.add_it (unitAliasDsc)
 								check
 									aliad_registered: unitAliasDsc /= Void
 								end -- check

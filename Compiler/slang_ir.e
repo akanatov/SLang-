@@ -70,8 +70,8 @@ feature {Any}
 	clusters: Sorted_Array [ClusterDescriptor] -- Clusters to search for usage of units and routines
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 
-	--allUnits: Sorted_Array [UnitDeclarationDescriptor] 
-	allUnits: Sorted_Array [ContextTypeDescriptor]
+	--allContextTypes: Sorted_Array [UnitDeclarationDescriptor] 
+	allContextTypes: Sorted_Array [ContextTypeDescriptor]
 	--allInstantiations: Sorted_Array [InstantiationDescriptor]
 
 	matrix: Sorted_Array [ContextUnit]
@@ -86,7 +86,7 @@ feature {Any}
 
 	registerLoadedUnit (unitDclDsc: UnitDeclarationDescriptor) is 
 	do
-		allUnits.add (unitDclDsc)
+		allContextTypes.add (unitDclDsc)
 	end -- registerLoadedUnit
 
 	allUnitInterfacesAreValid (o: Output): Boolean is
@@ -97,16 +97,16 @@ feature {Any}
 		currentID: Integer_Ref
 	do
 		from
-			i := allUnits.count
+			i := allContextTypes.count
 			Result := True
 		until
 			i = 0
 		loop
-			unitDclDsc ?= allUnits.item (i)
+			unitDclDsc ?= allContextTypes.item (i)
 			if unitDclDsc = Void then
 				-- Need to optimize the sorting to stop earlier ...
 				--i := 0
-				--instantiationDsc ?= allUnits.item (i)
+				--instantiationDsc ?= allContextTypes.item (i)
 				--if instantiationDsc = Void then
 				--	-- i := 0
 				--else
@@ -130,7 +130,7 @@ feature {Any}
 			assignID (anyDsc, currentID)			
 			anyDsc.setSortByID
 			matrix.qsort
-			debug
+			--debug
 				from
 					i := 1
 					n := matrix.count
@@ -142,7 +142,7 @@ feature {Any}
 					i := i + 1
 				end -- loop
 				o.putNL ("<<<< End of matrix")
-			end -- debug
+			--end -- debug
 		end -- if
 	end -- allUnitInterfacesAreValid
 
@@ -183,8 +183,8 @@ feature {Any}
 	lookForUnitAny: UnitDeclarationDescriptor is
 	do
 		--create Result.makeForSearch ("Any", Void)
-		--Result ?= allUnits.search (Result)
-		Result ?= allUnits.search (anyDclDsc)		
+		--Result ?= allContextTypes.search (Result)
+		Result ?= allContextTypes.search (anyDclDsc)		
 	end -- lookForUnitAny
 	
 	lookForUnit (unitDsc: UnitTypeNameDescriptor): UnitDeclarationDescriptor is
@@ -195,15 +195,15 @@ feature {Any}
 	do
 		if unitDsc.generics.count = 0 then
 			create Result.makeForSearch (unitDsc.name, Void)
-			Result ?= allUnits.search (Result)
+			Result ?= allContextTypes.search (Result)
 		else
 			create instantiationDsc.make_for_search (unitDsc)
-			instantiationDsc ?= allUnits.search (instantiationDsc)
+			instantiationDsc ?= allContextTypes.search (instantiationDsc)
 			if instantiationDsc /= Void then
 				Result := instantiationDsc.templateUnitDsc
 			else
 				-- Get tempale dsc from unitDsc 
-				templates := unitDsc.getGenericUnitByName (unitDsc.name, allUnits)
+				templates := unitDsc.getGenericUnitByName (unitDsc.name, allContextTypes)
 				if templates /= Void then
 					unitDsc.packGenericTemplates (templates, unitDsc.generics)
 					inspect
@@ -211,7 +211,7 @@ feature {Any}
 					when 0 then
 						-- No tempaltes available
 					when 1 then
-						Result ?= allUnits.search (templates.item (1))
+						Result ?= allContextTypes.search (templates.item (1))
 					else
 						-- Several templates available !!!
 					end -- if
@@ -219,7 +219,7 @@ feature {Any}
 			end -- if
 			
 			--create instantiationDsc.make_for_search (unitDsc)
-			--cntTypDsc := allUnits.search (instantiationDsc)
+			--cntTypDsc := allContextTypes.search (instantiationDsc)
 			--if cntTypDsc = Void then
 			--	debug
 			--		print ("Template for the instantiation `" + unitDsc.out + "` not found")
@@ -239,13 +239,13 @@ feature {Any}
 		cntTypDsc: ContextTypeDescriptor
 	do
 		from
-			n := allUnits.count
+			n := allContextTypes.count
 			o.putNL ("#### Context has " + n.out + " types")
 			i := 1
 		until
 			i > n					
 		loop
-			cntTypDsc := allUnits.item (i)
+			cntTypDsc := allContextTypes.item (i)
 			unitDclDsc ?= cntTypDsc
 			if unitDclDsc /= Void then
 				if unitDclDsc.aliasName = Void then
@@ -351,7 +351,7 @@ feature {Any}
 		if fs.file_exists (fileName) then
 			create cuDsc.make (Void)
 			if cuDsc.UnitIR_Loaded (fileName, o) then
-				allUnits.add (cuDsc.unitDclDsc)
+				allContextTypes.add (cuDsc.unitDclDsc)
 				Result := cuDsc
 			end -- if
 		else
@@ -393,7 +393,7 @@ feature {Any}
 		if actualFileName /= Void  then
 			create cuDsc.make (Void)
 			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
-				unitDclDsc ?= allUnits.add_it (cuDsc.unitDclDsc) -- register unit in the context
+				unitDclDsc ?= allContextTypes.add_it (cuDsc.unitDclDsc) -- register unit in the context
 				check
 					unit_registered: unitDclDsc /= Void
 					it_has_alias: unitDclDsc.aliasName /= Void
@@ -401,7 +401,7 @@ feature {Any}
 				cuDsc.setUnitDcl (unitDclDsc)
 				--create unitAliasDsc.init (unitExternalName, unitDclDsc)
 				create unitAliasDsc.init (unitDclDsc.aliasName, unitDclDsc)
-				allUnits.add (unitAliasDsc)
+				allContextTypes.add (unitAliasDsc)
 				Result := cuDsc
 			end -- if
 		end -- if
@@ -420,14 +420,14 @@ feature {Any}
 			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
 				-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
 
-				unitDclDsc ?= allUnits.add_it (cuDsc.unitDclDsc) -- register generic unit in the project context
+				unitDclDsc ?= allContextTypes.add_it (cuDsc.unitDclDsc) -- register generic unit in the project context
 				check
 					unit_registered: unitDclDsc /= Void
 				end -- check
 				cuDsc.setUnitDcl (unitDclDsc)
 				
 				create unitAliasDsc.init (unitExternalName, unitDclDsc)
-				Result ?= allUnits.add_it (unitAliasDsc)
+				Result ?= allContextTypes.add_it (unitAliasDsc)
 				check
 					alias_regsitered: Result /= Void
 				end -- check
@@ -614,7 +614,7 @@ feature {Any}
 							Result.put (unitAliasDsc.unitDclDsc, j)
 						end -- if
 						--if unitAliasDsc /= Void then
-						--	unitDclDsc ?= sysDsc.allUnits.add_it (unitDclDsc) -- register generic unit in the project context
+						--	unitDclDsc ?= sysDsc.allContextTypes.add_it (unitDclDsc) -- register generic unit in the project context
 						--	check
 						--		unit_registered: unitDclDsc /= Void
 						--	end -- 
@@ -627,7 +627,7 @@ feature {Any}
 						end -- debug
 						create unitIR.make (Void)
 						if unitIR.UnitIR_Loaded (fileDsc.path, o) then						
-							unitDclDsc ?= allUnits.add_it (unitIR.unitDclDsc) -- register generic unit in the project context
+							unitDclDsc ?= allContextTypes.add_it (unitIR.unitDclDsc) -- register generic unit in the project context
 							check
 								unit_registered: unitDclDsc /= Void
 							end -- 
@@ -903,7 +903,7 @@ feature {Any}
 	do
 		name:= aName
 		set_clusters_and_libraries (c, l)
-		create allUnits.make
+		create allContextTypes.make
 		--create allInstantiations.make
 		create matrix.make
 	end -- init_common
@@ -12510,7 +12510,7 @@ feature {Any}
 		pos: Integer
 		i, n: Integer
 	do
-		contextTypes := sysDsc.allUnits
+		contextTypes := sysDsc.allContextTypes
 		genericsCount := generics.count 
 		if genericsCount > 0 then
 			-- Current could be: A[Type] or A[constExpr] where constExpr can be some const Object or rtn Object
@@ -12833,7 +12833,7 @@ feature {Any}
 			unitDeclaration.setAliasName (aliasName)
 			-- Create an alias node to ensure it is registred too
 			create aliasDsc.init (aliasName, unitDeclaration)
-			registeredAliasDsc ?= context.allUnits.add_it (aliasDsc)
+			registeredAliasDsc ?= context.allContextTypes.add_it (aliasDsc)
 			if registeredAliasDsc /= aliasDsc and then registeredAliasDsc.unitDclDsc /= aliasDsc.unitDclDsc then
 				o.putNL ("Error: at least two aliases refer to the same name `" + aliasName + "` for different types")
 				Result := True								
