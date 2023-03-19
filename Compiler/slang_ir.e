@@ -70,9 +70,7 @@ feature {Any}
 	clusters: Sorted_Array [ClusterDescriptor] -- Clusters to search for usage of units and routines
 	libraries: Sorted_Array [String] -- object/lib/dll imp files to link with the system
 
-	--allContextTypes: Sorted_Array [UnitDeclarationDescriptor] 
 	allContextTypes: Sorted_Array [ContextTypeDescriptor]
-	--allInstantiations: Sorted_Array [InstantiationDescriptor]
 
 	matrix: Sorted_Array [ContextUnit]
 	anyDsc: ContextUnit
@@ -94,6 +92,7 @@ feature {Any}
 		i, n: Integer
 		unitDclDsc: UnitDeclarationDescriptor
 		--instantiationDsc: InstantiationDescriptor
+		ctxUnit: ContextUnit
 		currentID: Integer_Ref
 	do
 		from
@@ -127,32 +126,44 @@ feature {Any}
 			-- Let's number units starting from Any
 			create currentID -- First non-virtual unit will get 0 ID
 			anyDsc.setSortByChildrenCount
-			assignID (anyDsc, currentID)			
+			assignID (anyDsc, currentID, o)
 			anyDsc.setSortByID
 			matrix.qsort
-			--debug
-				from
-					i := 1
-					n := matrix.count
-					o.putNL (">>>> Incidence matrix has `" + n.out + "` units")
-				until
-					i > n
-				loop
-					o.putNL (matrix.item (i).out)				
-					i := i + 1
-				end -- loop
+			from
+				i := 1
+				n := matrix.count
+				debug
+					o.putNL (">>>> Incidence matrix has total `" + n.out + "` units")
+				end -- debug
+			until
+				i > n
+			loop
+				ctxUnit := matrix.item (i)
+				if ctxUnit.id >= 0 then
+					debug
+						o.putNL (ctxUnit.out)				
+					end -- debug
+-- IDs not set yet !!!
+--					ctxUnit.sortMemebrsByID
+				end -- if
+				--debug
+				--	o.putNL (ctxUnit.out)				
+				--end -- debug
+				i := i + 1
+			end -- loop
+			debug
 				o.putNL ("<<<< End of matrix")
-			--end -- debug
+			end -- debug
 		end -- if
 	end -- allUnitInterfacesAreValid
 
-	assignID (currentUnit: ContextUnit; currentID: Integer_Ref) is
+	assignID (currentUnit: ContextUnit; currentID: Integer_Ref; o: Output) is
 	require
 		non_void_current_unit: currentUnit /= Void
 		valid_id: currentID /= Void and then currentID.item >= 0
 	local
 		children: Sorted_Array [ContextUnit]
-		i, n: Integer
+		index: Integer
 	do
 		if currentUnit.id = 0 then
 			if currentUnit.isVirtual then -- or else currentUnit.isTemplate or else currentUnit.isGeneric then
@@ -160,17 +171,17 @@ feature {Any}
 			else
 				currentUnit.setID(currentID.item)
 				currentID.set_item (currentID.item + 1)
-			end -- if
+			end -- if			
+			currentUnit.getMembersFromParents (o)
 			children := currentUnit.children
-			children.qsort -- resort children by the number of their children
+			children.qsort -- resort children by the number of their children. Right one has the biggest # of children
 			from
-				i := 1
-				n := children.count
+				index := children.count
 			until
-				i > n
+				index = 0 
 			loop
-				assignID (children.item (i), currentID)
-				i := i + 1
+				assignID (children.item (index), currentID, o)
+				index := index - 1
 			end -- loop
 		end -- if		
 	end -- assignID
@@ -904,7 +915,6 @@ feature {Any}
 		name:= aName
 		set_clusters_and_libraries (c, l)
 		create allContextTypes.make
-		--create allInstantiations.make
 		create matrix.make
 	end -- init_common
 	feature {Any}
@@ -3515,7 +3525,12 @@ feature
 	end -- isTemplate
 	isGeneric: Boolean is
 	deferred 
-	end -- isGeneric	
+	end -- isGeneric
+	--buildRowVector (heigth: Integer) is
+	--require
+	--	valid_height: heigth > 0
+	--do
+	--end -- buildRowVector	
 end -- class ContextTypeDescriptor
 
 class UnitDeclarationDescriptor
@@ -3531,7 +3546,7 @@ class UnitDeclarationDescriptor
 inherit
 	ContextTypeDescriptor
 		redefine
-			out
+			out --, buildRowVector
 	end
 create 
 	init, makeForSearch
@@ -3686,6 +3701,14 @@ feature {Any}
 	unitMembers: Sorted_Array [MemberDeclarationDescriptor]
 	initMembers: Sorted_Array [InitDeclarationDescriptor] -- MemberDeclarationDescriptor]
 	memberNames: Sorted_Array [String]
+
+	--memebersVector: Sorted_Array [MemberInVectorDescriptor]
+	--
+	--buildRowVector (heigth: Integer) is
+	--do
+	--	create memebersVector.make
+	--	-- How to fill this vector
+	--end -- buildRowVector	
 	
 	hasNoEntryPointInitProcedure: Boolean is
 	local
