@@ -3022,6 +3022,10 @@ feature {Any}
 	
 	isOfArrayOfStringType: Boolean is once end
 
+	type: TypeDescriptor is
+	do
+	end -- type
+
 feature {None}
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -3048,7 +3052,7 @@ class NamedParameterDescriptor
 inherit	
 	ParameterDescriptor
 		redefine
-			isOfArrayOfStringType
+			isOfArrayOfStringType, type
 	end
 create 
 	init
@@ -3136,6 +3140,8 @@ class InitialisedParameterDescriptor
 -- Parameter: Identifier "is" Expression
 inherit	
 	ParameterDescriptor
+		redefine
+			type
 	end
 create 
 	init
@@ -3158,6 +3164,11 @@ feature {Any}
 			Result := expr.exprType.out
 		end -- if
 	end -- getSignatureName
+
+	type: TypeDescriptor is
+	do
+		Result := expr.exprType
+	end -- type
 
 	sameAs (other: like Current): Boolean is
 	do
@@ -3194,6 +3205,8 @@ class AssignAttributeParameterDescriptor
 -- Parameter: ":=" [Identifier]
 inherit	
 	ParameterDescriptor
+		redefine
+			type
 	end
 create 
 	init
@@ -3224,6 +3237,11 @@ feature {Any}
 	do
 		Result := name < other.name
 	end -- lessThan
+
+	type: TypeDescriptor is
+	do
+		-- Find an entity with the name and return its type
+	end -- type
 
 feature {None}
 
@@ -5260,12 +5278,16 @@ feature {Any}
 	fullMemberName: String is
 	do
 		Result := ""
-		if isOverriding then
-			Result.append_string ("override ")
-		end -- if
+		--if isOverriding then
+		--	Result.append_string ("override ")
+		--end -- if
 		Result.append_string (name)
 		Result.append_string (signatureAsString)
 	end -- fullMemberName
+
+	signature: SignatureDescriptor is
+	deferred
+	end -- signature
 	
 	signatureAsString: String is
 	deferred
@@ -5858,6 +5880,12 @@ feature {Any}
 	--do
 	--	name := aName
 	--end -- make_for_search
+	
+	signature: SignatureDescriptor is
+	do
+		create Result.make (parameters, type)
+	end -- signature	
+	
 	init (isO, isFi, isP, isS: Boolean; aName: like name; anAliasName: like aliasName; p: like parameters; t: like type; u: like usage; c: like constants; pre: like preconditions; isF, isV: Boolean; b: like innerBlock; e: like expr; post: like postconditions) is
 	require
 		name_not_void: aName /= Void
@@ -5935,6 +5963,11 @@ feature {Any}
 	generationFailed(cg: CodeGenerator): Boolean is
 	do
 	end -- generationFailed
+
+	signature: SignatureDescriptor is
+	do
+		create Result.make (parameters, Void)
+	end -- signature
 
 end -- class InitDeclarationDescriptor
 
@@ -6923,6 +6956,17 @@ feature {Any}
 	do
 		Result := name < other.name
 	end -- lessThan
+
+	signature: SignatureDescriptor is
+	do
+		if type = Void then
+			if expr /= Void and then expr.exprType /= Void  then
+				create Result.init (Void, expr.exprType)
+			end -- if		
+		else
+			create Result.init (Void, type)
+		end -- if	
+	end -- signature	
 
 	signatureAsString: String is
 	do
@@ -11563,10 +11607,31 @@ inherit
 			out, is_equal
 	end
 create	
-	init
+	init, make
 feature {Any}
 	parameters: Array [TypeDescriptor]
 	returnType: TypeDescriptor
+
+	make (p: Array [ParameterDescriptor]; t: like returnType) is
+	local
+		index: Integer
+	do
+		returnType := t
+		if p = Void then
+			create parameters.make (1, 0)
+		else
+			from
+				index := p.count 
+				create parameters.make (1, index)
+			until
+				index = 0
+			loop
+				parameters.put (p.item(index).type, index)
+				index := index - 1
+			end -- loop
+		end -- if
+	end -- make
+	
 
 	init (p: like parameters; t: like returnType) is
 	do

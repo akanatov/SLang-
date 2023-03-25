@@ -7,6 +7,7 @@ end
 
 unit B
 	foo do end
+	goo: B
 end
 
 abstract unit Any

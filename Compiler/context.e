@@ -43,6 +43,24 @@ feature
 	do
 		Result := currentVersion.signatureIdenticalTo (inheritedVersion)
 	end -- theSameSignatures
+
+	sameSignatures (parentVersion: MemberDeclarationDescriptor; inheritedOverride: InheritedMemberOverridingDescriptor): Boolean is
+	require
+		parentVersion /= Void
+		inheritedOverride /= Void
+	local
+		parentSignature: SignatureDescriptor
+	do
+		parentSignature := parentVersion.signature
+		if inheritedOverride.signature = Void then
+			Result :=  parentSignature = Void  
+		elseif parentSignature /= Void then
+			Result := inheritedOverride.signature.is_equal (parentSignature)
+		end -- if
+		--	signature: SignatureDescriptor
+		--		parameters: Array [TypeDescriptor]
+		--		returnType: TypeDescriptor
+	end -- sameSignatures
 	
 	buildFlatForm (o: Output) is
 	local
@@ -84,7 +102,9 @@ feature
 				until
 					index = 0
 				loop
-					if parentMember.version.name.is_equal (inheritedOverrides.item (index).name) then
+					if parentMember.version.name.is_equal (inheritedOverrides.item (index).name) and then
+						sameSignatures (parentMember.version, inheritedOverrides.item (index))
+					then
 						-- Signature is not checked yet !!!
 						create inheritedOverridingMember.makeFromMember (parentMember)
 						members.add (inheritedOverridingMember)
@@ -101,8 +121,7 @@ feature
 						index = 0
 					loop
 						member := members.item (index)
-						if member.version.name.is_equal (parentMember.version.name) then
-							-- Signature is not checked yet !!!
+						if member.version.name.is_equal (parentMember.version.name) and then member.version.conformsTo (parentMember.version) then
 							if member.isOverriding then
 								-- overriding in place check if signatures conform !
 								if not ConformingSignatures (member.version, parentMember.version) then 
@@ -112,9 +131,10 @@ feature
 										"` from parent `" + parent.contextTypeDsc.fullUnitName + "` and member `" + parentMember.version.fullMemberName + "`"
 									)
 								end -- if
+								member.setSeedAndOrigin (parentMember.seed, parentMember.origin)
 								toAddAsInherited := False
 							elseif theSameSignatures (member.version, parentMember.version) then
-								-- identical signatures - versions calsh ! Duplicating versions detected !!!
+								-- identical signatures - versions clash ! Duplicating versions detected !!!
 								o.putNL (
 									"Duplicating member inherited in unit `" + contextTypeDsc.fullUnitName + 
 									"` member `" + member.version.fullMemberName +
@@ -140,10 +160,11 @@ feature
 	out: String is
 	local
 		index: Integer
+		i, n: Integer
 		inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]
 		unitMembers: Sorted_Array [MemberDeclarationDescriptor]	
 	do
-		Result := "%T#" + id.out + " - `" + contextTypeDsc.fullUnitName + "`"
+		Result := "%T#" + id.out + "%T`" + contextTypeDsc.fullUnitName + "`"
 		if False then
 			index := parents.count
 			if index > 0 then
@@ -174,16 +195,17 @@ feature
 				Result.append_character (';')
 			end -- if
 		end -- if
-		index := members.count
-		if index > 0 then
+		n := members.count
+		if n > 0 then
 			from
+				i := 1
 				Result.append_character (':')
 			until
-				index = 0
+				i > n
 			loop
 				Result.append_character ('%T')
-				Result.append_string (members.item(index).out)
-				index := index - 1
+				Result.append_string (members.item(i).out)
+				i := i + 1
 			end -- loop	
 		else
 			inheritedOverrides := contextTypeDsc.getUnitDeclaration.inheritedOverrides
@@ -285,7 +307,7 @@ feature
 		parentUnit.children.add (Current)
 	end -- addParent
 feature {None}
-	sortMode: UnitSortMode is
+	sortMode: SortMode is
 	once
 		create Result
 	end -- sortMode
@@ -329,14 +351,14 @@ invariant
 	non_void_parents: parents /= Void
 	non_void_children: children /= Void
 end -- class ContextUnit
-class UnitSortMode
-feature {ContextUnit}
+class SortMode
+feature {ContextUnit, MemberInVectorDescriptor}
 	mode: Character
 	setMode (m: Character) is
 	do
 		mode := m
 	end -- setMode
-end -- class UnitSortMode
+end -- class SortMode
 
 class InheritedMemberInVectorDescriptor
 inherit
@@ -465,32 +487,48 @@ feature
 
 	out: String is
 	do
-		Result := clone(version.fullMemberName)
+		if isOverriding then
+			Result := "*"
+		else
+			Result := ""
+		end -- if
+		--Result := clone(version.fullMemberName)
+		Result.append_string(version.fullMemberName)
 		Result.append_character('@')
 		Result.append_string(versionUnit.fullUnitName)
 		Result.append_character('[')
-		if version = seed then
-			-- Start of the member version
-			check
-				seed /= Void
-				origin /= Void
-			end -- check
+		if seed = Void then
+			Result.append_string("<Void>")
+		else
 			Result.append_string(seed.fullMemberName)
 			Result.append_character('$')
+			check
+				origin /= Void
+			end -- check
 			Result.append_string(origin.fullUnitName)
-		else
-			if seed = Void then
-				Result.append_string("<Void>")
-			else
-				Result.append_string(seed.fullMemberName)
-				Result.append_character('$')
-				check
-					origin /= Void
-				end -- check
-				Result.append_string(origin.fullUnitName)
-			end -- if
 		end -- if
-		Result.append_character(']')
+		Result.append_character(']')		
+		--if version = seed then
+		--	-- Start of the member version
+		--	check
+		--		seed /= Void
+		--		origin /= Void
+		--	end -- check
+		--	Result.append_string(seed.fullMemberName)
+		--	Result.append_character('$')
+		--	Result.append_string(origin.fullUnitName)
+		--else
+		--	if seed = Void then
+		--		Result.append_string("<Void>")
+		--	else
+		--		Result.append_string(seed.fullMemberName)
+		--		Result.append_character('$')
+		--		check
+		--			origin /= Void
+		--		end -- check
+		--		Result.append_string(origin.fullUnitName)
+		--	end -- if
+		--end -- if
 	end -- out
 	setSortByID is
 	do
@@ -511,7 +549,7 @@ feature
 		origin := anOrigin
 	end -- setSeed
 feature {None}
-	sortMode: MemberSortMode is
+	sortMode: SortMode is
 	once
 		create Result
 	end -- sortMode
@@ -535,11 +573,11 @@ invariant
 	non_void_version_unit: versionUnit /= Void
 	--non_void_seed: seed /= Void
 end -- class MemberInVectorDescriptor
-class MemberSortMode
-feature {MemberInVectorDescriptor}
-	mode: Character
-	setMode (m: Character) is
-	do
-		mode := m
-	end -- setMode
-end -- class MemberSortMode
+--class MemberSortMode
+--feature {MemberInVectorDescriptor}
+--	mode: Character
+--	setMode (m: Character) is
+--	do
+--		mode := m
+--	end -- setMode
+--end -- class MemberSortMode
