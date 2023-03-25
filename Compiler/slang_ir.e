@@ -140,6 +140,7 @@ feature {Any}
 			loop
 				ctxUnit := matrix.item (i)
 				if ctxUnit.id >= 0 then
+					ctxUnit.sortMemebrsByOriginAndSeed
 					debug
 						o.putNL (ctxUnit.out)				
 					end -- debug

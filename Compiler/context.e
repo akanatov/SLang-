@@ -28,43 +28,6 @@ feature
 		Result := contextTypeDsc.isGeneric
 	end -- isGeneric
 
-	--buildRowVector  (heigth: Integer) is
-	--		contextTypeDsc.buildRowVector (heigth)
-	--buildOwnMemebrsList is
-	--do
-	--	create members.make
-	--end -- buildOwnMemebrsList
-	
-	--findSimilarMembers (parentMember: MemberInVectorDescriptor): Sorted_Array [MemberInVectorDescriptor] is
-	--local
-	--	index: Integer
-	--	member: MemberInVectorDescriptor
-	--do
-	--	from
-	--		index := members.count
-	--	until
-	--		index = 0
-	--	loop
-	--		member := members.item (index)
-	--		if member.version.name.is_equal (parentMember.version.name) then
-	--			if member.isOverriding then
-	--				-- ???
-	--			else
-	--				-- ???
-	--			end -- if
-	--			if Result = Void then
-	--				create Result.fill (<<member>>) 
-	--			else
-	--				Result.add (member)
-	--			end -- if
-	--		end -- if
-	--		index := index - 1
-	--	end -- loop
-	--	if Result /= Void then
-	--		-- ???? XXX
-	--	end -- if
-	--end -- findSimilarMembers
-
 	ConformingSignatures (currentVersion, inheritedVersion: MemberDeclarationDescriptor): Boolean is
 	require
 		currentVersion /= Void
@@ -86,9 +49,7 @@ feature
 		parent: ContextUnit
 		inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]
 		pMembers: Sorted_Array [MemberInVectorDescriptor]
-		--oMembers: Sorted_Array [MemberInVectorDescriptor]
 		parentMember: MemberInVectorDescriptor
-		--overridingMember: MemberInVectorDescriptor
 		inheritedMember: InheritedMemberInVectorDescriptor
 		inheritedOverridingMember: InheritedOverridingMemberInVectorDescriptor
 		member: MemberInVectorDescriptor
@@ -97,7 +58,6 @@ feature
 		index: Integer
 		ioCount: Integer
 		toAddAsInherited: Boolean
-		--pos: Integer
 	do
 		inheritedOverrides := contextTypeDsc.getUnitDeclaration.inheritedOverrides
 		if inheritedOverrides /= Void then
@@ -171,33 +131,6 @@ feature
 						members.add (inheritedMember)
 					end -- if
 				end -- if
-				
-				
-				--oMembers := findSimilarMembers (parentMember)
-				--if oMembers = Void then
-				--	-- simply inherited !
-				--	create inheritedMember.makeFromMember (parentMember)
-				--	members.add (inheritedMember)
-				--else
-				--	-- there are several members beign inherited under the same name + signature
-				--end -- oMembers
-				
-				--pos := members.seek (inheritedMember)
-				--if pos <= 0 then
-				--	members.add_after (inheritedMember, pos)
-				--else
-				--	-- overriding ?
-				--	overridingMember := members.item (pos)
-				--	if overridingMember.isOverriding then
-				--		-- Not implemented yet !!! Check for conformance !!!
-				--	else
-				--		-- Duplicating declaration detected !!!
-				--		o.putNL (
-				--			"Duplicating member inherited in unit `" + contextTypeDsc.fullUnitName + "` member `" + overridingMember.version.fullMemberName +
-				--			"` from parent `" + parent.contextTypeDsc.fullUnitName + "`"
-				--		)
-				--	end -- if					
-				--end -- if
 				mIndex := mIndex - 1
 			end -- loop
 			pIndex := pIndex - 1
@@ -294,6 +227,14 @@ feature
 			members.qsort
 		end -- if
 	end -- sortMemebrsByID
+
+	sortMemebrsByOriginAndSeed is
+	do
+		if members.count > 0 then
+			members.item (1).setSortByOriginAndSeed
+			members.qsort
+		end -- if
+	end -- sortMemebrsByOriginAndSeed
 		
 	setSortByChildrenCount is
 	do
@@ -468,7 +409,6 @@ feature
 		inspect 
 			sortMode.mode
 		when defaultMode then
-			--Result := seed.is_equal (other.seed) and then version.is_equal (other.version)
 			Result := version.is_equal (other.version)
 			if Result then
 				if seed /= other.seed and then seed /= Void and then other.seed /= Void then
@@ -477,6 +417,15 @@ feature
 			end -- if
 		when idMode then
 			Result := id = other.id
+		when originAndSeedMode then
+			if seed /= Void and then other.seed /= Void then
+				check
+					origin /= Void
+				end -- check
+				Result := seed.is_equal (other.seed) and then origin.is_equal (other.origin) and then version.is_equal (other.version)
+			else
+				Result := version.is_equal (other.version)
+			end -- if
 		end -- inspect
 	end -- is_equal
 	infix "<" (other: like Current): Boolean is
@@ -496,37 +445,63 @@ feature
 			end -- if
 		when idMode then
 			Result := id < other.id
+		when originAndSeedMode then
+			if origin = Void then
+				Result := other.origin /= Void
+			elseif other.origin /= Void then
+				check
+					seed /= Void
+					other.seed /= Void
+				end -- check
+				Result := seed < other.seed
+				if not Result and then seed.is_equal (other.seed) then
+					Result := version < other.version
+				end -- if
+			else			
+				Result := version < other.version
+			end -- if
 		end -- inspect
 	end -- infix "<"
+
 	out: String is
 	do
 		Result := clone(version.fullMemberName)
 		Result.append_character('@')
 		Result.append_string(versionUnit.fullUnitName)
-		--Result.append_character('-')
-		--if version = seed then
-		--	-- Start of the member version
-		--	check
-		--		seed /= Void
-		--		origin /= Void
-		--	end -- check
-		--	Result.append_string(seed.fullMemberName)
-		--	Result.append_character('$')
-		--	Result.append_string(origin.fullUnitName)
-		--else
-		--	if seed = Void then
-		--		Result.append_string("<Void>")
-		--	else
-		--		Result.append_string(seed.fullMemberName)
-		--		Result.append_character('$')
-		--		Result.append_string(origin.fullUnitName)
-		--	end -- if
-		--end -- if
+		Result.append_character('[')
+		if version = seed then
+			-- Start of the member version
+			check
+				seed /= Void
+				origin /= Void
+			end -- check
+			Result.append_string(seed.fullMemberName)
+			Result.append_character('$')
+			Result.append_string(origin.fullUnitName)
+		else
+			if seed = Void then
+				Result.append_string("<Void>")
+			else
+				Result.append_string(seed.fullMemberName)
+				Result.append_character('$')
+				check
+					origin /= Void
+				end -- check
+				Result.append_string(origin.fullUnitName)
+			end -- if
+		end -- if
+		Result.append_character(']')
 	end -- out
 	setSortByID is
 	do
 		sortMode.setMode (idMode)
 	end -- setSortByID
+
+	setSortByOriginAndSeed is
+	do
+		sortMode.setMode (originAndSeedMode)
+	end -- setSortByOriginAndSeed
+
 	setSeedAndOrigin (aSeed: like seed; anOrigin: like origin) is
 	require
 		non_void_seed: aSeed /= Void	
@@ -554,6 +529,7 @@ feature {None}
 	end -- init
 	defaultMode:  Character is 'D'
 	idMode: Character is '#'
+	originAndSeedMode: Character is 'O'
 invariant
 	non_void_version: version /= Void
 	non_void_version_unit: versionUnit /= Void
