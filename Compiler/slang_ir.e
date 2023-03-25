@@ -172,7 +172,7 @@ feature {Any}
 				currentUnit.setID(currentID.item)
 				currentID.set_item (currentID.item + 1)
 			end -- if			
-			currentUnit.getMembersFromParents (o)
+			currentUnit.buildFlatForm (o)
 			children := currentUnit.children
 			children.qsort -- resort children by the number of their children. Right one has the biggest # of children
 			from
@@ -188,13 +188,11 @@ feature {Any}
 
 	anyDclDsc: UnitDeclarationDescriptor is
 	once
-		create Result.makeForSearch ("Any", Void)
+		create Result.makeForSearch (anyName, Void)
 	end -- anyDclDsc
 	
 	lookForUnitAny: UnitDeclarationDescriptor is
 	do
-		--create Result.makeForSearch ("Any", Void)
-		--Result ?= allContextTypes.search (Result)
 		Result ?= allContextTypes.search (anyDclDsc)		
 	end -- lookForUnitAny
 	
@@ -3004,6 +3002,13 @@ feature {Any}
 	ensure
 		non_void_external_name: Result /= Void
 	end -- getExternalName
+
+	getSignatureName: String	is
+	deferred
+	ensure
+		non_void_external_name: Result /= Void
+	end -- getSignatureName
+	
 	isOfArrayOfStringType: Boolean is once end
 feature {None}
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -3013,7 +3018,7 @@ feature {None}
 	do
 		-- do nothing so far
 	end -- generationFailed
-invariant
+--invariant
 	--name_not_void: name /= Void
 end -- class ParameterDescriptor
 
@@ -3029,6 +3034,12 @@ create
 feature {Any}
 	isRigid: Boolean
 	type: TypeDescriptor
+
+	getSignatureName: String is
+	do
+		Result := type.out
+	end -- getSignatureName
+
 	isOfArrayOfStringType: Boolean is
 	local
 		unitTypDsc: UnitTypeCommonDescriptor
@@ -3112,6 +3123,14 @@ feature {Any}
 		Result := clone(name)  + "$is"
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
+	getSignatureName: String is
+	do
+		if expr.exprType = Void then
+			Result := "?"
+		else
+			Result := expr.exprType.out
+		end -- if
+	end -- getSignatureName
 
 	sameAs (other: like Current): Boolean is
 	do
@@ -3159,6 +3178,10 @@ feature {Any}
 		Result := out
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
+	getSignatureName: String is
+	do
+		Result := out
+	end -- getSignatureName
 
 	sameAs (other: like Current): Boolean is
 	do
@@ -3546,7 +3569,13 @@ class UnitDeclarationDescriptor
 inherit
 	ContextTypeDescriptor
 		redefine
-			out --, buildRowVector
+			out
+	end
+	Server
+		undefine
+			is_equal
+		redefine
+			out	
 	end
 create 
 	init, makeForSearch
@@ -4244,9 +4273,9 @@ feature {Any}
 			create currentContextUnit.init (Current)
 			currentContextUnit := sysDsc.matrix.add_it (currentContextUnit)
 			
-			n := parents.count
-			if n = 0 then
-				if name.is_equal ("Any") then
+				n := parents.count
+				if n = 0 then
+				if name.is_equal (anyName) then
 					sysDsc.setAny (currentContextUnit)
 				else
 					-- Look for Any and ensure is it valid
@@ -5161,6 +5190,7 @@ feature {Any}
 			Result.append_string ("final ")
 		end -- if
 	end -- out
+	
 	fullMemberName: String is
 	do
 		Result := ""
@@ -5168,7 +5198,12 @@ feature {Any}
 			Result.append_string ("override ")
 		end -- if
 		Result.append_string (name)
+		Result.append_string (signatureAsString)
 	end -- fullMemberName
+	
+	signatureAsString: String is
+	deferred
+	end -- signatureAsString
 	
 	cutImplementation is
 	deferred
@@ -5398,6 +5433,36 @@ feature {Any}
 
 	aliasName: String is do end -- aliasName
 	
+	signatureAsString: String is
+	local
+		i, n: Integer
+	do
+		Result := ""
+		if parameters /= Void then
+			n := parameters.count
+			if n > 0 then
+				from
+					Result.append_string (" (")
+					i := 1
+				until
+					i > n
+				loop
+					Result.append_string (parameters.item (i).getSignatureName)
+					if i < n then
+						Result.append_string (", ")
+					end -- if
+					i := i + 1
+				end -- loop
+				Result.append_character (')')
+			end -- if
+		end -- if
+		if type /= Void then
+			Result.append_character(':')
+			Result.append_character(' ')
+			Result.append_string (type.out)
+		end -- if
+	end -- signatureAsString
+
 	out: String is
 	local
 		i, n: Integer
@@ -6664,9 +6729,7 @@ inherit
 	MemberDeclarationDescriptor
 		rename
 			out as memberOut
-			export {NONE} memberOut
---		undefine
---			is_equal, infix "<"
+			export {None} memberOut
 	end
 create
 	init, init_for_search, make_for_search
@@ -6689,6 +6752,18 @@ feature {Any}
 	do
 		Result := name < other.name
 	end -- lessThan
+
+	signatureAsString: String is
+	do
+		if type = Void then
+			Result := ""
+			if expr /= Void and then expr.exprType /= Void  then
+				Result.append_string (expr.exprType.out)
+			end -- if		
+		else
+			Result := ": " + type.out
+		end -- if	
+	end -- signatureAsString
 	
 	generationFailed(cg: CodeGenerator): Boolean is
 	do

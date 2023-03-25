@@ -7,7 +7,8 @@ feature
 
 	unitAnyDsc: UnitTypeNameDescriptor is
 	once
-		create Result.init ("Any", Void)
+		create Result.init (anyName, Void)
 	end -- unitAnyDsc
 
-end
+	anyName: String is "Any"
+end -- class Server

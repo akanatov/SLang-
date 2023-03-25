@@ -7350,8 +7350,9 @@ end -- debug
 		create Result
 	end -- anyDsc
 	
-	parseMemberVisibility (unitDsc: UnitDeclarationDescriptor): MemberVisibilityDescriptor is
-	--18 “{” [this| UnitTypeNameDescriptor {“,” UnitTypeNameDescriptor}  ] “}”
+	--parseMemberVisibility (unitDsc: UnitDeclarationDescriptor): MemberVisibilityDescriptor is
+	parseMemberVisibility: MemberVisibilityDescriptor is
+	-- “{” [this| UnitTypeNameDescriptor {“,” UnitTypeNameDescriptor}  ] “}”
 	require
 		valid_token: validToken (<<scanner.left_curly_bracket_token, scanner.left_square_bracket_token>>)
 	local
@@ -7387,11 +7388,11 @@ end -- debug
 				when scanner.type_name_token then
 					if commaFound or else svDsc.clients.count = 0 then
 						commaFound := False
-						if unitDsc.hasFormalGenericParameter (scanner.tokenString) then
+						if currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 							-- attempt to override a member of generic parameter
 							validity_error(
-								"Generic parameter name `" + scanner.tokenString + "` can not be listed in clients list in type `" + 
-								unitDsc.fullUnitName + "`"
+								"Generic parameter name `" + scanner.tokenString + "` can not be listed in clients list in unit `" + 
+								currentUnitDsc.fullUnitName + "`"
 							)
 							scanner.nextToken
 							toLeave := True
@@ -7399,8 +7400,8 @@ end -- debug
 							utnDsc := parseUnitTypeName
 							if utnDsc = Void then
 								toLeave := True
-							else
-								if utnDsc.name.is_equal ("Any") then
+							else								
+								if utnDsc.name.is_equal (anyName) then
 									anyFound := True
 								elseif not anyFound then
 									svDsc.clients.add (utnDsc)
@@ -7515,12 +7516,12 @@ end -- debug
 		end -- loop
 	end -- parseMemberSelection
 
-	parseInheritedOverrideTail (uDsc: UnitTypeNameDescriptor; unitDsc: UnitDeclarationDescriptor) is
+	parseInheritedOverrideTail (uDsc: UnitTypeNameDescriptor) is --; unitDsc: UnitDeclarationDescriptor) is
 	-- override uDsc.
 	--              ^
 	require
 		utnd_not_void: uDsc /= Void
-		unit_dsc_not_void: unitDsc /= Void
+		--unit_dsc_not_void: unitDsc /= Void
 		valid_token: validToken (<<scanner.dot_token>>)
 	local
 		signDsc: SignatureDescriptor
@@ -7529,9 +7530,10 @@ end -- debug
 		ident: String
 		commaFound: Boolean
 		toLeave: Boolean
-	do
-		if unitDsc.findParent (uDsc) = Void then
-			validity_error( "Override refers to the unit `" + uDsc.out + "` which is not a parent of unit `" + unitDsc.name + "`")
+	do		
+		--if unitDsc.findParent (uDsc) = Void then
+		if currentUnitDsc.findParent (uDsc) = Void then
+			validity_error( "Override refers to the unit `" + uDsc.out + "` which is not a parent of unit `" + currentUnitDsc.fullUnitName + "`")
 		end -- if
 		scanner.nextToken
 		if scanner.token = scanner.identifier_token then
@@ -7546,8 +7548,8 @@ end -- debug
 			end -- inspect
 			create imoDsc.init (uDsc, ident, signDsc)
 			-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
-			if not unitDsc.inheritedOverrides.added (imoDsc) then
-				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + unitDsc.name + "`")
+			if not currentUnitDsc.inheritedOverrides.added (imoDsc) then
+				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + currentUnitDsc.fullUnitName + "`")
 			end -- if
 			-- Now check for the list 
 			if scanner.token = scanner.comma_token then
@@ -7560,7 +7562,7 @@ end -- debug
 						scanner.token
 					when scanner.comma_token then
 						if commaFound then
-							if unitDsc.inheritedOverrides.count > 1 then
+							if currentUnitDsc.inheritedOverrides.count > 1 then
 								syntax_error (<<scanner.identifier_token>>)
 								toLeave := True
 							end -- if
@@ -7572,10 +7574,11 @@ end -- debug
 						if commaFound then 
 							-- UnitTypeName”.”Identifier[Signature]
 							commaFound := False
-							if unitDsc.hasFormalGenericParameter (scanner.tokenString) then
+							if currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 								-- attempt to override a member of generic parameter
 								validity_error(
-									"Member of the generic parameter `" + scanner.tokenString + "` can not be overrided. Only unit type members can be overrided"
+									"Member of the generic parameter `" + scanner.tokenString + 
+									"` can not be overrided. Only unit type members can be overrided"
 								)
 								scanner.nextToken
 								toLeave := True
@@ -7597,8 +7600,8 @@ end -- debug
 											end -- inspect
 											create imoDsc.init (utnDsc, ident, signDsc)
 											-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
-											if not unitDsc.inheritedOverrides.added (imoDsc) then
-												validity_error( "Duplicated overriding of `" + imoDsc.out + "` in type `" + unitDsc.name + "`")
+											if not currentUnitDsc.inheritedOverrides.added (imoDsc) then
+												validity_error( "Duplicated overriding of `" + imoDsc.out + "` in type `" + currentUnitDsc.fullUnitName + "`")
 											end -- if
 										else
 											syntax_error (<<scanner.identifier_token>>)
@@ -7624,9 +7627,8 @@ end -- debug
 		end -- if
 	end -- parseInheritedOverrideTail
 	
-	parseInheritedMemberOverridingOrMemberDeclaration 
-		(currentVisibilityZone: MemberVisibilityDescriptor; unitDsc: UnitDeclarationDescriptor): Boolean is 
-		--74
+	parseInheritedMemberOverridingOrMemberDeclaration (currentVisibilityZone: MemberVisibilityDescriptor): Boolean is 
+		--(currentVisibilityZone: MemberVisibilityDescriptor; unitDsc: UnitDeclarationDescriptor): Boolean is 
 		-- override InheritedMemberOverridingDescriptor {“,” InheritedMemberOverridingDescriptor}
 		-- parse "override InheritedMemberOverriding"
 		--                 ^UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]
@@ -7634,7 +7636,7 @@ end -- debug
 		--                 ^[final] UnitAttribiteDeclaration|UnitRoutineDeclaration	
 	require
 		valid_token: validToken (<<scanner.override_token>>)
-		unit_descriptor_not_void: unitDsc /= Void
+		--unit_descriptor_not_void: unitDsc /= Void
 	local
 		utnDsc: UnitTypeNameDescriptor
 		nmdDsc: NamedTypeDescriptor
@@ -7645,24 +7647,28 @@ end -- debug
 			scanner.token
 		when scanner.final_token, scanner.pure_token, scanner.safe_token then
 			-- override final UnitAttribiteDeclaration|UnitRoutineDeclaration	
-			parseMember (currentVisibilityZone, unitDsc, True, Void)
+			--parseMember (currentVisibilityZone, unitDsc, True, Void)
+			parseMember (currentVisibilityZone, True, Void)			
 			Result := True
 		when scanner.const_token, scanner.rigid_token then
 			-- override const UnitAttribiteDeclaration
-			parseMember (currentVisibilityZone, unitDsc, True, Void)
+			--parseMember (currentVisibilityZone, unitDsc, True, Void)
+			parseMember (currentVisibilityZone, True, Void)			
 			Result := True
 		when 
 			scanner.operator_token,
 			scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
 			scanner.assignment_token, scanner.left_paranthesis_token
 		then
-			-- override operator ...
-			parseMember (currentVisibilityZone, unitDsc, True, Void)
+			-- override operator ... XXX
+			--parseMember (currentVisibilityZone, unitDsc, True, Void)
+			parseMember (currentVisibilityZone, True, Void)
 			Result := True
 		when scanner.type_name_token then
 			ident := scanner.tokenString
-			scanner.nextToken
-			if unitDsc.hasFormalGenericParameter (ident) then
+			scanner.nextToken			
+			--if unitDsc.hasFormalGenericParameter (ident) then
+			if currentUnitDsc.hasFormalGenericParameter (ident) then
 				-- attempt to override a member of generic parameter
 				validity_error( "Member of the generic parameter `" + ident + "` can not be overrided. Only unit type members can be overrided")
 			else
@@ -7675,7 +7681,7 @@ end -- debug
 					check
 						unit_type_registered: utnDsc /= Void
 					end -- check
-					parseInheritedOverrideTail (utnDsc, unitDsc)
+					parseInheritedOverrideTail (utnDsc) --, unitDsc)
 				else
 					if scanner.genericsStart then
 						-- parse "override identifier [UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor] {", UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]"}"
@@ -7688,7 +7694,7 @@ end -- debug
 							else
 								-- override UnitTypeNameDescriptor.
 								if scanner.token = scanner.dot_token then
-									parseInheritedOverrideTail (utnDsc, unitDsc)
+									parseInheritedOverrideTail (utnDsc) --, unitDsc)
 								else
 									syntax_error (<<scanner.dot_token>>)
 								end -- if
@@ -7704,7 +7710,8 @@ end -- debug
 		when scanner.identifier_token then
 			ident := scanner.tokenString
 			scanner.nextToken
-			parseMember (currentVisibilityZone, unitDsc, True, ident)
+			--parseMember (currentVisibilityZone, unitDsc, True, ident)
+			parseMember (currentVisibilityZone, True, ident)			
 			Result := True
 		--when scanner.left_paranthesis_token then
 		--	scanner.nextToken
@@ -8987,8 +8994,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		end -- if
 	end -- parsePureSafe
 
-	parseMemberDeclaration (unitDsc: UnitDeclarationDescriptor; isO: Boolean; name: String): Sorted_Array [MemberDeclarationDescriptor] is
-	--83
+	--parseMemberDeclaration (unitDsc: UnitDeclarationDescriptor; isO: Boolean; name: String): Sorted_Array [MemberDeclarationDescriptor] is
+	parseMemberDeclaration (isO: Boolean; name: String): Sorted_Array [MemberDeclarationDescriptor] is
 	-- scanner.override_token, scanner.final_token, scanner.const_token, scanner.identifier_token, 
 	-- scanner.operator_token, 
 	-- scanner.implies_token, scanner.bar_token, scanner.tilda_token, 
@@ -8996,8 +9003,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	-- scanner.assignment_token, scanner.left_paranthesis_token
 	-- name already parsed => scanner.left_paranthesis_token, scanner.colon_token, scanner.do_token, scanner.require_token
 	-- MemberDeclaration: [MemberVisibility]  ([override] [final] UnitAttribiteDeclaration|UnitRoutineDeclaration) | InitDeclaration
-	require
-		current_unit_not_void: unitDsc /= Void
+	--require
+	--	current_unit_not_void: unitDsc /= Void
 	local
 		rtnDsc: UnitRoutineDescriptor
 		memDsc: MemberDeclarationDescriptor
@@ -9029,7 +9036,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					--	syntax_error (<<scanner.identifier_token, scanner.pure_token, scanner.safe_token>>)
 					--end -- if
 				when scanner.identifier_token then
-					Result := parseUnitRoutineOrAttribute (unitDsc, isOverriding, isFinal)
+					Result := parseUnitRoutineOrAttribute (currentUnitDsc, isOverriding, isFinal)
 				when
 					scanner.operator_token,
 					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
@@ -9076,7 +9083,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					--	syntax_error (<<scanner.identifier_token, scanner.pure_token, scanner.safe_token>>)
 					--end -- if
 				when scanner.identifier_token then
-					Result := parseUnitRoutineOrAttribute (unitDsc, isOverriding, isFinal)
+					Result := parseUnitRoutineOrAttribute (currentUnitDsc, isOverriding, isFinal)
 				when
 					scanner.operator_token, -- scanner.minus_token, 
 					scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.bar_token, scanner.tilda_token,
@@ -9114,7 +9121,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				debug
 					--trace ("Unit or attribute - " + scanner.tokenString)
 				end -- debug
-				Result := parseUnitRoutineOrAttribute (unitDsc, isOverriding, isFinal)
+				Result := parseUnitRoutineOrAttribute (currentUnitDsc, isOverriding, isFinal)
 --trace ("NEXT!")
 			when
 				scanner.operator_token, --scanner.minus_token,
@@ -9192,14 +9199,21 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		end -- if
 	end -- parseMemberDeclaration
 
-	parseMember (currentVisibilityZone: MemberVisibilityDescriptor; unitDsc: UnitDeclarationDescriptor; isOverriding: Boolean; name: String) is
-	--84
+	--inTheInheritedOverridingList (mdDsc: MemberDeclarationDescriptor): Boolean is
+	--local
+	--	index: Integer
+	--do
+	--end -- inTheInheritedOverridingList
+	
+	--parseMember (currentVisibilityZone: MemberVisibilityDescriptor; unitDsc: UnitDeclarationDescriptor; isOverriding: Boolean; name: String) is
+	parseMember (currentVisibilityZone: MemberVisibilityDescriptor; isOverriding: Boolean; name: String) is
 	local
 		members: Sorted_Array [MemberDeclarationDescriptor]
 		mdDsc: MemberDeclarationDescriptor
 		i, n: Integer
 	do
-		members := parseMemberDeclaration (unitDsc, isOverriding, name)
+		--members := parseMemberDeclaration (unitDsc, isOverriding, name)
+		members := parseMemberDeclaration (isOverriding, name)
 		if members /= Void then
 			from
 				i := 1
@@ -9211,11 +9225,19 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				if mdDsc.visibility = Void then
 					mdDsc.setVisibility (currentVisibilityZone)
 				end -- if
-				if unitDsc.unitMembers.added (mdDsc) then
-					unitDsc.memberNames.add (mdDsc.name)
+				if currentUnitDsc.unitMembers.added (mdDsc) then
+					currentUnitDsc.memberNames.add (mdDsc.name)
+					--if mdDsc.isOverriding and then inTheInheritedOverridingList (mdDsc) then
+					--	-- Need to check that no inherited member makred as overriding
+					--	--unit A extend B
+					--	--	override B.foo
+					--	--	override foo do end
+					--	--end
+					--	validityError (mdDsc.toSourcePosition, "Duplicated overriding of member `" + mdDsc.name + "` inherited and declared in unit `" + currentUnitDsc.fullUnitName + "`")						
+					--end -- if
 				else
 					--validity_error( "Duplicated declaration of member `" + mdDsc.name + "` in type `" + unitDsc.name + "`") 
-					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in unit `" + unitDsc.name + "`") 
+					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in unit `" + currentUnitDsc.fullUnitName + "`") 
 				end -- if
 				i := i + 1
 			end -- loop
@@ -9504,8 +9526,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 
 			if scanner.token = scanner.extend_token then
 				-- parse inheritance clause
-				parseInheritanceClause
-			elseif not currentUnitDsc.name.is_equal ("Any") then
+				parseInheritanceClause			
+			elseif not currentUnitDsc.name.is_equal (anyName) then
 				-- Let's add inheritance from Any
 				utnDsc ?= register_type (unitAnyDsc)
 				check
@@ -9532,7 +9554,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 
 			if scanner.token = scanner.override_token then
 				-- parse "override InheritedMemberOverriding" or "override MemberDeclaration (goToMembers := True)"
-				goToMembers:= parseInheritedMemberOverridingOrMemberDeclaration (currentVisibilityZone, currentUnitDsc)
+				goToMembers:= parseInheritedMemberOverridingOrMemberDeclaration (currentVisibilityZone) --, currentUnitDsc)
 			end -- if
 
 			if scanner.token = scanner.new_token and then not goToMembers then
@@ -9571,7 +9593,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					scanner.bar_token,
 					scanner.const_token, scanner.rigid_token, scanner.assignment_token
 				then
-					parseMember (currentVisibilityZone, currentUnitDsc, False, Void)
+					parseMember (currentVisibilityZone, False, Void)
 				when scanner.override_token then
 					-- parse MemberDeclaration
 					scanner.nextToken
@@ -9583,13 +9605,13 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						scanner.bar_token,
 						scanner.const_token, scanner.rigid_token, scanner.assignment_token
 					then
-						parseMember (currentVisibilityZone, currentUnitDsc, True, Void)
+						parseMember (currentVisibilityZone, True, Void)
 					when scanner.left_paranthesis_token then
 						scanner.nextToken
 						if scanner.token = scanner.right_paranthesis_token then
 							scanner.nextToken
 							-- parse MemberDeclaration
-							parseMember (currentVisibilityZone, currentUnitDsc, False, "()")
+							parseMember (currentVisibilityZone, False, "()")
 						else
 							syntax_error (<<scanner.right_paranthesis_token>>)
 							toLeave := True
@@ -9656,7 +9678,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					if scanner.token = scanner.right_paranthesis_token then
 						scanner.nextToken
 						-- parse MemberDeclaration
-						parseMember (currentVisibilityZone, currentUnitDsc, False, "()")
+						parseMember (currentVisibilityZone, False, "()")
 					else
 						syntax_error (<<scanner.right_paranthesis_token>>)
 						toLeave := True
@@ -9670,7 +9692,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					elseif scanner.visibilityStart then
 						--	"{" MemberVisibility “:” {MemberDeclaration}
 						--	"{" MemberVisibility MemberDeclaration
-						mvDsc := parseMemberVisibility (currentUnitDsc)
+						--mvDsc := parseMemberVisibility (currentUnitDsc)
+						mvDsc := parseMemberVisibility
 						if mvDsc /= Void then
 							inspect
 								scanner.token
@@ -9687,7 +9710,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 								debug
 									--trace ("member with visibility " + mvDsc.out)
 								end -- debug
-								parseMember (mvDsc, currentUnitDsc, False, Void)
+								parseMember (mvDsc, False, Void)
 							when scanner.type_name_token then
 								typeName := scanner.tokenString
 								if typeName.is_equal (unitName) then
@@ -9733,13 +9756,13 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 									scanner.bar_token,
 									scanner.const_token, scanner.rigid_token, scanner.assignment_token
 								then
-									parseMember (mvDsc, currentUnitDsc, True, Void)
+									parseMember (mvDsc, True, Void)
 								when scanner.left_paranthesis_token then
 									scanner.nextToken
 									if scanner.token = scanner.right_paranthesis_token then
 										scanner.nextToken
 										-- parse MemberDeclaration
-										parseMember (currentVisibilityZone, currentUnitDsc, False, "()")
+										parseMember (currentVisibilityZone, False, "()")
 									else
 										syntax_error (<<scanner.right_paranthesis_token>>)
 										toLeave := True
@@ -9772,7 +9795,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 								if scanner.token = scanner.right_paranthesis_token then
 									scanner.nextToken
 									-- parse MemberDeclaration
-									parseMember (mvDsc, currentUnitDsc, False, "()")
+									parseMember (mvDsc, False, "()")
 								else
 									syntax_error (<<scanner.right_paranthesis_token>>)
 									toLeave := True

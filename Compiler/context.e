@@ -65,8 +65,19 @@ feature
 		end -- if
 	end -- findSimilarMembers
 	
-	getMembersFromParents (o: Output) is
+	getOverridingMembers: Sorted_Array [MemberInVectorDescriptor] is
 	local
+		unitDclDsc: UnitDeclarationDescriptor
+	do
+		unitDclDsc := contextTypeDsc.getUnitDeclaration
+		check
+			unitDclDsc /= Void
+		end -- check
+	end -- getOverridingMembers
+	
+	buildFlatForm (o: Output) is
+	local
+		overridingMembers: Sorted_Array [MemberInVectorDescriptor]
 		parent: ContextUnit
 		pMembers: Sorted_Array [MemberInVectorDescriptor]
 		oMembers: Sorted_Array [MemberInVectorDescriptor]
@@ -77,6 +88,7 @@ feature
 		mIndex: Integer
 		--pos: Integer
 	do
+		overridingMembers := getOverridingMembers
 		from
 			pIndex := parents.count
 		until
@@ -96,6 +108,7 @@ feature
 					create inheritedMember.makeFromMember (parentMember)
 					members.add (inheritedMember)
 				else
+					-- there are several members beign inherited under the same name + signature
 				end -- oMembers
 				--pos := members.seek (inheritedMember)
 				--if pos <= 0 then
@@ -117,7 +130,7 @@ feature
 			end -- loop
 			pIndex := pIndex - 1
 		end -- loop
-	end -- getMembersFromParents
+	end -- buildFlatForm
 	
 	out: String is
 	local
