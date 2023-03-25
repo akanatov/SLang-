@@ -35,81 +35,153 @@ feature
 	--	create members.make
 	--end -- buildOwnMemebrsList
 	
-	findSimilarMembers (parentMember: MemberInVectorDescriptor): Sorted_Array [MemberInVectorDescriptor] is
-	local
-		index: Integer
-		member: MemberInVectorDescriptor
+	--findSimilarMembers (parentMember: MemberInVectorDescriptor): Sorted_Array [MemberInVectorDescriptor] is
+	--local
+	--	index: Integer
+	--	member: MemberInVectorDescriptor
+	--do
+	--	from
+	--		index := members.count
+	--	until
+	--		index = 0
+	--	loop
+	--		member := members.item (index)
+	--		if member.version.name.is_equal (parentMember.version.name) then
+	--			if member.isOverriding then
+	--				-- ???
+	--			else
+	--				-- ???
+	--			end -- if
+	--			if Result = Void then
+	--				create Result.fill (<<member>>) 
+	--			else
+	--				Result.add (member)
+	--			end -- if
+	--		end -- if
+	--		index := index - 1
+	--	end -- loop
+	--	if Result /= Void then
+	--		-- ???? XXX
+	--	end -- if
+	--end -- findSimilarMembers
+
+	ConformingSignatures (currentVersion, inheritedVersion: MemberDeclarationDescriptor): Boolean is
+	require
+		currentVersion /= Void
+		inheritedVersion /= Void
 	do
-		from
-			index := members.count
-		until
-			index = 0
-		loop
-			member := members.item (index)
-			if member.version.name.is_equal (parentMember.version.name) then
-				if member.isOverriding then
-					-- ???
-				else
-					-- ???
-				end -- if
-				if Result = Void then
-					create Result.fill (<<member>>) 
-				else
-					Result.add (member)
-				end -- if
-			end -- if
-			index := index - 1
-		end -- loop
-		if Result /= Void then
-			-- ???? XXX
-		end -- if
-	end -- findSimilarMembers
+		Result := currentVersion.conformsTo (inheritedVersion)
+	end -- ConformingSignatures
 	
-	getOverridingMembers: Sorted_Array [MemberInVectorDescriptor] is
-	local
-		unitDclDsc: UnitDeclarationDescriptor
+	theSameSignatures (currentVersion, inheritedVersion: MemberDeclarationDescriptor): Boolean is
+	require
+		currentVersion /= Void
+		inheritedVersion /= Void
 	do
-		unitDclDsc := contextTypeDsc.getUnitDeclaration
-		check
-			unitDclDsc /= Void
-		end -- check
-	end -- getOverridingMembers
+		Result := currentVersion.signatureIdenticalTo (inheritedVersion)
+	end -- theSameSignatures
 	
 	buildFlatForm (o: Output) is
 	local
-		overridingMembers: Sorted_Array [MemberInVectorDescriptor]
 		parent: ContextUnit
+		inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]
 		pMembers: Sorted_Array [MemberInVectorDescriptor]
-		oMembers: Sorted_Array [MemberInVectorDescriptor]
+		--oMembers: Sorted_Array [MemberInVectorDescriptor]
 		parentMember: MemberInVectorDescriptor
 		--overridingMember: MemberInVectorDescriptor
 		inheritedMember: InheritedMemberInVectorDescriptor
+		inheritedOverridingMember: InheritedOverridingMemberInVectorDescriptor
+		member: MemberInVectorDescriptor
 		pIndex: Integer
 		mIndex: Integer
+		index: Integer
+		ioCount: Integer
+		toAddAsInherited: Boolean
 		--pos: Integer
 	do
-		overridingMembers := getOverridingMembers
+		inheritedOverrides := contextTypeDsc.getUnitDeclaration.inheritedOverrides
+		if inheritedOverrides /= Void then
+			ioCount := inheritedOverrides.count
+		end -- if
 		from
 			pIndex := parents.count
 		until
 			pIndex = 0
 		loop
 			parent := parents.item (pIndex)
-			pMembers := parent.members
+			pMembers := parent.members -- Flat form of the parent
 			from
 				mIndex := pMembers.count
 			until
 				mIndex = 0
 			loop
-				parentMember := pMembers.item (mIndex)
-				oMembers := findSimilarMembers (parentMember)
-				if oMembers = Void then
-					-- simply inherited !
-					create inheritedMember.makeFromMember (parentMember)
-					members.add (inheritedMember)
-				else
-					-- there are several members beign inherited under the same name + signature
-				end -- oMembers
+				parentMember := pMembers.item (mIndex)				
+				-- inheritedOverrides - list of what is overrding using inheritance
+				-- members - current flat form state
+				from
+					inheritedOverridingMember := Void
+					index := ioCount
+				until
+					index = 0
+				loop
+					if parentMember.version.name.is_equal (inheritedOverrides.item (index).name) then
+						-- Signature is not checked yet !!!
+						create inheritedOverridingMember.makeFromMember (parentMember)
+						members.add (inheritedOverridingMember)
+						index := 0
+					else
+						index := index - 1
+					end -- if
+				end -- loop
+				if inheritedOverridingMember = Void then
+					from
+						toAddAsInherited := True
+						index := members.count
+					until
+						index = 0
+					loop
+						member := members.item (index)
+						if member.version.name.is_equal (parentMember.version.name) then
+							-- Signature is not checked yet !!!
+							if member.isOverriding then
+								-- overriding in place check if signatures conform !
+								if not ConformingSignatures (member.version, parentMember.version) then 
+									o.putNL (
+										"Non-conforming member overrding in unit `" + contextTypeDsc.fullUnitName + 
+										"` member `" + member.version.fullMemberName +
+										"` from parent `" + parent.contextTypeDsc.fullUnitName + "` and member `" + parentMember.version.fullMemberName + "`"
+									)
+								end -- if
+								toAddAsInherited := False
+							elseif theSameSignatures (member.version, parentMember.version) then
+								-- identical signatures - versions calsh ! Duplicating versions detected !!!
+								o.putNL (
+									"Duplicating member inherited in unit `" + contextTypeDsc.fullUnitName + 
+									"` member `" + member.version.fullMemberName +
+									"` from parent `" + parent.contextTypeDsc.fullUnitName + "`"
+								)
+							else
+								-- valid overloading in place
+							end -- if
+						end -- if
+						index := index - 1
+					end -- loop
+					if toAddAsInherited then
+						create inheritedMember.makeFromMember (parentMember)
+						members.add (inheritedMember)
+					end -- if
+				end -- if
+				
+				
+				--oMembers := findSimilarMembers (parentMember)
+				--if oMembers = Void then
+				--	-- simply inherited !
+				--	create inheritedMember.makeFromMember (parentMember)
+				--	members.add (inheritedMember)
+				--else
+				--	-- there are several members beign inherited under the same name + signature
+				--end -- oMembers
+				
 				--pos := members.seek (inheritedMember)
 				--if pos <= 0 then
 				--	members.add_after (inheritedMember, pos)
@@ -347,6 +419,29 @@ feature {None}
 		id := other.id
 	end -- makeFromMember
 end -- class InheritedMemberInVectorDescriptor
+
+class InheritedOverridingMemberInVectorDescriptor
+inherit
+	MemberInVectorDescriptor
+		redefine
+			isOverriding
+	end
+creation
+	makeFromMember
+feature
+	isOverriding: Boolean is True
+feature {None}
+	makeFromMember (other: MemberInVectorDescriptor) is
+	require
+		other_not_void: other /= Void
+	do
+		version := other.version
+		versionUnit := other.versionUnit
+		seed := other.seed
+		origin := other.origin
+		id := other.id
+	end -- makeFromMember
+end -- class InheritedOverridingMemberInVectorDescriptor
 
 class MemberInVectorDescriptor
 inherit

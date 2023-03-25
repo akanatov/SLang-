@@ -15,7 +15,6 @@ end
 unit C extend B
 end
 unit D extend B
-       
 	override f2	do end // f2$B:f2@D
 end
 unit E extend B, H

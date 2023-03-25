@@ -3009,15 +3009,35 @@ feature {Any}
 		non_void_external_name: Result /= Void
 	end -- getSignatureName
 	
+	conformsTo (other: ParameterDescriptor): Boolean is
+	require
+		other /= Void
+	do
+		Result := Current = other
+		if not Result then
+			Result := conforms_to_other (other)
+		end -- if
+	end -- conformsTo	
+	
 	isOfArrayOfStringType: Boolean is once end
+
 feature {None}
+
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
 	end -- checkValidity
+
 	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
 	end -- generationFailed
+	
+	conforms_to_other (other: ParameterDescriptor): Boolean is
+	require
+		other /= Void
+	deferred
+	end -- conforms_to_other
+
 --invariant
 	--name_not_void: name /= Void
 end -- class ParameterDescriptor
@@ -3091,7 +3111,13 @@ feature {Any}
 	do
 		type := aType
 	end -- setType
+
 feature {None}
+
+	conforms_to_other (other: ParameterDescriptor): Boolean is
+	do
+	end -- conforms_to_other
+
 	init (iv: Boolean; aName: like name; aType: like type) is
 	require
 		non_void_name: aName /= Void
@@ -3143,7 +3169,13 @@ feature {Any}
 		Result := expr < other.expr
 --		Result := expr.type < other.expr.type
 	end -- lessThan
+
 feature {None}
+
+	conforms_to_other (other: ParameterDescriptor): Boolean is
+	do
+	end -- conforms_to_other
+
 	init (aName: like name; e: like expr) is
 	require
 		non_void_name: aName /= Void
@@ -3191,7 +3223,13 @@ feature {Any}
 	do
 		Result := name < other.name
 	end -- lessThan
+
 feature {None}
+
+	conforms_to_other (other: ParameterDescriptor): Boolean is
+	do
+	end -- conforms_to_other
+
 	init (aName: like name) is
 	require
 		non_void_name: aName /= Void
@@ -4273,8 +4311,8 @@ feature {Any}
 			create currentContextUnit.init (Current)
 			currentContextUnit := sysDsc.matrix.add_it (currentContextUnit)
 			
-				n := parents.count
-				if n = 0 then
+			n := parents.count
+			if n = 0 then
 				if name.is_equal (anyName) then
 					sysDsc.setAny (currentContextUnit)
 				else
@@ -4682,6 +4720,11 @@ feature {Any}
 		-- Ignore constraint and init		
 	end -- getExternalName
 	
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+	
+	
 	init (n: like name) is
 	require
 		formal_generic_name_not_void: n /= Void
@@ -4720,6 +4763,12 @@ create
 feature {Any}
 	typeConstraint: TypeDescriptor
 	initConstraint: SignatureDescriptor
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
+
 	out: String is
 	do
 		Result := clone(name)
@@ -4798,6 +4847,12 @@ create
 	init
 feature {Any}
 	type: TypeDescriptor
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+	
+	
 	out: String is
 	do
 		Result := name + ": " + type.out
@@ -5017,44 +5072,54 @@ create
 	init
 feature {Any}
 	parent: UnitTypeNameDescriptor
-	memberName: String
+	name: String
 	signature: SignatureDescriptor
-	init (p: like parent; mn: like memberName; s: like signature) is 
+	init (p: like parent; mn: like name; s: like signature) is 
 	require
-		non_void_parent : p /= Void
-		non_void_memberName : mn /= Void
+		non_void_parent: p /= Void
+		non_void_member_name: mn /= Void
 	do
 		parent := p
-		memberName := mn
+		name := mn
 		signature := s
 	end -- init
 	out: String is
 	do
 		Result:= parent.out
 		Result.append_character ('.')
-		Result.append_string (memberName)
+		Result.append_string (name)
 		if signature /= Void then
 			Result.append_string (signature.out)
 		end -- if
 	end -- out
 	is_equal (other: like Current): Boolean is
 	do
-		Result := parent.is_equal (other.parent) and then memberName.is_equal (other.memberName)
+		Result := parent.is_equal (other.parent) and then name.is_equal (other.name)
 		if signature /= Void and then other.signature /= Void and then Result then
 			Result := signature.is_equal (other.signature)
 		end -- if
 	end
 	infix "<"(other: like Current): Boolean is
 	do
-		Result := parent < other.parent and then memberName < other.memberName
-		if signature /= Void and then other.signature /= Void and then Result then
-			Result := signature < other.signature
+		Result := parent < other.parent --and then name < other.name
+		if not Result and then name.is_equal (other.name) then
+			Result := name < other.name
+			if not Result then
+				if signature = Void then
+					Result := other.signature /= Void
+				elseif other.signature /= Void then
+					Result := signature < other.signature				
+				end -- if
+			end -- if
 		end -- if
-	end
+		--if signature /= Void and then other.signature /= Void and then Result then
+		--	Result := signature < other.signature
+		--end -- if
+	end -- infix "<"
 invariant
-	non_void_parent : parent /= Void
-	non_void_memberName : memberName /= Void
-end
+	non_void_parent: parent /= Void
+	non_void_memberName: name /= Void
+end -- class InheritedMemberOverridingDescriptor
 
 deferred class MemberVisibilityDescriptor
 -- "{"" [this| UnitTypeNameDescriptor {"," UnitTypeNameDescriptor}  ] "}"
@@ -5204,6 +5269,33 @@ feature {Any}
 	signatureAsString: String is
 	deferred
 	end -- signatureAsString
+
+	conformsTo (other: MemberDeclarationDescriptor): Boolean is
+	do
+		Result := Current = other
+		if not Result then
+			--debug
+			--	print ("%N%TMember `" + fullMemberName + "` conforms to `" + other.fullMemberName + "` ?%N") 
+			--end -- debug
+			Result := conforms_to_other (other)
+		end -- if		
+	end -- conformsTo
+	
+	signatureIdenticalTo (other: MemberDeclarationDescriptor): Boolean is
+	do
+		Result := Current = other
+		if not Result then
+			Result := signature_identical_to (other)			
+		end -- if		
+	end -- signatureIdenticalTo
+
+	conforms_to_other (other: MemberDeclarationDescriptor): Boolean is
+	deferred
+	end -- conforms_to_other
+	
+	signature_identical_to (other: MemberDeclarationDescriptor): Boolean is
+	deferred
+	end -- signature_identical_to
 	
 	cutImplementation is
 	deferred
@@ -5369,6 +5461,84 @@ feature {Any}
 	isVirtual: Boolean is
 	deferred
 	end -- isVirtual
+
+	conforms_to_other (other: MemberDeclarationDescriptor): Boolean is
+	local
+		otherRtn: UnitRoutineDescriptor
+		index: Integer
+		currentParametersCount: Integer
+		otherParametersCount: Integer
+		otherParameters: like parameters
+	do
+		otherRtn ?= other
+		if otherRtn /= Void then
+			-- parameters: Array [ParameterDescriptor]
+			if parameters /= Void then 
+				currentParametersCount := parameters.count
+			end -- if
+			if otherRtn.parameters /= Void then 
+				otherParameters := otherRtn.parameters
+				otherParametersCount := otherParameters.count
+			end -- if
+			if currentParametersCount >= otherParametersCount then
+				Result := True
+				from
+					index := otherParametersCount
+				until
+					index = 0
+				loop
+					if parameters.item (index).conformsTo (otherParameters.item(index)) then
+						index := index - 1
+					else
+						index := 0
+					end 
+				end -- loop
+			end -- if
+			--type : TypeDescriptor
+			if Result and then type /= Void and then otherRtn.type /= Void then
+				Result := type.conformsTo (otherRtn.type)
+			end -- if
+		end -- if
+	end -- conforms_to_other
+	
+	signature_identical_to (other: MemberDeclarationDescriptor): Boolean is
+	local
+		otherRtn: UnitRoutineDescriptor
+		index: Integer
+		currentParametersCount: Integer
+		otherParametersCount: Integer
+		otherParameters: like parameters
+	do
+		otherRtn ?= other
+		if otherRtn /= Void and then (otherRtn.parameters = Void or else otherRtn.parameters.count = 0) and then otherRtn.type /= Void then
+			-- parameters: Array [ParameterDescriptor]
+			if parameters /= Void then 
+				currentParametersCount := parameters.count
+			end -- if
+			if otherRtn.parameters /= Void then 
+				otherParameters := otherRtn.parameters
+				otherParametersCount := otherParameters.count
+			end -- if
+			if currentParametersCount = otherParametersCount then
+				Result := True
+				from
+					index := currentParametersCount
+				until
+					index = 0
+				loop
+					if parameters.item (index).is_equal (otherParameters.item(index)) then
+						index := index - 1
+					else
+						index := 0
+					end 
+				end -- loop
+			end -- if
+			--type : TypeDescriptor
+			if Result and then type /= Void and then otherRtn.type /= Void then
+				Result := type.is_equal (otherRtn.type)
+			end -- if
+		end -- if
+	end -- signature_identical_to
 
 	sameAs (other: like Current): Boolean is
 	local
@@ -6764,6 +6934,53 @@ feature {Any}
 			Result := ": " + type.out
 		end -- if	
 	end -- signatureAsString
+	
+	conforms_to_other (other: MemberDeclarationDescriptor): Boolean is
+	local
+		otherAttr: UnitAttributeDeclarationDescriptor
+		otherRtn: UnitRoutineDescriptor
+	do
+		otherAttr ?= other
+		if otherAttr = Void then
+			otherRtn ?= other
+			if otherRtn /= Void and then (otherRtn.parameters = Void or else otherRtn.parameters.count = 0) and then otherRtn.type /= Void then
+				-- parameters: Array [ParameterDescriptor]
+				--type : TypeDescriptor
+				-- attr -> function with no parameters
+				if type /= Void then
+					Result := type.conformsTo (otherRtn.type)
+				end -- if
+			end -- if
+		else
+			-- attr -> otherAttr
+			if type /= Void and then otherAttr.type /= Void then
+				Result := type.conformsTo (otherAttr.type)
+			end -- if
+		end -- if
+	end -- conforms_to_other
+	
+	signature_identical_to (other: MemberDeclarationDescriptor): Boolean is
+	-- attr -> attr or attr -> function with no parameters
+	local
+		otherAttr: UnitAttributeDeclarationDescriptor
+		otherRtn: UnitRoutineDescriptor
+	do
+		otherAttr ?= other
+		if otherAttr = Void then
+			otherRtn ?= other
+			if otherRtn /= Void and then (otherRtn.parameters = Void or else otherRtn.parameters.count = 0) and then otherRtn.type /= Void then
+				-- parameters: Array [ParameterDescriptor]
+				--type : TypeDescriptor
+				-- attr -> function with no parameters
+				if type /= Void then
+					Result := type.is_equal (otherRtn.type)
+				end -- if
+			end -- if
+		else
+			-- attr -> otherAttr
+			Result := is_equal (otherAttr)
+		end -- if
+	end -- signature_identical_to
 	
 	generationFailed(cg: CodeGenerator): Boolean is
 	do
@@ -11001,22 +11218,33 @@ feature {Any}
 			Result := convertibleTo (other) or else conformsTo (other)
 		end -- if
 	end -- compatible_with
+	
 	convertibleTo (other: TypeDescriptor): Boolean is
 	require
 		other_not_void: other /= Void
 	do
 		-- get all :=(): Type functions from the current object
 		-- if there is a Type equal to other then convertible
+		
+		Result := is_equal (other) -- Temporary !!!
+		
 	end -- convertibleTo
+	
 	conformsTo (other: TypeDescriptor): Boolean is
 	require
 		other_not_void: other /= Void
 	do
 		Result := Current = other
 		if not Result then
-			-- if there is a conformant path in the inheritance graph from the current object to other
+			Result := conforms_to_other (other)
 		end -- if
 	end -- conformsTo
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	require
+		other_not_void: other /= Void
+	deferred
+	end -- conforms_to_other
 	
 	aliasName: String is do end
 
@@ -11053,6 +11281,12 @@ create
 feature {Any}
 	aliasName: String
 	actualType: AttachedTypeDescriptor
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
+
 	init (aName: like aliasName; aType: like actualType) is
 	require
 		non_void_alias_name: aName /= Void
@@ -11135,6 +11369,12 @@ create
 	init
 feature {Any}	
 	members: Sorted_Array [MemberDescriptionDescriptor]
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
+
 	init (m: like members) is 
 	do
 		if m = Void then
@@ -11254,6 +11494,12 @@ create
 	init
 feature {Any}	
 	signature: SignatureDescriptor 
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
+
 	init (s: like signature) is 
 	require
 		non_void_signature: s /= Void
@@ -11535,6 +11781,12 @@ feature {Any}
 	operator: String
 	--expr: ConstExpressionDescriptor -- ExpressionDescriptor
 	expr: ExpressionDescriptor
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
+
 	init (l: like left; o: like operator; e: like expr; r: like right) is
 	require
 		non_void_left: l /= Void
@@ -11618,6 +11870,11 @@ create
 feature {Any}
 	--values: Array [ConstExpressionDescriptor]
 	values: Array [ExpressionDescriptor]
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
 	init (v: like values) is
 	require
 		values_not_void: v /= Void
@@ -11727,6 +11984,12 @@ inherit
 	end
 feature {Any}
 	out: String is do Result := "as this" end
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
+
 	sameAs (other: like Current): Boolean is
 	do
 		Result := True
@@ -11771,6 +12034,11 @@ create
 feature {Any}
 	anchorId: String
 	anchorSignature: SignatureDescriptor
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
 	init (a: like anchorId; s: like anchorSignature) is
 	require
 		anchor_not_void: a /= Void
@@ -11847,6 +12115,11 @@ create
 	init
 feature {Any}
 	types: Array [UnitTypeCommonDescriptor]
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
 	init (t: like types) is
 	require
 		non_void_types: t /= Void
@@ -11997,6 +12270,12 @@ create
 	init
 feature {Any}
 	type: AttachedTypeDescriptor
+	
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
+	
 	init (t: like type) is
 	require
 		non_void_type: t /= Void
@@ -12057,6 +12336,11 @@ create
 	init --, fill
 feature {Any}
 	fields: Array [TupleFieldDescriptor]
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+
 	isTuple: Boolean is
 	do
 		Result := True
@@ -12337,6 +12621,12 @@ feature {Any}
 	isRef,
 	isVal,
 	isConcurrent: Boolean
+	
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
+	
+	
 	out: String is
 	do
 		if isRef then
@@ -13031,6 +13321,10 @@ feature
 	--		end -- loop
 	--	end -- if
 	--end -- getFormalGenerics
+
+	conforms_to_other (other: TypeDescriptor): Boolean is
+	do -- YYY
+	end -- conforms_to_other
 
 	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
 	local
