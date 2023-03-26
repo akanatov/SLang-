@@ -39,7 +39,7 @@ feature {None}
 	end -- getAnonymousRoutineClusters
 feature {Any}
 
-	checkStatementsValidity (statements: Array [StatementDescriptor]; scriptDsc : CompilationUnitAnonymousRoutine): Boolean is
+	checkStatementsValidityFailed (statements: Array [StatementDescriptor]; scriptDsc : CompilationUnitAnonymousRoutine): Boolean is
 	require
 		non_void_statements: statements /= Void	
 	local
@@ -59,7 +59,7 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
-	end -- checkStatementsValidity
+	end -- checkStatementsValidityFailed
 	
 	build_script_based_program_failed (fName: String): Boolean is
 	require
@@ -81,21 +81,33 @@ feature {Any}
 				-- 1. Build system description - where to look for units !!! 
 				create sysDsc.init_script (outputName, getAnonymousRoutineClusters, Void)
 				scriptCU.attachSystemDescription (sysDsc)
-				-- 1.1 Check that spources are actual
+				-- 1.1 Check that all sources are actual
 				if sysDsc.sourcesActual (o) then
 					-- 2.Load all units used
-					Result := failedToLoadRequiredTypes (sysDsc, scriptCU.typePool)
-					debug
-						sysDsc.dumpContext (o)						
-					end -- debug
-					if not Result then
+					if failedToLoadRequiredTypes (sysDsc, scriptCU.typePool) then
+						Result := True
+						debug
+							--o.putNL ("Info: failedToLoadRequiredTypes = True")
+						end -- debug
+					else
+						debug
+							sysDsc.dumpContext (o)						
+						end -- debug
 						-- 3. Check project context validity
 						if sysDsc.allUnitInterfacesAreValid (o) then
 							-- If all required types loaded and validated
 							-- 4. Check validity of cuDsc.statements
-							Result := checkStatementsValidity (scriptCU.statements, scriptCU)
+							if checkStatementsValidityFailed (scriptCU.statements, scriptCU) then
+								Result := True
+								debug
+									--o.putNL ("Info: checkStatementsValidityFailed = True")
+								end -- debug
+							end -- if
 						else
 							Result := True
+							debug
+								--o.putNL ("Info: sysDsc.allUnitInterfacesAreValid = FALSE")
+							end -- debug
 						end -- if
 					end -- if
 					

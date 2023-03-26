@@ -227,13 +227,22 @@ feature
 									end -- debug
 									toAddAsInherited := False
 								elseif theSameSignatures (member.version, parentMember.version) then
-									-- identical signatures - versions clash ! Duplicating versions detected !!!
-									o.putNL (
-										"Duplicating member inherited in unit `" + contextTypeDsc.fullUnitName + 
-										"` member `" + member.version.fullMemberName +
-										"` from parent `" + parent.contextTypeDsc.fullUnitName + "`"
-									)
-									Result := True
+									--debug
+									--	o.putNL (
+									--		"!!!!Parent member `" + parentMember.out + 
+									--		"` flat from memebr `" + member.out + "`"
+									--	)
+									--end -- debug
+									if member.seed.is_equal (parentMember.seed) and then member.origin.is_equal (parentMember.origin) then 
+									else
+										-- identical signatures - versions clash ! Duplicating versions detected !!!
+										o.putNL (
+											"Duplicating member inherited in unit `" + contextTypeDsc.fullUnitName + 
+											"` member `" + member.version.fullMemberName +
+											"` from parent `" + parent.contextTypeDsc.fullUnitName + "`"
+										)
+										Result := True
+									end -- if
 									toAddAsInherited := False
 								else
 									-- valid overloading in place
@@ -279,23 +288,28 @@ feature
 						"` is incorrectly marked as overriding in unit `" + contextTypeDsc.fullUnitName + "`"
 					)
 					Result := True
-				elseif ioCount > 0 then -- There are overrides while inheriting
+				elseif ioMembers /= Void then -- There are overrides while inheriting
 					from
-						index := ioCount
-						check
-							ioMembers /= Void
-						end -- check
+						index := ioMembers.count
 					until
 						index = 0
 					loop
 						inheritedOverridingMember := ioMembers.item (index)
-						if member /= inheritedOverridingMember and then member.version.name.is_equal (inheritedOverridingMember.version.name) then
-							if inheritedOverridingMember.version.conformsTo (member.version) then
-								-- Add into different origin&seed MST
-								member.setVersionAndUnit (inheritedOverridingMember.version, inheritedOverridingMember.versionUnit)
-							end -- if
+						check
+							inheritedOverridingMember /= Void
+							inheritedOverridingMember.version /= Void
+						end -- check
+						if 
+							member /= inheritedOverridingMember and then 
+							member.version.name.is_equal (inheritedOverridingMember.version.name) and then 
+							inheritedOverridingMember.version.conformsTo (member.version)
+						then
+							-- Add into different origin&seed MST
+							member.setVersionAndUnit (inheritedOverridingMember.version, inheritedOverridingMember.versionUnit)
+							index := 0
+						else
+							index := index - 1
 						end -- if
-						index := index - 1
 					end -- loop	
 				end -- if
 				mIndex := mIndex - 1

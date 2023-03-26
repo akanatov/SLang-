@@ -116,6 +116,9 @@ feature {Any}
 				--end -- if
 			else
 				if unitDclDsc.hasInvalidInterface (Current, o) then
+					debug
+						--o.putNL ("Info: unitDclDsc.hasInvalidInterface = True")
+					end -- debug
 					Result := False
 				end -- if
 				--i := i - 1
@@ -127,6 +130,9 @@ feature {Any}
 			create currentID -- First non-virtual unit will get 0 ID
 			anyDsc.setSortByChildrenCount
 			if failedToAssignIDandBuildFlatForms (anyDsc, currentID, o) then
+				debug
+					--o.putNL ("Info: failedToAssignIDandBuildFlatForms = True")
+				end -- debug
 				Result := False
 			end -- if
 			anyDsc.setSortByID
@@ -176,6 +182,9 @@ feature {Any}
 				currentID.set_item (currentID.item + 1)
 			end -- if			
 			if currentUnit.failedToBuildFlatForm (o) then
+				debug
+					--o.putNL ("Info: currentUnit.failedToBuildFlatForm = True")
+				end -- debug
 				Result := True
 			end -- if
 			children := currentUnit.children
@@ -186,6 +195,9 @@ feature {Any}
 				index = 0 
 			loop
 				if failedToAssignIDandBuildFlatForms (children.item (index), currentID, o) then
+					debug
+						--o.putNL ("Info: failedToAssignIDandBuildFlatForms = True")
+					end -- debug
 					Result := True
 				end -- if
 				index := index - 1
