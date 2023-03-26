@@ -57,13 +57,13 @@ feature
 	local
 		parent: ContextUnit
 		inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]
+		ioMembers: Sorted_Array [InheritedOverridingMemberInVectorDescriptor]
 		imoDsc: InheritedMemberOverridingDescriptor
 		pMembers: Sorted_Array [MemberInVectorDescriptor]
 		parentMember: MemberInVectorDescriptor
 		inheritedMember: InheritedMemberInVectorDescriptor
 		inheritedOverridingMember: InheritedOverridingMemberInVectorDescriptor
 		member: MemberInVectorDescriptor
-		--version: MemberDeclarationDescriptor
 		pIndex: Integer
 		mIndex: Integer
 		index: Integer
@@ -85,6 +85,9 @@ feature
 				pIndex = 0
 			loop
 				parent := parents.item (pIndex)
+				debug
+					o.putNL ("%T>Checking parent `" + parent.contextTypeDsc.fullUnitName + "`")
+				end -- debug
 				if not parent.flatFormBuilt then
 					if parent.failedToBuildFlatForm (o) then
 						Result := True
@@ -93,6 +96,7 @@ feature
 				
 				if ioCount > 0 then -- There are overrides while inheriting
 					pMembers := clone (parent.members) -- Copy of the flat form of the parent
+					create ioMembers.make
 					from
 						--inheritedOverridingMember := Void
 						index := ioCount
@@ -117,6 +121,7 @@ feature
 										o.putNL ("%T%TProcessed parent member `" + parentMember.out + "` as overriding while inheriting")
 									end -- debug
 									create inheritedOverridingMember.makeFromMember (parentMember)
+									ioMembers.add (inheritedOverridingMember)
 									if members.added (inheritedOverridingMember) then
 										debug
 											o.putNL ("%T%TOverriding member `" + inheritedOverridingMember.out + "` added")
@@ -143,20 +148,9 @@ feature
 						end -- if
 						index := index - 1
 					end -- loop
+				else
+					pMembers := parent.members -- Flat form of the parent
 				end -- if
-				debug
-					o.putNL ("%T<Parent `" + parent.contextTypeDsc.fullUnitName + "` checked")
-				end -- debug							
-				pIndex := pIndex - 1
-			end -- loop
-			
-			from
-				pIndex := parents.count
-			until
-				pIndex = 0
-			loop
-				parent := parents.item (pIndex)			
-				pMembers := parent.members -- Flat form of the parent
 				from
 					mIndex := pMembers.count
 					debug
@@ -167,141 +161,105 @@ feature
 				loop
 					parentMember := pMembers.item (mIndex)				
 					debug
-						o.putNL ("%T%TProcessing parent member `" + parentMember.out + "` - " + parentMember.generator)
+						o.putNL ("%T%TProcessing parent member `" + parentMember.out + "`") -- - " + parentMember.generator)
 					end -- debug
-					-- inheritedOverrides - list of what is overrding using inheritance
-					-- members - current flat form state
-					--from
-					--	inheritedOverridingMember := Void
-					--	index := ioCount
-					--until
-					--	index = 0
-					--loop
-					--	imoDsc := inheritedOverrides.item (index)
-					--	if parentMember.version.name.is_equal (imoDsc.name) and then 
-					--		parentMember.versionUnit.getUnitDeclaration.matchesType(imoDsc.parent) and then
-					--		sameSignatures (parentMember.version, imoDsc) 
-					--	then
-					--		debug
-					--			o.putNL ("%T%TProcessed parent member `" + parentMember.out + "` as overriding while inheriting")
-					--		end -- debug
-					--		create inheritedOverridingMember.makeFromMember (parentMember)
-					--		if members.added (inheritedOverridingMember) then
-					--			debug
-					--				o.putNL ("%T%TOverriding member `" + inheritedOverridingMember.out + "` added")
-					--			end -- debug
-					--		else -- ???? Can this really happen ???
-					--			debug
-					--				o.putNL ("%T%TOverriding member `" + inheritedOverridingMember.out + "` was already added")
-					--			end -- debug
-					--		end -- if
-					--		index := 0
-					--	else
-					--		index := index - 1
-					--	end -- if
-					--end -- loop
-					--if inheritedOverridingMember = Void then
-						-- parent member was not overriden while inheriting
-						from
-							toAddAsInherited := True
-							index := members.count
-						until
-							index = 0
-						loop
-							member := members.item (index)
-							debug
-								o.putNL ("%T%TCurrent member `" + member.out + "` - " + member.generator)
-							end -- debug
-							if member.version.name.is_equal (parentMember.version.name) then
-								if member.version.conformsTo (parentMember.version) then
-									if member.isInheritedOverriding then
-										-- Add into different origin&seed MST
-										member := clone(member) 
+					from
+						toAddAsInherited := True
+						index := members.count
+					until
+						index = 0
+					loop
+						member := members.item (index)
+						debug
+							o.putNL ("%T%TCurrent member `" + member.out + "` - " + member.generator)
+						end -- debug
+						if member.version.name.is_equal (parentMember.version.name) then
+							if member.version.conformsTo (parentMember.version) then
+								if member.isInheritedOverriding then
+									-- Add into different origin&seed MST
+									member := clone(member) 
+									member.setSeedAndOrigin (parentMember.seed, parentMember.origin)
+									if members.added (member) then
+										debug
+											o.putNL ("%T%TMember `" + member.out + "` added into another MST")
+										end -- debug
+									else
+										debug
+											o.putNL ("%T%TMember `" + member.out + "` was already added")
+										end -- debug
+									end -- if																		
+								elseif member.isOverriding then
+									debug
+										o.putNL ("%T%TInherited member `" + parentMember.out + "` matches `" + member.out + "` which overrides it")
+									end -- debug
+									-- overriding in place check if signatures conform !
+									if not ConformingSignatures (member.version, parentMember.version) then 
+										o.putNL (
+											"Non-conforming member overrding in unit `" + contextTypeDsc.fullUnitName + 
+											"` member `" + member.version.fullMemberName +
+											"` from parent `" + parent.contextTypeDsc.fullUnitName + "` and member `" + parentMember.version.fullMemberName + "`"
+										)
+										Result := True
+									end -- if
+									if member.seed = Void then
+										member.setSeedAndOrigin (parentMember.seed, parentMember.origin)
+										debug
+											o.putNL ("%T%TMember `" + member.out + "` has got origin and seed")
+										end -- debug
+									elseif not member.seed.is_equal (parentMember.seed) then
+										member := clone (member) 
 										member.setSeedAndOrigin (parentMember.seed, parentMember.origin)
 										if members.added (member) then
 											debug
-												o.putNL ("%T%TMember `" + member.out + "` added into another MST")
+												o.putNL ("%T%TMember `" + member.out + "` added")
 											end -- debug
 										else
 											debug
 												o.putNL ("%T%TMember `" + member.out + "` was already added")
 											end -- debug
-										end -- if																		
-									elseif member.isOverriding then
-										debug
-											o.putNL ("%T%TInherited member `" + parentMember.out + "` matches `" + member.out + "` which overrides it")
-										end -- debug
-										-- overriding in place check if signatures conform !
-										if not ConformingSignatures (member.version, parentMember.version) then 
-											o.putNL (
-												"Non-conforming member overrding in unit `" + contextTypeDsc.fullUnitName + 
-												"` member `" + member.version.fullMemberName +
-												"` from parent `" + parent.contextTypeDsc.fullUnitName + "` and member `" + parentMember.version.fullMemberName + "`"
-											)
-											Result := True
 										end -- if
-										if member.seed = Void then
-											member.setSeedAndOrigin (parentMember.seed, parentMember.origin)
-											debug
-												o.putNL ("%T%TMember `" + member.out + "` has got origin and seed")
-											end -- debug
-										elseif not member.seed.is_equal (parentMember.seed) then
-											member := clone (member) 
-											member.setSeedAndOrigin (parentMember.seed, parentMember.origin)
-											if members.added (member) then
-												debug
-													o.putNL ("%T%TMember `" + member.out + "` added")
-												end -- debug
-											else
-												debug
-													o.putNL ("%T%TMember `" + member.out + "` was already added")
-												end -- debug
-											end -- if
-										end -- if
-										debug
-											o.putNL (
-												"%T%TInherited member `" + parentMember.out + 
-												"` is overried with `" + member.out + "`"
-											)
-										end -- debug
-										toAddAsInherited := False
-									--elseif parent.isOverriding then 
-									--	-- Inherited parent member overrides !
-									elseif theSameSignatures (member.version, parentMember.version) then
-										-- identical signatures - versions clash ! Duplicating versions detected !!!
-										o.putNL (
-											"Duplicating member inherited in unit `" + contextTypeDsc.fullUnitName + 
-											"` member `" + member.version.fullMemberName +
-											"` from parent `" + parent.contextTypeDsc.fullUnitName + "`"
-										)
-										Result := True
-										toAddAsInherited := False
-									else
-										-- valid overloading in place
-										debug
-											o.putNL ("%T%TInherited member `" + parentMember.out + "` matches `" + member.out + "` which overloads it")
-										end -- debug
 									end -- if
+									debug
+										o.putNL (
+											"%T%TInherited member `" + parentMember.out + 
+											"` is overried with `" + member.out + "`"
+										)
+									end -- debug
+									toAddAsInherited := False
+								elseif theSameSignatures (member.version, parentMember.version) then
+									-- identical signatures - versions clash ! Duplicating versions detected !!!
+									o.putNL (
+										"Duplicating member inherited in unit `" + contextTypeDsc.fullUnitName + 
+										"` member `" + member.version.fullMemberName +
+										"` from parent `" + parent.contextTypeDsc.fullUnitName + "`"
+									)
+									Result := True
+									toAddAsInherited := False
 								else
+									-- valid overloading in place
+									debug
+										o.putNL ("%T%TInherited member `" + parentMember.out + "` matches `" + member.out + "` which overloads it")
+									end -- debug
 								end -- if
 							else
-								-- Different name or overloading is name is the same
 							end -- if
-							index := index - 1
-						end -- loop
-						if toAddAsInherited then
-							create inheritedMember.makeFromMember (parentMember)
-							if members.added (inheritedMember) then
-								debug
-									o.putNL ("%T%TInherited member `" + parentMember.out + "` added as just inherited as is")
-								end -- debug
-							else
-								debug
-									o.putNL ("%T%TInherited member `" + parentMember.out + "` is already registred as just inherited")
-								end -- debug
-							end -- if
+						else
+							-- Different name or overloading is name is the same
 						end -- if
-					--end -- if
+						index := index - 1
+					end -- loop
+					if toAddAsInherited then
+						create inheritedMember.makeFromMember (parentMember)
+						if members.added (inheritedMember) then
+							debug
+								o.putNL ("%T%TInherited member `" + parentMember.out + "` added as just inherited as is")
+							end -- debug
+						else
+							debug
+								o.putNL ("%T%TInherited member `" + parentMember.out + "` is already registred as just inherited")
+							end -- debug
+						end -- if
+					end -- if
 					mIndex := mIndex - 1
 				end -- loop
 				debug
@@ -310,22 +268,37 @@ feature
 				pIndex := pIndex - 1
 			end -- loop
 			from
-				index := members.count
+				mIndex := members.count
 			until
-				index = 0
+				mIndex = 0
 			loop
-				member := members.item (index)
+				member := members.item (mIndex)
 				if member.isOverriding and then member.seed = Void then
 					o.putNL (
 						"Unit member `" + member.version.fullMemberName +
 						"` is incorrectly marked as overriding in unit `" + contextTypeDsc.fullUnitName + "`"
 					)
 					Result := True
-					--debug
-					--	o.putNL ("%T%TMember `" + member.out + "` has no origin&seed set")
-					--end -- debug
+				elseif ioCount > 0 then -- There are overrides while inheriting
+					from
+						index := ioCount
+						check
+							ioMembers /= Void
+						end -- check
+					until
+						index = 0
+					loop
+						inheritedOverridingMember := ioMembers.item (index)
+						if member /= inheritedOverridingMember and then member.version.name.is_equal (inheritedOverridingMember.version.name) then
+							if inheritedOverridingMember.version.conformsTo (member.version) then
+								-- Add into different origin&seed MST
+								member.setVersionAndUnit (inheritedOverridingMember.version, inheritedOverridingMember.versionUnit)
+							end -- if
+						end -- if
+						index := index - 1
+					end -- loop	
 				end -- if
-				index := index - 1
+				mIndex := mIndex - 1
 			end -- loop
 			debug
 				o.putNL ("<<<Built flatform for `" + contextTypeDsc.fullUnitName + "`. It has " + members.count.out + " members")
@@ -384,7 +357,7 @@ feature
 				Result.append_string (members.item(i).out)
 				i := i + 1
 			end -- loop	
-		else
+		elseif False then
 			inheritedOverrides := contextTypeDsc.getUnitDeclaration.inheritedOverrides
 			index := inheritedOverrides.count
 			if index > 0 then
@@ -599,6 +572,15 @@ feature
 	seed: MemberDeclarationDescriptor
 	origin: ContextTypeDescriptor
 	id: Integer
+
+	setVersionAndUnit (v: like version; vu: like versionUnit) is
+	require
+		version_not_void: v /= Void
+		version_unit_not_void: vu /= Void
+	do
+		version := v
+		versionUnit := vu
+	end -- setVersionAndUnit
 	
 	isOverriding: Boolean is
 	do
