@@ -63,7 +63,7 @@ feature
 		inheritedMember: InheritedMemberInVectorDescriptor
 		inheritedOverridingMember: InheritedOverridingMemberInVectorDescriptor
 		member: MemberInVectorDescriptor
-		version: MemberDeclarationDescriptor
+		--version: MemberDeclarationDescriptor
 		pIndex: Integer
 		mIndex: Integer
 		index: Integer
@@ -79,7 +79,7 @@ feature
 			from
 				pIndex := parents.count
 				debug
-					o.putNL (">>>Building flatform for `" + contextTypeDsc.fullUnitName + "` with " + pIndex.out + " parents")
+					o.putNL (">>>Building flatform for `" + contextTypeDsc.fullUnitName + "` Checking " + pIndex.out + " parents")
 				end -- debug
 			until
 				pIndex = 0
@@ -143,14 +143,24 @@ feature
 						end -- if
 						index := index - 1
 					end -- loop
-				else
-					pMembers := parent.members -- Flat form of the parent
 				end -- if
-				
+				debug
+					o.putNL ("%T<Parent `" + parent.contextTypeDsc.fullUnitName + "` checked")
+				end -- debug							
+				pIndex := pIndex - 1
+			end -- loop
+			
+			from
+				pIndex := parents.count
+			until
+				pIndex = 0
+			loop
+				parent := parents.item (pIndex)			
+				pMembers := parent.members -- Flat form of the parent
 				from
 					mIndex := pMembers.count
 					debug
-						o.putNL ("%T>Processing parent `" + parent.contextTypeDsc.fullUnitName + "` with " + mIndex.out + " members")
+						o.putNL ("%T>Inheriting from parent `" + parent.contextTypeDsc.fullUnitName + "` with " + mIndex.out + " members")
 					end -- debug
 				until
 					mIndex = 0
@@ -204,7 +214,20 @@ feature
 							end -- debug
 							if member.version.name.is_equal (parentMember.version.name) then
 								if member.version.conformsTo (parentMember.version) then
-									if member.isOverriding then
+									if member.isInheritedOverriding then
+										-- Add into different origin&seed MST
+										member := clone(member) 
+										member.setSeedAndOrigin (parentMember.seed, parentMember.origin)
+										if members.added (member) then
+											debug
+												o.putNL ("%T%TMember `" + member.out + "` added into another MST")
+											end -- debug
+										else
+											debug
+												o.putNL ("%T%TMember `" + member.out + "` was already added")
+											end -- debug
+										end -- if																		
+									elseif member.isOverriding then
 										debug
 											o.putNL ("%T%TInherited member `" + parentMember.out + "` matches `" + member.out + "` which overrides it")
 										end -- debug
@@ -541,12 +564,14 @@ class InheritedOverridingMemberInVectorDescriptor
 inherit
 	MemberInVectorDescriptor
 		redefine
-			isOverriding
+			isOverriding, isInheritedOverriding
 	end
 creation
 	makeFromMember
 feature
 	isOverriding: Boolean is True
+	isInheritedOverriding: Boolean is True
+
 feature {None}
 	makeFromMember (other: MemberInVectorDescriptor) is
 	require
@@ -579,6 +604,10 @@ feature
 	do
 		Result := version.isOverriding
 	end -- isOverriding
+	
+	isInheritedOverriding: Boolean is
+	once
+	end -- isInheritedOverriding
 	
 	is_equal (other: like Current): Boolean is
 	do
