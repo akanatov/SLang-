@@ -74,6 +74,7 @@ feature {Any}
 
 	matrix: Sorted_Array [ContextUnit]
 	anyDsc: ContextUnit
+	mstList: Sorted_Array [OriginAndSeedDescriptor]
 	
 	setAny (any: like anyDsc) is
 	require
@@ -129,7 +130,7 @@ feature {Any}
 			-- Let's number units starting from Any
 			create currentID -- First non-virtual unit will get 0 ID
 			anyDsc.setSortByChildrenCount
-			if failedToAssignIDandBuildFlatForms (anyDsc, currentID, o) then
+			if failedToAssignIDandBuildFlatForms (anyDsc, currentID, Current, o) then
 				debug
 					--o.putNL ("Info: failedToAssignIDandBuildFlatForms = True")
 				end -- debug
@@ -148,12 +149,14 @@ feature {Any}
 			loop
 				ctxUnit := matrix.item (i)
 				if ctxUnit.id >= 0 then
-					ctxUnit.sortMemebrsByOriginAndSeed
-					debug
-						o.putNL (ctxUnit.out)				
-					end -- debug
--- IDs not set yet !!!
---					ctxUnit.sortMemebrsByID
+					if Result then
+						ctxUnit.sortMemebrsByID
+					else
+						ctxUnit.sortMemebrsByOriginAndSeed
+					end -- if
+					--debug
+						o.putNL (ctxUnit.output (Current))
+					--end -- debug
 				end -- if
 				--debug
 				--	o.putNL (ctxUnit.out)				
@@ -166,7 +169,7 @@ feature {Any}
 		end -- if
 	end -- allUnitInterfacesAreValid
 
-	failedToAssignIDandBuildFlatForms (currentUnit: ContextUnit; currentID: Integer_Ref; o: Output): Boolean is
+	failedToAssignIDandBuildFlatForms (currentUnit: ContextUnit; currentID: Integer_Ref; sysDsc: SystemDescriptor; o: Output): Boolean is
 	require
 		non_void_current_unit: currentUnit /= Void
 		valid_id: currentID /= Void and then currentID.item >= 0
@@ -181,7 +184,7 @@ feature {Any}
 				currentUnit.setID(currentID.item)
 				currentID.set_item (currentID.item + 1)
 			end -- if			
-			if currentUnit.failedToBuildFlatForm (o) then
+			if currentUnit.failedToBuildFlatForm (sysDsc, o) then
 				debug
 					--o.putNL ("Info: currentUnit.failedToBuildFlatForm = True")
 				end -- debug
@@ -194,7 +197,7 @@ feature {Any}
 			until
 				index = 0 
 			loop
-				if failedToAssignIDandBuildFlatForms (children.item (index), currentID, o) then
+				if failedToAssignIDandBuildFlatForms (children.item (index), currentID, sysDsc, o) then
 					debug
 						--o.putNL ("Info: failedToAssignIDandBuildFlatForms = True")
 					end -- debug
@@ -933,6 +936,7 @@ feature {Any}
 		set_clusters_and_libraries (c, l)
 		create allContextTypes.make
 		create matrix.make
+		create mstList.make
 	end -- init_common
 	feature {Any}
 

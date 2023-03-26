@@ -41,19 +41,19 @@ end
 abstract unit Any end
 
 /*
-				f1$A	f4$J	f3$H	f2$B
+					f1$A			f2$B			f3$H			f4$J		
 
-	!0  - `A`:	f1@A[f1$A]
-	!1  - `B`:	f2@B[f2$B]	*f1@B[f1$A]
-	#2  - `E`:	f3@H[f3$H]	f2@B[f2$B]	override f1@E[f1$A]
-	#3  - `F`:	f3@H[f3$H]	f2@B[f2$B]	override f1@E[f1$A]
-	#4  - `G`:	override f3@I[<Void>]	f2@B[f2$B]	override f1@E[f1$A]
-	#5  - `C`:	f2@B[f2$B]	override f1@B[f1$A]
-	#6  - `D`:	override f2@D[f2$B]	override f1@B[f1$A]
-	!7  - `H`:	f3@H[f3$H]	f1@A[f1$A]
-	#8  - `I`:	f4@J[f4$J]	override f3@I[f3$H]	f1@A[f1$A]
-	!9  - `J`:	f4@J[f4$J]	f1@A[f1$A]
-	#10 - `K`:	override f4@K[f4$J]	f1@A[f1$A]
+	#0	`A`:	f1@A[f1$A!11]
+	#1	`B`:	f1@B[f1$A!11]	f2@B[f2$B!6]
+	#2	`E`:	f1@E[f1$A!11]	f2@B[f2$B!6]	f3@H[f3$H!5]
+	#3	`F`:	f1@E[f1$A!11]	f2@B[f2$B!6]	f3@H[f3$H!5]
+	#4	`G`:	f1@A[f1$A!11]	f2@B[f2$B!6]	f3@H[f3$H!5]	f4@J[f4$J!4]
+	#5	`C`:	f1@B[f1$A!11]	f2@B[f2$B!6]
+	#6	`D`:	f1@B[f1$A!11]	f2@D[f2$B!6]
+	#7	`H`:	f1@A[f1$A!11]					f3@H[f3$H!5]
+	#8	`I`:	f1@A[f1$A!11]					f3@I[f3$H!5]	f4@J[f4$J!4]
+	#9	`J`:	f1@A[f1$A!11]									f4@J[f4$J!4]
+	#10	`K`:	f1@A[f1$A!11]									f4@K[f4$J!4]
 
 
 */
