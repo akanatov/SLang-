@@ -126,7 +126,9 @@ feature {Any}
 			-- Let's number units starting from Any
 			create currentID -- First non-virtual unit will get 0 ID
 			anyDsc.setSortByChildrenCount
-			assignID (anyDsc, currentID, o)
+			if failedToAssignIDandBuildFlatForms (anyDsc, currentID, o) then
+				Result := False
+			end -- if
 			anyDsc.setSortByID
 			matrix.qsort
 			from
@@ -158,7 +160,7 @@ feature {Any}
 		end -- if
 	end -- allUnitInterfacesAreValid
 
-	assignID (currentUnit: ContextUnit; currentID: Integer_Ref; o: Output) is
+	failedToAssignIDandBuildFlatForms (currentUnit: ContextUnit; currentID: Integer_Ref; o: Output): Boolean is
 	require
 		non_void_current_unit: currentUnit /= Void
 		valid_id: currentID /= Void and then currentID.item >= 0
@@ -173,7 +175,9 @@ feature {Any}
 				currentUnit.setID(currentID.item)
 				currentID.set_item (currentID.item + 1)
 			end -- if			
-			currentUnit.buildFlatForm (o)
+			if currentUnit.failedToBuildFlatForm (o) then
+				Result := True
+			end -- if
 			children := currentUnit.children
 			children.qsort -- resort children by the number of their children. Right one has the biggest # of children
 			from
@@ -181,11 +185,13 @@ feature {Any}
 			until
 				index = 0 
 			loop
-				assignID (children.item (index), currentID, o)
+				if failedToAssignIDandBuildFlatForms (children.item (index), currentID, o) then
+					Result := True
+				end -- if
 				index := index - 1
 			end -- loop
 		end -- if		
-	end -- assignID
+	end -- failedToAssignIDandBuildFlatForms
 
 	anyDclDsc: UnitDeclarationDescriptor is
 	once
@@ -3004,11 +3010,17 @@ feature {Any}
 		non_void_external_name: Result /= Void
 	end -- getExternalName
 
-	getSignatureName: String	is
+	getSignatureName: String is
 	deferred
 	ensure
 		non_void_external_name: Result /= Void
 	end -- getSignatureName
+	
+	hasTheSameType (typeDsc: TypeDescriptor): Boolean is
+	require
+		typeDsc /= Void
+	deferred
+	end -- hasTheSameType
 	
 	conformsTo (other: ParameterDescriptor): Boolean is
 	require
@@ -3065,6 +3077,11 @@ feature {Any}
 		Result := type.out
 	end -- getSignatureName
 
+	hasTheSameType (typeDsc: TypeDescriptor): Boolean is
+	do
+		Result := typeDsc.is_equal (type)
+	end -- hasTheSameType
+
 	isOfArrayOfStringType: Boolean is
 	local
 		unitTypDsc: UnitTypeCommonDescriptor
@@ -3092,6 +3109,7 @@ feature {Any}
 		end -- if
 		Result.append_string (name + ": " + type.out)
 	end
+
 	getExternalName: String	is
 	do
 		Result := type.getExternalName
@@ -3147,15 +3165,18 @@ create
 	init
 feature {Any}
 	expr: ExpressionDescriptor
+
 	out: String is
 	do
 		Result := name + " is " + expr.out
 	end
+
 	getExternalName: String	is
 	do
 		Result := clone(name)  + "$is"
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
+
 	getSignatureName: String is
 	do
 		if expr.exprType = Void then
@@ -3164,6 +3185,16 @@ feature {Any}
 			Result := expr.exprType.out
 		end -- if
 	end -- getSignatureName
+
+	hasTheSameType (typeDsc: TypeDescriptor): Boolean is
+	local
+		parType: TypeDescriptor
+	do
+		parType := type
+		if parType /= Void then
+			Result := typeDsc.is_equal (parType)
+		end -- if
+	end -- hasTheSameType
 
 	type: TypeDescriptor is
 	do
@@ -3219,20 +3250,33 @@ feature {Any}
 			Result := ":= " + name
 		end -- if
 	end -- out
+	
 	getExternalName: String	is
 	do
 		Result := out
 		Result.append_string ("_" + buildHash (Result))
 	end -- getExternalName
+	
 	getSignatureName: String is
 	do
 		Result := out
 	end -- getSignatureName
+	
+	hasTheSameType (typeDsc: TypeDescriptor): Boolean is
+	local
+		parType: TypeDescriptor
+	do
+		parType := type
+		if parType /= Void then
+			Result := typeDsc.is_equal (parType)
+		end -- if
+	end -- hasTheSameType
 
 	sameAs (other: like Current): Boolean is
 	do
 		Result := name.is_equal (other.name)
 	end -- sameAs
+	
 	lessThan(other: like Current): Boolean is
 	do
 		Result := name < other.name
@@ -3666,8 +3710,7 @@ feature {Any}
 	isGeneric: Boolean is
 	do
 		Result := formalGenerics.count > 0
-	end -- isGeneric	
-
+	end -- isGeneric
 
 	-- I do not remember why did I need this function :-)
 	--getUnitTypeDescriptor: UnitTypeCommonDescriptor is
@@ -3877,6 +3920,36 @@ feature {Any}
 	do
 		Result := formalGenerics.count > 0
 	end -- isTemplate
+
+	matchesType (utdDsc: UnitTypeNameDescriptor): Boolean is
+	require
+		utdDsc /= Void
+	local
+		fgCount: Integer
+		factualGenerics: Array [TypeOrExpressionDescriptor]
+	do
+		Result := name.is_equal (utdDsc.name)
+		if Result then
+			fgCount := formalGenerics.count
+			factualGenerics := utdDsc.generics
+			--generics: Array [TypeOrExpressionDescriptor]
+			if fgCount = factualGenerics.count then
+				from
+				until
+					fgCount = 0
+				loop
+					--if formalGenerics.item (fgCount) === factualGenerics.item (fgCount) then
+						fgCount := fgCount - 1
+					--else
+					--	Result := False
+					--	fgCount := 0
+					--end -- if
+				end -- loop
+			else
+				Result := False
+			end
+		end -- if
+	end -- matchesType
 
 	fullUnitName: String is
 	local
@@ -4247,6 +4320,7 @@ feature {Any}
 			i := i + 1
 		end -- loop
 	end -- attach_use_pool
+	
 	generationFailed(cg: CodeGenerator): Boolean is
 	local
 		i, n: Integer
@@ -4691,7 +4765,6 @@ feature {Any}
 	end -- uselessGetExternalName
 
 	isGeneric: Boolean is True
-
 	
 	applyGenerics (sysDsc: SystemDescriptor; formalGenerics: Array [FormalGenericDescriptor]; factualGenerics: Array [TypeOrExpressionDescriptor]; o: Output): TypeOrExpressionDescriptor is
 	local
@@ -5285,9 +5358,9 @@ feature {Any}
 		Result.append_string (signatureAsString)
 	end -- fullMemberName
 
-	signature: SignatureDescriptor is
+	hasTheSameSignature (signature: SignatureDescriptor): Boolean is
 	deferred
-	end -- signature
+	end -- hasTheSameSignature
 	
 	signatureAsString: String is
 	deferred
@@ -5881,11 +5954,48 @@ feature {Any}
 	--	name := aName
 	--end -- make_for_search
 	
-	signature: SignatureDescriptor is
+	hasTheSameSignature (signature: SignatureDescriptor): Boolean is
+	local
+		rtnParCount: Integer
+		sgnParCount: Integer
 	do
-		create Result.make (parameters, type)
-	end -- signature	
-	
+		if signature = Void then
+			Result := (parameters = Void or else parameters.count = 0) and then type = Void and then expr = Void
+		else
+			if signature.returnType = Void then
+				if parameters /= Void then
+					rtnParCount := parameters.count
+				end -- if
+				if signature.parameters /= Void then
+					sgnParCount := signature.parameters.count
+				end -- if
+				if rtnParCount = sgnParCount then
+					from
+						Result := True
+					until
+						rtnParCount = 0
+					loop
+						if parameters.item (rtnParCount).hasTheSameType (signature.parameters.item (rtnParCount)) then
+							rtnParCount := rtnParCount - 1
+						else
+							Result := False
+							rtnParCount := 0
+						end -- if
+					end -- loop
+				end -- if			
+			end -- if		
+			if signature.returnType /= Void then
+				if type = Void then
+					if expr /= Void and then expr.exprType /= Void  then
+						Result := signature.returnType.is_equal (expr.exprType)
+					end -- if		
+				else
+					Result := signature.returnType.is_equal (type)
+				end -- if	
+			end -- if		
+		end -- if
+	end -- hasTheSameSignature
+
 	init (isO, isFi, isP, isS: Boolean; aName: like name; anAliasName: like aliasName; p: like parameters; t: like type; u: like usage; c: like constants; pre: like preconditions; isF, isV: Boolean; b: like innerBlock; e: like expr; post: like postconditions) is
 	require
 		name_not_void: aName /= Void
@@ -5960,14 +6070,39 @@ feature {Any}
 		innerBlock := b
 		postconditions := post
 	end -- init
+
 	generationFailed(cg: CodeGenerator): Boolean is
 	do
 	end -- generationFailed
 
-	signature: SignatureDescriptor is
+	hasTheSameSignature (signature: SignatureDescriptor): Boolean is
+	local
+		rtnParCount: Integer
+		sgnParCount: Integer
 	do
-		create Result.make (parameters, Void)
-	end -- signature
+		if signature.returnType = Void then
+			if parameters /= Void then
+				rtnParCount := parameters.count
+			end -- if
+			if signature.parameters /= Void then
+				sgnParCount := signature.parameters.count
+			end -- if
+			if rtnParCount = sgnParCount then
+				from
+					Result := True
+				until
+					rtnParCount = 0
+				loop
+					if parameters.item (rtnParCount).hasTheSameType (signature.parameters.item (rtnParCount)) then
+						rtnParCount := rtnParCount - 1
+					else
+						Result := False
+						rtnParCount := 0
+					end -- if
+				end -- loop
+			end -- if			
+		end -- if		
+	end -- hasTheSameSignature
 
 end -- class InitDeclarationDescriptor
 
@@ -6947,7 +7082,7 @@ feature {Any}
 	--type: TypeDescriptor
 	--expr: ExpressionDescriptor
 
-	-- Overloading for attribute names ????
+	-- Overloading for attribute names ???? Not supported so far !!!
 	sameAs (other: like Current): Boolean is
 	do
 		Result := name.is_equal (other.name)
@@ -6957,16 +7092,20 @@ feature {Any}
 		Result := name < other.name
 	end -- lessThan
 
-	signature: SignatureDescriptor is
+	hasTheSameSignature (signature: SignatureDescriptor): Boolean is
 	do
-		if type = Void then
-			if expr /= Void and then expr.exprType /= Void  then
-				create Result.init (Void, expr.exprType)
-			end -- if		
-		else
-			create Result.init (Void, type)
-		end -- if	
-	end -- signature	
+		if signature = Void then
+			Result := type = Void and then expr = Void
+		elseif (signature.parameters = Void or else signature.parameters.count = 0) and then signature.returnType /= Void then
+			if type = Void then
+				if expr /= Void and then expr.exprType /= Void  then
+					Result := signature.returnType.is_equal (expr.exprType)
+				end -- if		
+			else
+				Result := signature.returnType.is_equal (type)
+			end -- if	
+		end -- if
+	end -- hasTheSameSignature
 
 	signatureAsString: String is
 	do

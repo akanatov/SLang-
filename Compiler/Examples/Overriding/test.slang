@@ -6,7 +6,7 @@ unit A extend B
 end
 unit B
 end
-unit Any
+abstract unit Any
 end
 unit T1
 end
