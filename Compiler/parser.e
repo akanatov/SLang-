@@ -4614,6 +4614,9 @@ end -- debug
 		name /= Void
 	do
 		if currentRtnLocals /= Void then
+			if currentRtnParameters /= Void and then currentRtnParameters.seek (name) > 0 then
+				validity_error( "Local `" + name + "` clashes with the name of the routine parameter")
+			end -- if
 			currentRtnLocals.add (name)
 		end -- if
 	end -- currentRtnLocalsAdd
