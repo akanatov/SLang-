@@ -942,14 +942,15 @@ feature {None}
 		create {UnqualifiedCallDescriptor}Result.init (identDsc, arguments, callChain)
 	end -- parseUnqalifiedCallWithFirstArgument
 
-
 	parseLocalsDeclaration(statements: Array [StatementDescriptor]; isVarOrRigid: Boolean; name: String) is
 	require
 		statements_not_void: statements /= Void
 	local
 		locals: Sorted_Array [LocalAttrDeclarationDescriptor]
 	do
---trace ("parseLocalsDeclaration")
+		debug
+			--trace ("parseLocalsDeclaration")
+		end -- debug
 		locals := parseLocalAttributesDeclaration (isVarOrRigid, name)
 		if locals /= Void then
 			statements.append (locals)
@@ -1408,7 +1409,7 @@ feature {None}
 		--attDsc: AttachedTypeDescriptor
 		expr: ExpressionDescriptor
 		localDsc: LocalAttrDeclarationDescriptor
-		tmpDsc: LocalAttrDeclarationDescriptor -- TemporaryLocalAttributeDescriptor
+		tmpDsc: LocalAttrDeclarationDescriptor
 		isVar, isRigid: Boolean
 		localAttrs: Sorted_Array [LocalAttrDeclarationDescriptor] -- Sorted_Array [TemporaryLocalAttributeDescriptor]
 		i, n: Integer
@@ -1421,7 +1422,9 @@ feature {None}
 			isRigid := scanner.token = scanner.rigid_token			
 			scanner.nextToken
 			if scanner.token = scanner.identifier_token then
---trace ("var|rigid processed")
+				debug
+					--trace ("var|rigid processed")
+				end -- debug
 				create tmpDsc.init_for_search (isVar, isRigid, scanner.tokenString)
 				scanner.nextToken
 			else
@@ -1544,7 +1547,9 @@ feature {None}
 				when scanner.is_token then
 					toLeave := True
 					scanner.nextToken
---trace ("is expression")
+					debug
+						--trace ("is expression")
+					end -- debug
 					expr := parseExpressionWithSemicolon -- parseExpression
 					if expr /= Void then
 						--create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, "", Void, expr)
