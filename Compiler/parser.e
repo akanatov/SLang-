@@ -889,6 +889,9 @@ feature {None}
 				scanner.nextToken
 				expr := parseExpressionWithSemicolon
 				if expr /= Void then
+					if currentRtnLocals /= Void then
+						currentRtnLocals.add (name)
+					end -- if			
 					create localDsc.init (False, False, name, type, expr)
 					if not ast.addedLocalDeclarationStatement (localDsc) then
 						validity_error( "Duplicated local declaration `" + localDsc.name + "`") 
@@ -912,6 +915,9 @@ feature {None}
 						validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 					end -- if					
 				else				
+					if currentRtnLocals /= Void then
+						currentRtnLocals.add (name)
+					end -- if			
 					create localDsc.init (False, False, name, type, Void)
 					if not ast.addedLocalDeclarationStatement (localDsc) then
 						validity_error( "Duplicated local declaration `" + localDsc.name + "`") 
@@ -1405,13 +1411,11 @@ feature {None}
 		valid_token_2: not isVarOrRigid implies name /= Void and then (validToken (<<scanner.comma_token, scanner.colon_token, scanner.is_token>>))	
 	local
 		type: TypeDescriptor
-		--detDsc: DetachableTypeDescriptor
-		--attDsc: AttachedTypeDescriptor
 		expr: ExpressionDescriptor
 		localDsc: LocalAttrDeclarationDescriptor
 		tmpDsc: LocalAttrDeclarationDescriptor
 		isVar, isRigid: Boolean
-		localAttrs: Sorted_Array [LocalAttrDeclarationDescriptor] -- Sorted_Array [TemporaryLocalAttributeDescriptor]
+		localAttrs: Sorted_Array [LocalAttrDeclarationDescriptor]
 		i, n: Integer
 		commaFound: Boolean
 		toLeave: Boolean
@@ -1431,6 +1435,9 @@ feature {None}
 				syntax_error (<<scanner.identifier_token>>)
 			end -- if
 		else
+			if currentRtnLocals /= Void then
+				currentRtnLocals.add (name)
+			end -- if			
 			inspect
 				scanner.token
 			when scanner.comma_token then
@@ -1452,33 +1459,6 @@ feature {None}
 						create localDsc.init (False, False, name, type, Void)
 						create Result.fill (<<localDsc>>)
 					end -- if
-					--detDsc ?= type
-					--if detDsc = Void then
-					--	if scanner.token = scanner.is_token then
-					--		-- initialization
-					--		scanner.nextToken
-					--		expr := parseExpressionWithSemicolon -- parseExpression
-					--		if expr /= Void then
-					--			attDsc ?= type
-					--			check
-					--				valid_attached_type: attDsc /= Void
-					--			end -- check
-					--			create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, name, attDsc, expr)
-					--			create Result.fill (<<localDsc>>)
-					--		end -- if
-					--	else
-					--		attDsc ?= type
-					--		check
-					--			valid_attached_type: attDsc /= Void
-					--		end -- check
-					--		create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, name, attDsc, Void)
-					--		create Result.fill (<<localDsc>>)
-					--		--syntax_error (<<scanner.is_token>>)
-					--	end -- if
-					--else
-					--	create {DetachedLocalAttributeDeclarationDescriptor} localDsc.init (name, detDsc) --.type)
-					--	create Result.fill (<<localDsc>>)
-					--end -- if
 				end -- if
 			when scanner.is_token then
 				-- initialization
@@ -1566,6 +1546,9 @@ feature {None}
 								tmpDsc := localAttrs.item (i)
 								localDsc := clone (localDsc)
 								localdsc.setFromTmpDsc (tmpDsc)
+								if currentRtnLocals /= Void then
+									currentRtnLocals.add (localDsc.name)
+								end -- if			
 								Result.add (localDsc)
 								i := i + 1
 							end -- if
@@ -1587,25 +1570,6 @@ feature {None}
 							create localDsc.init (False, False, "", type, Void)
 							--syntax_error (<<scanner.is_token>>)
 						end -- if				
-						--detDsc ?= type
-						--if detDsc = Void then
-						--	if scanner.token = scanner.is_token then
-						--		-- initialization
-						--		scanner.nextToken
-						--		expr := parseExpression
-						--		if expr /= Void then
-						--			attDsc ?= type
-						--			check
-						--				valid_attached_type: attDsc /= Void
-						--			end -- check
-						--			create {AttachedLocalAttributeDeclarationDescriptor} localDsc.init (False, False, "", attDsc, expr)
-						--		end -- if
-						--	else
-						--		syntax_error (<<scanner.is_token>>)
-						--	end -- if
-						--else
-						--	create {DetachedLocalAttributeDeclarationDescriptor} localDsc.init ("", detDsc) --.type)
-						--end -- if
 						if localDsc /= Void and then localAttrs /= Void then
 							from
 								create Result.make
@@ -1617,6 +1581,9 @@ feature {None}
 								tmpDsc := localAttrs.item (i)
 								localDsc := clone (localDsc)
 								localdsc.setFromTmpDsc (tmpDsc)
+								if currentRtnLocals /= Void then
+									currentRtnLocals.add (localDsc.name)
+								end -- if			
 								Result.add (localDsc)
 								i := i + 1
 							end -- if
@@ -2138,9 +2105,9 @@ feature {None}
 		parentDsc: UnitTypeNameDescriptor
 		toRegister: Boolean
 	do
-debug
-	--trace (">>>parseStatement1")
-end
+		debug
+			--trace (">>>parseStatement1")
+		end
 		inspect
 			scanner.token
 		when scanner.identifier_token then
@@ -4598,6 +4565,9 @@ end -- debug
 	local
 		preconditions: Array [PredicateDescriptor]	
 	do
+		create currentRtnLocals.make
+		create currentRtnReads.make
+		create currentRtnWrites.make
 		scanner.nextToken
 		preconditions := parsePredicates
 		if preconditions /= Void then
@@ -4609,6 +4579,9 @@ end -- debug
 				Result ?= parseAnyRoutineWithPreconditions (isOverriding, isFinal, is_pure, is_safe, name, Void, Void, Void, returnType, False, False, Void, False, preconditions, False, Void, Void, Void)
 			end -- if
 		end -- if
+		currentRtnLocals := Void
+		currentRtnReads := Void
+		currentRtnWrites := Void
 	end -- parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant
 
 	parseUnitFunctionWithNoParameters (isOverriding, isFinal: Boolean; is_pure, is_safe: Boolean; name: String; returnType: TypeDescriptor; checkSemicolonAfter: Boolean): UnitRoutineDeclarationDescriptor is
@@ -4630,6 +4603,10 @@ end -- debug
 	do
 		Result ?= parseAnyRoutine (False, False, is_pure, is_safe, name, Void, type, True, False, Void, False)
 	end -- parseStandAloneRoutine1
+
+	currentRtnLocals: Sorted_Array [String]
+	currentRtnReads: Sorted_Array [String]
+	currentRtnWrites: Sorted_Array [String]
 
 	parseAnyRoutine(
 		isOverriding, isFinal, is_pure, is_safe: Boolean; name, anAliasName: String; type: TypeDescriptor;
@@ -4666,6 +4643,9 @@ end -- debug
 		preconditions: Array [PredicateDescriptor]
 		wasError : Boolean		
 	do
+		create currentRtnLocals.make
+		create currentRtnReads.make
+		create currentRtnWrites.make
 		if isStandAlone then
 			-- standalone routine may have generics and no alias
 			if scanner.genericsStart and then not isLambda then
@@ -4762,7 +4742,6 @@ end -- debug
 			isOverriding, isFinal, is_pure, is_safe, name, anAliasName, formalGenerics, fgTypes, returnType, 
 			isStandAlone, isLambda, parameters, checkSemicolonAfter, preconditions, wasError, usage, constants, pars
 		)
-		
 	end -- parseAnyRoutine
 	
 	parseAnyRoutineWithPreconditions (
@@ -4882,6 +4861,9 @@ end -- debug
 			ast.stop_standalone_routine_parsing			
 			ast.setFGpool (Void)
 		end -- if
+		currentRtnLocals := Void
+		currentRtnReads := Void
+		currentRtnWrites := Void
 	end -- parseAnyRoutineWithPreconditions
 
 	parseMultiVarParameter (aResult: Array [NamedParameterDescriptor]): Array [NamedParameterDescriptor] is
