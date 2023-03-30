@@ -889,9 +889,7 @@ feature {None}
 				scanner.nextToken
 				expr := parseExpressionWithSemicolon
 				if expr /= Void then
-					if currentRtnLocals /= Void then
-						currentRtnLocals.add (name)
-					end -- if			
+					currentRtnLocalsAdd (name)
 					create localDsc.init (False, False, name, type, expr)
 					if not ast.addedLocalDeclarationStatement (localDsc) then
 						validity_error( "Duplicated local declaration `" + localDsc.name + "`") 
@@ -915,9 +913,7 @@ feature {None}
 						validity_error( "Duplicated routine declaration `" + rtnDsc.name + "`") 
 					end -- if					
 				else				
-					if currentRtnLocals /= Void then
-						currentRtnLocals.add (name)
-					end -- if			
+					currentRtnLocalsAdd (name)
 					create localDsc.init (False, False, name, type, Void)
 					if not ast.addedLocalDeclarationStatement (localDsc) then
 						validity_error( "Duplicated local declaration `" + localDsc.name + "`") 
@@ -1435,9 +1431,7 @@ feature {None}
 				syntax_error (<<scanner.identifier_token>>)
 			end -- if
 		else
-			if currentRtnLocals /= Void then
-				currentRtnLocals.add (name)
-			end -- if			
+			currentRtnLocalsAdd (name)
 			inspect
 				scanner.token
 			when scanner.comma_token then
@@ -1546,9 +1540,7 @@ feature {None}
 								tmpDsc := localAttrs.item (i)
 								localDsc := clone (localDsc)
 								localdsc.setFromTmpDsc (tmpDsc)
-								if currentRtnLocals /= Void then
-									currentRtnLocals.add (localDsc.name)
-								end -- if			
+								currentRtnLocalsAdd (localDsc.name)
 								Result.add (localDsc)
 								i := i + 1
 							end -- if
@@ -1581,9 +1573,7 @@ feature {None}
 								tmpDsc := localAttrs.item (i)
 								localDsc := clone (localDsc)
 								localdsc.setFromTmpDsc (tmpDsc)
-								if currentRtnLocals /= Void then
-									currentRtnLocals.add (localDsc.name)
-								end -- if			
+								currentRtnLocalsAdd (localDsc.name)
 								Result.add (localDsc)
 								i := i + 1
 							end -- if
@@ -1989,7 +1979,6 @@ feature {None}
 		end -- if
 	end -- parseMemberCallWithConstant
 
-	--parseWritableCall(ceDsc: CallDescriptor): CallDescriptor is
 	parseWritableCall(ceDsc: ExpressionDescriptor): CallDescriptor is
 	-- WritableCall: (((Identifier|return|this) [“.”(Identifier|OperatorName)])|old [“{”UnitTypeName”}”]) [Arguments] {CallChain}
 	--#1 Identifier|this|return [“.”Identifier|OperatorName] [Arguments]  {CallChain}
@@ -2120,11 +2109,11 @@ feature {None}
 				-- parse call statement: ident. | ident(  .... [:= Expr]
 				-- call or assignment!!!
 				-- ident. | ident( 
-				currentRtnReads.add (name)
 				create identDsc.init (name)
 				callDsc := parseWritableCall (identDsc)
 				if callDsc /= Void then
 					if scanner.token = scanner.assignment_token then
+						currentRtnWritesAdd (name)
 						scanner.nextToken
 						exprDsc := parseExpression
 						if exprDsc /= Void then
@@ -2138,12 +2127,13 @@ feature {None}
 						end -- if
 					else
 						-- Statement is the procedure call
+						currentRtnReadsAdd (name)
 						Result := <<callDsc>>
 					end -- if
 				end -- if 
 			when scanner.assignment_token then
 				-- assignemnt : ident := 
-				currentRtnWrites.add (name)
+				currentRtnWritesAdd (name)
 				stmtDsc := parseAssignmentToIdentifierStatement (name)
 				if stmtDsc /= Void then
 					Result := <<stmtDsc>>
@@ -2172,7 +2162,7 @@ feature {None}
 							callDsc := parseWritableCall (genIdentDsc)
 							if callDsc /= Void then
 								if scanner.token = scanner.assignment_token then
-									currentRtnWrites.add (name)
+									currentRtnWritesAdd (name)
 									scanner.nextToken
 									exprDsc := parseExpression
 									if exprDsc /= Void then
@@ -2185,7 +2175,7 @@ feature {None}
 										end -- if
 									end -- if
 								else
-									currentRtnReads.add (name)
+									currentRtnReadsAdd (name)
 									-- Statement is the procedure call
 									Result := <<callDsc>>
 								end -- if
@@ -2202,7 +2192,7 @@ feature {None}
 					end -- if
 				else
 					-- That is just a procedure call with no arguments!!! 
-					currentRtnReads.add (name)
+					currentRtnReadsAdd (name)
 					create identDsc.init (name)
 					create {UnqualifiedCallDescriptor} stmtDsc.init (identDsc, Void, Void)
 					Result := <<stmtDsc>>
@@ -2664,7 +2654,7 @@ feature {None}
 	end -- parseExpressionOrTuple
 
 	parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, returnType, parseConstExpr: Boolean): ExpressionDescriptor is
-	--50 Expression:
+	--Expression:
 	-- 		IfExpression | MemberCall | NewExpression | Expression Operator Expression | Operator Expression | Constant | TypeOfExpression |
 	--      if             ( ident ...  new                                              operator              constant
 	-- 		OldExpression | RangeExpression | LambdaExpression | TupleExpression | RefExpression | “(”Expression“)”{CallChain}
@@ -2809,6 +2799,7 @@ feature {None}
 					end -- if
 				end -- debug
 			else
+				currentRtnReadsAdd (name)
 				create identDsc.init (name)
 				scanner.nextWithSemicolon (checkSemicolonAfter)
 				debug
@@ -3003,20 +2994,20 @@ end -- debug
 		end -- inpsect
 		if Result /= Void and then not toExit then
 			from
-debug
-	--trace ("#55: parse expression tail of " + Result.out)
-end -- debug
+				debug
+					--trace ("#55: parse expression tail of " + Result.out)
+				end -- debug
 			until
 				toExit
 			loop
-debug
-	--trace ("#556: token: ")
-end -- debug
+				debug
+					--trace ("#556: token: ")
+				end -- debug
 				inspect
 					scanner.token
 				when scanner.semicolon_token then -- no need to continue with expression
 					--	Keep semicolon!!! scanner.nextToken
---trace ("#55 EOE due to ;")
+					--trace ("#55 EOE due to ;")
 					toExit := True
 				when
 					scanner.operator_token, scanner.implies_token, scanner.bar_token, scanner.tilda_token, scanner.less_token, scanner.greater_token
@@ -3110,7 +3101,7 @@ end -- debug
 					scanner.nextToken
 					rangeDsc := parseMandatoryRangeExpression (checkForCommentAfter, checkSemicolonAfter)
 					if rangeDsc /= Void then
---trace ("#5<expr>: " + Result.out + " in " + rangeDsc.out)
+						--trace ("#5<expr>: " + Result.out + " in " + rangeDsc.out)
 						create {InRangeExpression}Result.init (Result, rangeDsc)
 					end -- if
 					toExit := True
@@ -3136,12 +3127,12 @@ end -- debug
 						toParseMore := True
 						scanner.nextToken
 					else
---trace ("Expr: " + Result.out + " `" + scanner.tokenString + "`")
+						--trace ("Expr: " + Result.out + " `" + scanner.tokenString + "`")
 						toExit := True
 					end -- if
-debug
-	--trace ("#66 Expr: " + Result.out + " `" + operator + "`")
-end -- debug
+					debug
+						--trace ("#66 Expr: " + Result.out + " `" + operator + "`")
+					end -- debug
 					if toParseMore then
 						toParseMore := False
 						exprDsc := parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, False, parseConstExpr)
@@ -3153,21 +3144,21 @@ end -- debug
 						end -- if
 					end -- if
 				else
---trace ("EOE")
+					--trace ("EOE")
 					-- end of expression
 					toExit := True
 				end -- inspect
 			end -- loop			
 		end -- if
-debug
-	if Result = Void then
-		--trace ("<<< parseExpression: <Void>")
-	elseif parseConstExpr then
-		--trace ("<<< parseConstExpression: " + Result.out)
-	else
-		--trace ("<<< parseExpression: " + Result.out)
-	end -- if
-end -- debug
+		debug
+			if Result = Void then
+				--trace ("<<< parseExpression: <Void>")
+			elseif parseConstExpr then
+				--trace ("<<< parseConstExpression: " + Result.out)
+			else
+				--trace ("<<< parseExpression: " + Result.out)
+			end -- if
+		end -- debug
 	end -- parseExpression1
 
 	adjust_priorities (leftExprDsc: ExpressionDescriptor; operator: String; rightExprDsc: ExpressionDescriptor): ExpressionCallDescriptor is
@@ -3684,7 +3675,9 @@ end -- debug
 		toLeave: Boolean
 		requireExpression: Boolean
 	do
---trace (">>>parseArguments1")
+		debug
+			--trace (">>>parseArguments1")
+		end -- debug
 		from
 			create Result.make (1, 0)
 		until
@@ -3724,11 +3717,11 @@ end -- debug
 					scanner.nextToken
 				else
 					syntax_error (<<scanner.right_paranthesis_token>>)
---trace ("#1:parseArguments")
+					--trace ("#1:parseArguments")
 					Result := Void
 				end -- if
 			else			
---trace ("#3: argument " + exprDsc.out)
+				--trace ("#3: argument " + exprDsc.out)
 				if forcedType = Void then
 					Result.force (exprDsc, Result.count + 1)
 				else
@@ -3744,7 +3737,7 @@ end -- debug
 					scanner.nextToken
 					toLeave := True
 				else
---trace ("#2parseArguments")
+					--trace ("#2parseArguments")
 					syntax_error (<<scanner.comma_token, scanner.right_paranthesis_token>>)
 					Result := Void
 					toLeave := True
@@ -3754,7 +3747,7 @@ end -- debug
 		if Result /= Void and then Result.count = 0 then
 			Result := Void
 		end -- if
---trace ("<<<parseArguments1")
+		--trace ("<<<parseArguments1")
 	end -- parseArguments1
 
 	emptySignature: SignatureDescriptor is
@@ -4571,6 +4564,7 @@ end -- debug
 		preconditions: Array [PredicateDescriptor]	
 	do
 		create currentRtnLocals.make
+		create currentRtnParameters.make
 		create currentRtnReads.make
 		create currentRtnWrites.make
 		scanner.nextToken
@@ -4585,6 +4579,7 @@ end -- debug
 			end -- if
 		end -- if
 		currentRtnLocals := Void
+		currentRtnParameters := Void
 		currentRtnReads := Void
 		currentRtnWrites := Void
 	end -- parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant
@@ -4609,9 +4604,46 @@ end -- debug
 		Result ?= parseAnyRoutine (False, False, is_pure, is_safe, name, Void, type, True, False, Void, False)
 	end -- parseStandAloneRoutine1
 
-	currentRtnLocals: Sorted_Array [String]
-	currentRtnReads: Sorted_Array [String]
+	currentRtnLocals,
+	currentRtnParameters, 
+	currentRtnReads, 
 	currentRtnWrites: Sorted_Array [String]
+
+	currentRtnLocalsAdd (name: String) is
+	require
+		name /= Void
+	do
+		if currentRtnLocals /= Void then
+			currentRtnLocals.add (name)
+		end -- if
+	end -- currentRtnLocalsAdd
+
+	currentRtnParametersAdd (name: String) is
+	require
+		name /= Void
+	do
+		if currentRtnParameters /= Void then
+			currentRtnParameters.add (name)
+		end -- if
+	end -- currentRtnParametersAdd
+
+	currentRtnReadsAdd (name: String) is
+	require
+		name /= Void
+	do
+		if currentRtnReads /= Void then
+			currentRtnReads.add (name)
+		end -- if
+	end -- currentRtnReadsAdd
+
+	currentRtnWritesAdd (name: String) is
+	require
+		name /= Void
+	do
+		if currentRtnWrites /= Void then
+			currentRtnWrites.add (name)
+		end -- if
+	end -- currentRtnReadsAdd
 
 	parseAnyRoutine(
 		isOverriding, isFinal, is_pure, is_safe: Boolean; name, anAliasName: String; type: TypeDescriptor;
@@ -4649,6 +4681,7 @@ end -- debug
 		wasError : Boolean		
 	do
 		create currentRtnLocals.make
+		create currentRtnParameters.make
 		create currentRtnReads.make
 		create currentRtnWrites.make
 		if isStandAlone then
@@ -4868,9 +4901,11 @@ end -- debug
 		end -- if
 		if Result /= Void then
 			cleanUpAttrUsage
-			Result.attachUsage (currentRtnLocals, currentRtnReads, currentRtnWrites)
+			--Result.attachUsage (currentRtnLocals, currentRtnReads, currentRtnWrites)
+			Result.attachUsage (currentRtnReads, currentRtnWrites)
 		end -- if
 		currentRtnLocals := Void
+		currentRtnParameters := Void
 		currentRtnReads := Void
 		currentRtnWrites := Void
 	end -- parseAnyRoutineWithPreconditions
@@ -4886,6 +4921,16 @@ end -- debug
 			index = 0
 		loop
 			name := currentRtnLocals.item (index)
+			currentRtnReads.remove (name)
+			currentRtnWrites.remove (name)
+			index := index - 1
+		end -- loop
+		from
+			index := currentRtnParameters.count
+		until
+			index = 0
+		loop
+			name := currentRtnParameters.item (index)
 			currentRtnReads.remove (name)
 			currentRtnWrites.remove (name)
 			index := index - 1
@@ -5101,26 +5146,27 @@ end -- debug
 		i, n: Integer
 		parFound: Boolean
 		wasError: Boolean
-	do
--- trace (">> parseParameters1")
+	do  
+		-- trace (">> parseParameters1")
 		from
 			create Result.make (1, 0)
 			create pars.make
 		until
 			toLeave
 		loop
-debug
-	if Result.count > 0 then
-		--trace (">> parseParameter: " + Result.item (Result.count).out)
-	end -- if
-end -- debug
+			debug
+				if Result.count > 0 then
+					--trace (">> parseParameter: " + Result.item (Result.count).out)
+				end -- if
+			end -- debug
 			inspect 
 				scanner.token 
-			when scanner.assignment_token then 
+			when scanner.assignment_token then
 				parFound := True				
 				scanner.nextWithSemicolon (True)
 				if scanner.token = scanner.identifier_token then
 					name := scanner.tokenString
+					currentRtnWritesAdd (name)
 					if not pars.added (name) then
 						validity_error( "Duplicated parameter declaration `:= " + name + "`")
 						wasError := True
@@ -5157,6 +5203,7 @@ end -- debug
 					until
 						i > n
 					loop
+						currentRtnParametersAdd (parBlock.item (i).name)
 						if pars.added (parBlock.item (i).name) then
 							Result.force (parBlock.item (i), Result.count + 1)
 						else
@@ -5191,9 +5238,9 @@ end -- debug
 		if wasError then
 			Result := Void
 		end -- if
-debug
-	-- trace ("<< parseParameters1")
-end -- debug
+		debug
+			-- trace ("<< parseParameters1")
+		end -- debug
 	end -- parseParameters1
 
 	parseUseConst: Sorted_Array[UnitTypeNameDescriptor] is

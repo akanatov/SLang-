@@ -5483,15 +5483,17 @@ feature {Any}
 	deferred
 	end -- name
 	
-	rtnLocals, attrReads, attrWrites: Sorted_Array [String]
+	--rtnLocals, 
+	attrReads, attrWrites: Sorted_Array [String]
 	
-	attachUsage (currentRtnLocals, currentRtnReads, currentRtnWrites: Sorted_Array [String]) is
+	--attachUsage (currentRtnLocals, currentRtnReads, currentRtnWrites: Sorted_Array [String]) is
+	attachUsage (currentRtnReads, currentRtnWrites: Sorted_Array [String]) is
 	require
-		currentRtnLocals /= Void
+		--currentRtnLocals /= Void
 		currentRtnReads /= Void
 		currentRtnWrites /= Void
 	do
-		rtnLocals := currentRtnLocals
+		--rtnLocals := currentRtnLocals
 		attrReads := currentRtnReads
 		attrWrites := currentRtnWrites
 	end -- attachUsage	
@@ -5499,46 +5501,55 @@ feature {Any}
 	outAttrUsage: String is
 	local
 		index: Integer
+		addNewLine: Boolean
 	do
 		Result := ""
 		debug
-			from
-				index := rtnLocals.count
-				if index > 0 then
-					Result.append_string ("%N%TLocals:")
-				end -- if
-			until
-				index = 0
-			loop
-				Result.append_character (' ')
-				Result.append_string (rtnLocals.item (index)) 
-				index := index - 1
-			end -- loop
-			from
-				index := attrReads.count
-				if index > 0 then
-					Result.append_string ("%N%TReads:")				
-				end -- if
-			until
-				index = 0
-			loop
-				Result.append_character (' ')
-				Result.append_string (attrReads.item (index)) 
-				index := index - 1
-			end -- loop
-			from
-				index := attrWrites.count
-				if index > 0 then
-					Result.append_string ("%N%TWrites:") 
-				end -- if
-			until
-				index = 0
-			loop
-				Result.append_character (' ')
-				Result.append_string (attrWrites.item (index)) 
-				index := index - 1
-			end -- loop
-			Result.append_character ('%N')
+			--from
+			--	index := rtnLocals.count
+			--	if index > 0 then
+			--		Result.append_string ("%N%TLocals:")
+			--	end -- if
+			--until
+			--	index = 0
+			--loop
+			--	Result.append_character (' ')
+			--	Result.append_string (rtnLocals.item (index)) 
+			--	index := index - 1
+			--end -- loop
+			if attrReads /= Void then
+				from
+					index := attrReads.count
+					if index > 0 then
+						Result.append_string ("%N%TReads:")
+						addNewLine := True
+					end -- if
+				until
+					index = 0
+				loop
+					Result.append_character (' ')
+					Result.append_string (attrReads.item (index)) 
+					index := index - 1
+				end -- loop
+			end -- if
+			if attrWrites /= Void then
+				from
+					index := attrWrites.count
+					if index > 0 then
+						Result.append_string ("%N%TWrites:")
+						addNewLine := True
+					end -- if
+				until
+					index = 0
+				loop
+					Result.append_character (' ')
+					Result.append_string (attrWrites.item (index)) 
+					index := index - 1
+				end -- loop
+			end -- if
+			if addNewLine then
+				Result.append_character ('%N')
+			end -- if
 		end -- debug
 	end -- outAttrUsage
 	
