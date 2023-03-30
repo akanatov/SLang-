@@ -135,14 +135,14 @@ feature {Any}
 			inspect
 				scanner.token
 			when scanner.illegal_token then
-				syntaxError ("Valid compilation start expected", <<scanner.illegal_token>>, unit_folowers)
+				syntaxError ("Valid compilation start is expected", <<scanner.illegal_token>>, unit_folowers)
 				toExit := True
 			when scanner.eof_token then
 				toExit := True
 			when scanner.build_token then
 				sysDsc := parseSystemDescription
 				if sysDsc /= Void and then not systems.added (sysDsc) then
-					validity_warning ( "Duplicated system declaration `" + sysDsc.name + "', ignored. Only first one is kept")
+					validity_warning ( "Duplicated system declaration `" + sysDsc.name + "' found and ignored. Only the first one will be processed")
 				end -- if
 			else
 				scanner.disableSystemMode
@@ -9499,7 +9499,6 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	end -- 	parseFormalGenerics
 
 	parseUnit (is_final, is_ref, is_val, is_active, is_virtual, is_extend: Boolean) is
-	--87
 	-- [final] [ref|val|active|abstract|extend]
 	-- type Identifier 
 	-- alias	[AliasName]
@@ -9634,18 +9633,18 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				if scanner.token = scanner.colon_token then
 					-- parse "const :	ConstObjectsDeclaration"
 					scanner.flush
---trace ("Parse const objects")
+					--trace ("Parse const objects")
 					parseConstObjectsDeclaration (currentUnitDsc)
 				else
 					-- It is ordinary const start ...
---trace ("Parse const attribute #1")
+					--trace ("Parse const attribute #1")
 					scanner.push
 					scanner.revert
---trace ("Parse const attribute #2")
+					--trace ("Parse const attribute #2")
 				end -- if
 			end -- if
 
-			-- parse type members
+			-- parse unit members
 			from
 				toLeave := errorsCount > 0
 			until
@@ -9922,7 +9921,6 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		ast.setFGpool (Void)
 		currentUnitDsc := Void
 	end -- parseUnit
-
 	
 feature {None}
 
