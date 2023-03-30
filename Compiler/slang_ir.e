@@ -2877,6 +2877,9 @@ feature {Any}
 				Result.append_character ('%N')
 			end -- if
 		end -- if
+		
+		Result.append_string (outAttrUsage)
+		
 		if isOneLine then
 			Result.append_string (" => ")	
 			--if expr = Void then
@@ -5480,6 +5483,65 @@ feature {Any}
 	deferred
 	end -- name
 	
+	rtnLocals, attrReads, attrWrites: Sorted_Array [String]
+	
+	attachUsage (currentRtnLocals, currentRtnReads, currentRtnWrites: Sorted_Array [String]) is
+	require
+		currentRtnLocals /= Void
+		currentRtnReads /= Void
+		currentRtnWrites /= Void
+	do
+		rtnLocals := currentRtnLocals
+		attrReads := currentRtnReads
+		attrWrites := currentRtnWrites
+	end -- attachUsage	
+	
+	outAttrUsage: String is
+	local
+		index: Integer
+	do
+		Result := ""
+		debug
+			from
+				index := rtnLocals.count
+				if index > 0 then
+					Result.append_string ("%N%TLocals:")
+				end -- if
+			until
+				index = 0
+			loop
+				Result.append_character (' ')
+				Result.append_string (rtnLocals.item (index)) 
+				index := index - 1
+			end -- loop
+			from
+				index := attrReads.count
+				if index > 0 then
+					Result.append_string ("%N%TReads:")				
+				end -- if
+			until
+				index = 0
+			loop
+				Result.append_character (' ')
+				Result.append_string (attrReads.item (index)) 
+				index := index - 1
+			end -- loop
+			from
+				index := attrWrites.count
+				if index > 0 then
+					Result.append_string ("%N%TWrites:") 
+				end -- if
+			until
+				index = 0
+			loop
+				Result.append_character (' ')
+				Result.append_string (attrWrites.item (index)) 
+				index := index - 1
+			end -- loop
+			Result.append_character ('%N')
+		end -- debug
+	end -- outAttrUsage
+	
 	hasParameterOrLocal (aName: String): Boolean is
 	require
 		non_void_name: aName /= Void
@@ -5818,6 +5880,9 @@ feature {Any}
 		else
 			outConstants (Result, " use const ")
 		end -- if
+
+		Result.append_string (outAttrUsage)
+
 		if preconditions /= Void then
 			n := preconditions.count
 			if n > 0 then

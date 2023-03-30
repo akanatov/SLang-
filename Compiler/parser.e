@@ -2120,6 +2120,7 @@ feature {None}
 				-- parse call statement: ident. | ident(  .... [:= Expr]
 				-- call or assignment!!!
 				-- ident. | ident( 
+				currentRtnReads.add (name)
 				create identDsc.init (name)
 				callDsc := parseWritableCall (identDsc)
 				if callDsc /= Void then
@@ -2142,6 +2143,7 @@ feature {None}
 				end -- if 
 			when scanner.assignment_token then
 				-- assignemnt : ident := 
+				currentRtnWrites.add (name)
 				stmtDsc := parseAssignmentToIdentifierStatement (name)
 				if stmtDsc /= Void then
 					Result := <<stmtDsc>>
@@ -2170,6 +2172,7 @@ feature {None}
 							callDsc := parseWritableCall (genIdentDsc)
 							if callDsc /= Void then
 								if scanner.token = scanner.assignment_token then
+									currentRtnWrites.add (name)
 									scanner.nextToken
 									exprDsc := parseExpression
 									if exprDsc /= Void then
@@ -2182,6 +2185,7 @@ feature {None}
 										end -- if
 									end -- if
 								else
+									currentRtnReads.add (name)
 									-- Statement is the procedure call
 									Result := <<callDsc>>
 								end -- if
@@ -2198,6 +2202,7 @@ feature {None}
 					end -- if
 				else
 					-- That is just a procedure call with no arguments!!! 
+					currentRtnReads.add (name)
 					create identDsc.init (name)
 					create {UnqualifiedCallDescriptor} stmtDsc.init (identDsc, Void, Void)
 					Result := <<stmtDsc>>
@@ -2412,9 +2417,9 @@ feature {None}
 			end --if
 			-- it is not a statement
 		end -- inspect
-debug
-	--trace ("<<<parseStatement1")
-end
+		debug
+			--trace ("<<<parseStatement1")
+		end
 	end -- parseStatement1
 	
 	parseExpressionWithSemicolon: ExpressionDescriptor is
@@ -4751,7 +4756,7 @@ end -- debug
 		isStandAlone, isLambda: Boolean; parameters: Array [ParameterDescriptor]; checkSemicolonAfter: Boolean;
 		preconditions: Array [PredicateDescriptor]; we: Boolean; usage: Sorted_Array [EnclosedUseEementDescriptor];
 		constants: Sorted_Array [UnitTypeNameDescriptor] ; pars: Array [ParameterDescriptor] -- FullUnitNameDescriptor]
-		) : RoutineDescriptor is
+		): RoutineDescriptor is
 	local
 		isForeign: Boolean
 		isVirtual: Boolean
@@ -4861,10 +4866,31 @@ end -- debug
 			ast.stop_standalone_routine_parsing			
 			ast.setFGpool (Void)
 		end -- if
+		if Result /= Void then
+			cleanUpAttrUsage
+			Result.attachUsage (currentRtnLocals, currentRtnReads, currentRtnWrites)
+		end -- if
 		currentRtnLocals := Void
 		currentRtnReads := Void
 		currentRtnWrites := Void
 	end -- parseAnyRoutineWithPreconditions
+	
+	cleanUpAttrUsage is
+	local
+		name: String
+		index: Integer
+	do
+		from
+			index := currentRtnLocals.count
+		until
+			index = 0
+		loop
+			name := currentRtnLocals.item (index)
+			currentRtnReads.remove (name)
+			currentRtnWrites.remove (name)
+			index := index - 1
+		end -- loop
+	end -- cleanUpAttrUsage
 
 	parseMultiVarParameter (aResult: Array [NamedParameterDescriptor]): Array [NamedParameterDescriptor] is
 	-- when scanner.comma_token then
