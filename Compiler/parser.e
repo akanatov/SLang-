@@ -340,7 +340,9 @@ feature {Any}
 						scanner.nextToken
 						exprDsc := parseExpression
 						if exprDsc /= Void then
-							create {EntityDeclarationStatementDescriptor} stmtDsc.init (False, False, False, name, exprDsc)
+							--create {EntityDeclarationStatementDescriptor} stmtDsc.init (False, False, False, name, exprDsc)
+							create {LocalAttrDeclarationDescriptor} stmtDsc.init (False, False, name, Void, exprDsc)
+								-- init (mv, mr: Boolean; aName: like name; aType: like type; ie: like expr)
 							if stmtDsc /= Void then
 								ast.addStatement (stmtDsc)
 							end -- if				
