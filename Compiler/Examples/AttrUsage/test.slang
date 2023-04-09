@@ -1,11 +1,12 @@
 a is A
 unit A
-	foo do
+	foo do // (l1: A) do
 		l1 is A
 		l2: A
 		attr1
 		l1: Any
 		l2: Any is Any
+		attr3 := attr1 + attr2 / l1
 		l1
 		l2 := l1
 	end
