@@ -21,3 +21,6 @@ Slang.Innopolis/SLang VS Plugin/
 *.class
 *.msil
 *.LOG
+Compiler/Examples/Gor/FE.txt
+Docs/~$SLang 2021.pptx
+*.pdf
