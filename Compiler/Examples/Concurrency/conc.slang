@@ -56,7 +56,10 @@ active unit Queue [G]
 end
 
 // Example how to work with producer and consumer
-unit Data
+unit Data // Unit which shoudk contain some data which will be produced and consumed
+end
+timeToExit: Boolean do // Function which determines if it is the time to shut the whole system
+	return if Timer.totalTimeOfExecution > 1000 do true else false
 end
 q is Queue [Data] // create queue
 p is Producer [Data] (q) // create producer
@@ -65,7 +68,7 @@ p.produce (rtn : Data => Data) // start producing Data objects
 c.consume (rtn (data: Data) do io.print (data) end) // start processing Data objects
 var exit: Boolean
 while not exit do
-  exit := defineExit // Just do some activity of its own - main thread of the application
+  exit := timeToExit // Just do some activity of its own - main thread of the application
 end
 // Time to ramp down the whole system
 p.stop // Stop producing

@@ -987,9 +987,20 @@ abstract unit AnArray [G]
 			this (pos) := subArray (subArray.lower + pos - 1)
 		end
 	end
+	{}: // Low-level implementation of array concept
+	data: ?Pointer
+	allocateArray (l, u: Integer; size: Integer)
+	require
+		l <= u /// Consistent array borders
+	none
+	ensure
+		data is Pointer // data was allocated
+	end	
 require
-	count >= 0 /// Consistent array count must be greater than zero
-	lower <= upper - 1 /// Consistent  array range – lower index is not greater than upper when array is not empty. Array is empty when lower = upper - 1
+	// Consistent array index range
+	count = 0 implies lower = upper - 1 // Empty array indexes invariant
+	count > 0 implies lower <= upper // Non-empty array indexes invariant
+	// Was: lower <= upper - 1 
 end // AnArray [G]
 
 abstract unit OneDimentionalArray [G new ()] extend AnArray [G]
@@ -1063,16 +1074,12 @@ unit Array [G new ()] extend OneDimentionalArray [G]
 	do
 		Array (1, 0, G()) 
 	end
-	Array (n: Integer; value: G) 
+	Array (n: Cardinal; value: G) 
 		/// It creates an array of n elements,  lower index is 1
-	require
-		n >= 0 
 	do 
 		Array (1, n, value) 
 	end
-	Array (n: Integer) 
-	require
-		n >= 0 
+	Array (n: Cardinal) 
 	do 
 		Array (1, n, G()) 
 	end
@@ -1092,14 +1099,9 @@ unit Array [G new ()] extend OneDimentionalArray [G]
 			data := allocateArray (lower, upper, value.sizeof)
 			while index in lower .. upper do  
 				this (index) := value
-			end
-		end
+			end // while
+		end // if
 	end
-	{} data: ?Pointer
-	{} allocateArray (l, u: Integer; size: Integer)
-	require
-		l <= u /// Consistent array borders
-	none
 end // Array
 
 /*unit Array [G new (), dimentions: (Integer|Integer .. Integer)] extend Array [G, numberOfElementsInLinearArray ]
