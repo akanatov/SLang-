@@ -164,42 +164,42 @@ feature {Any}
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.ref_token then -- parse ref type
+					when scanner.ref_token then -- parse ref unit
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.unit_token then -- parse type
+						when scanner.unit_token then -- parse unit
 							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, True, False, False, False, False)
 						else
 							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 							toExit := True
 						end
-					when scanner.val_token then -- parse val type
+					when scanner.val_token then -- parse val unit
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.unit_token then -- parse type
+						when scanner.unit_token then -- parse unit
 							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, False, True, False, False, False)
 						else
 							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 						end
-					when scanner.active_token then -- parse active type
+					when scanner.active_token then -- parse active unit
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.unit_token then -- parse type
+						when scanner.unit_token then -- parse unit
 							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, False, False, True, False, False)
 						else
 							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 						end
-					when scanner.unit_token then -- parse type
+					when scanner.unit_token then -- parse unit
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.type_name_token then -- parse type
+						when scanner.type_name_token then -- parse unit
 							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, False, False, False, False, False)
 						else
@@ -209,48 +209,48 @@ feature {Any}
 						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.active_token, scanner.unit_token>>, unit_folowers)
 					end -- inspect
 					ast.stop_unit_parsing
-				when scanner.ref_token then -- parse ref type
+				when scanner.ref_token then -- parse ref unit
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse type
+					when scanner.unit_token then -- parse unit
 						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, True, False, False, False, False)
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.val_token then -- parse val type
+				when scanner.val_token then -- parse val unit
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse type
+					when scanner.unit_token then -- parse unit
 						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, True, False, False, False)
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.active_token then -- parse active type
+				when scanner.active_token then -- parse active unit
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse type
+					when scanner.unit_token then -- parse unit
 						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, False, True, False, False)
 					else
 						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.abstract_token then -- parse abstract type
+				when scanner.abstract_token then -- parse abstract unit
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse type
+					when scanner.unit_token then -- parse unit
 						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, False, False, True, False)
 					else
