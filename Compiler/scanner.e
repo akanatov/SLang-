@@ -209,7 +209,7 @@ feature
 	one_line_function_string: String is     "=>"
 	end_if_string: String is                "end // if"
 	end_block_string: String is             "end // block"
-	end_unit_string: String is              "end // type"
+	end_unit_string: String is              "end // unit"
 	end_routine_string: String is           "end // routine"
 	end_loop_string: String is              "end // loop"
 	less_string: String is                  "<"

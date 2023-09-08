@@ -5646,6 +5646,9 @@ feature {Any}
 	isVirtual: Boolean is
 	deferred
 	end -- isVirtual
+	isPrecursorCall: Boolean is
+	do
+	end -- isPrecursorCall
 
 	conforms_to_other (other: MemberDeclarationDescriptor): Boolean is
 	local
@@ -5939,7 +5942,12 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			Result.append_string (getIdent + "none")
+			--Result.append_string (getIdent + "none")
+			if isPrecursorCall then
+				Result.append_string (getIdent + "old%N")
+			else
+				Result.append_string (getIdent + "none%N")
+			end -- if
 		else
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
@@ -6021,11 +6029,11 @@ end -- class UnitRoutineDescriptor
 class UnitRoutineDeclarationDescriptor
 -- [pure|safe] RoutineName [final Identifier] [UnitRoutineParameters] [":" Type] [EnclosedUseDirective]
 -- [RequireBlock]
--- ((InnerBlock) [EnsureBlock] BlockEnd) | ((abstract|foreign|none| (“=>”Expression))[EnsureBlock BlockEnd])
+-- ((InnerBlock) [EnsureBlock] BlockEnd) | ((abstract|foreign|none|old| (“=>”Expression))[EnsureBlock BlockEnd])
 inherit
 	UnitRoutineDescriptor
 		redefine
-			aliasName
+			aliasName, isPrecursorCall
 	end
 	NamedDescriptor
 		undefine
@@ -6039,6 +6047,7 @@ feature {Any}
 	isVirtual: Boolean
 	isOverriding: Boolean
 	isFinal: Boolean
+	isPrecursorCall: Boolean
 	--type: TypeDescriptor
 	--expr: ExpressionDescriptor
 	--make_for_search (aName: like name) is
@@ -6088,7 +6097,10 @@ feature {Any}
 		end -- if
 	end -- hasTheSameSignature
 
-	init (isO, isFi, isP, isS: Boolean; aName: like name; anAliasName: like aliasName; p: like parameters; t: like type; u: like usage; c: like constants; pre: like preconditions; isF, isV: Boolean; b: like innerBlock; e: like expr; post: like postconditions) is
+	init (
+		isO, isFi, isP, isS: Boolean; aName: like name; anAliasName: like aliasName; p: like parameters; t: like type;
+		u: like usage; c: like constants; pre: like preconditions; isF, isV, isPC: Boolean; b: like innerBlock; e: like expr; post: like postconditions
+	) is
 	require
 		name_not_void: aName /= Void
 		expr_consistency: e /= Void implies b = Void
@@ -6109,6 +6121,7 @@ feature {Any}
 		isFinal := isFi
 		isPure := isP
 		isSafe := isS
+		isPrecursorCall := isPC
 		expr := e
 	end -- init
 	generationFailed(cg: CodeGenerator): Boolean is
@@ -8265,7 +8278,7 @@ create
 feature {Any}
 	init (p: like parameters; t: like type; pre: like preconditions; isF: Boolean; b: like innerBlock; e: like expr; post: like postconditions) is
 	do
-		unitRoutineInit (False, False, False, False, "<>", Void, p, t, Void, Void, pre, isF, False,  b, e, post)
+		unitRoutineInit (False, False, False, False, "<>", Void, p, t, Void, Void, pre, isF, False, False, b, e, post)
 	end -- init
 	isConst: Boolean is True
 	sameAs (other: like Current): Boolean is

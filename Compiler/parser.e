@@ -4652,7 +4652,7 @@ end -- debug
 		isOverriding, isFinal, is_pure, is_safe: Boolean; name, anAliasName: String; type: TypeDescriptor;
 		isStandAlone, isLambda: Boolean; pars: Array [ParameterDescriptor]; checkSemicolonAfter: Boolean): RoutineDescriptor is
 	-- StandaloneRoutine: 		[pure|safe] Identifier  [FormalGenerics] [Parameters] [“:”|"->" Type] [EnclosedUseDirective] ([RequireBlock] (InnerBlock [EnsureBlock] end)|(foreign|(“=>”Expression) [EnsureBlock end])
-	-- UnitRoutineDeclaration: 	[pure|safe] RoutineName [final Identifier] [Parameters] [“:”|"->" Type] [EnclosedUseDirective]  [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (abstract|foreign|(“=>”Expression) [EnsureBlock end])
+	-- UnitRoutineDeclaration: 	[pure|safe] RoutineName [final Identifier] [Parameters] [“:”|"->" Type] [EnclosedUseDirective]  [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (abstract|foreign|none|old(“=>”Expression) [EnsureBlock end])
     --                                                  ^
 	require
 		name_not_void: name /= Void
@@ -4796,6 +4796,7 @@ end -- debug
 	local
 		isForeign: Boolean
 		isVirtual: Boolean
+		callPrecursor: Boolean
 		innerBlock: InnerBlockDescriptor
 		postconditions: Array [PredicateDescriptor]
 		expr: ExpressionDescriptor
@@ -4837,6 +4838,16 @@ end -- debug
 			when scanner.none_token then
 				-- no body - no action. InnerBlock is Void
 				scanner.nextToken
+			when scanner.old_token then
+				if isStandAlone then
+					validity_error ("standalone routine `" + name + "` cannot call non-existing precursor")
+					wasError := True
+				else
+					-- call precursor - WIP
+					-- no body. InnerBlock is Void.
+					callPrecursor := True
+					scanner.nextToken
+				end -- if
 			else
 				if scanner.blockStart then
 					innerBlock := parseInnerBlock (False)
@@ -4878,7 +4889,8 @@ end -- debug
 					else
 						-- is_pure, is_safe,
 						create {UnitRoutineDeclarationDescriptor} Result.init (
-							isOverriding, isFinal, is_pure, is_safe, name, aliasName, parameters, returnType, usage, constants, preconditions, isForeign, isVirtual, innerBlock, expr, postconditions
+							isOverriding, isFinal, is_pure, is_safe, name, aliasName, parameters, returnType,
+							usage, constants, preconditions, isForeign, isVirtual, callPrecursor, innerBlock, expr, postconditions
 						)
 					end -- if
 				elseif scanner.Cmode then
@@ -4894,7 +4906,8 @@ end -- debug
 				Result := stndRtnDsc				
 			else
 				create {UnitRoutineDeclarationDescriptor} Result.init (
-					isOverriding, isFinal, is_pure, is_safe, name, aliasName, parameters, returnType, usage, constants, preconditions, isForeign, isVirtual, innerBlock, expr, postconditions
+					isOverriding, isFinal, is_pure, is_safe, name, aliasName, parameters, returnType, 
+					usage, constants, preconditions, isForeign, isVirtual, callPrecursor, innerBlock, expr, postconditions
 				)
 			end -- if
 		end -- if
@@ -8419,7 +8432,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				create Result.fill (<<attrDsc>>)
 				parseMultiAttributesDeclaration (isOverriding, isFinal, Result)
 			when scanner.final_token, scanner.left_paranthesis_token, scanner.use_token, scanner.require_token,
-				scanner.abstract_token, scanner.foreign_token, scanner.none_token, scanner.one_line_function_token
+				scanner.abstract_token, scanner.foreign_token, scanner.none_token, scanner.old_token, scanner.one_line_function_token
 			then
 				-- That is a routine start!
 				rtnDsc := parseUnitRoutine (isOverriding, isFinal, False, False, name, Void, scanner.token = scanner.one_line_function_token)
@@ -8437,7 +8450,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					syntax_error (<<
 						scanner.final_token, scanner.left_paranthesis_token, scanner.use_token,
 						scanner.require_token,
-						scanner.left_curly_bracket_token,
+						scanner.left_curly_bracket_token, scanner.old_token,
 						scanner.abstract_token, scanner.foreign_token, scanner.none_token, scanner.one_line_function_token,
 						scanner.colon_token, scanner.comma_token, scanner.is_token
 					>>)
@@ -8445,7 +8458,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					syntax_error (<<
 						scanner.final_token, scanner.left_paranthesis_token, scanner.use_token,
 						scanner.require_token,
-						scanner.do_token,
+						scanner.do_token, scanner.old_token,
 						scanner.abstract_token, scanner.foreign_token, scanner.none_token, scanner.one_line_function_token,
 						scanner.colon_token, scanner.comma_token, scanner.is_token
 					>>)
@@ -9022,19 +9035,24 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			inspect
 				scanner.token
 			when scanner.final_token, scanner.left_paranthesis_token, scanner.use_token, scanner.require_token,
-				scanner.abstract_token, scanner.foreign_token, scanner.one_line_function_token, scanner.colon_token
+				scanner.abstract_token, scanner.none_token, scanner.old_token, scanner.foreign_token,
+				scanner.one_line_function_token, scanner.colon_token
 			then
 				Result := parseUnitRoutine (isOverriding, isFinal, isPure, isSafe, rtnName, Void, scanner.token = scanner.one_line_function_token)
 			else
 				if scanner.blockStart then
 					Result := parseUnitRoutine (isOverriding, isFinal, isPure, isSafe, rtnName, Void, scanner.token = scanner.one_line_function_token)
 				elseif scanner.Cmode then
-					syntax_error (<<scanner.final_token, scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.left_curly_bracket_token,
-						scanner.abstract_token, scanner.foreign_token, scanner.one_line_function_token, scanner.colon_token
+					syntax_error (<<
+						scanner.final_token, scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.left_curly_bracket_token,
+						scanner.abstract_token, scanner.foreign_token, scanner.none_token, scanner.old_token, scanner.one_line_function_token,
+						scanner.colon_token
 					>>)
 				else
-					syntax_error (<<scanner.final_token, scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.do_token,
-						scanner.abstract_token, scanner.foreign_token, scanner.one_line_function_token, scanner.colon_token
+					syntax_error (<<
+						scanner.final_token, scanner.left_paranthesis_token, scanner.use_token, scanner.require_token, scanner.do_token,
+						scanner.abstract_token, scanner.foreign_token, scanner.none_token, scanner.old_token, scanner.one_line_function_token,
+						scanner.colon_token
 					>>)
 				end -- if
 			end -- inspect
