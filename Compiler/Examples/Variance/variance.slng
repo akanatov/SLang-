@@ -1,0 +1,16 @@
+unit A
+   foo (p: A)
+end
+unit B extend A
+   override foo (p: B)
+end
+unit C extend B
+   override foo (p: A)
+end
+
+a: A is new B
+a.foo(new A)
+
+
+b: B is new C
+b.foo(new B)
