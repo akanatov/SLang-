@@ -257,12 +257,12 @@ feature {None}
 						tsfName := Void
 					end -- if
 				end -- if
+				debug
+					dumpOutput.close
+				end
 			end -- if
 		end -- if
 		o.putNL ("")
-		debug
-			dumpOutput.close
-		end
 		o.close
 	end -- init
 
