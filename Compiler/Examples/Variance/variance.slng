@@ -1,16 +1,29 @@
 unit A
-   foo (p: A)
+	foo (p: A)
+	do 
+		p.a_attr // All A descendants have a_attr
+	end
+	a_attr: T1
 end
+
 unit B extend A
-   override foo (p: B)
+	override foo (p: A) old  // This version (precursor) to be called for contravriant arguments
+	override foo (p: B) do
+		p.a_attr
+		p.b_attr
+	end
+	// covariance
+	b_attr: T2
 end
+
 unit C extend B
-   override foo (p: A)
+   override foo (p: A) do p.a_attr end
+   // contravariance
+   c_attr: T3
 end
 
 a: A is new B
-a.foo(new A)
-
+a.foo(new A) // type-safe with double-dispatch
 
 b: B is new C
-b.foo(new B)
+b.foo(new B) // type-safe

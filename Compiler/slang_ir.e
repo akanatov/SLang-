@@ -6137,6 +6137,20 @@ invariant
 	body_consistency: innerBlock /= Void implies expr = Void and then not isVirtual and then not isForeign
 end -- class UnitRoutineDeclarationDescriptor
 
+class ParentInitCall
+create
+	init
+feature
+	-- UnitTypeName [Arguments]
+	parentDsc: 
+	arguments: Array[]
+	init (pDsc: like parentDsc; args: like arguments) is 
+	do
+		parentDsc := pDsc 
+		arguments := args
+	end -- init
+end -- class ParentInitCall
+
 class InitDeclarationDescriptor
 -- UnitName [UnitRoutineParameters] [EnclosedUseDirective] 
 -- [RequireBlock] 
@@ -6150,22 +6164,26 @@ feature {Any}
 	isVirtual: Boolean is False
 	isOverriding: Boolean is False
 	isFinal: Boolean is False
-	name: String is
-	do
-		Result := unitDsc.name		
-	end -- name
+	name: String is "new"
+	superCalls: Array [ParentInitCall]
+	--do
+	--	Result := unitDsc.name		
+	--end -- name
 	--make_for_search (ud: like unitDsc) is
 	--require
 	--	current_unit_not_void: ud /= Void
 	--do
 	--	unitDsc := ud
 	--end -- make_for_search
-	unitDsc: UnitDeclarationDescriptor
-	init (ud: like unitDsc; currentVisibilityZone: like visibility; p: like parameters; u: like usage; c: like constants; pre: like preconditions; isF: Boolean; b: like innerBlock; post: like postconditions) is
+	--unitDsc: UnitDeclarationDescriptor
+	init ( -- ud: like unitDsc; 
+	 currentVisibilityZone: like visibility; p: like parameters; u: like usage; c: like constants;
+	 pre: like preconditions; isF: Boolean; b: like innerBlock; post: like postconditions; sc: like superCalls
+	) is
 	require
 		current_unit_not_void: ud /= Void
 	do
-		unitDsc := ud
+		--unitDsc := ud
 		visibility := currentVisibilityZone
 		parameters := p
 		usage := u
@@ -6174,6 +6192,7 @@ feature {Any}
 		isForeign := isF
 		innerBlock := b
 		postconditions := post
+		superCalls := sc
 	end -- init
 
 	generationFailed(cg: CodeGenerator): Boolean is

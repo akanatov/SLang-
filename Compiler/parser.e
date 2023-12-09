@@ -157,9 +157,8 @@ feature {Any}
 				when scanner.alias_token then
 					-- parse type aliasing clause
 					parseAliasingClause
-
 				-- Unit start: ([final] [ref|val|active])|[abstract]|[extend]
-				when scanner.final_token then -- parse final type
+				when scanner.final_token then -- parse final unit
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
@@ -5322,7 +5321,7 @@ end -- debug
 		-- GlobalAlias: alias GlobalAliasElement {“,” GlobalAliasElement}
 		-- GlobalAliasElement: AttachedType as UnitName
 	require
-		valid_token : validToken (<<scanner.alias_token>>)
+		valid_token: validToken (<<scanner.alias_token>>)
 	local	
 		typeDsc: TypeDescriptor
 		atDsc: AttachedTypeDescriptor
@@ -5346,7 +5345,7 @@ end -- debug
 				if typeDsc /= Void then
 					atDsc ?= typeDsc
 					if atDsc = Void then
-						-- Formal generic type cann't be aliased
+						-- Formal generic type can't be aliased
 						validity_error ("Incorrect type `" + typeDsc.out + "` used in the use clause")
 						if scanner.token = scanner.as_token then
 							scanner.nextToken
@@ -7811,10 +7810,23 @@ end -- debug
 
 	parsingInit: Boolean 
 	
+	parseSuperCalls: Array [] is
+	do
+	end -- parseSuperCalls
+	
 	--parseInitDeclaration (unitDsc: UnitDeclarationDescriptor; currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
 	parseInitDeclaration (currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
+	--   InitDeclaration: new [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
+	--                    ^     
 	--   InitDeclaration: UnitName [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
 	--                    ^     
+	
+	-- InitDeclaration: new [UnitRoutineParameters] [EnclosedUseDirective] [RequireBlock] 
+	--                  ^     
+    --    [“:”UnitTypeName [Arguments] {“,” UnitTypeName [Arguments] }]
+    --    (InnerBlock [EnsureBlock] BlockEnd)|(foreign|none [EnsureBlock BlockEnd])
+
+	
 	require		
 		--non_void_current_unit: unitDsc /= Void
 		valid_token: validToken(<<scanner.type_name_token>>)
@@ -7822,6 +7834,7 @@ end -- debug
 		parameters: Array [ParameterDescriptor]
 		preconditions: Array [PredicateDescriptor]
 		postconditions: Array [PredicateDescriptor]
+		superCalls: Array [ParentInitCall]
 		innerBlock: InnerBlockDescriptor
 		ucb: UseConstBlock
 		checkForEnd: Boolean
@@ -7840,6 +7853,10 @@ end -- debug
 		if scanner.token = scanner.require_token then
 			scanner.nextToken
 			preconditions := parsePredicates
+		end -- if
+		if scanner.token = scanner.colon_token then
+			scanner.nextToken
+			superCalls := parseSuperCalls
 		end -- if
 		inspect
 			scanner.token
@@ -7885,99 +7902,94 @@ end -- debug
 		parsingInit := False
 	end -- parseInitDeclaration
 	
-	parseInitProcedureInheritanceOrMemberDeclaration
-		(currentVisibilityZone: MemberVisibilityDescriptor; unitDsc: UnitDeclarationDescriptor): Boolean is 
-		--76
-		-- parse
-		-- "new	InitProcedureInheritance"
-		-- new InitFromParentDescriptor {[“,”] InitFromParentDescriptor}
-		--		inhertitedInits: Sorted_Array [InitFromParentDescriptor]
-		-- InitFromParentDescriptor => UnitTypeName [Signature]
-		-- identifier
-
---		-- or
---		-- "MemberDeclaration (goToMembers := True)"
---		-- new ( require do foreign use
-	require
-		valid_token: validToken (<<scanner.new_token>>)
-		unit_descriptor_not_void: unitDsc /= Void
-	local
-		nmdTypeDsc: NamedTypeDescriptor
-		utnDsc: UnitTypeNameDescriptor
-		utnDsc1: UnitTypeNameDescriptor
-		ifpDsc: InitFromParentDescriptor
-		commaFound: Boolean
-		toLeave: Boolean
-	do
-		scanner.nextToken
-		inspect
-			scanner.token
-		when scanner.type_name_token then
-			-- parse init inheritance
-			from
-			until
-				toLeave
-			loop
-				inspect	
-					scanner.token
-				when scanner.type_name_token then
-					if commaFound or else unitDsc.inhertitedInits.count = 0 then
-						commaFound := False
-						nmdTypeDsc := parseUnitTypeName
-						if nmdTypeDsc = Void then
-							toLeave := True
-						else
-							utnDsc ?= nmdTypeDsc
-							if utnDsc = Void then
-								toLeave := True
-								validity_error( "Initialization procedure can not be inherited from the generic type `" + nmdTypeDsc.name + "`")
-							else
-								utnDsc1 := unitDsc.findParent (utnDsc)
-								if utnDsc1 = Void then
-									validity_error( "Initialization procedure can not be inherited from unit `" +  utnDsc.name + "` as it is not a parent of `" + unitDsc.name + "`")
-								else
-									utnDsc := utnDsc1
-								end -- if
-debug
-	--trace ("new " + utnDsc.out + " ?")
-end -- debug								
-								inspect	
-									scanner.token
-								-- when scanner.colon_token, scanner.left_paranthesis_token then
-								when scanner.left_paranthesis_token then
-									create ifpDsc.init (utnDsc, parseSignature)
-								else
-									create ifpDsc.init (utnDsc, Void)
-								end -- if
-								if theSameUnit1 (unitDsc, utnDsc) then
-									validity_error( "Initialization procedure can not be inherited from the same unit `" + unitDsc.name + "`")
-								elseif not unitDsc.inhertitedInits.added (ifpDsc) then
-									validity_error( "Duplicated initialization procedure inheritance of `" + ifpDsc.out + "` in unit `" + unitDsc.name + "`")
-								end -- if
-							end -- if
-						end -- if
-					else
-						toLeave := True
-					end -- if					
-				when scanner.comma_token then
-					if commaFound then
-						syntax_error (<<scanner.type_name_token>>)
-						toLeave:= True
-					else
-						commaFound := True
-					end -- if
-					scanner.nextToken
-				else
-					if commaFound then
-						syntax_error (<<scanner.type_name_token>>)
-					end -- if
-					toLeave:= True
-				end -- inspect	
-			end -- loop
-		else
-			syntax_error (<<scanner.type_name_token>>)
-		end -- inspect
-	end -- parseInitProcedureInheritanceOrMemberDeclaration
+	--parseInitProcedureInheritanceOrMemberDeclaration
+	--	(currentVisibilityZone: MemberVisibilityDescriptor; unitDsc: UnitDeclarationDescriptor): Boolean is 
+	--	-- parse
+	--	-- "new	InitProcedureInheritance"
+	--	-- new InitFromParentDescriptor {[“,”] InitFromParentDescriptor}
+	--	--		inhertitedInits: Sorted_Array [InitFromParentDescriptor]
+	--	-- InitFromParentDescriptor => UnitTypeName [Signature]
+	--	-- identifier
+	--require
+	--	valid_token: validToken (<<scanner.new_token>>)
+	--	unit_descriptor_not_void: unitDsc /= Void
+	--local
+	--	nmdTypeDsc: NamedTypeDescriptor
+	--	utnDsc: UnitTypeNameDescriptor
+	--	utnDsc1: UnitTypeNameDescriptor
+	--	ifpDsc: InitFromParentDescriptor
+	--	commaFound: Boolean
+	--	toLeave: Boolean
+	--do
+	--	scanner.nextToken
+	--	inspect
+	--		scanner.token
+	--	when scanner.type_name_token then
+	--		-- parse init inheritance
+	--		from
+	--		until
+	--			toLeave
+	--		loop
+	--			inspect	
+	--				scanner.token
+	--			when scanner.type_name_token then
+	--				if commaFound or else unitDsc.inhertitedInits.count = 0 then
+	--					commaFound := False
+	--					nmdTypeDsc := parseUnitTypeName
+	--					if nmdTypeDsc = Void then
+	--						toLeave := True
+	--					else
+	--						utnDsc ?= nmdTypeDsc
+	--						if utnDsc = Void then
+	--							toLeave := True
+	--							validity_error( "Initialization procedure can not be inherited from the generic type `" + nmdTypeDsc.name + "`")
+	--						else
+	--							utnDsc1 := unitDsc.findParent (utnDsc)
+	--							if utnDsc1 = Void then
+	--								validity_error( "Initialization procedure can not be inherited from unit `" +  utnDsc.name + "` as it is not a parent of `" + unitDsc.name + "`")
+	--							else
+	--								utnDsc := utnDsc1
+	--							end -- if
+    --debug
+	-- --trace ("new " + utnDsc.out + " ?")
+    --end -- debug								
+	--							inspect	
+	--								scanner.token
+	--							-- when scanner.colon_token, scanner.left_paranthesis_token then
+	--							when scanner.left_paranthesis_token then
+	--								create ifpDsc.init (utnDsc, parseSignature)
+	--							else
+	--								create ifpDsc.init (utnDsc, Void)
+	--							end -- if
+	--							if theSameUnit1 (unitDsc, utnDsc) then
+	--								validity_error( "Initialization procedure can not be inherited from the same unit `" + unitDsc.name + "`")
+	--							elseif not unitDsc.inhertitedInits.added (ifpDsc) then
+	--								validity_error( "Duplicated initialization procedure inheritance of `" + ifpDsc.out + "` in unit `" + unitDsc.name + "`")
+	--							end -- if
+	--						end -- if
+	--					end -- if
+	--				else
+	--					toLeave := True
+	--				end -- if					
+	--			when scanner.comma_token then
+	--				if commaFound then
+	--					syntax_error (<<scanner.type_name_token>>)
+	--					toLeave:= True
+	--				else
+	--					commaFound := True
+	--				end -- if
+	--				scanner.nextToken
+	--			else
+	--				if commaFound then
+	--					syntax_error (<<scanner.type_name_token>>)
+	--				end -- if
+	--				toLeave:= True
+	--			end -- inspect	
+	--		end -- loop
+	--	else
+	--		syntax_error (<<scanner.type_name_token>>)
+	--	end -- inspect
+	--end -- parseInitProcedureInheritanceOrMemberDeclaration
 	
 	parseConstObjectsDeclaration(unitDsc: UnitDeclarationDescriptor) is 
 		--77
@@ -8202,66 +8214,55 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		end -- inspect
 	end -- parseConstantObject
 
-	checkForInit (unitDsc: UnitDeclarationDescriptor; rtnDsc: UnitRoutineDeclarationDescriptor): UnitRoutineDescriptor is
-	require
-		current_unit_not_void: unitDsc /= Void
-		current_routine_not_void: rtnDsc /= Void
-	local
-		wasError: Boolean
-	do
-		Result := rtnDsc
-		if unitDsc.name.is_equal (rtnDsc.name) then
-			-- That should be a vlaid init procedure !!!
-			-- 
---trace ("Init found for type " + unitDsc.name)
-			if rtnDsc.type /= Void then
-				-- init must be a procedure !!!
-				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not return a value, procedure expected")
-				wasError := True
-			end -- if
-			if rtnDsc.isVirtual then
-				-- init must be effective !!!
-				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be abstract, do-foreign-none expected")
-				wasError := True
-			end -- if
-			if rtnDsc.isOverriding then
-				-- there is no overrding for init !!!
-				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be an overiding")
-				wasError := True
-			end -- if
-			if rtnDsc.isFinal then
-				-- there is no overrding control for init !!!
-				validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be marked final")
-				wasError := True
-			end -- if			
-			if not wasError then
-				create {InitDeclarationDescriptor}Result.init (unitDsc,
-					rtnDsc.visibility,
-					rtnDsc.parameters,
-					rtnDsc.usage,
-					rtnDsc.constants,
-					rtnDsc.preconditions,
-					rtnDsc.isforeign,
-					rtnDsc.innerblock,
-					rtnDsc.postconditions
-				)
---			create Result.init (
---	currentVisibilityZone,
---	parameters,
---	ucb.usage,
---	ucb.constants,
---	preconditions,
---	isForeign,
---	innerBlock,
---	postconditions
---	)
-
-			end -- if
-		end -- if
-	end -- checkForInit
+	----checkForInit (unitDsc: UnitDeclarationDescriptor; rtnDsc: UnitRoutineDeclarationDescriptor): UnitRoutineDescriptor is
+	--checkForInit (unitDsc: UnitDeclarationDescriptor; rtnDsc: UnitRoutineDeclarationDescriptor): InitDeclarationDescriptor is	
+	--require
+	--	current_unit_not_void: unitDsc /= Void
+	--	current_routine_not_void: rtnDsc /= Void
+	--local
+	--	wasError: Boolean
+	--do
+	--	Result := rtnDsc
+	--	if unitDsc.name.is_equal (rtnDsc.name) then
+	--		-- That should be a valid init procedure !!!
+	--		-- 
+	--		--trace ("Init found for type " + unitDsc.name)
+	--		if rtnDsc.type /= Void then
+	--			-- init must be a procedure !!!
+	--			validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not return a value, procedure expected")
+	--			wasError := True
+	--		end -- if
+	--		if rtnDsc.isVirtual then
+	--			-- init must be effective !!!
+	--			validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be abstract, do-foreign-none expected")
+	--			wasError := True
+	--		end -- if
+	--		if rtnDsc.isOverriding then
+	--			-- there is no overrding for init !!!
+	--			validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be an overiding")
+	--			wasError := True
+	--		end -- if
+	--		if rtnDsc.isFinal then
+	--			-- there is no overrding control for init !!!
+	--			validity_error ("Initializer of unit `" + unitDsc.name + "`" + " should not be marked final")
+	--			wasError := True
+	--		end -- if			
+	--		if not wasError then
+	--			create {InitDeclarationDescriptor}Result.init ( --unitDsc,
+	--				rtnDsc.visibility,
+	--				rtnDsc.parameters,
+	--				rtnDsc.usage,
+	--				rtnDsc.constants,
+	--				rtnDsc.preconditions,
+	--				rtnDsc.isforeign,
+	--				rtnDsc.innerblock,
+	--				rtnDsc.postconditions
+	--			)
+	--		end -- if
+	--	end -- if
+	--end -- checkForInit
 	
 	parseUnitRoutineOrAttribute (unitDsc: UnitDeclarationDescriptor; isOverriding, isFinal: Boolean): Sorted_Array [MemberDeclarationDescriptor] is
-	--78
 	-- UnitRoutineDeclaration: Identifier [final Identifier] [Parameters] [“:” Type] [EnclosedUseDirective] 
 	-- 		[RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (abstract|foreign|none (“=>”Expression ) [EnsureBlock end] )
 	-- or
@@ -8317,25 +8318,28 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						-- Function or it is the last attribute with no assigner in the type and require is invariant !!!!
 						memDsc := parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc, isOverriding, isFinal, False, False, name, typeDsc)
 						if memDsc /= Void then
-							rtnDsc ?= memDsc 
-							if rtnDsc /= Void then
-								create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
-							else
-								create Result.fill (<<memDsc>>)
-							end -- if
+							create Result.fill (<<memDsc>>)
+							--rtnDsc ?= memDsc 
+							--if rtnDsc /= Void then
+							--	create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+							--else
+							--	create Result.fill (<<memDsc>>)
+							--end -- if
 						end -- if
 					when scanner.use_token, scanner.abstract_token, scanner.foreign_token, scanner.one_line_function_token then 
 						-- function
 						rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
 						if rtnDsc /= Void then
-							create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+							--create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+							create Result.fill (<<rtnDsc>>)
 						end -- if
 					else
 						if scanner.blockStart then
 							-- function
 							rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
 							if rtnDsc /= Void then
-								create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+								--create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+								create Result.fill (<<rtnDsc>>)
 							end -- if
 						elseif scanner.Cmode then
 							syntax_error (<<
@@ -8391,25 +8395,28 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						-- Function or it is the last attribute with no assigner in the type and require is invariant !!!!
 						memDsc := parseUnitFunctionWithNoParametersOrLastAttributeAndInvariant (unitDsc, isOverriding, isFinal, False, False, name, typeDsc)
 						if memDsc /= Void then
-							rtnDsc ?= memDsc 
-							if rtnDsc /= Void then
-								create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
-							else
-								create Result.fill (<<memDsc>>)
-							end -- if
+							create Result.fill (<<memDsc>>)
+							--rtnDsc ?= memDsc 
+							--if rtnDsc /= Void then
+							--	create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+							--else
+							--	create Result.fill (<<memDsc>>)
+							--end -- if
 						end -- if
 					when scanner.use_token, scanner.abstract_token, scanner.foreign_token, scanner.none_token, scanner.one_line_function_token then 
 						-- function
 						rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
 						if rtnDsc /= Void then
-							create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+							--create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+							create Result.fill (<<rtnDsc>>)
 						end -- if
 					else
 						if scanner.blockStart then
 							-- function
 							rtnDsc := parseUnitFunctionWithNoParameters (isOverriding, isFinal, False, False, name, typeDsc, scanner.token = scanner.one_line_function_token)
 							if rtnDsc /= Void then
-								create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+								--create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+								create Result.fill (<<rtnDsc>>)
 							end -- if
 						else
 							-- attribute without assigner
@@ -8437,7 +8444,8 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				-- That is a routine start!
 				rtnDsc := parseUnitRoutine (isOverriding, isFinal, False, False, name, Void, scanner.token = scanner.one_line_function_token)
 				if rtnDsc /= Void then
-					create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+					--create Result.fill (<<checkForInit (unitDsc, rtnDsc)>>)
+					create Result.fill (<<rtnDsc>>)
 				end -- if
 			else
 				if scanner.blockStart then
@@ -9543,7 +9551,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]
 		unitUsageAndConst: UseConstBlock
 		unitName: String
-		typeName: String
+		--typeName: String
 		aliasName: String
 		initDsc: InitDeclarationDescriptor
 		toLeave: Boolean
@@ -9640,9 +9648,14 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				goToMembers:= parseInheritedMemberOverridingOrMemberDeclaration (currentVisibilityZone) --, currentUnitDsc)
 			end -- if
 
-			if scanner.token = scanner.new_token and then not goToMembers then
-				-- parse "new	InitProcedureInheritance" or "MemberDeclaration (goToMembers := True)"
-				goToMembers:= parseInitProcedureInheritanceOrMemberDeclaration (currentVisibilityZone, currentUnitDsc)
+			--if scanner.token = scanner.new_token and then not goToMembers then
+			--	-- parse "new	InitProcedureInheritance" or "MemberDeclaration (goToMembers := True)"
+			--	goToMembers:= parseInitProcedureInheritanceOrMemberDeclaration (currentVisibilityZone, currentUnitDsc)
+			--end -- if
+
+			if scanner.Cmode and then scanner.token = scanner.left_curly_bracket_token then
+				-- process unit A { } style
+				scanner.nextToken
 			end -- if
 
 			if scanner.token = scanner.const_token and then not goToMembers then
@@ -9722,40 +9735,41 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						end -- if
 						toLeave := True
 					end -- inspect
-				when scanner.type_name_token then
-					typeName := scanner.tokenString
-					if typeName.is_equal (unitName) then
+				--when scanner.type_name_token then
+				when scanner.new_token then
+					--typeName := scanner.tokenString
+					--if typeName.is_equal (unitName) then
 						-- That is init start !!!
-						initDsc := parseInitDeclaration (currentVisibilityZone) 
-						if initDsc /= Void then
-							if not currentUnitDsc.initMembers.added (initDsc) then
-								-- Duplicated init 
-								validityError (initDsc.toSourcePosition, "Duplicated declaration of unit `" + unitName + "` initializer") 
-							end -- if
+					initDsc := parseInitDeclaration (currentVisibilityZone)
+					if initDsc /= Void then
+						if not currentUnitDsc.initMembers.added (initDsc) then
+							-- Duplicated init 
+							validityError (initDsc.toSourcePosition, "Duplicated declaration of unit `" + unitName + "` initializer") 
 						end -- if
-					else
-						if scanner.Cmode then
-							syntax_error (<<
-								scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
-								scanner.identifier_token, scanner.operator_token,
-								scanner.implies_token, scanner.less_token, scanner.greater_token,
-								scanner.tilda_token,
-								scanner.bar_token,
-								scanner.left_square_bracket_token,
-								scanner.assignment_token
-							>>)
-						else
-							syntax_error (<<
-								scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
-								scanner.identifier_token, scanner.operator_token,
-								scanner.implies_token, scanner.tilda_token,
-								scanner.bar_token,
-								scanner.left_curly_bracket_token,
-								scanner.assignment_token
-							>>)
-						end -- if
-						toLeave := True
-					end -- if					
+					end -- if
+					--else
+					--	if scanner.Cmode then
+					--		syntax_error (<<
+					--			scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
+					--			scanner.identifier_token, scanner.operator_token,
+					--			scanner.implies_token, scanner.less_token, scanner.greater_token,
+					--			scanner.tilda_token,
+					--			scanner.bar_token,
+					--			scanner.left_square_bracket_token,
+					--			scanner.assignment_token
+					--		>>)
+					--	else
+					--		syntax_error (<<
+					--			scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
+					--			scanner.identifier_token, scanner.operator_token,
+					--			scanner.implies_token, scanner.tilda_token,
+					--			scanner.bar_token,
+					--			scanner.left_curly_bracket_token,
+					--			scanner.assignment_token
+					--		>>)
+					--	end -- if
+					--	toLeave := True
+					--end -- if					
 				when scanner.left_paranthesis_token then
 					scanner.nextToken
 					if scanner.token = scanner.right_paranthesis_token then
@@ -9793,9 +9807,10 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 									--trace ("member with visibility " + mvDsc.out)
 								end -- debug
 								parseMember (mvDsc, False, Void)
-							when scanner.type_name_token then
-								typeName := scanner.tokenString
-								if typeName.is_equal (unitName) then
+							-- when scanner.type_name_token then
+							when scanner.new_token then
+								--typeName := scanner.tokenString
+								--if typeName.is_equal (unitName) then
 									-- That is init start !!!
 									initDsc := parseInitDeclaration (currentVisibilityZone) 
 									if initDsc /= Void then
@@ -9804,29 +9819,29 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 											validityError (initDsc.toSourcePosition, "Duplicated declaration of unit `" + unitName + "` initializer") 
 										end -- if
 									end -- if
-								else
-									if scanner.Cmode then
-										syntax_error (<<
-											scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
-											scanner.identifier_token, scanner.operator_token,
-											scanner.implies_token, scanner.less_token, scanner.greater_token,
-											scanner.tilda_token,
-											scanner.bar_token,
-											scanner.left_square_bracket_token,
-											scanner.assignment_token
-										>>)
-									else
-										syntax_error (<<
-											scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
-											scanner.identifier_token, scanner.operator_token,
-											scanner.implies_token, scanner.tilda_token,
-											scanner.bar_token,
-											scanner.left_curly_bracket_token,
-											scanner.assignment_token
-										>>)
-									end -- if
-									toLeave := True
-								end -- if							
+								--else
+								--	if scanner.Cmode then
+								--		syntax_error (<<
+								--			scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
+								--			scanner.identifier_token, scanner.operator_token,
+								--			scanner.implies_token, scanner.less_token, scanner.greater_token,
+								--			scanner.tilda_token,
+								--			scanner.bar_token,
+								--			scanner.left_square_bracket_token,
+								--			scanner.assignment_token
+								--		>>)
+								--	else
+								--		syntax_error (<<
+								--			scanner.final_token, scanner.pure_token, scanner.safe_token, scanner.left_paranthesis_token,
+								--			scanner.identifier_token, scanner.operator_token,
+								--			scanner.implies_token, scanner.tilda_token,
+								--			scanner.bar_token,
+								--			scanner.left_curly_bracket_token,
+								--			scanner.assignment_token
+								--		>>)
+								--	end -- if
+								--	toLeave := True
+								--end -- if							
 							when scanner.override_token	then
 								-- parse MemberDeclaration
 								scanner.nextToken
