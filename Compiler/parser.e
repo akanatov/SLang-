@@ -2089,8 +2089,8 @@ feature {None}
 		exprDsc: ExpressionDescriptor
 		callDsc: CallDescriptor
 		assignDsc: AssignmentStatementDescriptor
-		initCallDsc: InitCallDescriptor
-		parentDsc: UnitTypeNameDescriptor
+		--initCallDsc: InitCallDescriptor
+		--parentDsc: UnitTypeNameDescriptor
 		toRegister: Boolean
 	do
 		debug
@@ -2219,34 +2219,34 @@ feature {None}
 			if unitTypeDsc /= Void then
 				inspect
 					scanner.token
-				when scanner.left_paranthesis_token then
-					-- parse init call: UnitName(  .... 
-					if currentUnitDsc.name.is_equal (name) then
-						if toRegister then
-							create {CurrentInitCallDescriptor}initCallDsc.init (currentUnitDsc, parseArguments)
-						else
-							create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, parseArguments)
-						end -- if
-						Result := <<initCallDsc>>
-						if not parsingInit then
-							validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
-						end -- if						
-					else
-						parentDsc := currentUnitDsc.findParent (unitTypeDsc)
-						if parentDsc = Void then
-							validity_error ("Initializer for unit `" + unitTypeDsc.out + "` can not be called within the unit `" + currentUnitDsc.fullUnitName + "`")
-						else
-							if toRegister then
-								create {ParentInitCallDescriptor}initCallDsc.init (parentDsc, parseArguments)
-							else
-								create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, parseArguments)
-							end -- if
-							Result := <<initCallDsc>>
-							if not parsingInit then
-								validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
-							end -- if						
-						end -- if
-					end -- if
+				--when scanner.left_paranthesis_token then
+				--	-- parse init call: UnitName(  .... 
+				--	if currentUnitDsc.name.is_equal (name) then
+				--		if toRegister then
+				--			create {CurrentInitCallDescriptor}initCallDsc.init (currentUnitDsc, parseArguments)
+				--		else
+				--			create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, parseArguments)
+				--		end -- if
+				--		Result := <<initCallDsc>>
+				--		if not parsingInit then
+				--			validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
+				--		end -- if						
+				--	else
+				--		parentDsc := currentUnitDsc.findParent (unitTypeDsc)
+				--		if parentDsc = Void then
+				--			validity_error ("Initializer for unit `" + unitTypeDsc.out + "` can not be called within the unit `" + currentUnitDsc.fullUnitName + "`")
+				--		else
+				--			if toRegister then
+				--				create {ParentInitCallDescriptor}initCallDsc.init (parentDsc, parseArguments)
+				--			else
+				--				create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, parseArguments)
+				--			end -- if
+				--			Result := <<initCallDsc>>
+				--			if not parsingInit then
+				--				validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
+				--			end -- if						
+				--		end -- if
+				--	end -- if
 				when scanner.dot_token then
 					-- ModuleName. 
 					--create unitTypeDsc.init (name, Void)				
@@ -2261,36 +2261,36 @@ feature {None}
 						end -- if
 					end -- if
 				else
-					if parsingInit then
-						if currentUnitDsc.name.is_equal (name) then
-							if toRegister then
-								create {CurrentInitCallDescriptor}initCallDsc.init (currentUnitDsc, Void)
-							else
-								create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, Void)
-							end -- if
-							Result := <<initCallDsc>>
-							if not parsingInit then
-								validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
-							end -- if						
-						else
-							parentDsc := currentUnitDsc.findParent (unitTypeDsc)
-							if parentDsc = Void then
-								validity_error ("Initializer for unit `" + unitTypeDsc.out + "` can not be called within the unit `" + currentUnitDsc.fullUnitName + "`")
-							else
-								if toRegister then
-									create {ParentInitCallDescriptor}initCallDsc.init (parentDsc, Void)
-								else
-									create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, Void)
-								end -- if
-								Result := <<initCallDsc>>
-								if not parsingInit then
-									validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
-								end -- if						
-							end -- if
-						end -- if
-					else
+					--if parsingInit then
+					--	if currentUnitDsc.name.is_equal (name) then
+					--		if toRegister then
+					--			create {CurrentInitCallDescriptor}initCallDsc.init (currentUnitDsc, Void)
+					--		else
+					--			create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, Void)
+					--		end -- if
+					--		Result := <<initCallDsc>>
+					--		if not parsingInit then
+					--			validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
+					--		end -- if						
+					--	else
+					--		parentDsc := currentUnitDsc.findParent (unitTypeDsc)
+					--		if parentDsc = Void then
+					--			validity_error ("Initializer for unit `" + unitTypeDsc.out + "` can not be called within the unit `" + currentUnitDsc.fullUnitName + "`")
+					--		else
+					--			if toRegister then
+					--				create {ParentInitCallDescriptor}initCallDsc.init (parentDsc, Void)
+					--			else
+					--				create {ParentInitCallDescriptor}initCallDsc.init (unitTypeDsc, Void)
+					--			end -- if
+					--			Result := <<initCallDsc>>
+					--			if not parsingInit then
+					--				validity_error ("Call to init `" + initCallDsc.out + "` must be in the body of other init only")
+					--			end -- if						
+					--		end -- if
+					--	end -- if
+					--else
 						syntax_error (<<scanner.dot_token>>)
-					end -- if											
+					--end -- if											
 					-- syntax_error (<< scanner.left_paranthesis_token, scanner.dot_token>>)
 				end -- inspect
 			end -- if
@@ -7808,40 +7808,44 @@ end -- debug
 		end -- inspect
 	end -- parseInheritedMemberOverridingOrMemberDeclaration
 
-	parsingInit: Boolean 
+	--parsingInit: Boolean 
 	
-	parseSuperCalls: Array [] is
+	parseInitCalls: Array [InitCallDescriptor] is
+	require
+		-- “:” init|UnitTypeName [Arguments] {“,” init|UnitTypeName [Arguments] }
+		--     ^
+	local	
+		initCallDsc: InitCallDescriptor
+		toLeave: Boolean
 	do
-	end -- parseSuperCalls
+		from
+			create Result.make (1, 0)
+		until
+			toLeave
+		loop
+			toLeave := True
+		end -- loop
+	end -- parseInitCalls
 	
-	--parseInitDeclaration (unitDsc: UnitDeclarationDescriptor; currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
 	parseInitDeclaration (currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
-	--   InitDeclaration: new [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
-	--                    ^     
-	--   InitDeclaration: UnitName [Parameters] [EnclosedUseDirective] [RequireBlock] ( ( InnerBlock [EnsureBlock] end ) | (foreign [EnsureBlock end] )
-	--                    ^     
-	
-	-- InitDeclaration: new [UnitRoutineParameters] [EnclosedUseDirective] [RequireBlock] 
+	-- InitDeclaration: init [UnitRoutineParameters] [EnclosedUseDirective] [RequireBlock] 
 	--                  ^     
-    --    [“:”UnitTypeName [Arguments] {“,” UnitTypeName [Arguments] }]
+    --    [“:” init|UnitTypeName [Arguments] {“,” init|UnitTypeName [Arguments] }]
     --    (InnerBlock [EnsureBlock] BlockEnd)|(foreign|none [EnsureBlock BlockEnd])
-
-	
 	require		
-		--non_void_current_unit: unitDsc /= Void
-		valid_token: validToken(<<scanner.type_name_token>>)
+		valid_token: validToken(<<scanner.init_token>>)
 	local
 		parameters: Array [ParameterDescriptor]
 		preconditions: Array [PredicateDescriptor]
 		postconditions: Array [PredicateDescriptor]
-		superCalls: Array [ParentInitCall]
+		initCalls: Array [InitCallDescriptor]
 		innerBlock: InnerBlockDescriptor
 		ucb: UseConstBlock
 		checkForEnd: Boolean
 		isForeign: Boolean
 		wasError: Boolean
 	do
-		parsingInit := True
+		--parsingInit := True
 		scanner.nextToken
 		if scanner.token = scanner.left_paranthesis_token then
 			-- scanner.nextToken
@@ -7856,7 +7860,7 @@ end -- debug
 		end -- if
 		if scanner.token = scanner.colon_token then
 			scanner.nextToken
-			superCalls := parseSuperCalls
+			initCalls := parseInitCalls
 		end -- if
 		inspect
 			scanner.token
@@ -7899,7 +7903,7 @@ end -- debug
 				end -- if
 			end -- if
 		end -- if	
-		parsingInit := False
+		--parsingInit := False
 	end -- parseInitDeclaration
 	
 	--parseInitProcedureInheritanceOrMemberDeclaration
@@ -9736,7 +9740,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 						toLeave := True
 					end -- inspect
 				--when scanner.type_name_token then
-				when scanner.new_token then
+				when scanner.init_token then
 					--typeName := scanner.tokenString
 					--if typeName.is_equal (unitName) then
 						-- That is init start !!!
@@ -9808,7 +9812,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 								end -- debug
 								parseMember (mvDsc, False, Void)
 							-- when scanner.type_name_token then
-							when scanner.new_token then
+							when scanner.init_token then
 								--typeName := scanner.tokenString
 								--if typeName.is_equal (unitName) then
 									-- That is init start !!!

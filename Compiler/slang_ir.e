@@ -6137,24 +6137,11 @@ invariant
 	body_consistency: innerBlock /= Void implies expr = Void and then not isVirtual and then not isForeign
 end -- class UnitRoutineDeclarationDescriptor
 
-class ParentInitCall
-create
-	init
-feature
-	-- UnitTypeName [Arguments]
-	parentDsc: 
-	arguments: Array[]
-	init (pDsc: like parentDsc; args: like arguments) is 
-	do
-		parentDsc := pDsc 
-		arguments := args
-	end -- init
-end -- class ParentInitCall
-
 class InitDeclarationDescriptor
--- UnitName [UnitRoutineParameters] [EnclosedUseDirective] 
--- [RequireBlock] 
--- (InnerBlock [EnsureBlock] BlockEnd)|(foreign|none [EnsureBlock BlockEnd])
+	-- InitDeclaration: init [UnitRoutineParameters] [EnclosedUseDirective] [RequireBlock] 
+    -- [“:” (init  [Arguments]) | (ParentInitCall {“,” ParentInitCall} [“,” init  [Arguments]])]
+	--    (InnerBlock [EnsureBlock] BlockEnd)|(foreign|none [EnsureBlock BlockEnd])
+	-- ParentInitCall:  UnitTypeName [Arguments]
 inherit
 	UnitRoutineDescriptor
 	end
@@ -6164,8 +6151,8 @@ feature {Any}
 	isVirtual: Boolean is False
 	isOverriding: Boolean is False
 	isFinal: Boolean is False
-	name: String is "new"
-	superCalls: Array [ParentInitCall]
+	initCalls: Array [InitCallDescriptor]
+	name: String is "init"
 	--do
 	--	Result := unitDsc.name		
 	--end -- name
@@ -6178,10 +6165,10 @@ feature {Any}
 	--unitDsc: UnitDeclarationDescriptor
 	init ( -- ud: like unitDsc; 
 	 currentVisibilityZone: like visibility; p: like parameters; u: like usage; c: like constants;
-	 pre: like preconditions; isF: Boolean; b: like innerBlock; post: like postconditions; sc: like superCalls
+	 pre: like preconditions; isF: Boolean; b: like innerBlock; post: like postconditions; ic: like initCalls
 	) is
-	require
-		current_unit_not_void: ud /= Void
+	--require
+	--	current_unit_not_void: ud /= Void
 	do
 		--unitDsc := ud
 		visibility := currentVisibilityZone
@@ -6192,7 +6179,7 @@ feature {Any}
 		isForeign := isF
 		innerBlock := b
 		postconditions := post
-		superCalls := sc
+		initCalls := ic
 	end -- init
 
 	generationFailed(cg: CodeGenerator): Boolean is

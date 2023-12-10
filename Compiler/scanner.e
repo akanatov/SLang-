@@ -87,6 +87,7 @@ feature
 	hide_token,
 	if_token,	
 	in_token,
+	init_token,
 	is_token,		
 	new_token,
 	none_token,
@@ -168,6 +169,7 @@ feature
 	hide_string: String is                  "hide"
 	if_string: String is 	                "if"
 	in_string: String is                    "in"
+	init_string: String is                  "init"
 	is_string: String is 		            "is"
 	new_string: String is                   "new"
 	none_string: String is                  "none"
@@ -252,6 +254,7 @@ feature
 			hide_string,
 			if_string,
 			in_string,
+			init_string,
 			is_string,
 			new_string,
 			none_string,
@@ -657,7 +660,7 @@ feature {Any}
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- if		
-		when 'i' then -- "if", "in", "is"
+		when 'i' then -- "if", "in", "init", "is"
 			inspect
 				buff_len
 			when 2 then
@@ -667,6 +670,15 @@ feature {Any}
 					Result := if_token
 				elseif buffer.item (2) = 'n' then
 					Result := in_token
+				else
+					Result := register_buffer_and_return_identifier_token
+				end -- if
+			when 4 then
+				if  buffer.item (2) = 'n' and then 
+					buffer.item (3) = 'i' and then 
+					buffer.item (4) = 't' 
+				then
+					Result := init_token
 				else
 					Result := register_buffer_and_return_identifier_token
 				end -- if

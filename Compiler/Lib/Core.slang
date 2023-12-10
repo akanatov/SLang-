@@ -1,5 +1,5 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.15 Janury 7th 2023
+// Version 0.99.20 December 10th 2023
 build Kernel from "." // Kernel library is to be built from all SLang files from the current folder
 end
 
@@ -237,7 +237,7 @@ val unit Bit [bitsCount: Cardinal]
 	ensure
 		( old this )(pos) /= this (pos) /// bit Toggled
 	end // toggle
-	Bit do
+	init do
 		/// Every BIT field is initialized with 0s
 		while pos in 0 .. bitsCount - 1 do
 			this (pos) := 0b0
@@ -457,7 +457,11 @@ val unit Region
 end // Region
 
 val unit Cardinal alias Uint extend Cardinal [Platform.cardinalBitsCount]
-	new Cardinal[Platform.cardinalBitsCount]( as this ), Cardinal[Platform.cardinalBitsCount]
+	init: Cardinal[Platform.cardinalBitsCount] none
+	init (other: Integer [Platform.integerBitsCount]): Cardinal[Platform.cardinalBitsCount](other)
+	require
+		other >= 0 /// Integer must be not less than 0 to be converted into Cardinal
+	none
 end // Cardinal
 
 val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
@@ -485,7 +489,11 @@ val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
 	override const count: Cardinal is maxCardinal
 	override safe ord: Cardinal => this
 
-	new (other: Integer [bitsCount])
+	init do
+		/// Default zero value
+		data is Bit [Platform.cardinalBitsCount]
+	end
+	init (other: Integer [bitsCount])
 	require
 		other >= 0 /// Integer must be not less than 0 to be converted into Cardinal
 	do
@@ -500,7 +508,8 @@ val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
 end // Cardinal
 
 val unit Integer alias Int extend Integer [Platform.integerBitsCount]
-	new Integer [Platform.integerBitsCount] (Integer), Integer [Platform.integerBitsCount]
+	init (value: Integer): Integer [Platform.integerBitsCount] (value) none
+	init: Integer [Platform.integerBitsCount] none
 end // Integer
 
 val unit Integer alias Int [bitsCount: Cardinal] extend Numeric, Enumeration
@@ -631,11 +640,11 @@ val unit Integer alias Int [bitsCount: Cardinal] extend Numeric, Enumeration
 		return new Character (data.getLowBits (Platform.characterBitsCount))
 	end
 	{} data: Bit [bitsCount]	
-	new (value: Integer) do
+	init (value: Integer) do
 		// Not that simple !!! Copy the bits we need and pad the gap with 0 bits!!!
 		data is value.data
 	end
-	new do
+	init do
 		/// Default zero value
 		data is Bit [bitsCount]
 	end
@@ -645,10 +654,10 @@ end // Integer
 //end
 val unit Byte
 	// WIP - to be fully implemented
-	new (value: Byte) do
+	init (value: Byte) do
 		data is value.data
 	end
-	new do
+	init do
 		/// Default zero value
 		data is Bit [Platform.bitsInByteCount]
 	end
@@ -765,10 +774,10 @@ val unit Real extend Float [Platform.realBitsCount]
 		// Bit-level implementation
 		raise "Not implemented!!!"
 	end
-	new (value: val Real) do
+	init (value: val Real) do
 		data is value.data
 	end
-	new do
+	init do
 		data is Bit [Platform.realBitsCount]
 	end
 	{} data : Bit [Platform.realBitsCount]	
@@ -795,10 +804,10 @@ val unit Character alias Char extend Enumeration
 	do
 		data := other
 	end
-	new (value: val Character) do
+	init (value: val Character) do
 		data is value.data
 	end
-	new do
+	init do
 		data is Bit [Platform.characterBitsCount]
 	end
 	{} data : Bit [Platform.characterBitsCount]	
@@ -840,13 +849,13 @@ val unit Boolean alias Bool extend Enumeration
 	safe -> alias implies (other: as this): Boolean => not this or other
 	safe ~ alias not : Boolean => if this do false else true
 	safe := : Cardinal => if this do 1 else 0
-	Boolean (value: val Boolean) do
+	init (value: val Boolean) do
 		data is value.data
 	end
-	new do
+	init do
 		data is 0b0
 	end
-	{} new (value: Cardinal) 
+	{} init (value: Cardinal) 
 	require	
 		value in zero .. one /// Valid Cardinal value to be assigned into Boolean
 	do
@@ -938,10 +947,10 @@ unit String extend AString
 	ensure
 		return.count = this.count + other.count /// Valid concatenated string length
 	end
-	new do
+	init do
 		data is new Array [Character] (1, 0)
 	end
-	new (other: as this) do
+	init (other: as this) do
 		data is other.data
 	end
 	//String (:= data)
@@ -991,7 +1000,7 @@ abstract unit AnArray [G]
 	data: ?Pointer
 	allocateArray (l, u: Integer; size: Integer)
 	require
-		l <= u /// Consistent array borders
+		l <= u /// Consistent array bounds
 	none
 	ensure
 		data is Pointer // data was allocated
@@ -1026,13 +1035,13 @@ unit Array [G new (), arrayLength: Cardinal] extend OneDimentionalArray [G]
 	override lower: Integer is 1
 	override upper: Integer is arrayLength
 
-	new (other: as this) do
+	init (other: as this) do
 		while pos in other.lower .. other.upper do
 			this (lower + pos - 1) := other (pos)
 		end
 	end
 
-	new do
+	init do
 		element is new G
 		while pos in lower .. upper do
 			this (pos) := element
@@ -1048,12 +1057,12 @@ unit Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray
 */
 	override lower: Integer is arrayBounds(1)
 	override upper: Integer is arrayBounds(2)
-	new (other: as this) do
+	init (other: as this) do
 		while pos in other.lower .. other.upper do
 			this (lower + pos - 1) := other (pos)
 		end
 	end
-	new do
+	init do
 		element is new G
 		while pos in lower .. upper do
 			this (pos) := element
@@ -1069,26 +1078,15 @@ unit Array [G new ()] extend OneDimentionalArray [G]
 	override () (pos: Integer; value: G) none
 	override lower: Integer
 	override upper: Integer
-	new
+	init: init(1, 0, G) none
 		/// It creates an empty array, but lower index is set a 1
-	do
-		Array (1, 0, G()) 
-	end
-	new (n: Cardinal; value: G) 
+	init (n: Cardinal; value: G): init (1, n, value) none
 		/// It creates an array of n elements,  lower index is 1
-	do 
-		Array (1, n, value) 
-	end
-	new (n: Cardinal) 
-	do 
-		Array (1, n, G()) 
-	end
-	new (l, u: Integer) do
-		Array (l, u, G())
-	end
-	new (l, u: Integer; value: G) 
+	init (n: Cardinal): init (1, n, G) none
+	init (l, u: Integer): init (l, u, G) none
+	init (l, u: Integer; value: G) 
 	require
-		l <= u - 1 /// Consistent array borders, lower must be not greater than upper if array is not empty and 1 less than upper otherwise
+		l <= u - 1 /// Consistent array bounds, lower must be not greater than upper if array is not empty and 1 less than upper otherwise
 	do
 		lower is l 
 		upper is u 
@@ -1216,16 +1214,16 @@ unit DynamicObject
 	final set_value (attr: VariableDescriptor; value: Any) none
 	{ this } final findRoutine (rtn_name: String): ?RoutineDescriptor none
 	{ this } final findAttribute (attr_name: String): ?AttributeDescriptor none
-	new
+	init
 		/// Create empty dynamic object
 	none
-	new (fileName: String) do
+	init (fileName: String) do
 		/// Load dynamic object from file
 		raise "Not implemented yet!!!"
 	end
-	new (bytes: Array [Byte]) none
+	init (bytes: Array [Byte]) none
 		/// Create dynamic object from binary data sequence
-	new (other: Any) none
+	init (other: Any) none
 		/// Create dynamic object from any other object
 	
 end // DynamicObject
@@ -1241,14 +1239,14 @@ end // RoutineDescriptor
 final unit ProcedureDescriptor extend RoutineDescriptor
 	() alias apply (args: ()) foreign
 		// That is a procedure call
-	new (:= name; := arguments) none
+	init (:= name; := arguments) none
 end // Procedure [Arguments -> ()]
 
 final unit FunctionDescriptor extend RoutineDescriptor
 	fType: TypeDescriptor
 	() alias apply (args: ()): Any none
 		// That is a function call
-	new (:= name; := arguments; := fType) none
+	init (:= name; := arguments; := fType) none
 end // Function [Arguments -> (), Result]
 
 abstract unit AttributeDescriptor extend MemberDescriptor
@@ -1258,11 +1256,11 @@ end // AttributeDescriptor
 
 final unit VariableDescriptor extend AttributeDescriptor 
 	override := alias set (:= value) none
-	new (:= name; := aType; := value) none
+	init (:= name; := aType; := value) none
 end // VariableDescriptor
 
 final unit ConstantDescriptor extend AttributeDescriptor 
-	new (:= name; := aType; := value) none
+	init (:= name; := aType; := value) none
 end // ConstantDescriptor
 
 final unit TypeDescriptor
@@ -1270,11 +1268,11 @@ final unit TypeDescriptor
 	final routines : Array [RoutineDescriptor]
 	final attributes : Array [AttributeDescriptor]
 	final parents: Array [TypeDescriptor]
-	new (:= name; := parents; := routines; := attributes) none
+	init (:= name; := parents; := routines; := attributes) none
 end // TypeDescriptor
 
 final unit ArgumentDescriptor
 	final name: String
 	final aType: TypeDescriptor	
-	new (:= name; := aType) none
+	init (:= name; := aType) none
 end // ArgumentDescriptor
