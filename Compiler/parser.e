@@ -7812,26 +7812,74 @@ end -- debug
 	
 	parseInitCalls: Array [InitCallDescriptor] is
 	require
-		-- “:” init|UnitTypeName [Arguments] {“,” init|UnitTypeName [Arguments] }
-		--     ^
+    -- “:” (init  [Arguments]) | (ParentInitCall {“,” ParentInitCall} [“,” init  [Arguments]])
+	--     ^
+	-- ParentInitCall:  UnitTypeName [Arguments]
 	local	
 		initCallDsc: InitCallDescriptor
+		nmdDsc: NamedTypeDescriptor
+		unitTypeDsc: UnitTypeNameDescriptor
+		parentDsc: UnitTypeNameDescriptor
 		toLeave: Boolean
 	do
-		from
-			create Result.make (1, 0)
-		until
-			toLeave
-		loop
-			toLeave := True
-		end -- loop
+		if scanner.token = scanner.init_token then
+			scanner.nextToken
+			create {CurrentInitCallDescriptor} initCallDsc.init (currentUnitDsc, parseArguments)
+			Result := << initCallDsc >>
+		else
+			from
+				create Result.make (1, 0)
+			until
+				toLeave
+			loop
+				inspect
+					scanner.token
+				when scanner.init_token then
+					scanner.nextToken
+					create {CurrentInitCallDescriptor} initCallDsc.init (currentUnitDsc, parseArguments)
+					Result.resize (1, Result.count + 1)
+					Result.put (initCallDsc, Result.count)
+					toLeave := True
+				when scanner.type_name_token then
+					nmdDsc := parseUnitTypeName2 (False)
+					if nmdDsc /= Void then
+						unitTypeDsc ?= nmdDsc
+						if unitTypeDsc /= Void then
+							parentDsc := currentUnitDsc.findParent (unitTypeDsc)
+							if parentDsc = Void then
+								validity_error (
+									"Initializer for unit `" + unitTypeDsc.out + "` can not be called within the unit `" +
+									currentUnitDsc.fullUnitName + "` as `" + unitTypeDsc.out + "` is not its parent"
+								)
+							else
+								create {ParentInitCallDescriptor}initCallDsc.init (parentDsc, parseArguments)
+								Result.resize (1, Result.count + 1)
+								Result.put (initCallDsc, Result.count)
+							end -- if
+						else -- attempt to call init of the formal generic type
+							validity_error ("Incorrect generic type `" + nmdDsc.name + "` usage in init call")
+						end -- if					
+						if scanner.token = scanner.comma_token then
+							scanner.nextToken
+						else
+							toLeave := True
+						end -- if
+					--else -- there was an error
+					--	toLeave := True					
+					end -- if		
+				else
+					toLeave := True
+				end -- if
+			end -- loop
+		end -- if
 	end -- parseInitCalls
 	
 	parseInitDeclaration (currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
 	-- InitDeclaration: init [UnitRoutineParameters] [EnclosedUseDirective] [RequireBlock] 
 	--                  ^     
-    --    [“:” init|UnitTypeName [Arguments] {“,” init|UnitTypeName [Arguments] }]
+    --    [“:” (init  [Arguments]) | (ParentInitCall {“,” ParentInitCall} [“,” init  [Arguments]])]
     --    (InnerBlock [EnsureBlock] BlockEnd)|(foreign|none [EnsureBlock BlockEnd])
+	-- ParentInitCall:  UnitTypeName [Arguments]
 	require		
 		valid_token: validToken(<<scanner.init_token>>)
 	local
@@ -7892,9 +7940,11 @@ end -- debug
 				if scanner.blockEnd then
 					scanner.nextToken
 					if ucb = Void then
-						create Result.init (currentUnitDsc, currentVisibilityZone, parameters, Void, Void, preconditions, isForeign, innerBlock, postconditions )
+						--create Result.init (currentUnitDsc, currentVisibilityZone, parameters, Void, Void, preconditions, isForeign, innerBlock, postconditions )
+						create Result.init (currentVisibilityZone, parameters, Void, Void, preconditions, isForeign, innerBlock, postconditions, initCalls)
 					else
-						create Result.init (currentUnitDsc, currentVisibilityZone, parameters, ucb.usage, ucb.constants, preconditions, isForeign, innerBlock, postconditions )
+						--create Result.init (currentUnitDsc, currentVisibilityZone, parameters, ucb.usage, ucb.constants, preconditions, isForeign, innerBlock, postconditions )
+						create Result.init (currentVisibilityZone, parameters, ucb.usage, ucb.constants, preconditions, isForeign, innerBlock, postconditions, initCalls)
 					end -- if
 				elseif scanner.Cmode then
 					syntax_error (<<scanner.right_curly_bracket_token>>)

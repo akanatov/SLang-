@@ -5919,6 +5919,8 @@ feature {Any}
 				decIdent
 			end -- if
 		end -- if
+		
+		add_init_calls (Result)
 
 		if isVirtual then
 			if Result.item (Result.count) /= '%N' then
@@ -5994,6 +5996,8 @@ feature {Any}
 		expr := Void
 	end -- cutImplementation
 feature {None}
+	add_init_calls (outString: String) is do end -- add_init_calls
+	
 	outConstants (aResult: String; aTitle: String) is
 	require
 		aResult /= Void
@@ -6144,6 +6148,8 @@ class InitDeclarationDescriptor
 	-- ParentInitCall:  UnitTypeName [Arguments]
 inherit
 	UnitRoutineDescriptor
+		redefine
+			add_init_calls
 	end
 create
 	init --, make_for_search
@@ -6214,6 +6220,30 @@ feature {Any}
 			end -- if			
 		end -- if		
 	end -- hasTheSameSignature
+feature {None}
+	add_init_calls (outString: String) is
+	local 
+		i, n: Integer
+	do
+		-- initCalls: Array [InitCallDescriptor]
+		if initCalls /= Void then
+			n := initCalls.count
+			if n > 0 then
+				from
+					outString.append_string (" : ")
+					i := 1
+				until
+					i > n
+				loop
+					outString.append_string (initCalls.item (i).out)
+					if i /= n then
+						outString.append_string (", ")
+					end -- if
+					i := i + 1
+				end -- loop
+			end -- if
+		end -- if
+	end -- add_init_calls
 
 end -- class InitDeclarationDescriptor
 

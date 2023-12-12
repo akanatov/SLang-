@@ -429,7 +429,7 @@ val unit Pointer alias Ptr
 		numberOfBytes > 0 /// Number of bytes to read is greater than zero
 	none
 	{} data : Bit [Platform.pointerBitsCount]
-	new (address: Cardinal) 
+	init (address: Cardinal) 
 	require
 		validPointer (address) /// Pointer should be valid from the OS point of view: allocated if it is heap
 	do
@@ -458,9 +458,10 @@ end // Region
 
 val unit Cardinal alias Uint extend Cardinal [Platform.cardinalBitsCount]
 	init: Cardinal[Platform.cardinalBitsCount] none
-	init (other: Integer [Platform.integerBitsCount]): Cardinal[Platform.cardinalBitsCount](other)
+	init (other: Integer [Platform.integerBitsCount])
 	require
 		other >= 0 /// Integer must be not less than 0 to be converted into Cardinal
+	: Cardinal[Platform.cardinalBitsCount](other)
 	none
 end // Cardinal
 
@@ -1127,8 +1128,8 @@ end // Array
 end // Array 
 */
 unit StandardIO alias IO
-	StandardIO do
-		// Init procedure is missed or way how to setup IO !!!!
+	init do
+		// Init procedure implementation is missed or way how to setup IO !!!!
 	end // StandardIO
 	pure get: Integer none
 	pure get: Real none
