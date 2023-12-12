@@ -2008,7 +2008,7 @@ feature {None}
 				else
 					unitType ?= nmdDsc
 					if unitType = Void then
-						validity_error ("Formal genric parameter `" + nmdDsc.name + "` can not be used as a parent type name")
+						validity_error ("Formal generic parameter `" + nmdDsc.name + "` can not be used as a parent type name")
 						wasError := True
 					end -- if
 				end -- if
@@ -7122,7 +7122,7 @@ end -- debug
 			if scanner.token = scanner.type_name_token then
 				if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 					-- attempt to override a member of generic parameter
-					validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent type `" + currentUnitDsc.fullUnitName + "`")
+					validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent type of `" + currentUnitDsc.fullUnitName + "`")
 					scanner.nextToken
 					toLeave := True
 				else
@@ -7131,7 +7131,7 @@ end -- debug
 						toLeave := True
 					else
 						if theSameUnit1 (currentUnitDsc, utnDsc) then
-							validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + currentUnitDsc.name + "`")
+							validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + currentUnitDsc.fullUnitName + "`")
 							--toLeave := True
 							-- Inheritance graph simple cycle
 						else
@@ -7144,7 +7144,7 @@ end -- debug
 							
 							create parentDsc.init (isNonConformant, utnDsc)
 							if not currentUnitDsc.parents.added (parentDsc) then
-								validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in unit `" + currentUnitDsc.name + "`")
+								validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in unit `" + currentUnitDsc.fullUnitName + "`")
 								--toLeave := True
 								-- Repeated inheritance is prohibited
 							end -- if
@@ -9731,7 +9731,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 
 			-- parse unit members
 			from
-				toLeave := errorsCount > 0
+				toLeave := False -- errorsCount > 0
 			until
 				toLeave
 			loop
