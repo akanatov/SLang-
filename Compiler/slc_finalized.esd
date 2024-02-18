@@ -23,6 +23,7 @@ makepath
 link
 
   generators.o
+  crc32.o
 
 
 option

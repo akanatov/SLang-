@@ -2801,7 +2801,7 @@ feature {Any}
 			Result.append_character ('$')
 			Result.append_string (type.getExternalName)
 		end -- if
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 	
 	out: String is
@@ -3193,7 +3193,7 @@ feature {Any}
 	getExternalName: String	is
 	do
 		Result := clone(name)  + "$is"
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	getSignatureName: String is
@@ -3273,7 +3273,7 @@ feature {Any}
 	getExternalName: String	is
 	do
 		Result := out
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 	
 	getSignatureName: String is
@@ -3781,11 +3781,15 @@ feature {Any}
 			Result.append_character ('$')
 		end -- if
 		-- No need so far ...
-		--Result.append_string ("_" + buildHash (Result))
+		--hashed_tail (Result)
 	end -- getExternalName
 		
 	parents: Sorted_Array [ParentDescriptor]
 		-- extend ParentDescriptor {"," ParentDescriptor}
+	inheritsAny: Boolean
+	setAnyAsParent is do 
+		inheritsAny := True
+	end -- setAnyAsParent
 
 	hasParent (unitTypeDsc: UnitTypeNameDescriptor): Boolean is
 	require
@@ -4907,7 +4911,7 @@ feature {Any}
 		--	Result.append_string("_new_")
 		--	Result.append_string (initConstraint.getExternalName)
 		--end -- if
-		--Result.append_string ("_" + buildHash (Result))
+		--hashed_tail (Result)
 	end -- getExternalName
 	
 	init (n: like name; tc: like typeConstraint; ic: like initConstraint) is
@@ -4972,7 +4976,7 @@ feature {Any}
 	do
 		Result := type.getExternalName
 		--Result := name + "_" + type.getExternalName
-		--Result.append_string ("_" + buildHash (Result))
+		--hashed_tail (Result)
 	end -- getExternalName
 	isType: Boolean is do end
 	isRoutine: Boolean is do
@@ -5036,7 +5040,7 @@ end
 --	do
 --		Result := routineType.getExternalName
 --		--Result := name + "_" + routineType.getExternalName
---		--Result.append_string ("_" + buildHash (Result))
+--		--hashed_tail (Result)
 --	end -- getExternalName
 --	
 --	init (aName: String; rt: RoutineTypeDescriptor) is
@@ -5920,7 +5924,7 @@ feature {Any}
 			end -- if
 		end -- if
 		
-		add_init_calls (Result)
+		--add_init_calls (Result)
 
 		if isVirtual then
 			if Result.item (Result.count) /= '%N' then
@@ -5996,7 +6000,7 @@ feature {Any}
 		expr := Void
 	end -- cutImplementation
 feature {None}
-	add_init_calls (outString: String) is do end -- add_init_calls
+	--add_init_calls (outString: String) is do end -- add_init_calls
 	
 	outConstants (aResult: String; aTitle: String) is
 	require
@@ -6148,8 +6152,8 @@ class InitDeclarationDescriptor
 	-- ParentInitCall:  UnitTypeName [Arguments]
 inherit
 	UnitRoutineDescriptor
-		redefine
-			add_init_calls
+		--redefine
+		--	add_init_calls
 	end
 create
 	init --, make_for_search
@@ -6157,7 +6161,7 @@ feature {Any}
 	isVirtual: Boolean is False
 	isOverriding: Boolean is False
 	isFinal: Boolean is False
-	initCalls: Array [InitCallDescriptor]
+	--initCalls: Array [InitCallDescriptor]
 	name: String is "init"
 	--do
 	--	Result := unitDsc.name		
@@ -6171,7 +6175,7 @@ feature {Any}
 	--unitDsc: UnitDeclarationDescriptor
 	init ( -- ud: like unitDsc; 
 	 currentVisibilityZone: like visibility; p: like parameters; u: like usage; c: like constants;
-	 pre: like preconditions; isF: Boolean; b: like innerBlock; post: like postconditions; ic: like initCalls
+	 pre: like preconditions; isF: Boolean; b: like innerBlock; post: like postconditions --; ic: like initCalls
 	) is
 	--require
 	--	current_unit_not_void: ud /= Void
@@ -6185,7 +6189,7 @@ feature {Any}
 		isForeign := isF
 		innerBlock := b
 		postconditions := post
-		initCalls := ic
+		-- initCalls := ic
 	end -- init
 
 	generationFailed(cg: CodeGenerator): Boolean is
@@ -6221,29 +6225,29 @@ feature {Any}
 		end -- if		
 	end -- hasTheSameSignature
 feature {None}
-	add_init_calls (outString: String) is
-	local 
-		i, n: Integer
-	do
-		-- initCalls: Array [InitCallDescriptor]
-		if initCalls /= Void then
-			n := initCalls.count
-			if n > 0 then
-				from
-					outString.append_string (" : ")
-					i := 1
-				until
-					i > n
-				loop
-					outString.append_string (initCalls.item (i).out)
-					if i /= n then
-						outString.append_string (", ")
-					end -- if
-					i := i + 1
-				end -- loop
-			end -- if
-		end -- if
-	end -- add_init_calls
+	--add_init_calls (outString: String) is
+	--local 
+	--	i, n: Integer
+	--do
+	--	-- initCalls: Array [InitCallDescriptor]
+	--	if initCalls /= Void then
+	--		n := initCalls.count
+	--		if n > 0 then
+	--			from
+	--				outString.append_string (" : ")
+	--				i := 1
+	--			until
+	--				i > n
+	--			loop
+	--				outString.append_string (initCalls.item (i).out)
+	--				if i /= n then
+	--					outString.append_string (", ")
+	--				end -- if
+	--				i := i + 1
+	--			end -- loop
+	--		end -- if
+	--	end -- if
+	--end -- add_init_calls
 
 end -- class InitDeclarationDescriptor
 
@@ -6612,13 +6616,6 @@ end -- class ConstWithInitDescriptor
 
 deferred class BuildServer
 feature
-	buildHash (aString: String): String is
-	require
-		non_void_string: aString /= Void
-	do
-		Result := aString.hash_code.out
-		Result := ""
-	end -- buildHash
 	generationFailed(cg: CodeGenerator): Boolean is
 	deferred
 	end -- generationFailed
@@ -6639,12 +6636,34 @@ end -- debug
 	validityChecked: Boolean
 	isValid: Boolean
 feature {None}
+
+	buildHash (aString: String): String is
+	require
+		non_void_string: aString /= Void
+	do
+		--Result := aString.hash_code.out
+		Result := ""
+		--Result := crc32.hash_for_string(aString).out		
+	end -- buildHash
+
+	hashed_tail (a_string: String) is
+	require
+		non_void_string: a_string /= Void
+	do
+		a_string.append_character('_')
+		a_string.append_string(buildHash (a_string))
+	end -- hashed_tail
+
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	require
 		non_void_contex: context /= Void
 		non_void_output: o /= Void
 	deferred
 	end -- is_invalid
+	crc32: CRC32 is
+	once
+		create Result
+	end -- crc32
 end -- class BuildServer
 
 deferred class StatementDescriptor
@@ -7504,7 +7523,7 @@ feature{Any}
 	getExternalName: String is
 	do
 		Result := "<expression>"
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 	getFactualGenericExternalName (pos: Integer): String is
 	do
@@ -7947,7 +7966,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := out
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	markedConst, markedRigid, MarkedVar: Boolean is False
@@ -10023,7 +10042,8 @@ feature{Any}
 	
 	out: String is
 	do
-		Result := unitTypeDsc.out
+		Result := "init "
+		Result.append_string (unitTypeDsc.out)
 		Result.append_string (outArguments)
 	end -- out
 	sameAs (other: like Current): Boolean is
@@ -10047,10 +10067,11 @@ inherit
 create
 	init
 feature{Any}
-	unitTypeDsc: UnitDeclarationDescriptor
-	init (unitDsc: like unitTypeDsc; args: like arguments) is
+	--unitTypeDsc: UnitDeclarationDescriptor
+	--init (unitDsc: like unitTypeDsc; args: like arguments) is
+	init (args: like arguments) is
 	do
-		unitTypeDsc := unitDsc
+		--unitTypeDsc := unitDsc
 		arguments := args
 	end -- if
 	
@@ -10066,19 +10087,21 @@ feature{Any}
 	
 	out: String is
 	do
-		Result := unitTypeDsc.fullUnitName
+		Result := "init "
+		--Result := unitTypeDsc.fullUnitName
 		Result.append_string (outArguments)
 	end -- out
 	sameAs (other: like Current): Boolean is
 	do
-		Result := unitTypeDsc.is_equal (other.unitTypeDsc) and then sameArguments (other)
+		--Result := unitTypeDsc.is_equal (other.unitTypeDsc) and then sameArguments (other)
+		Result := sameArguments (other)
 	end -- sameAs
 	lessThan (other: like Current): Boolean is
 	do
-		Result := unitTypeDsc < other.unitTypeDsc
-		if not Result and then unitTypeDsc.is_equal (other.unitTypeDsc) then
+		--Result := unitTypeDsc < other.unitTypeDsc
+		--if not Result and then unitTypeDsc.is_equal (other.unitTypeDsc) then
 			Result := lessArguments (other)
-		end -- if
+		--end -- if
 	end -- lessThan
 end -- class CurrentInitCallDescriptor
 
@@ -10109,7 +10132,6 @@ feature{Any}
 	do
 		-- do nothing so far
 	end -- generationFailed
-
 
 	init (ut: like unitType; args: like arguments; cc: like callChain) is
 	do
@@ -10885,7 +10907,7 @@ feature
 	getExternalName: String is
 	do
 		Result := clone (name)
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 invariant
@@ -11379,7 +11401,7 @@ feature {Any}
 			Result.append_string (members.item (i).getExternalName)
 			i := i + 1
 		end -- loop
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	out: String is 
@@ -11501,7 +11523,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := "rtn " + signature.getExternalName
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -11632,7 +11654,7 @@ feature {Any}
 			Result.append_string ("$$")
 			Result.append_string (returnType.getExternalName)
 		end -- if
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	is_equal (other: like Current): Boolean is
@@ -11843,7 +11865,7 @@ feature {Any}
 		end -- if
 		Result.append_string ("$$")
 		Result.append_string (right.out)
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -11900,7 +11922,7 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	out: String is
@@ -12001,7 +12023,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := "as_this"
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do	
@@ -12060,7 +12082,7 @@ feature {Any}
 		if anchorSignature /= Void then
 			Result.append_string (anchorSignature.getExternalName)
 		end -- if		
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -12164,7 +12186,7 @@ feature {Any}
 			end -- if
 			i := i + 1
 		end -- loop
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	out: String is
@@ -12463,7 +12485,7 @@ feature {Any}
 			i := i + 1
 		end -- loop
 		Result.append_character ('$')
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
@@ -12540,7 +12562,7 @@ feature {Any}
 	getExternalName: String is
 	do
 		Result := type.getExternalName
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	sameAs (other: like Current): Boolean is
@@ -12583,7 +12605,7 @@ feature {Any}
 		Result := clone (name)
 		Result.append_character ('$')
 		Result.append_string (type.getExternalName)
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 
 	sameAs (other: like Current): Boolean is
@@ -12788,7 +12810,7 @@ feature {Any}
 			end -- loop
 			Result.append_character ('$')
 		end -- if
-		Result.append_string ("_" + buildHash (Result))
+		hashed_tail (Result)
 	end -- getExternalName
 	
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is

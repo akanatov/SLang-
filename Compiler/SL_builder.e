@@ -119,9 +119,11 @@ feature {Any}
 							-- 5. Generate code for cuDsc.statements
 							Result := generationFailed (scriptCU, folderName + fs.separator + outputName)
 							if not Result then
-								not_implemented_yet ("Building executable `" + sysDsc.name + "` from script `" + fname + "`%N")
 								-- 6.Check validity and code generation for used CUs
+								not_implemented_yet ("Validity check and code generation for used CUs")
 								-- 7. Build executable
+								o.putNL ("Building executable `" + sysDsc.name + "` from script `" + fname + "`")
+								Result := buildExecutableFailed (folderName, sysDsc.name)
 							end -- if
 						else
 							Result := True
@@ -316,9 +318,10 @@ feature {None}
 								if not Result then
 									Result := generationFailed (rootUnitCU, "_$" + sysDsc.name + fs.separator + sysDsc.name)
 									if not Result then
-										not_implemented_yet ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
 										-- 6.Check validity and code generation for used CUs
 										-- 7. Build executable
+										o.putNL ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`")
+										Result := buildExecutableFailed (clusters.item (1).name, sysDsc.name)
 									end -- if
 								end -- if
 							else
@@ -374,9 +377,10 @@ feature {None}
 								if not Result then
 									Result := generationFailed (entryRtnCU, "_$" + sysDsc.name + fs.separator + sysDsc.name)
 									if not Result then
-										not_implemented_yet ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`%N")
 										-- 6.Check validity and code generation for used CUs
 										-- 7. Build executable
+										o.putNL ("Building executable `" + sysDsc.name + "` from standalone procedure `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`")
+										Result := buildExecutableFailed (clusters.item (1).name, sysDsc.name)
 									end -- if
 								end -- if
 							else
@@ -388,7 +392,21 @@ feature {None}
 			end -- if
 		end -- if
 	end -- executable_build_failed
-	
+
+	buildExecutableFailed (path, exe_name: String): Boolean is
+	local 
+		clang: EXTERNAL_PROCESS
+	do
+		--create clang.make ("clang " + path + "/*.c -o" + path + "/" + exe_name + ".exe")
+		create clang.make ("clang " + path + "/*.c -o" + exe_name + ".exe")
+		clang.execute
+		if clang.exit_code = 0 then
+			o.putNL ("Build done.")
+		else
+			o.putNL ("Error: build failed with error code `" + clang.exit_code.out + "`.")
+		end -- if
+	end -- buildExecutableFailed
+
 	failedToLoadRequiredTypes (sysDsc: SystemDescriptor; typesPool: Sorted_Array[TypeDescriptor]): Boolean is
 	local		
 		typeDsc: TypeDescriptor
@@ -530,7 +548,7 @@ feature {None}
 				end -- loop
 				closeCodeGenerators (generators)
 				if not Result then
-					not_implemented_yet ("Building library `" + sysDsc.name + "` from folder `" + folderName + "`%N")
+					not_implemented_yet ("Building library `" + sysDsc.name + "` from folder `" + folderName + "`")
 				end -- if
 			else
 				Result := True
