@@ -3059,10 +3059,6 @@ feature {Any}
 
 feature {None}
 
-	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	do
-	end -- checkValidity
-
 	generationFailed(cg: CodeGenerator): Boolean is
 	do
 		-- do nothing so far
@@ -3156,6 +3152,10 @@ feature {Any}
 
 feature {None}
 
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+	end -- is_invalid
+
 	conforms_to_other (other: ParameterDescriptor): Boolean is
 	do
 	end -- conforms_to_other
@@ -3234,6 +3234,10 @@ feature {Any}
 
 feature {None}
 
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+	end -- is_invalid
+
 	conforms_to_other (other: ParameterDescriptor): Boolean is
 	do
 	end -- conforms_to_other
@@ -3307,6 +3311,10 @@ feature {Any}
 	end -- type
 
 feature {None}
+
+	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
+	do
+	end -- is_invalid
 
 	conforms_to_other (other: ParameterDescriptor): Boolean is
 	do
@@ -6628,9 +6636,9 @@ feature
 debug
 	--o.putNL ("ValCheck: " + generating_type)
 end -- debug
+			validityChecked := True
 			Result := is_invalid (context, o)
 			isValid := not Result
-			validityChecked := True
 		end -- if
 	end -- isInvalid
 	validityChecked: Boolean
@@ -13624,18 +13632,15 @@ feature {Any}
 		Result := expr.out + " do " + doExpr.out
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
-	local
-	do
-		-- 'expr' is valid and of Boolean type
+	do		
 		if expr.isInvalid (context, o) then
 			Result := True
+		else -- 'expr' is valid
+			-- TBD: expr must have type Boolean 
 		end -- if
 		-- 'doExpr' is valid
 		if doExpr.isInvalid (context, o) then
 			Result := True
-		end -- if
-		if not Result then
-			-- TBD: expr must have type Boolean 
 		end -- if
 	end -- is_invalid
 	generationFailed(cg: CodeGenerator): Boolean is
