@@ -167,34 +167,34 @@ feature {Any}
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.unit_token then -- parse unit
+						when scanner.type_token then -- parse unit
 							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, True, False, False, False, False)
 						else
-							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+							syntaxError ("Unit type start expected", <<scanner.type_token>>, unit_folowers)
 							toExit := True
 						end
 					when scanner.val_token then -- parse val unit
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.unit_token then -- parse unit
+						when scanner.type_token then -- parse unit
 							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, False, True, False, False, False)
 						else
-							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+							syntaxError ("Unit type start expected", <<scanner.type_token>>, unit_folowers)
 						end
 					when scanner.active_token then -- parse active unit
 						scanner.nextToken
 						inspect	
 							scanner.token
-						when scanner.unit_token then -- parse unit
+						when scanner.type_token then -- parse unit
 							-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 							parseUnit (True, False, False, True, False, False)
 						else
-							syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+							syntaxError ("Unit type start expected", <<scanner.type_token>>, unit_folowers)
 						end
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse unit
 						scanner.nextToken
 						inspect	
 							scanner.token
@@ -205,7 +205,7 @@ feature {Any}
 							syntaxError ("Unit name expected", <<scanner.type_name_token>>,<<>>)
 						end
 					else
-						syntaxError ("Unit start expected", <<scanner.ref_token, scanner.val_token, scanner.active_token, scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit type start expected", <<scanner.ref_token, scanner.val_token, scanner.active_token, scanner.type_token>>, unit_folowers)
 					end -- inspect
 					ast.stop_unit_parsing
 				when scanner.ref_token then -- parse ref unit
@@ -213,11 +213,11 @@ feature {Any}
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse unit
 						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, True, False, False, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit type start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
 				when scanner.val_token then -- parse val unit
@@ -225,11 +225,11 @@ feature {Any}
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse unit
 						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, True, False, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit type start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
 				when scanner.active_token then -- parse active unit
@@ -237,11 +237,11 @@ feature {Any}
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse unit
 						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, False, True, False, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit type start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
 				when scanner.abstract_token then -- parse abstract unit
@@ -249,11 +249,11 @@ feature {Any}
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse unit
 						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, False, False, True, False)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit type start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
 				when scanner.extend_token then -- parse extend unit
@@ -261,14 +261,14 @@ feature {Any}
 					scanner.nextToken
 					inspect	
 						scanner.token
-					when scanner.unit_token then -- parse unit
+					when scanner.type_token then -- parse unit
 						-- is_final, is_ref, is_val, is_active, is_virtual, is_extend
 						parseUnit (False, False, False, False, False, True)
 					else
-						syntaxError ("Unit start expected", <<scanner.unit_token>>, unit_folowers)
+						syntaxError ("Unit type start expected", <<scanner.type_token>>, unit_folowers)
 					end
 					ast.stop_unit_parsing
-				when scanner.unit_token then -- parse unit
+				when scanner.type_token then -- parse unit
 					ast.start_unit_parsing
 					scanner.nextToken
 					inspect	
@@ -503,7 +503,7 @@ feature {None}
 	do
 		Result := <<
 			 scanner.build_token, scanner.use_token, scanner.final_token, scanner.ref_token, scanner.val_token, scanner.active_token,
-			 scanner.abstract_token, scanner.extend_token, scanner.unit_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
+			 scanner.abstract_token, scanner.extend_token, scanner.type_token, scanner.pure_token, scanner.safe_token, scanner.identifier_token,
 			 scanner.type_name_token,
 			 scanner.if_token, scanner.while_token, scanner.new_token, scanner.detach_token, scanner.raise_token, scanner.return_token,
 			 scanner.left_paranthesis_token, scanner.var_token, scanner.require_token, scanner.rigid_token
@@ -6408,7 +6408,7 @@ end -- debug
 	-- AnonymousUnitType: “unit” MemberDesciption {[“;”] MemberDesciption} “end”
 	--                     ^
 	require
-		valid_token: validToken (<<scanner.unit_token>>)
+		valid_token: validToken (<<scanner.type_token>>)
 	local
 		members: Sorted_Array [MemberDescriptionDescriptor]
 		m1: Sorted_Array [MemberDescriptionDescriptor]
@@ -6541,7 +6541,7 @@ end -- debug
 				--trace ("parseAttachedType: tuple type parsed " + Result.out)
 				end -- if
 			end -- debug
-		when scanner.unit_token then
+		when scanner.type_token then
 			-- Anonymous type type
 			Result := parseAnonymousUnitType (checkSemicolonAfter)
 		when
@@ -6561,7 +6561,7 @@ end -- debug
 				scanner.as_token,
 				scanner.rtn_token,
 				scanner.left_paranthesis_token,
-				scanner.unit_token,
+				scanner.type_token,
 				scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token				
 			>>)
 		end -- inspect
@@ -7934,9 +7934,7 @@ end -- debug
 	parseInitDeclaration (currentVisibilityZone: MemberVisibilityDescriptor): InitDeclarationDescriptor is 
 	-- InitDeclaration: init [UnitRoutineParameters] [EnclosedUseDirective] [RequireBlock] 
 	--                  ^     
-    --    [“:” (init  [Arguments]) | (ParentInitCall {“,” ParentInitCall} [“,” init  [Arguments]])]
     --    (InnerBlock [EnsureBlock] BlockEnd)|(foreign|none [EnsureBlock BlockEnd])
-	-- ParentInitCall:  UnitTypeName [Arguments]
 	require		
 		valid_token: validToken(<<scanner.init_token>>)
 	local
@@ -9656,7 +9654,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	-- require	[InvariantBlock]
 	-- end
 	require
-		valid_token: validToken (<<scanner.type_name_token, scanner.unit_token>>)
+		valid_token: validToken (<<scanner.type_name_token, scanner.type_token>>)
 	local	
 		goToMembers: Boolean
 		mvDsc, currentVisibilityZone: MemberVisibilityDescriptor
@@ -9674,7 +9672,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 		utnDsc: UnitTypeNameDescriptor
 	do
 		initialErrorsCount := errorsCount
-		if scanner.token = scanner.unit_token then
+		if scanner.token = scanner.type_token then
 			scanner.nextToken
 			inspect
 				scanner.token 
@@ -9697,6 +9695,14 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			scanner.nextToken
 		end -- if
 		if unitName /= Void then
+			if scanner.token = scanner.is_token then
+				-- type A is ...  // Type declaration found
+			--	scanner.nextToken
+			else
+				-- unit type start
+			end -- if
+
+
 			create currentUnitDsc.init (unitName, is_final, is_ref, is_val, is_active, is_virtual, is_extend)
 			currentUnitDsc.attach_pools (ast)
 			

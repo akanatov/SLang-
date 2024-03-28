@@ -105,7 +105,7 @@ feature
 	select_token,
 	target_token,
 	this_token,
-	unit_token,
+	type_token,
 	use_token,
 	val_token,
 	var_token,
@@ -781,15 +781,17 @@ feature {Any}
 			else
 				Result := register_buffer_and_return_identifier_token
 			end	-- inspect		
-		when 't' then -- "this", "target"
+		when 't' then -- "this", "target", "type"
 			if buff_len = 4 and then buffer.item (2) = 'h' and then buffer.item (3) = 'i' and then buffer.item (4) = 's' then
 				Result := this_token
+			elseif buff_len = 4 and then buffer.item (2) = 'y' and then buffer.item (3) = 'p' and then buffer.item (4) = 'e' then
+				Result := type_token
 			elseif systemMode and then buff_len = 6 and then buffer.is_equal (keywords.item (target_token)) then
 				Result := target_token
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- if
-		when 'u' then -- "unit", "use"
+		when 'u' then -- "use"  //"unit", 
 			inspect
 				buff_len
 			when 3 then
@@ -798,12 +800,12 @@ feature {Any}
 				else
 					Result := register_buffer_and_return_identifier_token
 				end -- if
-			when 4 then
-				if buffer.item (2) = 'n' and then buffer.item (3) = 'i'  and then buffer.item (4) = 't' then
-					Result := unit_token
-				else
-					Result := register_buffer_and_return_identifier_token
-				end -- if
+			--when 4 then
+			--	if buffer.item (2) = 'n' and then buffer.item (3) = 'i'  and then buffer.item (4) = 't' then
+			--		Result := type_token
+			--	else
+			--		Result := register_buffer_and_return_identifier_token
+			--	end -- if
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- inspect
