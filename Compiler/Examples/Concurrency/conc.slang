@@ -1,9 +1,9 @@
 /* 
-1. Every active unit has a queue of activation requests per every 'exported' routine
-2. All active unit attrubutes are ensured being atomic for all read-write requests
+1. Every active type has a queue of activation requests per every 'exported' routine
+2. All active type attrubutes are ensured being atomic for all read-write requests
 */
-active unit Producer[G]
-  Producer (queue :=)
+active type Producer[G]
+  init (:= queue) none
   produce (generateData: rtn: G) do
     while not toStop do
       queue.put (generateData)
@@ -16,9 +16,9 @@ active unit Producer[G]
   queue: Queue [G]
   toStop: Boolean
 end
-active unit Consumer[G]
-  Consumer (queue :=)
-  consume (processData: rtn (data: G)) do
+active type Consumer[G]
+  init (:= queue) none
+  consume (processData: rtn (G)) do
     isProcessing := true
     while not toStop do
       processData (queue.get)
@@ -37,18 +37,18 @@ active unit Consumer[G]
   toStop: Boolean
   queue:  Queue [G]
 end
-active unit Queue [G]
+active type Queue [G]
   put (element: G) do
     queue.resize (queue.count + 1, element)    
   end
   get: G
   require
-    queue.count > 0 // while waiting for precondition be true other unit routines can be called
+    queue.count > 0 // while waiting for precondition be true other type routines can be called
   do
     return := queue (queue.upper)
     queue.resize (queue.count - 1)
   end
-  Queue do
+  init do
     queue is () // Empty array
   end
   isEmpty: Boolean => queue.count = 0
@@ -56,7 +56,7 @@ active unit Queue [G]
 end
 
 // Example how to work with producer and consumer
-unit Data // Unit which shoudk contain some data which will be produced and consumed
+type Data // Unit which shoudk contain some data which will be produced and consumed
 end
 timeToExit: Boolean do // Function which determines if it is the time to shut the whole system
 	return if Timer.totalTimeOfExecution > 1000 do true else false
@@ -65,7 +65,7 @@ q is Queue [Data] // create queue
 p is Producer [Data] (q) // create producer
 c is Consumer [Data] (q) // create consumer
 p.produce (rtn : Data => Data) // start producing Data objects
-c.consume (rtn (data: Data) do io.print (data) end) // start processing Data objects
+c.consume (rtn (data: Data) do IO.print (data) end) // start processing Data objects
 var exit: Boolean
 while not exit do
   exit := timeToExit // Just do some activity of its own - main thread of the application

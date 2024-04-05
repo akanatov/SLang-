@@ -1,7 +1,7 @@
 // How to deal with dynamic objects .... WIP !!!
- unit  DynamicObject
-	/* This  unit  allows to deal with dynamically loaded/created objects 
-	providing dynamic  unit  checking.
+ type  DynamicObject
+	/* This  type  allows to deal with dynamically loaded/created objects 
+	providing dynamic  type  checking.
 	*/
 	// Access members by name
 	final call (rtn_name: String; args: ()) do
@@ -59,14 +59,14 @@
 	
 end
 
-abstract  unit  MemberDescriptor
+abstract  type  MemberDescriptor
 	final name: String
 end
-abstract  unit  RoutineDescriptor extend MemberDescriptor
+abstract  type  RoutineDescriptor extend MemberDescriptor
 	final arguments: Array [ArgumentDescriptor]
 end // RoutineDescriptor
 
-final  unit  ProcedureDescriptor extend RoutineDescriptor
+final  type  ProcedureDescriptor extend RoutineDescriptor
 	() alias apply (args: ()) foreign
 		// That is a procedure call
 	ProcedureDescriptor (aName: as name; args: as arguments) do
@@ -75,7 +75,7 @@ final  unit  ProcedureDescriptor extend RoutineDescriptor
 	end
 end // Procedure [Arguments -> ()]
 
-final  unit  FunctionDescriptor extend RoutineDescriptor
+final  type  FunctionDescriptor extend RoutineDescriptor
 	fType: TypeDescriptor
 	() alias apply (args: Arguments): Any foreign
 		// That is a function call
@@ -86,12 +86,12 @@ final  unit  FunctionDescriptor extend RoutineDescriptor
 	end
 end // Function [Arguments -> (), Result]*/
 
-abstract  unit  AttributeDescriptor extend MemberDescriptor
+abstract  type  AttributeDescriptor extend MemberDescriptor
 	value: Any
 	aType: TypeDescriptor
 end // AttributeDescriptor
 
-final  unit  VariableDescriptor  extend AttributeDescriptor 
+final  type  VariableDescriptor  extend AttributeDescriptor 
 	override := alias set (v: as value) do 
 		value := v
 	end
@@ -102,7 +102,7 @@ final  unit  VariableDescriptor  extend AttributeDescriptor
 	end
 end // VariableDescriptor
 
-final  unit  ConstantDescriptor  extend AttributeDescriptor 
+final  type  ConstantDescriptor  extend AttributeDescriptor 
 	ConstantDescriptor (aName: as name; aType: as cType; aValue: as value) do
 		name is aName
 		cType is aType
@@ -110,7 +110,7 @@ final  unit  ConstantDescriptor  extend AttributeDescriptor
 	end
 end // ConstantDescriptor
 
-final  unit  TypeDescriptior
+final  type  TypeDescriptior
 	final name: String
 	final routines : Array [RoutineDescriptor]
 	final attributes : Array [AttributeDescriptor]

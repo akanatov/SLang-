@@ -1,4 +1,4 @@
- unit  SLang_Scanner
+ type  SLang_Scanner
 	token: Integer // current token
 	tokenRow: Integer // current token row
 	tokenCol: Integer // current token column

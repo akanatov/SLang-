@@ -928,7 +928,7 @@ feature {None}
 	require
 		target_not_void: name /= Void
 		valid_token: validToken (<<
-			scanner.operator_token,
+			scanner.operator_token, scanner.rtn_token,
 			scanner.bar_token, scanner.tilda_token, scanner.identifier_token, scanner.type_name_token,
 			scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token
 		>>)
@@ -991,7 +991,9 @@ feature {None}
 		wasError: Boolean
 		isRtnDecl: Boolean
 	do
+		debug
 --trace (">>>parseAssignmentOrUnqualifiedCallOrRoutineStart")
+		end -- debug
 		scanner.nextToken
 		inspect	
 			scanner.token 
@@ -1006,6 +1008,9 @@ feature {None}
 			--        ^
 		when scanner.integer_const_token, scanner.real_const_token, scanner.string_const_token, scanner.char_const_token then
 			-- name ( const		>> unqualified call or assignment ().x or ().x := expr
+			--        ^
+		when scanner.rtn_token then
+			-- name ( rtn		>> unqualified call or assignment ().x or ().x := expr
 			--        ^
 		when scanner.right_paranthesis_token then 
 			-- name ( )		>> unqualified call or routine declaration
@@ -3545,7 +3550,7 @@ end -- debug
 				else
 					create {LambdaFromRoutineExpression} Result.init (name, Void)
 				end -- inspect
-			when scanner.left_paranthesis_token, scanner.require_token, scanner.foreign_token, scanner.one_line_function_token then
+			when scanner.left_paranthesis_token, scanner.colon_token, scanner.require_token, scanner.foreign_token, scanner.one_line_function_token then
 				rtnDsc ?= parseAnyRoutine(False, False, False, False, "<>", Void, Void, False, True, Void, checkSemicolonAfter or else scanner.token = scanner.one_line_function_token)
 				if rtnDsc /= Void then
 					create {InlineLambdaExpression} Result.init (rtnDsc.parameters,  rtnDsc.type, rtnDsc.preconditions, rtnDsc.isForeign, rtnDsc.innerBlock, rtnDsc.expr, rtnDsc.postconditions)
@@ -3589,6 +3594,7 @@ end -- debug
 			create {ReturnStatementDescriptor}Result.init (Void)
 		when scanner.assignment_token then
 			-- return := expr
+			skipReturnCheck := True
 			scanner.nextToken
 			exprDsc := parseExpression
 			if exprDsc /= Void then
