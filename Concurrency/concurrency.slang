@@ -1,4 +1,4 @@
-active unit Queue[G]
+active type Queue[G]
 	put (e: G) do
 		if buffer.count = 0 do
 			first := 1
@@ -21,7 +21,7 @@ active unit Queue[G]
 		end
 	end // get
 	pure canGet: Boolean => first > 0
-	Queue do
+	init do
 		buffer is ()
 		first is 0
 		last is 0
@@ -35,9 +35,9 @@ require
 	buffer.count = 0 implies first = 0
 end // Queue
 
-unit Data end
+type Data end
 
-active unit Producer
+active type Producer
 	produce do
 		while true do
 			Queue[Data].put (Data) // all calls to put are put into the call queue for the object Queue
@@ -45,7 +45,7 @@ active unit Producer
 	end
 end
 
-active unit Consumer
+active type Consumer
 	consume do
 		while true do
 			consumeData (Queue[Data].get) // all calls to get are puit into the queue for the object Queue

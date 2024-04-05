@@ -1,4 +1,4 @@
- unit  A
+ type  A
 const: 
 	x, y, z
 end

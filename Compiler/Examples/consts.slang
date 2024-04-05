@@ -11,6 +11,6 @@ x is Integer.5
 
 /*someConst is Unit.constName
 
-unit Unit
+type Unit
 	const constName: Unit
 end*/

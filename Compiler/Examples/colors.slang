@@ -1,4 +1,4 @@
- unit  Color
+ type  Color
 	const:
 		white, red, orange, yellow, green, cyan, blue, violet, black
 	end

@@ -1,4 +1,4 @@
- unit  DynamicObject
+ type  DynamicObject
 	final call (rtn_name: String; args: ()) do
 		rtn_descr is findRoutine(rtn_name)
 		if rtn_descr is ProcedureDescriptor do

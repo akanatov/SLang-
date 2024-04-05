@@ -1,10 +1,10 @@
 a is AA
 a is GA [Any]
 
-unit A alias AA
+type A alias AA
 end
-unit A alias GA [G]
+type A alias GA [G]
 end
-unit Any end
+type Any end
 
-// unit X alias X  end // CTE: Handled properly !!!
+// type X alias X  end // CTE: Handled properly !!!

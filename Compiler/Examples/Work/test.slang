@@ -1,6 +1,6 @@
 entity is Derived
-unit Derived extend Parent1, Parent2 end
-unit Parent1 extend Parent2 end
-final unit Parent2 extend Parent1 end
-unit Any end
+type Derived extend Parent1, Parent2 end
+type Parent1 extend Parent2 end
+final type Parent2 extend Parent1 end
+type Any end
 

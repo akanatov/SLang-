@@ -1,5 +1,5 @@
 // Core units to represent basic SLang types  (WIP - not all features are fully implemented!!! )
-// Version 0.99.20 December 10th 2023
+// Version 0.99.22 March 29th 2024
 build Kernel from "." // Kernel library is to be built from all SLang files from the current folder
 end
 
@@ -1206,8 +1206,8 @@ type DynamicObject
 		end
 	end
 	// Access members by object (address) 
-	final routines() : Array [RoutineDescriptor] none
-	final attributes (): Array [AttributeDescriptor] none
+	final routines : Array [RoutineDescriptor] none
+	final attributes: Array [AttributeDescriptor] none
 	final call (rtnDsc: ProcedureDescriptor; args: ()) none
 	final call (rtnDsc: FunctionDescriptor; args: ()): Any none
 	final get_value (attr: AttributeDescriptor): Any => attr.value

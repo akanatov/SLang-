@@ -2662,9 +2662,18 @@ feature {None}
 		valid_token: scanner.token = scanner.left_paranthesis_token
 	local	
 		exprDsc: ExpressionDescriptor
+		isEmptyTuple: Boolean
 	do
 		scanner.nextToken
-		exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
+		inspect
+			scanner.token
+		when scanner.right_paranthesis_token then				
+			-- () is found - empty tuple !!!
+			create {TupleExpressionDescriptor} exprDsc.init (<<>>)
+			isEmptyTuple := True
+		else
+			exprDsc := parseExpression1 (checkForCommentAfter, True, checkSemicolonAfter, False, parseConstExpr)
+		end -- inspect		
 		if exprDsc /= Void then
 			debug
 				--trace ("#2: (Expression " + exprDsc.out)
@@ -2681,7 +2690,11 @@ feature {None}
 				--	--scanner.nextToken Keep semicolon till the caller to remove it
 				--	create {ParenthedExpressionDescriptor} Result.init (exprDsc)
 				else
-					create {ParenthedExpressionDescriptor} Result.init (exprDsc)
+					if isEmptyTuple then
+						Result := exprDsc
+					else
+						create {ParenthedExpressionDescriptor} Result.init (exprDsc)
+					end -- if
 				end -- if
 				debug
 					--trace ("#4: (Expr) " + Result.out)

@@ -1,7 +1,7 @@
 a: A is A
 b: B[A] is B[A]
- unit  A
+ type  A
 end
- unit  B[G]
+ type  B[G]
 end
 

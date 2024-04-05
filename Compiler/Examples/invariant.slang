@@ -1,4 +1,4 @@
- unit  A
+ type  A
 data: X	
 require
 	BitsNumber > 0

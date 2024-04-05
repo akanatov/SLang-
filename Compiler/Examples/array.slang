@@ -1,2 +1,2 @@
- unit  Array [n: (Integer,Integer)]
+type  Array [n: (Integer,Integer)]
 end

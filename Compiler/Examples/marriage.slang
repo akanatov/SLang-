@@ -1,6 +1,6 @@
-abstract  unit  NamedPerson
+abstract  type  NamedPerson
 	name: String
-	{} clearSpouse () // This routine is available only for  unit  NamedPerson and its descendants
+	{} clearSpouse () // This routine is available only for  type  NamedPerson and its descendants
 	require
 		isMarried /// Person should be married!!!
 	abstract
@@ -29,8 +29,8 @@ abstract  unit  NamedPerson
 	end // divorce
 end // NamedPerson
 
- unit  MonogamousPerson extend NamedPerson
-	spouse: ? as this {} := (aSpouse: as spouse) do // Setter is visible only for this  unit  and its descendants
+ type  MonogamousPerson extend NamedPerson
+	spouse: ? as this {} := (aSpouse: as spouse) do // Setter is visible only for this  type  and its descendants
 		spouse := aSpouse
 	end // spouse setter
 	{} override clearSpouse ()
@@ -55,7 +55,7 @@ require
 	isMarried() implies spouse.spouse = this
 end // MonogamousPerson
 
- unit  PolygamyPerson extend NamedPerson
+ type  PolygamyPerson extend NamedPerson
 	spouses: Array [as this]
 	{} override clearSpouse ()
 	do 

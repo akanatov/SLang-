@@ -1,9 +1,9 @@
-unit Color
+type Color
 	const:
 		red, yellow, green, off
 	end
 end
-unit TrafficLight use const Color
+type TrafficLight use const Color
 	TrafficLight none
 	TrafficLight (:=light) none
 	light: Color is off

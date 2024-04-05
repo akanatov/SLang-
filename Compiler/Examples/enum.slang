@@ -1,4 +1,4 @@
-unit  A
+type  A
 	const:
 	end
 end

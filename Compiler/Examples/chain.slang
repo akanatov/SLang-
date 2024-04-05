@@ -45,7 +45,7 @@ x is do safe a.b.c.d else else_Value end
 y is do safe a.b.c.d end // Type of y is equal to type of d and should be detachable
 
 
-unit A
+type A
 	const proc1 is () do end
 	proc2 do end
 	proc3 is () do end
@@ -102,16 +102,16 @@ a: (T1, T2, T3) // That is a tuple!
 vs
 a: rtn (T1, T2, T3) // That is a rtn!
 
-unit Base
+type Base
 	isSomething: Boolean abstract
 end
-unit Derived1 extend Base
+type Derived1 extend Base
 	override isSomething: Boolean // variable attribute
 end
-unit Derived2 extend Base
+type Derived2 extend Base
 	override isSomething: Boolean do end // function
 end
-unit Derived3 extend Base
+type Derived3 extend Base
 	override const isSomething: Boolean is true // constant attribute
 end
 
@@ -123,14 +123,14 @@ base := Derived3()
 bool := base.isSomething ()
 
 
-unit T0
+type T0
 	foo (<parameters>): Result do return Result end
-end // unit T0
-active unit T1 extend T0
+end // type T0
+active type T1 extend T0
 end
-active unit T2 extend T0
+active type T2 extend T0
 end
-active unit T3 extend T0
+active type T3 extend T0
 end
 
 resultingTuple is in (T1, T2, T3) do foo (<arguments>) // Variant #1

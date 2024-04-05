@@ -1,12 +1,12 @@
-unit B
+type B
 end
 
-unit A  // CTE: unit A has no init procedure which initializes field
+type A  // CTE: type A has no init procedure which initializes field
   field: B
 end
 
 
-unit AA
+type AA
 	field: B
 	init do
 		field := new B
