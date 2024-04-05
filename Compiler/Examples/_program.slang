@@ -1,5 +1,5 @@
 a is new A
 b is new B
- unit  A
+ type  A
 end
 

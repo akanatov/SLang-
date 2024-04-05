@@ -4,6 +4,6 @@ end
 too (M.goo)
 /*foo () do
 end*/
-unit M
+type M
 end
 

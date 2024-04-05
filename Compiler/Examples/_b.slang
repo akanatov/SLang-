@@ -1,3 +1,3 @@
- unit  B
+ type  B
 	foo do end
 end

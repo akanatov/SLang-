@@ -1,5 +1,5 @@
 use StandardIO as IO
-abstract  unit  Output
+abstract  type  Output
 
 	final put (obj: Any)
 	do
@@ -88,8 +88,8 @@ abstract  unit  Output
 	
 require
 	lastLength >= 0 /// invalid length of last string
-end //  unit  Output
- unit  ScreenOutput extend Output
+end //  type  Output
+ type  ScreenOutput extend Output
 
 	close
 	do	
@@ -114,8 +114,8 @@ end //  unit  Output
 	do
 		io.put_character ('\n')
 	end // put_new_line
-end //  unit  ScreenOutput
- unit  FileOutput extend Output
+end //  type  ScreenOutput
+ type  FileOutput extend Output
 {}:
 	file: ?File
 	init (fileName: String)
@@ -159,8 +159,8 @@ end //  unit  ScreenOutput
 			file.put_character ('\n')
 		end // if
 	end // put_new_line
-end //  unit  FileOutput
- unit  ScreenAndFileOutput extend ScreenOutput, FileOutput
+end //  type  FileOutput
+ type  ScreenAndFileOutput extend ScreenOutput, FileOutput
 	override ScreenOutput.put_spaces, FileOutput.close
 	new FileOutput
 {}:
@@ -180,4 +180,4 @@ end //  unit  FileOutput
 		old {ScreenOutput}
 		old {FileOutput}
 	end // put_new_line
-end //  unit  ScreenAndFileOutput
+end //  type  ScreenAndFileOutput

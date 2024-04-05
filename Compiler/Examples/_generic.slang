@@ -1,9 +1,9 @@
 a is A[X]
 b is A[A[X]]
 //c is C[X]
- unit  A[G] 
+ type  A[G] 
 end
- unit  X
+ type  X
 end
 foo [G extend T] -> T do
 end

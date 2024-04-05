@@ -2,7 +2,7 @@ t1: T1
 t2: T2
 t3: T3
 a: A[T1, T2, T3] is A[T1, T2, T3]
- unit  A [G1, G2, G3]
+ type  A [G1, G2, G3]
 end
  type  T1 end
  type  T2 end
