@@ -8,14 +8,14 @@ if a is
        // statements
 	:B
        // statements
-		io.put ("B!")
+		IO.put ("B!")
 	:C, D
        // statements
     :1 .. 2, "a" .. "z"
        // statements
 else
        // statements
-		io.put ("ELSE!")
+		IO.put ("ELSE!")
 end
 
 
@@ -35,9 +35,9 @@ x is
 
 if a is
 	:true
-		io.put ("True")
+		IO.put ("True")
 	:false
-		io.put ("False")
+		IO.put ("False")
 end
 */
 
