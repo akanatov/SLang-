@@ -3127,8 +3127,18 @@ end -- debug
 							--		scanner.revert
 							--	end -- inspect
 							--end -- if
+						when scanner.colon_token then 
+						    -- expr is : 
+							-- start of alternative
+							toExit := True
 						else
-							syntax_error (<<scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token, scanner.detach_token>>)
+							syntax_error (
+								<<
+									scanner.type_name_token, scanner.ref_token, scanner.val_token, scanner.active_token,
+									scanner.detach_token,
+									scanner.colon_token
+								>>
+							)
 							-- expr is expr :
 							--scanner.revert
 						end -- inspect
@@ -3988,12 +3998,22 @@ end -- debug
 		end -- inspect
 	end -- parseMemberDescription
 	
+	parseIfStatementAlternatives1 (utDsc: NamedTypeDescriptor): Array [IfStatementAlternative] is
+	require
+		valid_alternative_start_token: validToken (<<scanner.colon_token>>)
+	do
+		scanner.nextToken
+		debug
+			trace (">>>parseIfStatementAlternatives1")
+		end -- debug
+	end -- parseIfStatementAlternatives1
+
 	parseIfStatementAlternatives: Array [IfStatementAlternative] is
-	-- Alternatives: “:”AlternativeTags StatementsList {“:”AlternativeTags StatementsList} 
-	-- 	AlternativeTags: AlternativeTag {“,” AlternativeTag}
+	-- Alternatives: AlternativeTags “:” StatementsList {AlternativeTags “:” StatementsList} 
+	-- AlternativeTags: AlternativeTag {“,” AlternativeTag}
 
 	require	
-		valid_alternative_start_token: validToken (<<scanner.case_token>>)
+		--valid_alternative_start_token: validToken (<<scanner.case_token>>)
 	local
 		curTagsList: Sorted_Array [AlternativeTagDescriptor]
 		tagsList: Sorted_Array [AlternativeTagDescriptor]
@@ -4001,7 +4021,7 @@ end -- debug
 		isOptionalAlternative: Boolean
 		toLeave : Boolean
 	do
-		scanner.nextToken
+		--scanner.nextToken
 		from
 			create Result.make (1, 0)
 			create tagsList.make
@@ -4018,12 +4038,26 @@ end -- debug
 				isOptionalAlternative := True
 				create altDsc.init (curTagsList, parseStatements (False))
 				Result.force (altDsc, Result.count + 1)
-				if scanner.token = scanner.case_token then
+				inspect
+					scanner.token
+				when scanner.colon_token then
 					scanner.nextToken
 					-- parse next alternative
-				else
+				when scanner.elsif_token, scanner.else_token then
+				    --not_implemented_yet ("alternatives parsing")
 					toLeave := True
-				end -- if					
+				else
+					if scanner.blockEnd then
+						scanner.nextToken
+					end -- if
+					toLeave := True
+				end -- inspect
+				--if scanner.token = scanner.case_token then
+				--	scanner.nextToken
+				--	-- parse next alternative
+				--else
+				--	toLeave := True
+				--end -- if					
 			end -- if
 		end -- loop
 		if Result.count = 0 then
@@ -4034,18 +4068,26 @@ debug
 end
 	end -- parseIfStatementAlternatives
 
+	parseIfExprAlternatives1 (utDsc: NamedTypeDescriptor): Array [IfExpressionAlternative] is
+	require
+		valid_alternative_start_token: validToken (<<scanner.colon_token>>)
+	do
+		scanner.nextToken
+	end -- parseIfExprAlternatives1
+
 	parseIfExprAlternatives: Array [IfExpressionAlternative] is
-	-- ExpressionAlternatives: “case” AlternativeTags Expression {“case” AlternativeTags Expression}
+	-- ExpressionAlternatives: ":" AlternativeTags Expression {":" AlternativeTags Expression}
 	require	
-		valid_alternative_start_token: validToken (<<scanner.case_token>>)
+		--valid_alternative_start_token: validToken (<<scanner.case_token>>)
 	local
 		curTagsList: Sorted_Array [AlternativeTagDescriptor]
 		tagsList: Sorted_Array [AlternativeTagDescriptor]
 		altDsc: IfExpressionAlternative --AlternativeDescriptor
+		exprDsc: ExpressionDescriptor
 		isOptionalAlternative: Boolean
 		toLeave : Boolean
 	do
-		scanner.nextToken
+		--scanner.nextToken
 		from
 			create Result.make (1, 0)
 			create tagsList.make
@@ -4057,14 +4099,19 @@ end
 				toLeave := True
 			else
 				isOptionalAlternative := True
-				create altDsc.init (curTagsList, parseOptionalExpression)
-				Result.force (altDsc, Result.count + 1)
-				if scanner.token = scanner.case_token then
-					scanner.nextToken
-					-- parse next alternative
-				else
+				exprDsc := parseExpression
+				if exprDsc = Void then
 					toLeave := True
-				end -- if					
+				else
+					create altDsc.init (curTagsList, exprDsc) --parseOptionalExpression)
+					Result.force (altDsc, Result.count + 1)
+					if scanner.token = scanner.colon_token then
+						scanner.nextToken
+						-- parse next alternative
+					else
+						toLeave := True
+					end -- if					
+				end -- if
 			end -- if
 		end -- loop
 		if Result.count = 0 then
@@ -4245,12 +4292,11 @@ end
 	end -- parseIfExpression
 
 	parseIfStatementOrExpression (isStatement, checkSemicolonAfter: Boolean): Any is -- StatementDescriptor is
-	--56	IfCase:
 	--	if Expression (is IfBody)|(do [StatementsList])
 	--	{elsif Expression (is IfBody)|(do [StatementsList]) }
 	--	[else [ StatementsList ]]
 	--	end
-	--	IfBody: (ValueAlternative “:” StatementsList {ValueAlternative “:” StatementsList} ) | ( “(” MemberDesciption {“,”} MemberDesciption “)” )
+	--	IfBody: (“:” ValueAlternative  StatementsList {“:” ValueAlternative StatementsList} ) | ( “(” MemberDesciption {“,”} MemberDesciption “)” )
 	--	ValueAlternative : Expression ([“..”Expression ] | {“|”Expression} ) {“,”Expression ([“..”Expression ] | {“|”Expression} )}
 	-- 	MemberDescription : ( [rtn] RoutineName [Signature] )|( Idenitifer “:”UnitType )
 	--
@@ -4258,7 +4304,7 @@ end
 	-- if     Expression (is IfBodyExpression)|(do Expression)
 	-- {elsif Expression (is IfBodyExpression)|(do Expression)}
 	-- else Expression
-	-- IfBodyExpression: ValueAlternative “:” Expression {ValueAlternative “:” Expression}
+	-- IfBodyExpression: “:” ValueAlternative Expression {“:” ValueAlternative Expression}
 	
 	require
 		valid_start_token: validToken (<<scanner.if_token>>)
@@ -4285,11 +4331,7 @@ end
 		exprAlternatives: Array [IfExpressionAlternative] -- IS
 		doExpr: ExpressionDescriptor -- DO
 
-		--typeOfDsc: IsAttachedDescriptor
-		--alternativeTypeDsc: UnitTypeCommonDescriptor
-
-		caseFound: Boolean
-	
+		caseFound: Boolean	
 		toLeave: Boolean
 		wasError: Boolean
 	do
@@ -4298,25 +4340,30 @@ end
 		ifExpr := parseExpression
 		if ifExpr /= Void then
 debug
-	--trace ("%Tif " + ifExpr.out )
+	--trace (">>>parseIfStatementOrExpression: %Tif " + ifExpr.out)
 end -- debug
 			inspect	
 				scanner.token
-			when scanner.case_token then
-			--when scanner.colon_token then
-			-- when scanner.is_token then
+			when scanner.colon_token then
 				-- if with alternatives				
-				--scanner.nextToken
+				scanner.nextToken
 				caseFound := True
 				if isStatement then
-					alternatives := parseIfStatementAlternatives 
+					alternatives := parseIfStatementAlternatives
 					if alternatives = Void then
 						wasError := True
+					else
+						statements := parseStatements (False)						
 					end -- if
 				else
 					exprAlternatives := parseIfExprAlternatives
 					if exprAlternatives = Void then
 						wasError := True
+					else
+						doExpr := parseExpression -- parseOptionalExpression
+						if doExpr = Void then
+							wasError := True
+						end -- if
 					end -- if
 				end -- if
 				
@@ -4344,14 +4391,17 @@ end -- debug
 					if isStatement then
 						statements := parseStatements (False)
 					else
-						doExpr := parseOptionalExpression
+						doExpr := parseExpression -- parseOptionalExpression
+						if doExpr = Void then
+							wasError := True
+						end -- if
 					end -- if
 				else
 					wasError := True
 					if scanner.Cmode then
-						syntax_error (<<scanner.case_token, scanner.left_curly_bracket_token>>)
+						syntax_error (<<scanner.colon_token, scanner.left_curly_bracket_token>>)
 					else
-						syntax_error (<<scanner.case_token, scanner.do_token>>)
+						syntax_error (<<scanner.colon_token, scanner.do_token>>)
 					end -- if
 				end -- if
 			end -- if				
@@ -4372,6 +4422,7 @@ end -- debug
 						end -- if
 						ifExprLines:= <<ifExprLineDsc>>
 					end -- if
+					caseFound := False
 				until
 					toLeave
 				loop
@@ -4383,9 +4434,8 @@ end -- debug
 						else
 							inspect	
 								scanner.token
-							--when scanner.is_token then
-							when scanner.case_token then
-								--scanner.nextToken
+							when scanner.colon_token then
+								scanner.nextToken
 								caseFound := True
 								if isStatement then
 									alternatives := parseIfStatementAlternatives
@@ -4427,7 +4477,10 @@ end -- debug
 									if isStatement then
 										statements := parseStatements (False)
 									else
-										doExpr := parseOptionalExpression
+										doExpr := parseExpression -- parseOptionalExpression
+										if doExpr = Void then
+											wasError := True
+										end -- if
 									end -- if
 								else
 									wasError := True
@@ -4441,27 +4494,49 @@ end -- debug
 									end -- if
 								end -- if
 							end -- if				
-							if not wasError then
-								if isStatement then
-									if caseFound then
-										create {IfIsLineDecsriptor} ifLineDsc.init (ifExpr, alternatives)
-									else
-										create {IfDoLineDecsriptor} ifLineDsc.init (ifExpr, statements)
-									end -- if
-									ifLines.force (ifLineDsc, ifLines.count + 1)
-								else
-									if caseFound then
-										create {IfIsExprLineDescriptor} ifExprLineDsc.init (ifExpr, exprAlternatives)
-									else
-										create {IfDoExprLineDescriptor} ifExprLineDsc.init (ifExpr, doExpr)
-									end -- if
-									ifExprLines.force (ifExprLineDsc, ifExprLines.count + 1)
+						end -- if
+					elseif scanner.token = scanner.colon_token then
+						scanner.nextToken
+						caseFound := True
+						if isStatement then
+							alternatives := parseIfStatementAlternatives
+							if alternatives = Void then
+								wasError := True
+							else
+								statements := parseStatements (False)						
+							end -- if
+						else
+							exprAlternatives := parseIfExprAlternatives
+							if exprAlternatives = Void then
+								wasError := True
+							else
+								doExpr := parseExpression -- parseOptionalExpression
+								if doExpr = Void then
+									wasError := True
 								end -- if
 							end -- if
 						end -- if
 					else
 						toLeave := True
 					end -- if
+					if not toLeave and then not wasError then
+						if isStatement then
+							if caseFound then
+								create {IfIsLineDecsriptor} ifLineDsc.init (ifExpr, alternatives)
+							else
+								create {IfDoLineDecsriptor} ifLineDsc.init (ifExpr, statements)
+							end -- if
+							ifLines.force (ifLineDsc, ifLines.count + 1)
+						else
+							if caseFound then
+								create {IfIsExprLineDescriptor} ifExprLineDsc.init (ifExpr, exprAlternatives)
+							else
+								create {IfDoExprLineDescriptor} ifExprLineDsc.init (ifExpr, doExpr)
+							end -- if
+							ifExprLines.force (ifExprLineDsc, ifExprLines.count + 1)
+						end -- if
+					end -- if
+					caseFound := False					
 				end -- loop
 				if not wasError then
 					if scanner.token = scanner.else_token then
@@ -4499,7 +4574,7 @@ end -- debug
 			end -- if
 		end -- if
 debug
-	--trace ("<<<parse_if")
+	--trace ("<<<parseIfStatementOrExpression")
 end -- debug
 	end -- parseIfStatementOrExpression
 	
@@ -5386,6 +5461,14 @@ end -- debug
 			syntax_error (<<scanner.type_name_token>>)
 		end -- if
 	end -- parseUseConst
+	
+	parseNewTypeDeclaration(unitName : String) is
+		-- type UnitName is AttachedType
+	require
+		valid_token: validToken (<<scanner.is_token>>)		
+	do
+		not_implemented_yet ("parseNewTypeDeclaration: " + unitName)
+	end -- parseNewTypeDeclaration
 	
 	parseAliasingClause is
 		-- GlobalAlias: alias GlobalAliasElement {“,” GlobalAliasElement}

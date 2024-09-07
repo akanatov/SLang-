@@ -7627,8 +7627,8 @@ feature {Any}
 	init (e: like expDsc; t: like typeDsc) is
 	require
 		non_void_expression: e /= Void
+		non_void_type: t /= Void
 	do
-		-- detached_init (e)
 		expDsc := e
 		typeDsc := t
 	end -- init
@@ -7649,13 +7649,7 @@ feature {Any}
 	end -- theSame
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
-		
-		
-			
 	do
-	
-	
-	
 		if expdsc.isInvalid (context, o) then
 			Result := True
 		end -- if
@@ -10295,11 +10289,15 @@ end -- class NewExpressionDescriptor
 -- ExpressionList: Expression{"," Expression}
 
 class IfStatementDescriptor
--- IfCase:
--- if Expression (case Alternatives)|(BlockStart StatementsList)
--- {elsif Expression (case Alternatives)|(BlockStart StatementsList)}
--- [else [StatementsList]]
+-- if Expression (“is” Alternatives)|(BlockStart StatementsList)
+-- {elsif Expression (“is” Alternatives)|(BlockStart StatementsList)}
+-- [else StatementsList]
 -- BlockEnd
+--
+-- Alternatives:
+-- “:” AlternativeTags StatementsList
+-- {“:” AlternativeTags StatementsList}
+
 inherit
 	StatementDescriptor
 	end
@@ -10400,9 +10398,9 @@ invariant
 end -- class IfStatementDescriptor
 
 deferred class IfLineDecsriptor
--- if Expression (case Alternatives)|(BlockStart StatementsList)
+-- if Expression (":" Alternatives)|(BlockStart StatementsList)
 -- or
--- {elsif Expression (case Alternatives)|(BlockStart StatementsList)}
+-- {elsif Expression (":" Alternatives)|(BlockStart StatementsList)}
 
 inherit
 	Comparable
@@ -10430,9 +10428,9 @@ invariant
 end -- class IfLineDecsriptor
 
 class IfIsLineDecsriptor
--- if Expression case Alternatives
+-- if Expression ":" Alternatives
 -- or
--- elsif Expression case Alternatives
+-- elsif Expression ":" Alternatives
 inherit
 	IfLineDecsriptor
 		redefine
@@ -10476,7 +10474,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := expr.out + "%N"
+		Result := expr.out + " is%N"
 		incIdent
 		from
 			i := 1
@@ -10484,7 +10482,7 @@ feature {Any}
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + "case " + alternatives.item (i).out)
+			Result.append_string (getIdent + ": " + alternatives.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
@@ -10843,7 +10841,7 @@ invariant
 end -- class IfStatementAlternative
 
 class IfExpressionAlternative
--- "case" ValueAlternative {"," ValueAlternative} "do" Expression
+-- ":" ValueAlternative {"," ValueAlternative} "do" Expression
 -- AlternativeTags Expression
 inherit
 	AlternativeDescriptor
@@ -13404,11 +13402,11 @@ end -- class UnitTypeNameDescriptor
 
 -----------------------------------------------------------------
 class IfExpressionDescriptor
--- if Expression (case ExpressionAlternatives)|( BlockStart Expression)
--- {elsif Expression (case ExpressionAlternatives)|( BlockStart Expression)}
+-- if Expression ("is" ExpressionAlternatives)|( BlockStart Expression)
+-- {elsif Expression ("is" ExpressionAlternatives)|( BlockStart Expression)}
 -- else Expression “}”Cmod
 --
---ExpressionAlternatives: “case” AlternativeTags "do" Expression {“case” AlternativeTags "do" Expression}
+--ExpressionAlternatives: ":" AlternativeTags Expression {":" AlternativeTags Expression}
 inherit
 	ExpressionDescriptor
 	end	
@@ -13537,7 +13535,7 @@ invariant
 end -- class IfExpressionDescriptor
 
 class IfIsExprLineDescriptor
--- (if | elsif Expression) case IfBodyExpression
+-- (if | elsif Expression) ":" IfBodyExpression
 inherit
 	--IfExprLineDescriptor
 	IfLineDecsriptor
@@ -13563,7 +13561,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := expr.out + "%N"
+		Result := expr.out + " is%N"
 		incIdent
 		from
 			i := 1
@@ -13571,7 +13569,7 @@ feature {Any}
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + "case " + alternatives.item (i).out)
+			Result.append_string (getIdent + ": " + alternatives.item (i).out)
 			if i < n then
 				Result.append_character(' ')
 			end -- if

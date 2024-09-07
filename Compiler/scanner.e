@@ -71,7 +71,6 @@ feature
 	alias_token,	
 	as_token,	
 	build_token,
-	case_token,
 	cluster_token,
 	const_token,	
 	do_token,		
@@ -153,7 +152,6 @@ feature
 	alias_string: String is 	            "alias"
 	as_string: String is 	                "as"
 	build_string: String is                 "build"
-	case_string: String is                  "case"
 	cluster_string: String is               "cluster"
 	const_string: String is 	            "const"
 	do_string: String is 		            "do"
@@ -238,7 +236,6 @@ feature
 			alias_string,
 			as_string,
 			build_string,
-			case_string,
 			cluster_string,
 			const_string,
 			do_string,
@@ -548,15 +545,9 @@ feature {Any}
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- if
-		when 'c' then -- "case", "cluster", "const"
+		when 'c' then -- "cluster", "const"
 			inspect
 				buff_len
-			when 4 then
-				if buffer.is_equal (keywords.item (case_token)) then
-					Result := case_token
-				else
-					Result := register_buffer_and_return_identifier_token
-				end
 			when 5 then
 				if buffer.is_equal (keywords.item (const_token)) then
 					Result := const_token
