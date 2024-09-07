@@ -25,14 +25,14 @@ end //  type  TokenDescriptor
 	
 	tokenValue: ?Any // current token value, Void if not manifest constant
 	do
-		if token
-			case integer_const_token
+		if token is
+			:integer_const_token
 				return integer_value
-			case real_const_token
+			:real_const_token
 				return buffer.to_real
-			case string_const_token
+			: string_const_token
 				return buffer 
-			case char_const_token
+			:char_const_token
 				return buffer (1)
 			else
 		end // if		
@@ -346,23 +346,23 @@ end //  type  TokenDescriptor
 				tokenCol := col
 				setTokenNoRead (eof_token)
 			else
-				if ch 
-				case  ';'
+				if ch is
+				:';'
 					if returnSemicolon do
 						setToken (semicolon_token)
 						returnSemicolon := false
 					end // if
-				case  '('
+				:'('
 					setToken (left_paranthesis_token)
-				case  ')'
+				:')'
 					setToken (right_paranthesis_token)
-				case  '?'
+				:'?'
 					setToken (detach_token)				
-				case  '|'
+				:'|'
 					setToken (bar_token)
-				case  ','
+				:','
 					setToken (comma_token)
-				case  '{'
+				:'{'
 					//if styleC do
 					//	// C P
 					//	// { do
@@ -370,7 +370,7 @@ end //  type  TokenDescriptor
 					//else
 						setToken (left_curly_bracket_token)
 					//end // if
-				case  '}'
+				:'}'
 					//if styleC do
 					//	// C P
 					//	// } end
@@ -378,7 +378,7 @@ end //  type  TokenDescriptor
 					//else
 						setToken (right_curly_bracket_token)
 					//end // if
-				case  '['
+				:'['
 					//if styleC do
 					//	// C P
 					//	// [ {
@@ -386,7 +386,7 @@ end //  type  TokenDescriptor
 					//else
 						setToken (left_square_bracket_token)
 					//end // if
-				case  ']'
+				:']'
 					//if styleC do
 					//	// C P
 					//	// ] }
@@ -394,11 +394,11 @@ end //  type  TokenDescriptor
 					//else
 						setToken (right_square_bracket_token)
 					//end // if
-				case  '~'
+				:'~'
 					setToken (tilda_token)
-				case  '-'
+				:'-'
 					setToken (minus_token)
-				case  'A'..'Z', 'a'..'z' 
+				:'A'..'Z', 'a'..'z' 
 					if toRead do
 						tokenRow := row
 						tokenCol := col
@@ -409,7 +409,7 @@ end //  type  TokenDescriptor
 						setCharBuff (ch)
 						token := identifier_token
 					end // if
-				case  '0' .. '9'
+				:'0' .. '9'
 					if toRead do
 						tokenRow := row
 						tokenCol := col
@@ -441,8 +441,8 @@ end //  type  TokenDescriptor
 				end
 			else
 				// Bug in parser
-				if ch 
-				case  '\t', ' ', ';'
+				if ch is
+				:'\t', ' ', ';'
 					if buffer.count > 0 do
 						clear_buffer
 					end
@@ -458,13 +458,13 @@ end //  type  TokenDescriptor
 				end
 				tokenCol := col
 				tokenRow := row
-				if ch 
-				case  ' ' // just skip
-				case  '\r' // step back the col counter
+				if ch is
+				:' ' // just skip
+				:'\r' // step back the col counter
 					col := col - 1
-				case  '\t' // just skip
+				:'\t' // just skip
 					col := col + tabSize - 1
-				case  '\n' 
+				:'\n' 
 					row := row + 1
 					col := 0
 					if returnSemicolon do // newline is treated as separator as well where necessary
@@ -472,12 +472,12 @@ end //  type  TokenDescriptor
 						ch := ';'
 						returnSemicolon := false
 					end // if
-				case  ';' 
+				:';' 
 					if returnSemicolon do
 						setToken (semicolon_token)
 						returnSemicolon := false
 					end // if
-				case  ':' 
+				:':' 
 					if pos <= size do
 						getNextChar
 						if ch = '=' do
@@ -488,15 +488,15 @@ end //  type  TokenDescriptor
 					else
 						setTokenNoRead (colon_token)
 					end
-				case  '/'  // may be a comment as well !!!
+				:'/'  // may be a comment as well !!!
 					if pos > size do
 						token := operator_token
 						setCharBuff ('/')
 						toRead := false
 					else
 						getNextChar
-						if ch 
-						case  '*'  // Multi-line comment start
+						if ch is
+						:'*'  // Multi-line comment start
 							if buffer.count > 0 do
 								clear_buffer
 							end
@@ -505,8 +505,8 @@ end //  type  TokenDescriptor
 							numberOfComments := 1
 							while pos <= size and then not toLeave do
 								getNextChar
-								if ch 
-								case  '/'
+								if ch is
+								:'/'
 									if pos <= size do
 										getNextChar
 										if ch = '*' do
@@ -517,7 +517,7 @@ end //  type  TokenDescriptor
 									else
 										buffer.append_character (ch)
 									end // if
-								case  '*' 
+								:'*' 
 									if pos <= size do
 										getNextChar
 										if ch = '/' do
@@ -543,11 +543,11 @@ end //  type  TokenDescriptor
 										toRead := false
 										toLeave := true
 									end	// if					
-								case  '\n' 
+								:'\n' 
 									buffer.append_character ('\n')
 									row := row + 1
 									col := 0
-								case  '\r' 
+								:'\r' 
 									buffer.append_character ('\r')
 								else
 									buffer.append_character (ch)
@@ -557,7 +557,7 @@ end //  type  TokenDescriptor
 								token := illegal_token
 								toRead := false
 							end
-						case  '/'  // One line comment
+						:'/'  // One line comment
 							token := comment_token
 							if buffer.count > 0 do
 								clear_buffer
@@ -565,9 +565,9 @@ end //  type  TokenDescriptor
 							toLeave := false
 							while pos <= size and then not toLeave do
 								getNextChar
-								if ch 
-								case  '\r'  // just skip
-								case  '\n'  // end of comemnt line
+								if ch is
+								:'\r'  // just skip
+								:'\n'  // end of comemnt line
 									row := row + 1
 									col := 0
 									toLeave := true
@@ -584,7 +584,7 @@ end //  type  TokenDescriptor
 									token := no_token_assigned							
 								end // if
 							end // if
-						case  '=', '<', '>', '+', '-', '\', '^', '&', '|', '~'
+						:'=', '<', '>', '+', '-', '\', '^', '&', '|', '~'
 							token := operator_token
 							setCharBuff ('/')
 							buffer.append_character (ch)
@@ -594,13 +594,13 @@ end //  type  TokenDescriptor
 							toRead := false
 						end // if
 					end
-				case  '=' , '<', '>', '+', '-', '*', '\', '^', '&' 
+				:'=' , '<', '>', '+', '-', '*', '\', '^', '&' 
 					token := operator_token
 					setCharBuff (ch)
 					if pos <= size do
 						getNextChar
-						if ch 
-						case  '=' , '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|'
+						if ch is
+						:'=' , '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|'
 							buffer.append_character (ch)
 							if buffer.item (1) = '=' and then buffer.item (2) = '>' do
 								token := one_line_function_token
@@ -609,16 +609,16 @@ end //  type  TokenDescriptor
 							end // if
 						else	
 							//if styleC do
-								if buffer.item (1)
-								case  '<'
+								if buffer.item (1) is
+								:'<'
 									// C P
 									// < [
 									setToken (less_token)
-								case  '>'
+								:'>'
 									// C P
 									// > ]
 									setToken (greater_token)
-								case  '-'
+								:'-'
 									setToken (minus_token)
 								else
 								end // if
@@ -628,18 +628,18 @@ end //  type  TokenDescriptor
 					else
 						toRead := false
 					end
-				case  '('
+				:'('
 					setToken (left_paranthesis_token)
-				case  ')' 
+				:')' 
 					setToken (right_paranthesis_token)
-				case  '?' 
+				:'?' 
 					setToken (detach_token)				
-				case  '|' 
+				:'|' 
 					setCharBuff (ch)
 					if pos <= size do
 						getNextChar
-						if ch 
-						case  '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' 
+						if ch is
+						:'=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' 
 							buffer.append_character (ch)
 							token := operator_token
 						else	
@@ -650,11 +650,11 @@ end //  type  TokenDescriptor
 						setToken (bar_token)
 						toRead := false
 					end // if
-				case  '.'
+				:'.'
 					if pos <= size do
 						getNextChar
-						if ch
-						case  '.'
+						if ch is
+						:'.'
 							setToken (period_token)
 						else	
 							setTokenNoRead (dot_token)
@@ -662,27 +662,27 @@ end //  type  TokenDescriptor
 					else
 						setTokenNoRead (dot_token)
 					end
-				case  '"' // start of String constant
+				:'"' // start of String constant
 					toLeave := false
 					while pos <= size and then not toLeave do
 						getNextChar
-						if ch 
-						case  '"' 
+						if ch is
+						:'"' 
 							token := string_const_token
 							toLeave := true
-						case  '\'  // process control Characters in Slang source mode 
+						:'\'  // process control Characters in Slang source mode 
 							if systemMode do
 								buffer.append_character ('\')
 							elsif pos <= size do
 								getNextChar
-								if ch 
-								case  'n', 'N'
+								if ch is
+								:'n', 'N'
 									buffer.append_character ('\n')
-								case  'r', 'R' 
+								:'r', 'R' 
 									buffer.append_character ('\r')
-								case  't', 'T' 
+								:'t', 'T' 
 									buffer.append_character ('\t')
-								case  '\' 
+								:'\' 
 									buffer.append_character ('\')
 								else	
 									token := illegal_token
@@ -704,18 +704,18 @@ end //  type  TokenDescriptor
 						token := illegal_token
 						toRead := false
 					end
-				case  '%'  // start of char constant
+				:'%'  // start of char constant
 					if pos <= size do
 						token := char_const_token
 						getNextChar
-						if ch
-						case  '%' 
+						if ch is
+						:'%' 
 							buffer := ""
-						case  '\'  // process control Characters!!!
+						:'\'  // process control Characters!!!
 							if pos <= size do
 								getNextChar
-								if ch 
-								case  'n', 'N' 
+								if ch is
+								:'n', 'N' 
 									buffer := "\n"
 									getNextChar
 									if ch /= '\' do
@@ -723,7 +723,7 @@ end //  type  TokenDescriptor
 										token := illegal_token
 										toRead := false
 									end // if
-								case  'r', 'R'
+								:'r', 'R'
 									buffer := "\r"
 									getNextChar
 									if ch /= '\' do
@@ -731,7 +731,7 @@ end //  type  TokenDescriptor
 										token := illegal_token
 										toRead := false
 									end // if
-								case  't', 'T'
+								:'t', 'T'
 									buffer := "\t"
 									getNextChar
 									if ch /= '\' do
@@ -739,7 +739,7 @@ end //  type  TokenDescriptor
 										token := illegal_token
 										toRead := false
 									end // if
-								case  '\'
+								:'\'
 									buffer := "\\"
 									getNextChar
 									if ch /= '\' do
@@ -747,7 +747,7 @@ end //  type  TokenDescriptor
 										token := illegal_token
 										toRead := false
 									end // if
-								case  '%' 
+								:'%' 
 									buffer := "\\"
 								else	
 									token := illegal_token
@@ -784,9 +784,9 @@ end //  type  TokenDescriptor
 						buffer := "\\"
 						toRead := false
 					end	// if
-				case  ','
+				:','
 					setToken (comma_token)
-				case  '{'
+				:'{'
 					//if styleC do
 					//	// C P
 					//	// { do
@@ -794,7 +794,7 @@ end //  type  TokenDescriptor
 					//else
 						setToken (left_curly_bracket_token)
 					//end // if
-				case  '}' 
+				:'}' 
 					//if styleC do
 					//	// C P
 					//	// } end
@@ -802,7 +802,7 @@ end //  type  TokenDescriptor
 					//else
 						setToken (right_curly_bracket_token)
 					//end // if
-				case  '[' 
+				:'[' 
 					//if styleC do
 					//	// C P
 					//	// [ {
@@ -810,7 +810,7 @@ end //  type  TokenDescriptor
 					//else
 						setToken (left_square_bracket_token)
 					//end // if
-				case  ']' 
+				:']' 
 					//if styleC do
 					//	// C P
 					//	// ] }
@@ -818,12 +818,12 @@ end //  type  TokenDescriptor
 					//else
 						setToken (right_square_bracket_token)
 					//end // if
-				case  '~' 
+				:'~' 
 					setCharBuff (ch)
 					if pos <= size do
 						getNextChar
-						if ch 
-						case  '=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' 
+						if ch is
+						:'=', '/', '<', '>', '+', '-', '*', '\', '^', '&', '~', '|' 
 							buffer.append_character (ch)
 							token := operator_token
 						else	
@@ -834,28 +834,28 @@ end //  type  TokenDescriptor
 						setToken (tilda_token)
 						toRead := false
 					end // if
-				case  'A' .. 'Z', 'g', 'h', 'j', 'k', 'l', 'm', 'q', 'x', 'y', 'z' // start of identifier
+				:'A' .. 'Z', 'g', 'h', 'j', 'k', 'l', 'm', 'q', 'x', 'y', 'z' // start of identifier
 					token := identifier_token
 					setCharBuff (ch)
 					toLeave := false
 					while pos <= size and then not toLeave do
 						getNextChar
-						if ch
-						case  'A'..'Z', 'a'..'z', '0'..'9', '_'
+						if ch is
+						:'A'..'Z', 'a'..'z', '0'..'9', '_'
 							buffer.append_character (ch)
 						else
 							toRead := false						 
 							toLeave := true
 						end
 					end
-				case  'a' .. 'f', 'i', 'n', 'o', 'p', 'r'..'w' // start of keyword or identifier
+				:'a' .. 'f', 'i', 'n', 'o', 'p', 'r'..'w' // start of keyword or identifier
 					// or hex constant in form of ffffh which is not supported!
 					setCharBuff (ch)
 					toLeave := false
 					while pos <= size and then not toLeave do
 						getNextChar
-						if ch 
-						case  'A'..'Z', 'a'..'z', '0'..'9', '_'
+						if ch is
+						:'A'..'Z', 'a'..'z', '0'..'9', '_'
 							buffer.append_character (ch)
 						else
 							toRead := false
@@ -863,7 +863,7 @@ end //  type  TokenDescriptor
 						end
 					end // while
 					token := getKeywordPos
-				case  '0'  // start of number constant
+				:'0'  // start of number constant
 					// 0x/X hex_number  example: 0xFFF51 
 					// 0b/B bit_number  example: 0b00001 
 					// 0o/O octa_number example: 0o77777
@@ -876,8 +876,8 @@ end //  type  TokenDescriptor
 					// 77777o // octa
 					if pos <= size do
 						getNextChar
-						if ch 
-						case  'x', 'X' // hex constant
+						if ch is
+						:'x', 'X' // hex constant
 							toLeave := false
 							// setCharBuff ('0')
 							// buffer.append_character (ch)
@@ -885,8 +885,8 @@ end //  type  TokenDescriptor
 							buffer := ""
 							while pos <= size and then not toLeave do
 								getNextChar
-								if ch 
-								case  '0'..'9', 'A'..'F', 'a'..'f'
+								if ch is
+								:'0'..'9', 'A'..'F', 'a'..'f'
 									buffer.append_character (ch)
 								else
 									token := integer_const_token
@@ -902,7 +902,7 @@ end //  type  TokenDescriptor
 							elsif buffer.count = 0 do
 								token := illegal_token
 							end
-						case  'b', 'B' // bit constant
+						:'b', 'B' // bit constant
 							toLeave := false
 							// setCharBuff ('0')
 							// buffer.append_character (ch)
@@ -910,8 +910,8 @@ end //  type  TokenDescriptor
 							buffer := ""
 							while pos <= size and then not toLeave do
 								getNextChar
-								if ch 
-								case  '0', '1'
+								if ch is
+								:'0', '1'
 									buffer.append_character (ch)
 								else
 									token := integer_const_token
@@ -927,7 +927,7 @@ end //  type  TokenDescriptor
 							elsif buffer.count = 0 do
 								token := illegal_token
 							end
-						case  'o', 'O'  // octa constant
+						:'o', 'O'  // octa constant
 							toLeave := false
 							// setCharBuff ('0')
 							// buffer.append_character (ch)
@@ -935,8 +935,8 @@ end //  type  TokenDescriptor
 							buffer := ""
 							while pos <= size and then not toLeave do
 								getNextChar
-								if ch 
-								case  '0'..'7'
+								if ch is
+							    :'0'..'7'
 									buffer.append_character (ch)
 								else
 									token := integer_const_token
@@ -960,19 +960,19 @@ end //  type  TokenDescriptor
 							// 0..
 							// 0any
 							setCharBuff ('0')
-							if	ch
-							case  '0'..'9'
+							if	ch is
+							:'0'..'9'
 								scan_number_constant 
-							case  '.'
+							:'.'
 								if pos <= size do
 									getNextChar
-									if ch 
-									case  '.'
+									if ch is
+									:'.'
 										token := integer_const_token
 										integer_value := buffer.to_integer										
 										setdoextToken (period_token)
 										toRead := true
-									case  '0'..'9' // Real constant 0.digits
+									:'0'..'9' // Real constant 0.digits
 										token := real_const_token
 										foundE := false
 										foundEsign := false
@@ -981,10 +981,10 @@ end //  type  TokenDescriptor
 										buffer.append_character (ch)
 										while pos <= size and then not toLeave do
 											getNextChar
-											if ch
-											case  '0'..'9'
+											if ch is
+											:'0'..'9'
 												buffer.append_character (ch)
-											case  'e', 'E' // not tested !!!
+											:'e', 'E' // not tested !!!
 												if foundE do
 													toRead := false
 													toLeave := true
@@ -992,7 +992,7 @@ end //  type  TokenDescriptor
 													buffer.append_character ('E')
 													foundE := true
 												end // if
-											case  '+', '-'
+											:'+', '-'
 												if foundE do
 													// one more bool flag is required ... to prevent 0.3E++//
 													if foundEsign do
@@ -1036,7 +1036,7 @@ end //  type  TokenDescriptor
 						integer_value := buffer.to_integer
 						toRead := false
 					end
-				case  '1' .. '9' // start of number constant
+				:'1' .. '9' // start of number constant
 					scan_number_constant
 				else
 					buffer.append_character (ch)
@@ -1060,36 +1060,36 @@ end //  type  TokenDescriptor
 		factor is 1
 		i is buffer.count
 		while i > 0 do
-			if buffer(i)
-			case  '1'
+			if buffer(i) is
+			:'1'
 				integer_value := integer_value +  1 * factor
-			case  '2'
+			:'2'
 				integer_value := integer_value +  2 * factor
-			case  '3'
+			:'3'
 				integer_value := integer_value +  3 * factor
-			case  '4'
+			:'4'
 				integer_value := integer_value +  4 * factor
-			case  '5'
+			:'5'
 				integer_value := integer_value +  5 * factor
-			case  '6'
+			:'6'
 				integer_value := integer_value +  6 * factor
-			case  '7'
+			:'7'
 				integer_value := integer_value +  7 * factor
-			case  '8'
+			:'8'
 				integer_value := integer_value +  8 * factor
-			case  '9'
+			:'9'
 				integer_value := integer_value +  9 * factor
-			case  'A', 'a'
+			:'A', 'a'
 				integer_value := integer_value +  10 * factor
-			case  'B', 'b'
+			:'B', 'b'
 				integer_value := integer_value +  11 * factor
-			case  'C', 'c'
+			:'C', 'c'
 				integer_value := integer_value +  12 * factor
-			case  'D', 'd'
+			:'D', 'd'
 				integer_value := integer_value +  13 * factor
-			case  'E', 'e'
+			:'E', 'e'
 				integer_value := integer_value +  14 * factor
-			case  'F', 'f'
+			:'F', 'f'
 				integer_value := integer_value +  15 * factor
 			end // if
 			i := i - 1
@@ -1102,20 +1102,20 @@ end //  type  TokenDescriptor
 		factor is 1
 		i is buffer.count
 		while i > 0 do
-			if buffer (i)
-			case  '1'
+			if buffer (i) is
+			:'1'
 				integer_value := integer_value +  1 * factor
-			case  '2'
+			:'2'
 				integer_value := integer_value +  2 * factor
-			case  '3'
+			:'3'
 				integer_value := integer_value +  3 * factor
-			case  '4'
+			:'4'
 				integer_value := integer_value +  4 * factor
-			case  '5'
+			:'5'
 				integer_value := integer_value +  5 * factor
-			case  '6'
+			:'6'
 				integer_value := integer_value +  6 * factor
-			case  '7'
+			:'7'
 				integer_value := integer_value +  7 * factor
 			end // if
 			i := i - 1
@@ -1168,18 +1168,18 @@ end //  type  TokenDescriptor
 		toLeave is false
 		while pos <= size and then not toLeave do
 			getNextChar
-			if ch
-			case  '0', '1'
+			if ch is
+			:'0', '1'
 				buffer.append_character (ch)
-			case  '2'..'7'
+			:'2'..'7'
 				isBitConst := false
 				buffer.append_character (ch)
-			case  '8'..'9'
+			:'8'..'9'
 				isBitConst := false
 				isOctaConst := false
 				buffer.append_character (ch)
 			////////////////////
-			case  'e', 'E' // not tested !!!
+			:'e', 'E' // not tested !!!
 				if foundE do
 					toRead := false
 					toLeave := true
@@ -1187,7 +1187,7 @@ end //  type  TokenDescriptor
 					buffer.append_character ('E')
 					foundE := true
 				end // if
-			case  '+', '-'
+			:'+', '-'
 				if foundE do
 					// one more bool flag is required ... to prevent 0.3E++//
 					if foundEsign do
@@ -1202,15 +1202,15 @@ end //  type  TokenDescriptor
 					toLeave := true
 				end // if
 			//////////////////////
-			case  '.' // Real or period or syntax error 
+			:'.' // Real or period or syntax error 
 				if pos <= size do
 					getNextChar
-					if ch
-					case  '.'
+					if ch is
+					:'.'
 						setdoextToken (period_token)
 						toLeave := true
 						toRead := true
-					case  '0'..'9' // fractional part
+					:'0'..'9' // fractional part
 						isRealConst := true
 						isBitConst := false
 						isOctaConst := false
@@ -1274,16 +1274,16 @@ end //  type  TokenDescriptor
 	do
 		first_ch is buffer (1)
 		buff_len is buffer.count
-		if first_ch 
-		case  'a'  // "alias", "as"
-			if buff_len
-			case  2 
+		if first_ch is
+		:'a'  // "alias", "as"
+			if buff_len is
+			:2 
 				if buffer (2) = 's' do
 					return as_token
 				else
 					return identifier_token
 				end
-			case  5 
+			:5 
 				if buffer.is_equal (keywords (alias_token)) do
 					return alias_token
 				else
@@ -1292,15 +1292,15 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  'c'  // "concurrent", "const"
-			if buff_len
-			case  5 
+		:'c'  // "concurrent", "const"
+			if buff_len is
+			:5 
 				if buffer.is_equal (keywords (const_token)) do
 					return const_token
 				else
 					return identifier_token
 				end
-			case  10 
+			:10 
 				if buffer.is_equal (keywords (concurrent_token)) do
 					return concurrent_token
 				else
@@ -1309,7 +1309,7 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  'd'  // "do"
+		:'d'  // "do"
 			if buff_len = 2 and then buffer (2) = 'o' do
 				if styleC do
 					return illegal_token // identifier_token
@@ -1319,9 +1319,9 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  'e'  // "else" 4, "elsif" -5, "end" - 3, "ensure" 6, "extend" - 6
-			if buff_len 
-			case  3 // end
+		:'e'  // "else" 4, "elsif" -5, "end" - 3, "ensure" 6, "extend" - 6
+			if buff_len is
+			:3 // end
 				if buffer (2) = 'n' and then buffer (3) = 'd' do
 					if styleC do
 						return illegal_token // identifier_token
@@ -1331,19 +1331,19 @@ end //  type  TokenDescriptor
 				else
 					return identifier_token
 				end
-			case  4 // else
+			:4 // else
 				if buffer.is_equal (keywords (else_token)) do
 					return else_token
 				else
 					return identifier_token
 				end
-			case  5 // elsif
+			:5 // elsif
 				if buffer.is_equal (keywords (elsif_token)) do
 					return elsif_token
 				else
 					return identifier_token
 				end
-			case  6 // "ensure", "extend"
+			:6 // "ensure", "extend"
 				if buffer (2) = 'n' and then buffer.is_equal (keywords (ensure_token)) do
 					return ensure_token
 				elsif buffer (2) = 'x' and then buffer.is_equal (keywords (extend_token)) do
@@ -1354,15 +1354,15 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  'f' // "final" - 5, "foreign" - 7
-			if buff_len
-			case  5 
+		:'f' // "final" - 5, "foreign" - 7
+			if buff_len is
+			:5 
 				if buffer.is_equal (keywords (final_token)) do
 					return final_token
 				else
 					return identifier_token
 				end
-			case  7 
+			:7 
 				if buffer.is_equal (keywords (foreign_token)) do
 					return foreign_token
 				else
@@ -1371,9 +1371,9 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  'i'  // "if", "in", "init", "is"
-			if buff_len
-			case  2 
+		:'i'  // "if", "in", "init", "is"
+			if buff_len is
+			:2 
 				if buffer (2) = 's' do
 					return is_token
 				elsif buffer (2) = 'f' do
@@ -1383,7 +1383,7 @@ end //  type  TokenDescriptor
 				else
 					return identifier_token
 				end
-			case  4 
+			:4 
 				if buffer.is_equal (keywords (init_token)) do
 					return init_token
 				else
@@ -1392,21 +1392,21 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  'n'  // "new"
+		:'n'  // "new"
 			if buff_len = 3 and then buffer (2) = 'e' and then buffer (3) = 'w' do
 				return new_token
 			else
 				return identifier_token
 			end
-		case  'o'  // "old", "override"
-			if buff_len
-			case  3 
+		:'o'  // "old", "override"
+			if buff_len is
+			:3 
 				if buffer (2) = 'l' and then buffer (3) = 'd' do
 					return old_token
 				else
 					return identifier_token
 				end
-			case  8 
+			:8 
 				if buffer.is_equal (keywords (override_token)) do
 					return override_token
 				else
@@ -1415,15 +1415,15 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  'p' // "pure"
+		:'p' // "pure"
 			if buff_len = 4 and then buffer (2) = 'u' and then buffer (3) = 'r' and then buffer (4) = 'e' do
 				return pure_token
 			else
 				return identifier_token
 			end
-		case  'r' // "raise" - 5, "ref" - 3, "rename" - 6, "require" - 7, "return" - 6, "rigid" - 5, "rtn" - 3
-			if buff_len
-			case  3 // ref rtn
+		:'r' // "raise" - 5, "ref" - 3, "rename" - 6, "require" - 7, "return" - 6, "rigid" - 5, "rtn" - 3
+			if buff_len is
+			:3 // ref rtn
 				if buffer (2) = 'e' and then buffer (3) = 'f' do
 					return ref_token
 				elsif buffer (2) = 't' and then buffer (3) = 'n' do
@@ -1431,7 +1431,7 @@ end //  type  TokenDescriptor
 				else
 					return identifier_token
 				end
-			case  5 // raise rigid
+			:5 // raise rigid
 				if buffer.is_equal (keywords (rigid_token)) do
 					return rigid_token
 				elsif buffer.is_equal (keywords (raise_token)) do
@@ -1439,13 +1439,13 @@ end //  type  TokenDescriptor
 				else
 					return identifier_token
 				end
-			case  6 // return
+			:6 // return
 				if buffer.is_equal (keywords (return_token)) do
 					return return_token
 				else
 					return identifier_token
 				end
-			case  7 // "require"
+			:7 // "require"
 				if buffer.is_equal (keywords (require_token)) do
 					return require_token
 				else
@@ -1454,15 +1454,15 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  's' // "safe", "select", "system"
-			if buff_len 
-			case  4 
+		:'s' // "safe", "select", "system"
+			if buff_len  is
+			:4 
 				if buffer (2) = 'a' and then buffer (3) = 'f' and then buffer (4) = 'e' do
 					return safe_token
 				else
 					return identifier_token
 				end
-			case  6 
+			:6 
 				if buffer.is_equal (keywords (select_token)) do
 					return select_token
 				elsif systemMode and then buffer.is_equal (keywords (system_token)) do
@@ -1473,21 +1473,21 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end			
-		case  't' // "this"
+		:'t' // "this"
 			if buff_len = 4 and then buffer (2) = 'h' and then buffer (3) = 'i' and then buffer (4) = 's' do
 				return this_token
 			else
 				return identifier_token
 			end
-		case  'u' // " type ", "use"
-			if buff_len
-			case  3 
+		:'u' // " type ", "use"
+			if buff_len is
+			:3 
 				if buffer (2) = 's' and then buffer (3) = 'e' do
 					return use_token
 				else
 					return identifier_token
 				end
-			case  4 
+			:4 
 				if buffer (2) = 'n' and then buffer (3) = 'i'  and then buffer (4) = 't' do
 					return unit_token
 				else
@@ -1496,9 +1496,9 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  'v'  // "val", "var", "virtual"
-			if buff_len
-			case  3 
+		:'v'  // "val", "var", "virtual"
+			if buff_len is
+			:3 
 				if buffer (2) = 'a' and then buffer (3) = 'r' do
 					return var_token
 				elsif buffer (2) = 'a' and then buffer (3) = 'l' do
@@ -1506,7 +1506,7 @@ end //  type  TokenDescriptor
 				else
 					return identifier_token
 				end
-			case  7 
+			:7 
 				if buffer.is_equal (keywords (virtual_token)) do
 					return virtual_token
 				else
@@ -1515,15 +1515,15 @@ end //  type  TokenDescriptor
 			else
 				return identifier_token
 			end
-		case  'w'  // "when", "while"
-			if buff_len
-			case  4
+		:'w'  // "when", "while"
+			if buff_len is
+			:4
 				if buffer (2) = 'h' and then buffer (3) = 'e' and then buffer (4) = 'n' do
 					return when_token
 				else
 					return identifier_token
 				end
-			case  5 
+			:5 
 				if buffer.is_equal (keywords (while_token)) do
 					return while_token
 				else

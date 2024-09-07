@@ -21,9 +21,9 @@ else
 end // if
 
 /*
-// 1. Shorter form is suggested. Minus - if several entitiies will have the same type ?T else case will not distingush such cases
+// 1. Shorter form is suggested. Minus - if several entitiies will have the same type ?T "else case" will not distingush such cases
 do safe a.b.c.d 
-else case
+"else case"
 	?A: action_A_is_void
 	?B: action_B_is_void
 	?C: action_C_is_void

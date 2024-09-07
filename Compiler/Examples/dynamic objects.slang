@@ -2,8 +2,8 @@
 			object is DynamicObject ("classfile.compiled")
 			object.call ("foo", 1,2,3)
 			result is object.call ("goo", true, false, "xyz")
-			if result 
-				case Integer
+			if result is
+				:Integer
 					StandardIO.put ("Recieved Integer from loaded code ", result)
 				else
 					StandardIO.put ("Received nothing from loaded code")

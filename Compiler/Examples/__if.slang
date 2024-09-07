@@ -2,37 +2,37 @@ if expr is ? do
  	expr := expr
 elseif expr is T1 do
  	expr := expr
-elseif expr  
-	case T1, T2, T3
+elseif expr is
+	:T1, T2, T3
 		expr := expr
-elseif expr  	
-	case value
+elseif expr  is
+	:value
 		expr := expr
-	case value1 .. value2
+	:value1 .. value2
 		expr := expr
-	case value3, value11 .. value22
+	:value3, value11 .. value22
 		expr := expr
 else
 	expr := expr 
 end
 
-/*if argument
-	case Integer
+/*if argument is
+	:Integer
 		putInteger (argument)
-	case Character
+	:Character
 		putCharacter (argument)
-	case String
+	:String
 		putString (argument)
-	 case T1, T2, T3
-	 case T4, T5, T6 .. T7
+	:T1, T2, T3
+	:T4, T5, T6 .. T7
 		do_action
-		a := if a
-			case T1 1
-			case T2 2
+		a := if a is
+			:T1 1
+			:T2 2
 			else 3
 		
-	case T7
-//	case T2 // CTE
+	:T7
+//	:T2 // CTE
 	else
 		putString (argument.toString)
 end

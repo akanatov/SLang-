@@ -7,16 +7,16 @@
 	// Init procedure is missed or how to set the output is missed !!!!
 	pure put (arguments: ()) do
 		while argument in arguments do
-			if argument 
-				case  Integer 
+			if argument is
+				:Integer 
 					putInteger (argument)
-				case  Character 
+				:Character 
 					putCharacter (argument)
-				case  String 
+				:String 
 					putString (argument)
-				case  Real
+				:Real
 					putReal (argument)
-				case  Boolean
+				:Boolean
 					putBoolean (argument)
 				else
 					putString (argument.toString)

@@ -1113,10 +1113,10 @@ end // Array
 	{} numberOfElementsInLinearArray: Integer do
 		var result is 0
 		while dim in dimentions do
-			if dim
-				case Integer
+			if dim is
+				:Integer
 					result := result + dim
-				case Integer .. Integer
+				:Integer .. Integer
 					result := result + dim.last - dim.first + 1
 			else
 				raise "Bad array"
@@ -1137,18 +1137,18 @@ unit StandardIO alias IO
 	pure get: String none
 	pure put (arguments: ()) do
 		while argument in arguments do
-			if argument 
-				case  Integer
+			if argument is
+				:Integer
 					putInteger (argument)
-				case  Cardinal
+				:Cardinal
 					putCardinal (argument)
-				case  Character
+				:Character
 					putCharacter (argument)
-				case  String
+				:String
 					putString (argument)
-				case  Real
+				:Real
 					putReal (argument)
-				case  Boolean
+				:Boolean
 					putBoolean (argument)
 				else
 					putString (argument.toString)

@@ -11,14 +11,14 @@
 	
 	tokenValue: ?Any // current token value, Void if not manifest constant
 	do
-		if token
-		case  integer_const_token 
+		if token is
+		:integer_const_token 
 			return integer_value
-		case  real_const_token 
+		:real_const_token 
 			return buffer.to_real
-		case  string_const_token 
+		:string_const_token 
 			return buffer 
-		case  char_const_token
+		:char_const_token
 			return buffer (1)
 		else
 		end // if		

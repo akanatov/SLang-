@@ -20,13 +20,13 @@ elsif b do
 else
 end
 
-if a
-   case 1
-   case 2 
+if a is
+   :1
+   :2 
 elsif b do
-elsif c
-   case 3
-   case 4
+elsif c is
+   :3
+   :4
 else
 end
 

@@ -1,4 +1,4 @@
-if condition 
-	case true thenAction 
-	case false elseAction
+if condition is
+	:true thenAction 
+	:false elseAction
 end

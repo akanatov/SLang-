@@ -1,16 +1,16 @@
-if argument 
-	case  Integer 
+if argument is
+	:Integer 
 		putInteger (argument)
-	case  Character 
+	:Character 
 		putCharacter (argument)
-	case  String 
+	:String 
 		putString (argument)
-	case  T1, T2, T3 
-	case   T4, T5 
+	:T1, T2, T3 
+	:T4, T5 
 		do_action
-		a := if a
-			case  T1 1
-			case  T2 2
+		a := if a is
+			:T1 1
+			:T2 2
 			else 3
 		
 	else
