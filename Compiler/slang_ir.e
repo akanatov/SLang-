@@ -1,23 +1,23 @@
-deferred class Identation
+deferred class Indentation
 inherit
 	Any
 		undefine 
 			out
 	end
 feature {None}
-	ident: Integer_Ref is
+	indent: Integer_Ref is
 	once
 		create Result
-	end -- ident
-	incIdent is
+	end -- indent
+	incIndent is
 	do
-		ident.set_item (ident.item + 1)
-	end -- incIdent
-	decIdent is
+		indent.set_item (indent.item + 1)
+	end -- incIndent
+	decIndent is
 	do
-		ident.set_item (ident.item - 1)
-	end -- decIdent
-	getIdent: String is
+		indent.set_item (indent.item - 1)
+	end -- decIndent
+	getIndent: String is
 	local
 		i: Integer
 	do
@@ -25,13 +25,13 @@ feature {None}
 			Result := ""
 			i := 1
 		until
-			i > ident.item
+			i > indent.item
 		loop
 			Result.append_character ('%T')
 			i := i + 1
 		end -- loop
-	end -- getIdent
-end -- class Identation
+	end -- getIndent
+end -- class Indentation
 
 class SystemDescriptor
 -- Context: system (Identifier| StringConstant) 
@@ -2362,7 +2362,7 @@ inherit
 		redefine
 			out
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -2416,17 +2416,17 @@ feature {Any}
 		from
 			i := 1
 			n := statements.count
-			incIdent
+			incIndent
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + statements.item (i).out)
+			Result.append_string (getIndent + statements.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
-		decIdent
+		decIndent
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	-- when ([identifier:] UnitTypeDescriptor) | Expression do StatementsList
@@ -2482,7 +2482,7 @@ class InnerBlockDescriptor
 inherit	
 	StatementDescriptor
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -2594,9 +2594,9 @@ feature {Any}
 		i, n: Integer
 	do
 		if statements.count = 0 and then whenClauses.count = 0 and then whenElseClause.count = 0 then
-			Result := getIdent + "do%N"
+			Result := getIndent + "do%N"
 		else
-			Result := getIdent + "do"			
+			Result := getIndent + "do"			
 			-- invariantOffList
 			n := invariantOffList.count
 			if n > 0 then
@@ -2620,47 +2620,47 @@ feature {Any}
 			from
 				i := 1
 				n := statements.count
-				incIdent
+				incIndent
 			until
 				i > n
 			loop
-				Result.append_string (getIdent + statements.item (i).out)
+				Result.append_string (getIndent + statements.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 			from
 				i := 1
 				n := whenClauses.count
-				--incIdent
+				--incIndent
 			until
 				i > n
 			loop
-				Result.append_string (getIdent + whenClauses.item (i).out)
+				Result.append_string (getIndent + whenClauses.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
-			--decIdent
+			--decIndent
 			n := whenElseClause.count
 			if n > 0 then
 				from
-					Result.append_string (getIdent + "else%N")
-					incIdent
+					Result.append_string (getIndent + "else%N")
+					incIndent
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_string (getIdent + whenElseClause.item (i).out)
+					Result.append_string (getIndent + whenElseClause.item (i).out)
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
 					end -- if
 					i := i + 1
 				end -- loop
-				decIdent
+				decIndent
 			end -- if
 		end -- if
 	end -- out
@@ -2684,7 +2684,7 @@ inherit
 		redefine
 			is_equal
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -2896,31 +2896,31 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				Result.append_string (getIdent + "require%N")
-				incIdent
+				Result.append_string (getIndent + "require%N")
+				incIndent
 				from
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_string (getIdent + preconditions.item (i).out)	
+					Result.append_string (getIndent + preconditions.item (i).out)	
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
 					end -- if
 					i := i + 1
 				end -- loop
-				decIdent
+				decIndent
 			end -- if
 			if isForeign then
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				Result.append_string (getIdent + "foreign%N")	
+				Result.append_string (getIndent + "foreign%N")	
 			elseif innerBlock = Void then
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				Result.append_string (getIdent + "none%N")
+				Result.append_string (getIndent + "none%N")
 			else
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
@@ -2929,26 +2929,26 @@ feature {Any}
 			end -- if
 			n := postconditions.count 
 			if n > 0 then
-				Result.append_string (getIdent + "ensure%N")	
-				incIdent
+				Result.append_string (getIndent + "ensure%N")	
+				incIndent
 				from
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_string (getIdent + postconditions.item (i).out)	
+					Result.append_string (getIndent + postconditions.item (i).out)	
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
 					end -- if
 					i := i + 1
 				end -- loop
-				decIdent
+				decIndent
 			end -- if
 			if not (isForeign and then n = 0) then
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
-				Result.append_string (getIdent +  "end // " + name)	
+				Result.append_string (getIndent +  "end // " + name)	
 			end -- if
 		end -- if
 	end
@@ -3656,7 +3656,7 @@ inherit
 		undefine
 			is_equal
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -4105,8 +4105,8 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				incIdent
-				Result.append_string (getIdent + "select ")
+				incIndent
+				Result.append_string (getIndent + "select ")
 				i := 1
 			until
 				i > n
@@ -4117,7 +4117,7 @@ feature {Any}
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 			Result.append_character ('%N')
 		end -- if
 
@@ -4127,8 +4127,8 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				incIdent
-				Result.append_string (getIdent + "override ")
+				incIndent
+				Result.append_string (getIndent + "override ")
 				i := 1
 			until
 				i > n
@@ -4139,7 +4139,7 @@ feature {Any}
 				end
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 			Result.append_character ('%N')
 		end -- if
 
@@ -4149,8 +4149,8 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				incIdent
-				Result.append_string (getIdent + "new ")				
+				incIndent
+				Result.append_string (getIndent + "new ")				
 				i := 1
 			until
 				i > n
@@ -4161,7 +4161,7 @@ feature {Any}
 				end
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 			Result.append_character ('%N')
 		end -- if
 
@@ -4171,10 +4171,10 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				incIdent
-				Result.append_string (getIdent + "const:%N")
-				incIdent
-				Result.append_string (getIdent)
+				incIndent
+				Result.append_string (getIndent + "const:%N")
+				incIndent
+				Result.append_string (getIndent)
 				i := 1
 			until
 				i > n
@@ -4185,10 +4185,10 @@ feature {Any}
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
-			decIdent
+			decIndent
+			decIndent
 			Result.append_character('%N')
-			Result.append_string(getIdent + "end%N")
+			Result.append_string(getIndent + "end%N")
 		end -- if
 
 		n := initMembers.count
@@ -4198,18 +4198,18 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string (getIdent + "// " + n.out + " type initializer(s)%N")
-				incIdent
+				Result.append_string (getIndent + "// " + n.out + " type initializer(s)%N")
+				incIndent
 			until
 				i > n
 			loop
-				Result.append_string (getIdent + initMembers.item (i).out)
+				Result.append_string (getIndent + initMembers.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 		end -- if
 
 		n := unitMembers.count
@@ -4219,18 +4219,18 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
-				Result.append_string (getIdent + "// " + n.out + " type member(s)%N")
-				incIdent
+				Result.append_string (getIndent + "// " + n.out + " type member(s)%N")
+				incIndent
 			until
 				i > n
 			loop
-				Result.append_string (getIdent + unitMembers.item (i).out)
+				Result.append_string (getIndent + unitMembers.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 		end -- if
 
 		n := invariantPredicates.count
@@ -4239,24 +4239,24 @@ feature {Any}
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if				
-				Result.append_string (getIdent + "require%N")
-				incIdent
+				Result.append_string (getIndent + "require%N")
+				incIndent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_string (getIdent + invariantPredicates.item (i).out)
+				Result.append_string (getIndent + invariantPredicates.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 		end -- if
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		Result.append_string (getIdent + "end // unit " + name + "%N")
+		Result.append_string (getIndent + "end // unit " + name + "%N")
 	end -- out
 	
 	setAliasName (aName: like aliasName) is
@@ -5649,7 +5649,7 @@ inherit
 		select	
 			out
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -5916,19 +5916,19 @@ feature {Any}
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
 					end -- if
-					Result.append_string (getIdent + "require%N")
-					incIdent
+					Result.append_string (getIndent + "require%N")
+					incIndent
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_string (getIdent + preconditions.item (i).out)
+					Result.append_string (getIndent + preconditions.item (i).out)
 					if Result.item (Result.count) /= '%N' then
 						Result.append_character ('%N')
 					end -- if
 					i := i + 1
 				end -- loop
-				decIdent
+				decIndent
 			end -- if
 		end -- if
 		
@@ -5938,12 +5938,12 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			Result.append_string (getIdent + "abstract%N")
+			Result.append_string (getIndent + "abstract%N")
 		elseif isForeign then
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			Result.append_string (getIdent + "foreign%N")
+			Result.append_string (getIndent + "foreign%N")
 		elseif isOneLine then
 			Result.append_string (" => ")
 			--if expr = Void then
@@ -5956,11 +5956,11 @@ feature {Any}
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
-			--Result.append_string (getIdent + "none")
+			--Result.append_string (getIndent + "none")
 			if isPrecursorCall then
-				Result.append_string (getIdent + "old%N")
+				Result.append_string (getIndent + "old%N")
 			else
-				Result.append_string (getIdent + "none%N")
+				Result.append_string (getIndent + "none%N")
 			end -- if
 		else
 			if Result.item (Result.count) /= '%N' then
@@ -5976,19 +5976,19 @@ feature {Any}
 					if Result.item (Result.count) /= '%N' then
 						Result.append_string ("%N")
 					end -- if
-					Result.append_string (getIdent + "ensure%N")
-					incIdent
+					Result.append_string (getIndent + "ensure%N")
+					incIndent
 					i := 1
 				until
 					i > n
 				loop
-					Result.append_string (getIdent + postconditions.item (i).out)
+					Result.append_string (getIndent + postconditions.item (i).out)
 					if Result.item (Result.count) /= '%N' then
 						Result.append_string ("%N")
 					end -- if
 					i := i + 1
 				end -- loop
-				decIdent
+				decIndent
 			end -- if
 		end -- if
 		if not ((isVirtual or else isForeign or else isOneLine) and then (postconditions = Void or else postconditions.count = 0)) then
@@ -5996,9 +5996,9 @@ feature {Any}
 				Result.append_character ('%N')
 			end -- if
 			if name.is_equal ("<>") then
-				Result.append_string (getIdent + "end%N")
+				Result.append_string (getIndent + "end%N")
 			else
-				Result.append_string (getIdent + "end // " + name + "%N")
+				Result.append_string (getIndent + "end // " + name + "%N")
 			end -- if
 		end -- if
 	end -- out
@@ -6756,7 +6756,7 @@ feature {Any}
 		i, n: Integer
 	do
 		--Result := "while " + whileExpr.out
-		Result := getIdent + "while "
+		Result := getIndent + "while "
 		from
 			i := whileExpressions.lower
 			n := whileExpressions.upper
@@ -6920,7 +6920,7 @@ inherit
 		redefine
 			out
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -6937,19 +6937,19 @@ feature {Any}
 		n := requireClause.count
 		if n > 0 then
 			from
-				Result.append_string (getIdent + "require%N")
-				incIdent
+				Result.append_string (getIndent + "require%N")
+				incIndent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_string (getIdent + requireClause.item(i).out)
+				Result.append_string (getIndent + requireClause.item(i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i +1 
 			end
-			decIdent
+			decIndent
 		--else
 		--	Result.append_character('%N')
 		end -- if
@@ -6957,21 +6957,21 @@ feature {Any}
 		n := ensureClause.count
 		if n > 0 then
 			from
-				Result.append_string (getIdent + "ensure%N")
-				incIdent
+				Result.append_string (getIndent + "ensure%N")
+				incIndent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_string (getIdent + ensureClause.item(i).out)
+				Result.append_string (getIndent + ensureClause.item(i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end --if
 				i := i +1 
 			end -- loop
-			decIdent
+			decIndent
 		end -- if
-		Result.append_string (getIdent + "end // block%N")
+		Result.append_string (getIndent + "end // block%N")
 	end -- out
 	init (rc: like requireClause; invOff: like invariantOffList; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
 	do
@@ -6993,7 +6993,7 @@ invariant
 end -- class HyperBlockDescriptor
 
 --class EntityDeclarationStatementDescriptor
----- [const|rigid] indentifier "is" Expression
+---- [const|rigid] identifier "is" Expression
 --inherit	
 --	StatementDescriptor
 --	end
@@ -10301,7 +10301,7 @@ class IfStatementDescriptor
 inherit
 	StatementDescriptor
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -10364,15 +10364,15 @@ feature {Any}
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + "elsif " + ifParts.item (i).out)
+			Result.append_string (getIndent + "elsif " + ifParts.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
 		if elsePart /= Void then
-			Result.append_string (getIdent + "else%N")
-			incIdent
+			Result.append_string (getIndent + "else%N")
+			incIndent
 			from
 				i := 1
 				n := elsePart.count
@@ -10380,18 +10380,18 @@ feature {Any}
 				i > n
 			loop
 				-- 
-				Result.append_string (getIdent + elsePart.item (i).out)
+				Result.append_string (getIndent + elsePart.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character ('%N')
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 		end -- if
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		Result.append_string(getIdent + "end // if%N")
+		Result.append_string(getIndent + "end // if%N")
 	end -- out		
 invariant
 	consistent_if: ifParts /= Void and then ifParts.count > 0
@@ -10436,12 +10436,12 @@ inherit
 		redefine
 			is_equal, infix "<"
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
 create
-	init 
+	init
 feature {Any}
 
 --	alternatives: Array [IfStatementAlternative]
@@ -10475,20 +10475,20 @@ feature {Any}
 		i, n: Integer
 	do
 		Result := expr.out + " is%N"
-		incIdent
+		incIndent
 		from
 			i := 1
 			n := alternatives.count
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + ": " + alternatives.item (i).out)
+			Result.append_string (getIndent + ": " + alternatives.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
-		decIdent
+		decIndent
 	end -- out
 
 	is_equal (other: like Current): Boolean is
@@ -10555,7 +10555,7 @@ inherit
 		redefine
 			is_equal, infix "<"
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -10591,20 +10591,20 @@ feature {Any}
 		i, n: Integer
 	do
 		Result := expr.out + " do%N"
-		incIdent
+		incIndent
 		from
 			i := 1
 			n := statements.count
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + statements.item (i).out)
+			Result.append_string (getIndent + statements.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
-		decIdent
+		decIndent
 	end -- out
 	is_equal (other: like Current): Boolean is
 	local
@@ -10771,7 +10771,7 @@ class IfStatementAlternative
 inherit
 	AlternativeDescriptor
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -10799,20 +10799,20 @@ feature {Any}
 	do		
 		Result := out_alternatives
 		Result.append_character ('%N')
-		incIdent
+		incIndent
 		from
 			i := 1
 			n := statements.count
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + statements.item (i).out)
+			Result.append_string (getIndent + statements.item (i).out)
 			if Result.item (Result.count) /= '%N' then
 				Result.append_character ('%N')
 			end -- if
 			i := i + 1
 		end -- loop
-		decIdent
+		decIndent
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local
@@ -10841,7 +10841,7 @@ invariant
 end -- class IfStatementAlternative
 
 class IfExpressionAlternative
--- ":" ValueAlternative {"," ValueAlternative} "do" Expression
+-- ":" ValueAlternative {"," ValueAlternative} Expression
 -- AlternativeTags Expression
 inherit
 	AlternativeDescriptor
@@ -11042,9 +11042,9 @@ feature {Any}
 	local	
 		i, n: Integer
 	do
-		--incIdent
+		--incIndent
 		if isWhileLoop then
-			Result := getIdent + "while "
+			Result := getIndent + "while "
 			from
 				i := whileExpressions.lower
 				n := whileExpressions.upper
@@ -11066,19 +11066,19 @@ feature {Any}
 		n := requireClause.count
 		if n > 0 then
 			from
-				Result.append_string (getIdent + "require%N")
-				incIdent
+				Result.append_string (getIndent + "require%N")
+				incIndent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_string (getident + requireClause.item (i).out)
+				Result.append_string (getIndent + requireClause.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 		end -- if
 
 		Result.append_string (Precursor)
@@ -11087,7 +11087,7 @@ feature {Any}
 		end -- if
 
 		if not isWhileLoop then
-			Result.append_string (getIdent + "while ") -- + whileExpr.out)
+			Result.append_string (getIndent + "while ") -- + whileExpr.out)
 			from
 				i := whileExpressions.lower
 				n := whileExpressions.upper
@@ -11107,25 +11107,25 @@ feature {Any}
 		n := ensureClause.count
 		if n > 0 then
 			from
-				Result.append_string (getIdent + "ensure%N")
-				incIdent
+				Result.append_string (getIndent + "ensure%N")
+				incIndent
 				i := 1
 			until
 				i > n
 			loop
-				Result.append_string (getIdent + ensureClause.item (i).out)
+				Result.append_string (getIndent + ensureClause.item (i).out)
 				if Result.item (Result.count) /= '%N' then
 					Result.append_character('%N')
 				end -- if
 				i := i + 1
 			end -- loop
-			decIdent
+			decIndent
 		end -- if
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		Result.append_string (getIdent + "end // loop%N")
-		--decIdent
+		Result.append_string (getIndent + "end // loop%N")
+		--decIndent
 	end
 	init (ioff: like invariantOffList; isWL: Boolean; w: like whileExpressions; rc: like requireClause; stmts: like statements; wc: like whenClauses; wec: like whenElseClause; ec: like ensureClause) is
 	require
@@ -11369,7 +11369,7 @@ class AnonymousUnitTypeDescriptor
 inherit	
 	AttachedTypeDescriptor
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -11414,26 +11414,26 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := getIdent + "unit "
+		Result := getIndent + "unit "
 		from
 			i := 1
 			n := members.count
-			incIdent
-			Result.append_string(getIdent)
+			incIndent
+			Result.append_string(getIndent)
 		until
 			i > n
 		loop
 			Result.append_string (members.item (i).out)
 			if i \\ 4 = 0 then
 				Result.append_character ('%N')
-				Result.append_string (getIdent)
+				Result.append_string (getIndent)
 			else
 				Result.append_character (' ')
 			end -- if
 			i := i + 1
 		end -- loop
-		decIdent
-		Result.append_string (getIdent + "end")
+		decIndent
+		Result.append_string (getIndent + "end")
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	do
@@ -13410,6 +13410,10 @@ class IfExpressionDescriptor
 inherit
 	ExpressionDescriptor
 	end	
+	Indentation
+		undefine
+			is_equal
+	end
 create 
 	init
 feature {Any}
@@ -13464,11 +13468,11 @@ feature {Any}
 		until
 			i > n
 		loop
-			Result.append_string (" elsif " + ifExprLines.item (i).out)
+			Result.append_string (getIndent + "elsif " + ifExprLines.item (i).out)
 			i := i + 1
 		end -- if
 		if elseExpr /= Void then
-			Result.append_string (" else " + elseExpr.out)
+			Result.append_string (getIndent + "else " + elseExpr.out)
 		end -- if
 	end -- init
 	sameAs (other: like Current): Boolean is
@@ -13540,7 +13544,7 @@ inherit
 	--IfExprLineDescriptor
 	IfLineDecsriptor
 	end
-	Identation
+	Indentation
 		undefine
 			is_equal
 	end
@@ -13562,20 +13566,20 @@ feature {Any}
 		i, n: Integer
 	do
 		Result := expr.out + " is%N"
-		incIdent
+		incIndent
 		from
 			i := 1
 			n := alternatives.count
 		until
 			i > n
 		loop
-			Result.append_string (getIdent + ": " + alternatives.item (i).out)
-			if i < n then
-				Result.append_character(' ')
-			end -- if
+			Result.append_string (getIndent + ": " + alternatives.item (i).out + "%N")
+			--if i < n then
+			--	Result.append_character(' ')
+			--end -- if
 			i := i + 1
 		end -- loop
-		decIdent
+		decIndent
 	end -- out
 	is_invalid (context: CompilationUnitCommon; o: Output): Boolean is
 	local

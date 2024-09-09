@@ -66,7 +66,7 @@ create
 feature {None}
 trace (message: String ) is
 do
-	o.putNL ("At: " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - "+ scanner.token.out + "`" + scanner.tokenName (scanner.token) + "`: " + message)
+	o.putNL ("@" + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " tkn: " + scanner.token.out + "/`" + scanner.tokenName (scanner.token) + "`: " + message)
 end -- trace
 	
 not_implemented_yet (featureName: String) is
@@ -74,7 +74,7 @@ require
 	feature_name_not_void : featureName /= Void
 do
 	errorsCount := errorsCount + 1
-	o.putNL ("NOT IMPLEMENTED YET @" + scanner.tokenRow.out + ":" + scanner.tokenCol.out + ":`" + scanner.tokenName (scanner.token) + "`<" + featureName + ">")
+	o.putNL ("NOT IMPLEMENTED YET @" + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " `" + scanner.tokenName (scanner.token) + "`<" + featureName + ">")
 end -- not_implemented_yet
 
 	o: Output
@@ -317,25 +317,25 @@ feature {Any}
 					inspect	
 						scanner.token
 					when scanner.colon_token, scanner.implies_token then
-						-- ident: function defintion or local attribute !!!
+						-- indent: function defintion or local attribute !!!
 						parseFunctionOrLocalAttribute (name)
 					when scanner.left_paranthesis_token then
 						-- identifier ( .... Huh .... parse further ...
 						parseAssignmentOrUnqualifiedCallOrRoutineStart (name)
 					when scanner.dot_token then
-						-- Anonymous routine call statement : ident.
+						-- Anonymous routine call statement : indent.
 						stmtDsc := parseCallWithOptionalTailAssignment (identDsc)
 						if stmtDsc /= Void then
 							ast.addStatement (stmtDsc)
 						end -- if
 					when scanner.assignment_token then
-						-- Anonymous routine assignemnt: ident := 
+						-- Anonymous routine assignemnt: indent := 
 						stmtDsc := parseAssignmentToIdentifierStatement (name)
 						if stmtDsc /= Void then
 							ast.addStatement (stmtDsc)
 						end -- if				
 					when scanner.is_token then 
-						-- Anonymous routine: ident is <Expression>
+						-- Anonymous routine: indent is <Expression>
 						scanner.nextToken
 						exprDsc := parseExpression
 						if exprDsc /= Void then
@@ -405,7 +405,7 @@ feature {Any}
 						end -- if
 					end -- inspect
 				-- Statement: Assignment | LocalAttributeCreation | +IfCase | ? Identifier | Return | +HyperBlock | Raise |MemberCallOrCreation 		|  +Loop
-				--            ( ident      var ident                if        ?              return    +require do   raise   ident new old this return     while require do
+				--            ( indent      var indent                if        ?              return    +require do   raise   indent new old this return     while require do
 				-- Anonymous routine start (statements list)
 				when scanner.type_name_token then -- Anonymous routine: Module feature call
 					stmtDsc := parseModuleCall
@@ -819,7 +819,7 @@ feature {None}
 	end -- parseStrings
 	
 	parseFunctionOrLocalAttribute (name: String) is
-		-- ident: function defintion or local attribute !!!
+		-- indent: function defintion or local attribute !!!
 	require
 		valid_token: validToken (<<scanner.colon_token, scanner.implies_token>>)
 		name_not_void: name /= Void
@@ -884,7 +884,7 @@ feature {None}
 			inspect
 				scanner.token
 			when scanner.is_token then
-				-- ident: type is expr // local with initialization
+				-- indent: type is expr // local with initialization
 				scanner.nextToken
 				expr := parseExpressionWithSemicolon
 				if expr /= Void then
@@ -1070,11 +1070,11 @@ feature {None}
 				scanner.revert
 			when scanner.colon_token, scanner.is_token then
 				-- name (id: 			>> routine declaration
-				-- ident ( ident :
-				-- ident ( ident is
+				-- indent ( indent :
+				-- indent ( indent is
 				--               ^
 				--         ^
-				-- revert to ident!!! 
+				-- revert to indent!!! 
 				scanner.revert
 				isRtnDecl := True
 			when scanner.dot_token then
@@ -1196,7 +1196,7 @@ feature {None}
 							toLeave := True
 							wasError := True
 						else
-							-- Unqalified call: ident (ident, ident, ... ident)
+							-- Unqalified call: indent (indent, indent, ... indent)
 							scanner.revert
 							toLeave := True
 						end -- if
@@ -1403,8 +1403,8 @@ feature {None}
 	parseLocalAttributesDeclaration (isVarOrRigid: Boolean; name: String): Sorted_Array [LocalAttrDeclarationDescriptor] is
 	-- Anonymous rotuine - local attribute declaration
 	-- 1: var ...
-	-- 2: ident, ....
-	-- 3: ident: ....
+	-- 2: indent, ....
+	-- 3: indent: ....
 	-- 4: is Expr 
 	require
 		valid_token_1: isVarOrRigid implies validToken (<<scanner.var_token, scanner.rigid_token>>)
@@ -1596,7 +1596,7 @@ feature {None}
 	end -- parseLocalAttributesDeclaration
 	
 	parseAssignmentToIdentifierStatement (name:String): AssignmentStatementDescriptor is
-	-- Anonymous routine assignemnt : ident := 
+	-- Anonymous routine assignemnt : indent := 
 	require
 		valid_token: validToken (<<scanner.assignment_token>>)
 	local
@@ -2079,7 +2079,7 @@ feature {None}
 
 	parseStatement1 (statementExpected, checkForRepeatWhile: Boolean): Array [StatementDescriptor] is
 	-- Statement: Assignment| LocalAttributeCreation | ProcedureCall | NewStatement | IfCase | Loop | ? Identifier | Return | Raise | HyperBlock 
-	--            ident       var ident                ident (         new            if       while  ?              return   raise   require do
+	--            indent       var indent                indent (         new            if       while  ?              return   raise   require do
 	--                                                 old this 
 	--                                                 return
 	--                                                 type_name
@@ -2111,9 +2111,9 @@ feature {None}
 			inspect	
 				scanner.token
 			when scanner.dot_token, scanner.left_paranthesis_token then
-				-- parse call statement: ident. | ident(  .... [:= Expr]
+				-- parse call statement: indent. | indent(  .... [:= Expr]
 				-- call or assignment!!!
-				-- ident. | ident( 
+				-- indent. | indent( 
 				create identDsc.init (name)
 				callDsc := parseWritableCall (identDsc)
 				if callDsc /= Void then
@@ -2137,7 +2137,7 @@ feature {None}
 					end -- if
 				end -- if 
 			when scanner.assignment_token then
-				-- assignemnt : ident := 
+				-- assignemnt : indent := 
 				currentRtnWritesAdd (name)
 				stmtDsc := parseAssignmentToIdentifierStatement (name)
 				if stmtDsc /= Void then
@@ -2161,9 +2161,9 @@ feature {None}
 						inspect	
 							scanner.token
 						when scanner.dot_token, scanner.left_paranthesis_token then
-							-- parse call statement: ident. | ident(  .... [:= Expr]
+							-- parse call statement: indent. | indent(  .... [:= Expr]
 							-- call or assignment!!!
-							-- ident. | ident( 
+							-- indent. | indent( 
 							callDsc := parseWritableCall (genIdentDsc)
 							if callDsc /= Void then
 								if scanner.token = scanner.assignment_token then
@@ -2724,7 +2724,7 @@ feature {None}
 	parseExpression1 (checkForCommentAfter, isMandatory, checkSemicolonAfter, returnType, parseConstExpr: Boolean): ExpressionDescriptor is
 	--Expression:
 	-- 		IfExpression | MemberCall | NewExpression | Expression Operator Expression | Operator Expression | Constant | TypeOfExpression |
-	--      if             ( ident ...  new                                              operator              constant
+	--      if             ( indent ...  new                                              operator              constant
 	-- 		OldExpression | RangeExpression | LambdaExpression | TupleExpression | RefExpression | “(”Expression“)”{CallChain}
 	--      old                               pure safe rtn      (                 ref               (
 
@@ -2794,7 +2794,7 @@ feature {None}
 			inspect
 				scanner.token
 			when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token then
-				-- ident operator
+				-- indent operator
 				Result := parseBinaryOperatorExpression (returnDsc, checkSemicolonAfter)
 			when scanner.in_token then
 				-- return in Expr1 [.. Expr2]
@@ -2871,27 +2871,27 @@ feature {None}
 				create identDsc.init (name)
 				scanner.nextWithSemicolon (checkSemicolonAfter)
 				debug
-					--trace ("<ident>: " + identDsc.out)
+					--trace ("<indent>: " + identDsc.out)
 				end -- debug
 				inspect
 					scanner.token
 				when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token, scanner.bar_token then
-					-- ident operator
+					-- indent operator
 					debug
-						--trace ("<ident>: " + identDsc.out + " <operator>" )
+						--trace ("<indent>: " + identDsc.out + " <operator>" )
 					end -- debug
 					Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
 				when scanner.in_token then
-					-- ident in Expr1 .. Expr2
-						--trace ("<ident>: " + identDsc.out + " in <range>" )
+					-- indent in Expr1 .. Expr2
+						--trace ("<indent>: " + identDsc.out + " in <range>" )
 					scanner.nextToken
 					rangeDsc := parseMandatoryRangeExpression (checkForCommentAfter, checkSemicolonAfter)
 					if rangeDsc /= Void then
-						--trace ("#2<ident>: " + identDsc.out + " in " + rangeDsc.out)
+						--trace ("#2<indent>: " + identDsc.out + " in " + rangeDsc.out)
 						create {InRangeExpression}Result.init (identDsc, rangeDsc)
 					end -- if
 --				when scanner.bar_token then
-----trace ("<ident>: " + identDsc.out + " |" )
+----trace ("<indent>: " + identDsc.out + " |" )
 ----					if stopAtBar then
 ----						Result := identDsc
 ----						--create {IdentifierDescriptor} Result.init (name)
@@ -2900,21 +2900,21 @@ feature {None}
 ----					end -- if
 --					Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
 				when scanner.dot_token, scanner.left_paranthesis_token then
-					-- ident. | ident( 
---trace ("<ident>: " + identDsc.out + " .|(" )
+					-- indent. | indent( 
+--trace ("<indent>: " + identDsc.out + " .|(" )
 					Result := parseWritableCall (identDsc)
 --trace ("Expr: " + Result.out)
 				when scanner.semicolon_token then
 					-- Just identiifer
 					--	Keep semicolon!!! scanner.nextToken
---trace ("<ident>: " + identDsc.out + ";" )
+--trace ("<indent>: " + identDsc.out + ";" )
 					Result := identDsc
 					toExit := True
 				when scanner.period_token then
-					-- ident .. Expr kind of range expression
-					-- ident {ConstExpr} .. 
+					-- indent .. Expr kind of range expression
+					-- indent {ConstExpr} .. 
 					debug
-						--trace ("<ident>: " + identDsc.out + " ..|{" )
+						--trace ("<indent>: " + identDsc.out + " ..|{" )
 					end -- debug
 					Result := parseRangeExpression (identDsc, checkSemicolonAfter)
 					toExit := True 
@@ -2923,20 +2923,20 @@ feature {None}
 						inspect
 							scanner.token
 						when scanner.left_square_bracket_token then
-							-- ident {ConstExpr} .. 
---trace ("<ident>: " + identDsc.out + " ..|{" )
+							-- indent {ConstExpr} .. 
+--trace ("<indent>: " + identDsc.out + " ..|{" )
 							Result := parseRangeExpression (identDsc, checkSemicolonAfter)
 							toExit:= True
 						when scanner.less_token then 
-							-- ident [    like a := Bit [5].count
---trace ("<ident>: " + identDsc.out + " [" )
+							-- indent [    like a := Bit [5].count
+--trace ("<indent>: " + identDsc.out + " [" )
 							utnDsc := parseUnitTypeName1 (name, False)
 								--	parseUnitTypeName1 (name: String; checkSemicolonAfter: Boolean): UnitTypeNameDescriptor is
 							if utnDsc /= Void then
 								Result := utnDsc
 							end -- if		
 						else
---trace ("<ident>: " + identDsc.out)
+--trace ("<indent>: " + identDsc.out)
 							-- Just identiifer
 							Result := identDsc
 						end -- inspect
@@ -2944,13 +2944,13 @@ feature {None}
 						inspect
 							scanner.token
 						when scanner.left_curly_bracket_token then
-							-- ident {ConstExpr} .. 
---trace ("<ident>: " + identDsc.out + " ..|{" )
+							-- indent {ConstExpr} .. 
+--trace ("<indent>: " + identDsc.out + " ..|{" )
 							Result := parseRangeExpression (identDsc, checkSemicolonAfter)
 							toExit:= True
 						when scanner.left_square_bracket_token then 
-							-- ident [    like a := Bit [5].count
---trace ("<ident>: " + identDsc.out + " [" )
+							-- indent [    like a := Bit [5].count
+--trace ("<indent>: " + identDsc.out + " [" )
 							utnDsc := parseUnitTypeName1 (name, False)
 								--	parseUnitTypeName1 (name: String; checkSemicolonAfter: Boolean): UnitTypeNameDescriptor is
 							if utnDsc /= Void then
@@ -2958,7 +2958,7 @@ feature {None}
 							end -- if		
 						else
 debug
-	--trace ("<ident>: " + identDsc.out)
+	--trace ("<indent>: " + identDsc.out)
 end -- debug
 							-- Just identiifer
 							Result := identDsc
@@ -3035,7 +3035,7 @@ end -- debug
 --				end -- if
 				Result := parseBinaryOperatorExpression (constDsc, checkSemicolonAfter)
 			when scanner.period_token then -- , scanner.left_curly_bracket_token then  -- conflicts with the scope start !!!!			
-				-- ident .. Expr kind of range expression
+				-- indent .. Expr kind of range expression
 				Result := parseRangeExpression (constDsc, checkSemicolonAfter)
 				toExit:= True
 			when scanner.dot_token then
@@ -4047,7 +4047,7 @@ end -- debug
 				    --not_implemented_yet ("alternatives parsing")
 					toLeave := True
 				else
-					if scanner.blockEnd then
+					if scanner.blockEnd then -- What is this ??? Why ???
 						scanner.nextToken
 					end -- if
 					toLeave := True
@@ -4167,6 +4167,7 @@ end
 
 	parseAlternativeTag (isOptionalAlternative: Boolean): AlternativeTagDescriptor is
 	-- Expression [“{”OperatorName ConstantExpression“}”] “..”Expression
+    -- Expression [[GroupStart OperatorName ConstantExpression GroupEnd] “..”Expression]
 	local
 		exprDsc: ExpressionDescriptor
 		lower: ExpressionDescriptor
@@ -4174,14 +4175,18 @@ end
 		upper: ExpressionDescriptor
 		utDsc: UnitTypeAlternative
 	do
---trace ("%TParse alternative expression started")
+debug
+	-- trace ("%TParse alternative tag started")
+end
 		if isOptionalAlternative then
 			exprDsc := parseOptionalExpressionX
 		else
 			exprDsc := parseExpressionX
 		end -- if
 		if exprDsc /= Void then
---trace ("%TParse alternative - " + exprDsc.out)
+debug
+	-- trace ("%TParse alternative tag - " + exprDsc.out)
+end
 			inspect	
 				scanner.token
 			when scanner.period_token then
@@ -4229,9 +4234,9 @@ end
 			end -- inspect
 		end -- if
 debug
---		if Result /= Void then
---trace ("%TAlternative expression: " +  Result.out)
---		end -- if
+		--if Result /= Void then
+		--	trace ("%TAlternative expression tag parsed : " +  Result.out)
+		--end -- if
 end
 	end -- parseAlternativeTag
 	
@@ -4248,7 +4253,7 @@ end
 		inspect
 			scanner.token
 		when scanner.dot_token then
-			-- Module member call in the form of the call: ident.
+			-- Module member call in the form of the call: indent.
 			--                                                  ^
 			create unitTypeDsc.init (typeName, Void)
 			unitTypeDsc ?= register_type (unitTypeDsc)
@@ -4292,10 +4297,28 @@ end
 	end -- parseIfExpression
 
 	parseIfStatementOrExpression (isStatement, checkSemicolonAfter: Boolean): Any is -- StatementDescriptor is
-	--	if Expression (is IfBody)|(do [StatementsList])
-	--	{elsif Expression (is IfBody)|(do [StatementsList]) }
-	--	[else [ StatementsList ]]
-	--	end
+	-- Conditional:
+	-- if Expression (“is” Alternatives)|(BlockStart StatementsList)
+	-- {elsif Expression (“is” Alternatives)|(BlockStart StatementsList)}
+		--ifLines: Array [IfLineDecsriptor]
+	-- [else StatementsList] --elsePart: Array [StatementDescriptor]
+	-- BlockEnd
+	-- Alternatives: “:” AlternativeTags StatementsList {“:” AlternativeTags StatementsList}
+	
+	-- AlternativeTags: AlternativeTag {“,” AlternativeTag}
+	-- AlternativeTag: Expression [[GroupStart OperatorName ConstantExpression GroupEnd] “..”Expression]
+	
+	-- IfExpression:
+	-- if Expression ( “is” ExpressionAlternatives)|(BlockStart Expression)
+	-- {elsif Expression ( “is” ExpressionAlternatives)|(BlockStart Expression)}
+		-- 
+	-- else Expression “}”Cmod
+	-- ExpressionAlternatives: “:” AlternativeTags Expression {“:” AlternativeTags Expression}
+
+	
+	
+	
+	
 	--	IfBody: (“:” ValueAlternative  StatementsList {“:” ValueAlternative StatementsList} ) | ( “(” MemberDesciption {“,”} MemberDesciption “)” )
 	--	ValueAlternative : Expression ([“..”Expression ] | {“|”Expression} ) {“,”Expression ([“..”Expression ] | {“|”Expression} )}
 	-- 	MemberDescription : ( [rtn] RoutineName [Signature] )|( Idenitifer “:”UnitType )
@@ -4335,12 +4358,11 @@ end
 		toLeave: Boolean
 		wasError: Boolean
 	do
---trace (">>>parse_if")
 		scanner.nextToken
 		ifExpr := parseExpression
 		if ifExpr /= Void then
 debug
-	--trace (">>>parseIfStatementOrExpression: %Tif " + ifExpr.out)
+	--trace (">>>parseIfStatementOrExpression: if " + ifExpr.out + ", isStatement = " + isStatement.out)
 end -- debug
 			inspect	
 				scanner.token
@@ -4352,38 +4374,13 @@ end -- debug
 					alternatives := parseIfStatementAlternatives
 					if alternatives = Void then
 						wasError := True
-					else
-						statements := parseStatements (False)						
 					end -- if
 				else
 					exprAlternatives := parseIfExprAlternatives
 					if exprAlternatives = Void then
 						wasError := True
-					else
-						doExpr := parseExpression -- parseOptionalExpression
-						if doExpr = Void then
-							wasError := True
-						end -- if
 					end -- if
 				end -- if
-				
-				--if scanner.token = scanner.colon_token then
-				--	isFound := True
-				--	if isStatement then
-				--		alternatives := parseIfStatementAlternatives
-				--		if alternatives = Void then
-				--			wasError := True
-				--		end -- if
-				--	else
-				--		exprAlternatives := parseIfExprAlternatives
-				--		if exprAlternatives = Void then
-				--			wasError := True
-				--		end -- if
-				--	end -- if
-				--else
-				--	wasError := True
-				--	syntax_error (<<scanner.colon_token>>)
-				--end -- if
 			else
 				if scanner.blockStart then
 					-- then-part detected
@@ -4406,27 +4403,33 @@ end -- debug
 				end -- if
 			end -- if				
 			if not wasError then
-				from
-					if isStatement then
-						if caseFound then
-							create {IfIsLineDecsriptor} ifLineDsc.init (ifExpr, alternatives)
-						else
-							create {IfDoLineDecsriptor} ifLineDsc.init (ifExpr, statements)
-						end -- if
-						ifLines := <<ifLineDsc>>
+				-- add first if line
+				if isStatement then
+					if caseFound then
+						create {IfIsLineDecsriptor} ifLineDsc.init (ifExpr, alternatives)
 					else
-						if caseFound then
-							create {IfIsExprLineDescriptor} ifExprLineDsc.init (ifExpr, exprAlternatives)
-						else
-							create {IfDoExprLineDescriptor} ifExprLineDsc.init (ifExpr, doExpr)
-						end -- if
-						ifExprLines:= <<ifExprLineDsc>>
+						create {IfDoLineDecsriptor} ifLineDsc.init (ifExpr, statements)
 					end -- if
+					ifLines := <<ifLineDsc>>
+				else
+					if caseFound then
+						create {IfIsExprLineDescriptor} ifExprLineDsc.init (ifExpr, exprAlternatives)
+					else
+						create {IfDoExprLineDescriptor} ifExprLineDsc.init (ifExpr, doExpr)
+					end -- if
+					ifExprLines:= <<ifExprLineDsc>>
+				end -- if
+				from
 					caseFound := False
 				until
 					toLeave
 				loop
-					if scanner.token = scanner.elsif_token then
+debug
+	--trace ("%T%TparseIfStatementOrExpression: ")
+end -- debug
+					inspect
+						scanner.token						
+					when scanner.elsif_token then
 						scanner.nextToken
 						ifExpr := parseExpression
 						if ifExpr = Void then
@@ -4450,26 +4453,6 @@ end -- debug
 										toLeave := True
 									end -- if
 								end -- if								
-								--if scanner.token = scanner.colon_token then
-								--	isFound := True
-								--	if isStatement then
-								--		alternatives := parseIfStatementAlternatives
-								--		if alternatives = Void then
-								--			wasError := True
-								--			toLeave := True
-								--		end -- if
-								--	else
-								--		exprAlternatives := parseIfExprAlternatives
-								--		if exprAlternatives = Void then
-								--			wasError := True
-								--			toLeave := True
-								--		end -- if
-								--	end -- if
-								--else
-								--	wasError := True
-								--	toLeave := True
-								--	syntax_error (<<scanner.colon_token>>)
-								--end -- if
 							else
 								if scanner.blockStart then
 									scanner.nextToken
@@ -4487,39 +4470,31 @@ end -- debug
 									toLeave := True
 									if scanner.Cmode then
 										syntax_error (<<scanner.colon_token, scanner.left_curly_bracket_token>>)
-										--syntax_error (<<scanner.case_token, scanner.left_curly_bracket_token>>)
 									else
 										syntax_error (<<scanner.colon_token, scanner.do_token>>)
-										--syntax_error (<<scanner.case_token, scanner.do_token>>)
 									end -- if
 								end -- if
 							end -- if				
 						end -- if
-					elseif scanner.token = scanner.colon_token then
+					when scanner.colon_token then
 						scanner.nextToken
 						caseFound := True
 						if isStatement then
 							alternatives := parseIfStatementAlternatives
 							if alternatives = Void then
 								wasError := True
-							else
-								statements := parseStatements (False)						
 							end -- if
 						else
 							exprAlternatives := parseIfExprAlternatives
 							if exprAlternatives = Void then
 								wasError := True
-							else
-								doExpr := parseExpression -- parseOptionalExpression
-								if doExpr = Void then
-									wasError := True
-								end -- if
 							end -- if
 						end -- if
 					else
 						toLeave := True
-					end -- if
+					end -- inspect
 					if not toLeave and then not wasError then
+						-- add elseif or case alternative line
 						if isStatement then
 							if caseFound then
 								create {IfIsLineDecsriptor} ifLineDsc.init (ifExpr, alternatives)
@@ -4544,6 +4519,9 @@ end -- debug
 						if isStatement then
 							elsePart := parseStatements (False)
 						else
+debug
+	--trace ("%TparseIfExpression else part")
+end -- debug
 							elseExpr := parseExpressionWithSemicolon1 (checkSemicolonAfter)
 						end -- if
 					elseif not isStatement then
@@ -4574,7 +4552,7 @@ end -- debug
 			end -- if
 		end -- if
 debug
-	--trace ("<<<parseIfStatementOrExpression")
+	--trace ("<<<parseIfStatementOrExpression end")
 end -- debug
 	end -- parseIfStatementOrExpression
 	
@@ -5099,10 +5077,10 @@ end -- debug
 
 	parseMultiVarParameter (aResult: Array [NamedParameterDescriptor]): Array [NamedParameterDescriptor] is
 	-- when scanner.comma_token then
-	-- ident , ....
+	-- indent , ....
 	--         ^
 	-- scanner.token = scanner.var_token
-	-- rigid ident ...
+	-- rigid indent ...
 	-- ^
 	require
 		array_not_void: aResult /= Void and then aResult.count < 2
@@ -5218,7 +5196,7 @@ end -- debug
 			inspect
 				scanner.token
 			when scanner.is_token then
-				-- ident is Expression
+				-- indent is Expression
 				initialisedParFound := True
 				scanner.nextToken
 				exprDsc := parseExpressionWithSemicolon
@@ -5227,7 +5205,7 @@ end -- debug
 					Result := <<parDsc>>
 				end -- if
 			when scanner.colon_token then
-				-- ident : Type
+				-- indent : Type
 				if initialisedParFound then
 					validity_error( "Initialised parameter should not be followed by the non-initilized one called `" + name + "`")
 				end -- if
@@ -5241,7 +5219,7 @@ end -- debug
 					Result := <<namedParDsc>>
 				end -- if
 			when scanner.comma_token then
-				-- ident , ....
+				-- indent , ....
 				--         ^
 				if initialisedParFound then
 					validity_error( "Initialised parameter should not be followed by the non-initilized one called `" + name + "`")
@@ -5255,7 +5233,7 @@ end -- debug
 					<<scanner.right_paranthesis_token>>)
 			end -- inspect
 		when scanner.rigid_token then
-			-- var ident ...
+			-- var indent ...
 			-- ^
 			Result := parseMultiVarParameter (<<>>)
 		end -- inspect
@@ -6109,34 +6087,34 @@ end -- debug
 --		inspect
 --			scanner.token
 --		when scanner.identifier_token then
----- not_implemented_yet ("parseConstExpression: <ident>")
+---- not_implemented_yet ("parseConstExpression: <indent>")
 --			create identDsc.init (scanner.tokenString)
 --			scanner.nextWithSemicolon (checkSemicolonAfter)
 --			inspect
 --				scanner.token
 --			when scanner.operator_token, scanner.implies_token, scanner.less_token, scanner.greater_token, scanner.tilda_token then
---				-- ident operator
-----trace ("<ident>: " + identDsc.out + " <operator>" )
+--				-- indent operator
+----trace ("<indent>: " + identDsc.out + " <operator>" )
 --				Result := parseBinaryOperatorExpression (identDsc, checkSemicolonAfter)
 --			when scanner.left_square_bracket_token then 
---				-- ident [
+--				-- indent [
 --				-- Not sure if it will work out !!!
 --				not_implemented_yet ("Call `" + identDsc.name + "[ not suppported yet")
 ---- Create proper object and call parseWritableCall
 ----				Result := parseWritableCall (identDsc)
 --			when scanner.dot_token, scanner.left_paranthesis_token then
---				-- ident. | ident( 
-----trace ("<ident>: " + identDsc.out + " .|(" )
+--				-- indent. | indent( 
+----trace ("<indent>: " + identDsc.out + " .|(" )
 --				Result := parseWritableCall (identDsc)
 ----trace ("Expr: " + Result.out)
 --			when scanner.semicolon_token then
 --				-- Just identiifer
 --				--	Keep semicolon!!! scanner.nextToken
-----trace ("<ident>: " + identDsc.out + ";" )
+----trace ("<indent>: " + identDsc.out + ";" )
 --				Result := identDsc
 ----				toExit := True
 --			else
-----trace ("<ident>: " + identDsc.out)
+----trace ("<indent>: " + identDsc.out)
 --				-- Just identiifer
 --				Result := identDsc
 --			end -- inspect
@@ -6782,7 +6760,7 @@ end -- debug
 		inspect
 			scanner.token
 		when scanner.dot_token then
-			-- Module member call in the form of the call: ident.
+			-- Module member call in the form of the call: indent.
 			--                                                  ^
 			create unitTypeDsc.init (typeName, Void)
 			typeDsc := register_named_type(unitTypeDsc)
@@ -7762,7 +7740,7 @@ end -- debug
 		signDsc: SignatureDescriptor
 		imoDsc : InheritedMemberOverridingDescriptor
 		utnDsc: UnitTypeNameDescriptor
-		ident: String
+		indent: String
 		commaFound: Boolean
 		toLeave: Boolean
 	do		
@@ -7771,8 +7749,8 @@ end -- debug
 		end -- if
 		scanner.nextToken
 		if scanner.token = scanner.identifier_token then
-			-- override uDsc.ident
-			ident := scanner.tokenString
+			-- override uDsc.indent
+			indent := scanner.tokenString
 			scanner.nextToken
 			inspect
 				scanner.token
@@ -7780,7 +7758,7 @@ end -- debug
 				signDsc := parseSignature
 			else
 			end -- inspect
-			create imoDsc.init (uDsc, ident, signDsc)
+			create imoDsc.init (uDsc, indent, signDsc)
 			-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
 			if not currentUnitDsc.inheritedOverrides.added (imoDsc) then
 				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + currentUnitDsc.fullUnitName + "`")
@@ -7824,7 +7802,7 @@ end -- debug
 									if scanner.token = scanner.dot_token then
 										scanner.nextToken
 										if scanner.token = scanner.identifier_token then
-											ident := scanner.tokenString
+											indent := scanner.tokenString
 											scanner.nextToken
 											inspect
 												scanner.token
@@ -7833,7 +7811,7 @@ end -- debug
 											else
 												signDsc := Void
 											end -- inspect
-											create imoDsc.init (utnDsc, ident, signDsc)
+											create imoDsc.init (utnDsc, indent, signDsc)
 											-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
 											if not currentUnitDsc.inheritedOverrides.added (imoDsc) then
 												validity_error(
@@ -7875,7 +7853,7 @@ end -- debug
 	local
 		utnDsc: UnitTypeNameDescriptor
 		nmdDsc: NamedTypeDescriptor
-		ident: String
+		indent: String
 	do
 		scanner.nextToken
 		inspect
@@ -7897,17 +7875,17 @@ end -- debug
 			parseMember (currentVisibilityZone, True, Void)
 			Result := True
 		when scanner.type_name_token then
-			ident := scanner.tokenString
+			indent := scanner.tokenString
 			scanner.nextToken			
-			if currentUnitDsc.hasFormalGenericParameter (ident) then
+			if currentUnitDsc.hasFormalGenericParameter (indent) then
 				-- attempt to override a member of generic parameter
-				validity_error( "Member of the generic parameter `" + ident + "` can not be overrided. Only unit type members can be overrided")
+				validity_error( "Member of the generic parameter `" + indent + "` can not be overrided. Only unit type members can be overrided")
 			else
 				inspect
 					scanner.token
 				when scanner.dot_token then
 					-- parse "override UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]"
-					create utnDsc.init (ident, Void)
+					create utnDsc.init (indent, Void)
 					utnDsc ?= register_type (utnDsc)
 					check
 						unit_type_registered: utnDsc /= Void
@@ -7917,7 +7895,7 @@ end -- debug
 					if scanner.genericsStart then
 						-- parse "override identifier [UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor] {", UnitTypeNameDescriptor”.”Identifier[SignatureDescriptor]"}"
 						--                            ^
-						nmdDsc := parseUnitTypeName1 (ident, False)
+						nmdDsc := parseUnitTypeName1 (indent, False)
 						if nmdDsc /= Void then
 							utnDsc ?= nmdDsc
 							if utnDsc = Void then
@@ -7939,9 +7917,9 @@ end -- debug
 				end -- inspect
 			end -- if
 		when scanner.identifier_token then
-			ident := scanner.tokenString
+			indent := scanner.tokenString
 			scanner.nextToken
-			parseMember (currentVisibilityZone, True, ident)			
+			parseMember (currentVisibilityZone, True, indent)			
 			Result := True
 		--when scanner.left_paranthesis_token then
 		--	scanner.nextToken
@@ -8505,7 +8483,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 			inspect
 				scanner.token
 			when scanner.is_token then
-				-- ident is Expr
+				-- indent is Expr
 				--       ^    attribute with initialization
 				scanner.nextToken
 				constExprDsc := parseConstExpression (False)  -- Or just parseExpression ????
@@ -8515,7 +8493,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					create Result.fill (<<attrDsc>>)
 				end -- if
 			when scanner.implies_token then
-				-- ident ->
+				-- indent ->
 				scanner.nextToken
 --trace ("parse function")
 				typeDsc := parseTypeDescriptor
@@ -8571,7 +8549,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					end -- inspect
 				end -- if
 			when scanner.colon_token then
-				-- ident :     parse more!!! Attribute or function!!!!
+				-- indent :     parse more!!! Attribute or function!!!!
 				scanner.nextToken
 --trace ("parse type of attr or function")
 				typeDsc := parseTypeDescriptor
@@ -8646,7 +8624,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					end -- inspect
 				end -- if
 			when scanner.comma_token then
-				-- ident ,     that is an attribute ...
+				-- indent ,     that is an attribute ...
 				scanner.nextToken
 				--create {TemporaryUnitAttributeDescriptor} attrDsc.init (False, False, name)
 				create attrDsc.init_for_search (False, False, name)

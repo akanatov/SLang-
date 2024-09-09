@@ -1,4 +1,17 @@
-foo do
+main do
+
+
+x is 
+	if a is
+		:A 1 // expression
+		:B 2 // expression
+		:C, D 3// expression
+	    :1 .. 2, "a" .. "z" 4// expression
+	else 5// expression
+
+
+
+
 if a is A do // type of 'a' is 'A'
 else
 end
@@ -20,13 +33,6 @@ end
 
 
 
-x is 
-	if a is
-		:A // expression
-		:B // expression
-		:C, D // expression
-	    :1 .. 2, "a" .. "z" // expression
-	else // expression
 
 /*
 x is 
