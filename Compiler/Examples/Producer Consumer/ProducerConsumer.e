@@ -7,27 +7,26 @@ feature
   local
     I: Integer
   do
- 
     from
 	  I := 1
 	until
       I > 10
     loop	  
-      print("Producer writing") print (I)
-      сonsumer.Buf(I) -- Так как сonsumer - это активный объект, то любой вызов его процедур асинхронный
+      print("Producer writing ") print (I)
+      сonsumer.consume(I) -- Так как сonsumer - это активный объект, то любой вызов его процедур асинхронный
 	  I := I + 1
     end -- loop
-  end // produce
+  end -- produce
 feature {None}
   init (c: like Consumer) do consumer := c end
-end // Producer
+end -- class Producer
 
 separate class Consumer -- Для каждого активного объекта есть своя очередь вызовов на исполнение
 feature
   consume (item: Integer) do
-    print("Consumer read") print (item)
-  end // consume
-end // Consumer
+    print("Consumer read ") print (item)
+  end -- Buf
+end -- class Consumer
 
 class Main 
 create

@@ -128,7 +128,7 @@ feature
 	one_line_function_token,
 	end_if_expected,
 	end_block_expected,
-	end_unit_expected,
+	end_type_expected,
 	end_routine_expected,
 	end_loop_expected,
 	less_token,
@@ -185,7 +185,7 @@ feature
 	select_string: String is                "select"
 	target_string: String is                "target"
 	this_string: String is                  "this"
-	unit_string: String is                  "unit"
+	type_string: String is                  "type"
 	use_string: String is                   "use"
 	val_string: String is                   "val"
 	var_string: String is                   "var"
@@ -209,7 +209,7 @@ feature
 	one_line_function_string: String is     "=>"
 	end_if_string: String is                "end // if"
 	end_block_string: String is             "end // block"
-	end_unit_string: String is              "end // unit"
+	end_type_string: String is              "end // type"
 	end_routine_string: String is           "end // routine"
 	end_loop_string: String is              "end // loop"
 	less_string: String is                  "<"
@@ -269,7 +269,7 @@ feature
 			select_string,
 			target_string,
 			this_string,
-			unit_string,
+			type_string,
 			use_string,
 			val_string,
 			var_string,
@@ -293,7 +293,7 @@ feature
             one_line_function_string,   
             end_if_string,            
             end_block_string,         
-            end_unit_string,          
+            end_type_string,          
             end_routine_string,       
             end_loop_string,          
             less_string,                
@@ -782,7 +782,7 @@ feature {Any}
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- if
-		when 'u' then -- "use"  //"unit", 
+		when 'u' then -- "use"
 			inspect
 				buff_len
 			when 3 then
@@ -791,12 +791,6 @@ feature {Any}
 				else
 					Result := register_buffer_and_return_identifier_token
 				end -- if
-			--when 4 then
-			--	if buffer.item (2) = 'n' and then buffer.item (3) = 'i'  and then buffer.item (4) = 't' then
-			--		Result := type_token
-			--	else
-			--		Result := register_buffer_and_return_identifier_token
-			--	end -- if
 			else
 				Result := register_buffer_and_return_identifier_token
 			end -- inspect

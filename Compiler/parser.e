@@ -10149,7 +10149,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 				end -- if
 				scanner.nextToken
 			else
-				syntax_error (<<scanner.end_unit_expected>>)
+				syntax_error (<<scanner.end_type_expected>>)
 			end -- if
 		end -- if
 		ast.setFGpool (Void)
@@ -10268,7 +10268,7 @@ feature {None}
 ---- Temporary solution when follwers are not used!!!
 --inspect 
 --	tokens_expected.item(1)
---when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
+--when scanner.end_if_expected, scanner.end_block_expected, scanner.end_type_expected, scanner.end_routine_expected, scanner.end_loop_expected then
 --	followers.put (scanner.end_token, 1)
 --else
 --end -- inspect
@@ -10298,7 +10298,7 @@ feature {None}
 					scanner.token
 				when scanner.eof_token then
 					toLeave := True
-				--when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
+				--when scanner.end_if_expected, scanner.end_block_expected, scanner.end_type_expected, scanner.end_routine_expected, scanner.end_loop_expected then
 				--	scanner.nextToken
 				--	o.putNL ("Code skipped upto " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " - `" + scanner.tokenName(scanner.token) + "`, parsing resumed")
 				--	toLeave := True
@@ -10322,7 +10322,7 @@ feature {None}
 					--if not toLeave then
 					--	inspect 
 					--		scanner.token
-					--	when scanner.end_if_expected, scanner.end_block_expected, scanner.end_unit_expected, scanner.end_routine_expected, scanner.end_loop_expected then
+					--	when scanner.end_if_expected, scanner.end_block_expected, scanner.end_type_expected, scanner.end_routine_expected, scanner.end_loop_expected then
 					--		--scanner.nextToken
 					--		o.putNL ("Code skipped upto nearest end at " + scanner.tokenRow.out + ":" + scanner.tokenCol.out + " and parsing resumed")
 					--		toLeave := True

@@ -2,7 +2,7 @@ active type Producer
   produce do
     while i in 1..10 do
       IO.put("Producer writing", i)
-      // Имя типа задает синглетон - т.е. один обхект (companion object, прообраз static)
+      // Имя типа задает синглетон - т.е. один объект (companion object, прообраз static)
       Consumer.consume(i) // Так как Consumer - это активный объект, то любой вызов его процедур асинхронный
     end // while
   end // produce

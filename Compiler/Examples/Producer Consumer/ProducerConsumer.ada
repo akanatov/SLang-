@@ -1,15 +1,15 @@
 with Ada.Text_IO; use Ada.Text_IO;
 
-procedure PC_Rendezvous is
+procedure Main is
    task Producer;
    task Consumer is
-      entry Buf(Item : in Integer);
+      entry consume(Item : in Integer);
    end Consumer;
    task body Producer is
    begin
       for I in 1..10 loop
-         Put_Line("Producer writing" & Integer'Image(I));
-         Consumer.Buf(I);
+         Put_Line("Producer writing " & Integer'Image(I));
+         Consumer.consume(I);
       end loop;
    end Producer;
    task body Consumer is
@@ -17,10 +17,10 @@ procedure PC_Rendezvous is
    begin
       loop
          select
-            accept Buf(Item : in Integer) do
-               temp := Item;
+            accept consume(Item : in Integer) do
+               Temp := Item;
             end;
-            Put_Line("Consumer read" & Integer'Image(Temp));
+            Put_Line("Consumer read " & Integer'Image(Temp));
          or
             terminate;
          end select;
@@ -29,4 +29,4 @@ procedure PC_Rendezvous is
 
 begin
    null;
-end PC_Rendezvous;
+end Main;
