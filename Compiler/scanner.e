@@ -834,6 +834,24 @@ feature {Any}
 	end -- getKeywordPos
 
 	TabSize: Integer is 4
+	
+	--  ASCII Win-1251
+	UpperA: Character  is
+	once
+		Result.from_integer (192) -- 'А'
+	end
+	LowerA: Character  is
+	once
+		Result.from_integer (224) -- 'а'
+	end
+	UpperYA: Character is 
+	once
+		Result.from_integer (223) -- 'Я'
+	end
+	LowerYA: Character is 
+	once
+		Result.from_integer (255) -- 'я'
+	end
 
 	nextWithSemicolon (checkSemicolonAfter: Boolean) is
 	do
@@ -954,7 +972,37 @@ feature {Any}
 						token := integer_const_token
 					end -- if
 				else
-					if returnSemicolon then -- newline is treated as separator as well where necessary
+					if UpperA <= ch and then ch <= UpperYA then
+						if toRead then
+							tokenRow := row
+							tokenCol := col
+							setTokenNoRead (eof_token)
+						else
+							tokenRow := row
+							tokenCol := col
+							setCharBuff (ch)
+							token := type_name_token
+							check
+								pool_set: pool /= Void
+							end -- check
+							buffer := pool.add_it (buffer)
+						end -- if
+					elseif LowerA <= ch and then ch <= LowerYA then
+						if toRead then
+							tokenRow := row
+							tokenCol := col
+							setTokenNoRead (eof_token)
+						else
+							tokenRow := row
+							tokenCol := col
+							setCharBuff (ch)
+							token := identifier_token
+							check
+								pool_set: pool /= Void
+							end -- check
+							buffer := pool.add_it (buffer)
+						end -- if		
+					elseif returnSemicolon then -- newline is treated as separator as well where necessary
 						setToken (semicolon_token)
 						ch := ';'
 						returnSemicolon := False
@@ -1417,8 +1465,14 @@ feature {Any}
 						when 'A'..'Z', 'a'..'z', '0'..'9', '_' then
 							buffer.append_character (ch)
 						else
-							toRead := False						 
-							toLeave := True
+							if UpperA <= ch and then ch <= UpperYA or else
+							   LowerA <= ch and then ch <= LowerYA
+							then
+								buffer.append_character (ch)
+							else
+								toRead := False						 
+								toLeave := True
+							end -- if
 						end
 					end -- loop
 					check
@@ -1439,8 +1493,14 @@ feature {Any}
 						when 'A'..'Z', 'a'..'z', '0'..'9', '_' then
 							buffer.append_character (ch)
 						else
-							toRead := False
-							toLeave := True
+							if UpperA <= ch and then ch <= UpperYA or else 
+								LowerA <= ch and then ch <= LowerYA
+							then
+								buffer.append_character (ch)
+							else
+								toRead := False
+								toLeave := True
+							end -- if
 						end
 					end
 					token := getKeywordPos
@@ -1639,8 +1699,39 @@ feature {Any}
 				when '1' .. '9' then -- start of number constant
 					scan_number_constant
 				else
-					buffer.append_character (ch)
-					token := illegal_token
+					if UpperA <= ch and then ch <= UpperYA then -- start of type name/type
+						-- or hex constant in form of FFFH which is not supported!
+						token := type_name_token
+						setCharBuff (ch)
+						from
+							toLeave := False
+						until
+							pos > size or else toLeave
+						loop
+							getNextChar
+							inspect
+								ch
+							when 'A'..'Z', 'a'..'z', '0'..'9', '_' then
+								buffer.append_character (ch)
+							else
+								if UpperA <= ch and then ch <= UpperYA or else
+								   LowerA <= ch and then ch <= LowerYA
+								then
+									buffer.append_character (ch)
+								else
+									toRead := False						 
+									toLeave := True
+								end -- if
+							end
+						end -- loop
+						check
+							pool_set: pool /= Void
+						end -- check
+						buffer := pool.add_it (buffer)
+					else
+						buffer.append_character (ch)
+						token := illegal_token
+					end -- if
 				end -- inspect
 			end -- loop
 			if pos > size and then token = no_token_assigned then
