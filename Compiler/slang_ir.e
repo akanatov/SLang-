@@ -280,14 +280,14 @@ feature {Any}
 			unitDclDsc ?= cntTypDsc
 			if unitDclDsc /= Void then
 				if unitDclDsc.aliasName = Void then
-					o.putNL ("%T#" + i.out + " Unit: " + unitDclDsc.fullUnitName)
+					o.putNL ("%T#" + i.out + " Type: " + unitDclDsc.fullUnitName)
 				else
-					o.putNL ("%T#" + i.out + " Unit: " + unitDclDsc.fullUnitName + " with alias: " + unitDclDsc.aliasName)
+					o.putNL ("%T#" + i.out + " Type: " + unitDclDsc.fullUnitName + " with alias: " + unitDclDsc.aliasName)
 				end -- if
 			else
 				unitAliasDsc ?= cntTypDsc
 				if unitAliasDsc /= Void then
-					o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for unit: " + unitAliasDsc.unitDclDsc.fullUnitName)
+					o.putNL ("%T#" + i.out + " Alias: " + unitAliasDsc.aliasName + " for type: " + unitAliasDsc.unitDclDsc.fullUnitName)
 				else
 					instantiationDsc ?= cntTypDsc
 					check
@@ -495,13 +495,13 @@ feature {Any}
 		end -- if
 		if clusters_zone = Void or else clusters_zone.count = 0 then
 			-- Such unit is not found in the search universe !!!
-			o.putNL ("Error: unit `" + unitPrintableName + "` is not found in the provided context")
+			o.putNL ("Error: type `" + unitPrintableName + "` is not found in the provided context")
 		elseif clusters_zone.count > 1 then
 			-- More than one unit is found in the search universe !!!
-			o.putNL ("Error: " + clusters_zone.count.out + " versions of unit `" + unitPrintableName + "` found in the provided context. Select the one to be used in your project")
+			o.putNL ("Error: " + clusters_zone.count.out + " versions of type `" + unitPrintableName + "` found in the provided context. Select one to be used in your project")
 		else
 			-- Load it
-			o.putLine ("Loading unit `" + unitPrintableName + "`")
+			o.putLine ("Loading `" + unitPrintableName + "`")
 			if unitDsc.generics.count = 0 then
 				cntTypeCU := loadUnitInterafceFrom (clusters_zone.item (1).name, unitExternalName, o)
 				if cntTypeCU /= Void then
@@ -524,9 +524,9 @@ feature {Any}
 			end -- if
 			if Result = Void then
 				-- There was a problem to load type interface 
-				o.putNL ("Error: unit `" + unitPrintableName + "` was not loaded correctly")
+				o.putNL ("Error: type `" + unitPrintableName + "` was not loaded correctly")
 			else
-				o.putLine ("Unit `" + unitPrintableName + "` loaded")
+				o.putLine ("Type `" + unitPrintableName + "` loaded")
 			-- No need to check sources actuality here - it was all already done for the whole project when build was started !!!
 			--elseif fs.file_exists(Result.srcFileName) then
 			--	-- Check if the type source file was changed after type IR was created. If necessary run the parser. 
@@ -558,26 +558,26 @@ feature {Any}
 		unitName := unitDsc.name
 		unitExternalName := unitDsc.getExternalName
 		unitPrintableName:= unitDsc.out  -- Name[factualGenerics]
-		o.putLine ("Looking for generic unit `" + unitName + "` for type `" + unitPrintableName + "`" )
+		o.putLine ("Looking for generic type `" + unitName + "` for type `" + unitPrintableName + "`" )
 		clusters_zone := hasGenericUnit(unitName)
 		--clusters := sysDsc.hasUnit(unitName)
 		if clusters_zone = Void or else clusters_zone.count = 0 then
 			-- Such unit is not found in the search universe !!!
-			o.putNL ("Error: generic unit(s) for type `" + unitPrintableName + "` not found in the provided context")
+			o.putNL ("Error: generic type(s) for type `" + unitPrintableName + "` not found in the provided context")
 		elseif clusters_zone.count > 1 then
 			-- More than one unit is found in the search universe !!!
-			o.putNL ("Error: " + clusters_zone.count.out + " folders have versions of generic unit `" + unitName + "` in the provided context. Select the one to be used in your project")
+			o.putNL ("Error: " + clusters_zone.count.out + " folders have versions of generic type `" + unitName + "` in the provided context. Select one to be used in your project")
 		else
 			-- Load it
-			o.putLine ("Loading generic unit(s) `" + unitName + "`")
+			o.putLine ("Loading generic type(s) `" + unitName + "`")
 			Result := loadGenericUnitInterafcesFrom (clusters_zone.item (1).name, unitName, o)
 			if Result = Void then
 				-- There was a problem to load type interface 
-				o.putNL ("Error: generic unit(s) `" + unitName + "` was not loaded correctly")
+				o.putNL ("Error: generic type(s) `" + unitName + "` was not loaded correctly")
 			elseif Result.count = 1 then
-				o.putLine ("Generic unit `" + Result.item(1).fullUnitName + "` was loaded")
+				o.putLine ("Generic type `" + Result.item(1).fullUnitName + "` was loaded")
 			else
-				o.putLine (Result.count.out + " generic units named `" + unitName + "` were loaded")
+				o.putLine (Result.count.out + " generic types named `" + unitName + "` were loaded")
 			end -- if
 		end -- if
 	end -- loadGenericUnits
@@ -1566,9 +1566,9 @@ feature {Any}
 			end -- if			
 		end --if
 		if currentUnit = Void then
-			Result.append_string ("Current unit: Void%N")
+			Result.append_string ("Current type: Void%N")
 		else
-			Result.append_string ("Current unit: " + currentUnit.name + "%N")
+			Result.append_string ("Current type: " + currentUnit.name + "%N")
 		end --if
 		if currentRoutine = Void then
 			Result.append_string ("Current routine: Void%N")
@@ -2069,14 +2069,14 @@ feature {None}
 		wasError: Boolean
 	do
 		if wasError then
-			o.putNL ("Consistency error: unable to load unit code from file `" + fileName + "`")
+			o.putNL ("Consistency error: unable to load type code from file `" + fileName + "`")
 			Result := Void
 		else
 			create aFile.make_open_read (fileName)
 			create Result.init_empty
 			Result ?= Result.retrieved (aFile)
 			if Result = Void then
-				o.putNL ("Consistency error: file `" + fileName + "` does not contain unit code")
+				o.putNL ("Consistency error: file `" + fileName + "` does not contain the type code")
 			end -- if
 			aFile.close
 		end -- if
@@ -2211,7 +2211,7 @@ feature {Any}
 					-- Let's store only dummy file interface with the the name of the actual file in it
 					fName := filePrefix  + AliasPrefix + unitDsc.getAliasExternalName + UnitSuffix + "." + irFileExtension
 					if not dummyFileCreated (fName, unitDsc.getExternalName) then
-						o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
+						o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
 						Result := Result + 1
 					end -- if
 				end -- if
@@ -2219,7 +2219,7 @@ feature {Any}
 					unitOfInterest.sameUnitFill (uImg.unitDclDsc)
 				end -- if
 			else
-				o.putNL ("File open/create/write/close error: unable to store unit IR into file `" + fName + "`")
+				o.putNL ("File open/create/write/close error: unable to store type IR into file `" + fName + "`")
 				Result := Result + 1
 			end -- if
 			i := i - 1
@@ -4028,7 +4028,7 @@ feature {Any}
 				Result.append_string ("active ")
 			end -- if
 		end -- if
-		Result.append_string ("unit " + name)
+		Result.append_string ("type " + name)
 		if aliasName /= Void then
 			Result.append_string (" alias " + aliasName)
 		end
@@ -4053,7 +4053,7 @@ feature {Any}
 		n := parents.count
 		if n > 0 then
 			from
-				Result.append_string (" extend ")
+				Result.append_string (": ")
 				i := 1
 			until
 				i > n

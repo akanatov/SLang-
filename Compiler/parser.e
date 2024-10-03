@@ -2240,7 +2240,7 @@ feature {None}
 				--	else
 				--		parentDsc := currentUnitDsc.findParent (unitTypeDsc)
 				--		if parentDsc = Void then
-				--			validity_error ("Initializer for unit `" + unitTypeDsc.out + "` can not be called within the unit `" + currentUnitDsc.fullUnitName + "`")
+				--			validity_error ("Initializer for `" + unitTypeDsc.out + "` can not be called within `" + currentUnitDsc.fullUnitName + "`")
 				--		else
 				--			if toRegister then
 				--				create {ParentInitCallDescriptor}initCallDsc.init (parentDsc, parseArguments)
@@ -2326,7 +2326,7 @@ feature {None}
 
 					parentDsc := currentUnitDsc.findParent (unitTypeDsc)
 					if parentDsc = Void then
-						validity_error ("Initializer for unit `" + unitTypeDsc.out + "` can not be called within the unit `" + currentUnitDsc.fullUnitName + "`")
+						validity_error ("Initializer for type `" + unitTypeDsc.out + "` can not be called within the type `" + currentUnitDsc.fullUnitName + "`")
 					else
 						if toRegister then
 							create {ParentInitCallDescriptor}initCallDsc.init (parentDsc, parseArguments)
@@ -7224,14 +7224,14 @@ end -- debug
 	end -- theSameUnit
 	
 	parseInheritanceClause is
-	-- extend ParentDescriptor {“,” ParentDescriptor}
+	-- ":" ParentDescriptor {“,” ParentDescriptor}
 	-- [“~”] UnitTypeNameDescriptor 
 	--  ^^^^ obsolete 
 	-- InheritDirective: extend Parent {“,” Parent} 
 	-- Parent: UnitTypeName | (“~” UnitTypeName [“(”MemberName{“,”MemberName}“)”])
 	-- MemberName: Identifier|(RoutineName [Signature])
 	require
-		valid_token: validToken (<<scanner.extend_token>>)
+		valid_token: validToken (<<scanner.colon_token>>)
 	local
 		parentDsc: ParentDescriptor
 		utnDsc: UnitTypeNameDescriptor
@@ -7253,7 +7253,7 @@ end -- debug
 			if scanner.token = scanner.type_name_token then
 				if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 					-- attempt to override a member of generic parameter
-					validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent type of `" + currentUnitDsc.fullUnitName + "`")
+					validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used as a parent type of type `" + currentUnitDsc.fullUnitName + "`")
 					scanner.nextToken
 					toLeave := True
 				else
@@ -7262,7 +7262,7 @@ end -- debug
 						toLeave := True
 					else
 						if theSameUnit1 (currentUnitDsc, utnDsc) then
-							validity_error( "Attempt to inherit from itself. Extending unit `" + utnDsc.out + "` in unit `" + currentUnitDsc.fullUnitName + "`")
+							validity_error( "Attempt to inherit from itself. Inheriting from type `" + utnDsc.out + "` in type `" + currentUnitDsc.fullUnitName + "`")
 							--toLeave := True
 							-- Inheritance graph simple cycle
 						else
@@ -7275,7 +7275,7 @@ end -- debug
 							
 							create parentDsc.init (isNonConformant, utnDsc)
 							if not currentUnitDsc.parents.added (parentDsc) then
-								validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in unit `" + currentUnitDsc.fullUnitName + "`")
+								validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + currentUnitDsc.fullUnitName + "`")
 								--toLeave := True
 								-- Repeated inheritance is prohibited
 							end -- if
@@ -7448,7 +7448,7 @@ end -- debug
 					commaFound := False
 					if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 						-- attempt to override a member of generic parameter
-						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used in the use clause in unit `" + currentUnitDsc.fullUnitName + "`")
+						validity_error( "Generic parameter name `" + scanner.tokenString + "` can not be used in the use clause in type `" + currentUnitDsc.fullUnitName + "`")
 						scanner.nextToken
 						toLeave := True
 						wasError := True
@@ -7483,7 +7483,7 @@ end -- debug
 									if currentUnitDsc /= Void and then currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 										-- attempt to override a member of generic parameter
 										validity_error(
-											"Generic parameter name `" + scanner.tokenString + "` can not be used as new name for renaming in unit `" +
+											"Generic parameter name `" + scanner.tokenString + "` can not be used as new name for renaming in type `" +
 											currentUnitDsc.fullUnitName + "`"
 										)
 										scanner.nextToken
@@ -7495,7 +7495,7 @@ end -- debug
 											if currentUnitDsc = Void then
 												validity_error( "Duplicated import of constants from `" + eueDsc.out + "`")
 											else
-												validity_error( "Duplicated import of constants from `" + eueDsc.out + "` in unit `" + currentUnitDsc.name + "`")
+												validity_error( "Duplicated import of constants from `" + eueDsc.out + "` in type `" + currentUnitDsc.name + "`")
 											end -- if
 											wasError := True
 										end -- if
@@ -7607,7 +7607,7 @@ end -- debug
 						if currentUnitDsc.hasFormalGenericParameter (scanner.tokenString) then
 							-- attempt to override a member of generic parameter
 							validity_error(
-								"Generic parameter name `" + scanner.tokenString + "` can not be listed in clients list in unit `" + 
+								"Generic parameter name `" + scanner.tokenString + "` can not be listed in clients list in type `" + 
 								currentUnitDsc.fullUnitName + "`"
 							)
 							scanner.nextToken
@@ -7710,7 +7710,7 @@ end -- debug
 				if not toLeave then
 					create sDsc.init (memberName, signatureDsc)
 					if not currentUnitDsc.memberSelections.added (sDsc) then
-						validity_error( "Duplicated selection of `" + sDsc.out + "` in unit `" + currentUnitDsc.fullUnitName + "`")
+						validity_error( "Duplicated selection of `" + sDsc.out + "` in `" + currentUnitDsc.fullUnitName + "` body")
 					end -- if
 				end -- if
 			when scanner.comma_token then
@@ -7745,7 +7745,7 @@ end -- debug
 		toLeave: Boolean
 	do		
 		if currentUnitDsc.findParent (uDsc) = Void then
-			validity_error( "Override refers to the unit `" + uDsc.out + "` which is not a parent of unit `" + currentUnitDsc.fullUnitName + "`")
+			validity_error( "Override refers to the type `" + uDsc.out + "` which is not a parent of type `" + currentUnitDsc.fullUnitName + "`")
 		end -- if
 		scanner.nextToken
 		if scanner.token = scanner.identifier_token then
@@ -7761,7 +7761,7 @@ end -- debug
 			create imoDsc.init (uDsc, indent, signDsc)
 			-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
 			if not currentUnitDsc.inheritedOverrides.added (imoDsc) then
-				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in unit `" + currentUnitDsc.fullUnitName + "`")
+				validity_error( "Duplicated overriding of `" + imoDsc.out + "` in `" + currentUnitDsc.fullUnitName + "` body")
 			end -- if
 			-- Now check for the list 
 			if scanner.token = scanner.comma_token then
@@ -7815,7 +7815,7 @@ end -- debug
 											-- inheritedOverrides: Sorted_Array [InheritedMemberOverridingDescriptor]				
 											if not currentUnitDsc.inheritedOverrides.added (imoDsc) then
 												validity_error(
-													"Duplicated overriding of `" + imoDsc.out + "` in type `" + currentUnitDsc.fullUnitName + "`"
+													"Duplicated overriding of `" + imoDsc.out + "` in `" + currentUnitDsc.fullUnitName + "` body"
 												)
 											end -- if
 										else
@@ -9521,7 +9521,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					--end -- if
 				else
 					--validity_error( "Duplicated declaration of member `" + mdDsc.name + "` in type `" + unitDsc.name + "`") 
-					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in unit `" + currentUnitDsc.fullUnitName + "`") 
+					validityError (mdDsc.toSourcePosition, "Duplicated declaration of member `" + mdDsc.name + "` in `" + currentUnitDsc.fullUnitName + "` body") 
 				end -- if
 				i := i + 1
 			end -- loop
@@ -9813,9 +9813,9 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					currentUnitDsc.setFormalGenercis (formalGenerics, fgTypes)
 				end -- if
 			end -- if
-			o.putLine ("Parsing unit `" + currentUnitDsc.fullUnitName + "`")
+			o.putLine ("Parsing `" + currentUnitDsc.fullUnitName + "`")
 
-			if scanner.token = scanner.extend_token then
+			if scanner.token = scanner.colon_token then
 				-- parse inheritance clause
 				parseInheritanceClause			
 			elseif not currentUnitDsc.name.is_equal (anyName) then
