@@ -1,9 +1,9 @@
 c is C
 
-abstract unit Any 
+abstract type Any 
 	foo (p: as this): Any abstract
 end 
 
-unit C
+type C
 	override foo (p: as this): Any do end
 end 

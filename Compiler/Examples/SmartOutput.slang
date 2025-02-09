@@ -89,7 +89,7 @@ abstract  type  Output
 require
 	lastLength >= 0 /// invalid length of last string
 end //  type  Output
- type  ScreenOutput extend Output
+ type  ScreenOutput : Output
 
 	close
 	do	
@@ -115,7 +115,7 @@ end //  type  Output
 		io.put_character ('\n')
 	end // put_new_line
 end //  type  ScreenOutput
- type  FileOutput extend Output
+ type  FileOutput : Output
 {}:
 	file: ?File
 	init (fileName: String)
@@ -160,7 +160,7 @@ end //  type  ScreenOutput
 		end // if
 	end // put_new_line
 end //  type  FileOutput
- type  ScreenAndFileOutput extend ScreenOutput, FileOutput
+ type  ScreenAndFileOutput : ScreenOutput, FileOutput
 	override ScreenOutput.put_spaces, FileOutput.close
 	new FileOutput
 {}:

@@ -3,11 +3,11 @@ a.foo
 a.goo
 
 // Unit extentions are not supprted !!! Need to store IR in a different file !!!
-extend unit A
+extend type A
 	goo do end
 end
-unit A
+type A
 	foo do end
 end
-unit Any
+type Any
 end

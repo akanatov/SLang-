@@ -29,7 +29,7 @@ abstract  type  NamedPerson
 	end // divorce
 end // NamedPerson
 
- type  MonogamousPerson extend NamedPerson
+ type  MonogamousPerson : NamedPerson
 	spouse: ? as this {} := (aSpouse: as spouse) do // Setter is visible only for this  type  and its descendants
 		spouse := aSpouse
 	end // spouse setter
@@ -55,7 +55,7 @@ require
 	isMarried() implies spouse.spouse = this
 end // MonogamousPerson
 
- type  PolygamyPerson extend NamedPerson
+ type  PolygamyPerson : NamedPerson
 	spouses: Array [as this]
 	{} override clearSpouse ()
 	do 

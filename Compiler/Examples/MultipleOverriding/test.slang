@@ -1,3 +1,3 @@
-unit A
+type A
 	foo old
 end

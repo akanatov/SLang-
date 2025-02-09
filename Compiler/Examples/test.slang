@@ -1,6 +1,6 @@
 //foo foreign
  type  A alias XX [G] 
-	extend M, B, ~C 
+	: M, B, ~C 
 	//use A as BB, B, C const A, B, C
 	select	b, foo(as this, rtn):rtn (as this), c
 override M.f, B[as this].moo, A.foo (as this, rtn):rtn (as this)

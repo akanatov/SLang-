@@ -1,4 +1,4 @@
-unit A
+type A
 	foo do
 		foo[T, U, V].call
 	end

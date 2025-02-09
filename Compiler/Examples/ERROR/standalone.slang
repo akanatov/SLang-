@@ -15,5 +15,5 @@ name12 (id1, id2, ~a)			// unqualified call or assignment
 name13 ( + operator) := expr  	 	// unqualified call or assignment ().x or ().x := expr
 name14 ( + operator).foo := expr 	// unqualified call or assignment ().x or ().x := expr
 */
-unit Any end
+type Any end
 

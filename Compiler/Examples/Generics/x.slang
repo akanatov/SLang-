@@ -18,21 +18,21 @@
 
 foo do end
 
-unit Any end 
-unit A end
+type Any end 
+type A end
 
-unit A[G] 
+type A[G] 
 	A do
 		A(Any)
 	end
 	A(p: Any) do
 	end
 end
-unit A[G, x:Any] end
-unit A[G, x:(Any, Any)] end
-unit A[c: Any] end
-unit A[r: rtn] end
+type A[G, x:Any] end
+type A[G, x:(Any, Any)] end
+type A[c: Any] end
+type A[r: rtn] end
 
 
 // A[H] is stored in the same file as A[G]
-//unit A[H] end
+//type A[H] end

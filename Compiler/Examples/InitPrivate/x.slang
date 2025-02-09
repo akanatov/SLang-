@@ -1,6 +1,6 @@
 d is Derived
 
-unit Base
+type Base
 	{this}:
 		attr1: T1
 		attr2: T2
@@ -15,7 +15,7 @@ unit Base
 		attr3 is T3 (Any)
 	end*/
 end
-unit Derived extend Base
+type Derived : Base
   /* 
 	If Base has constructor with no parameters it will be called when Derived object created 
 	Otherwise Derived must have at least one its own constructor where the first N statements should be calls to N parents constructors
@@ -25,18 +25,18 @@ unit Derived extend Base
 	end
 end
 
-unit T1
+type T1
 	// No constructor with no parameters
 end
-unit T2
+type T2
 	// Constructor with no parameters
 	T2 do end
 end
-unit T3
+type T3
 	// Constructor with parameters
 	T3 (p: Any) do end
 end
  
 
-unit Any end
+type Any end
 

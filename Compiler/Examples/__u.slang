@@ -62,11 +62,11 @@ end
 abstract  type  MemberDescriptor
 	final name: String
 end
-abstract  type  RoutineDescriptor extend MemberDescriptor
+abstract  type  RoutineDescriptor : MemberDescriptor
 	final arguments: Array [ArgumentDescriptor]
 end // RoutineDescriptor
 
-final  type  ProcedureDescriptor extend RoutineDescriptor
+final  type  ProcedureDescriptor : RoutineDescriptor
 	() alias apply (args: ()) foreign
 		// That is a procedure call
 	ProcedureDescriptor (aName: as name; args: as arguments) do
@@ -75,7 +75,7 @@ final  type  ProcedureDescriptor extend RoutineDescriptor
 	end
 end // Procedure [Arguments -> ()]
 
-final  type  FunctionDescriptor extend RoutineDescriptor
+final  type  FunctionDescriptor : RoutineDescriptor
 	fType: TypeDescriptor
 	() alias apply (args: Arguments): Any foreign
 		// That is a function call
@@ -86,12 +86,12 @@ final  type  FunctionDescriptor extend RoutineDescriptor
 	end
 end // Function [Arguments -> (), Result]*/
 
-abstract  type  AttributeDescriptor extend MemberDescriptor
+abstract  type  AttributeDescriptor : MemberDescriptor
 	value: Any
 	aType: TypeDescriptor
 end // AttributeDescriptor
 
-final  type  VariableDescriptor  extend AttributeDescriptor 
+final  type  VariableDescriptor  : AttributeDescriptor 
 	override := alias set (v: as value) do 
 		value := v
 	end
@@ -102,7 +102,7 @@ final  type  VariableDescriptor  extend AttributeDescriptor
 	end
 end // VariableDescriptor
 
-final  type  ConstantDescriptor  extend AttributeDescriptor 
+final  type  ConstantDescriptor  : AttributeDescriptor 
 	ConstantDescriptor (aName: as name; aType: as cType; aValue: as value) do
 		name is aName
 		cType is aType

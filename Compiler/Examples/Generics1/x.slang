@@ -1,7 +1,7 @@
 a is A[Any]
-unit B
+type B
 end
-unit A [G] extend B, C[G], C[B]
+type A [G] : B, C[G], C[B]
 	A do
 		A (Any) 
 		B ()
@@ -18,7 +18,7 @@ unit A [G] extend B, C[G], C[B]
 		B () // CTE: init call must be in the body of init only
 	end
 end 
-unit C[G]
+type C[G]
 end
-unit Any
+type Any
 end

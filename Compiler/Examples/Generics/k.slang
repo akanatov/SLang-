@@ -1,5 +1,5 @@
 x is X [Any]
-unit X [G]
+type X [G]
 	X do end
 end
-unit Any end
+type Any end

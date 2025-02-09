@@ -1,5 +1,5 @@
 a is A
-unit A
+type A
 	foo do // (l1: A) do
 		l1 is A
 		l2: A
@@ -20,5 +20,5 @@ unit A
 	rigid attr8: A is A
 	rigid attr9 is A
 end
-abstract unit Any
+abstract type Any
 end

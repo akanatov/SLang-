@@ -1,7 +1,7 @@
-unit Any end
-unit Base1 end
-unit Base2 end
-unit Derived extend Base1, Base2
+type Any end
+type Base1 end
+type Base2 end
+type Derived : Base1, Base2
 	init do
 		init Base1
 		init Base2
@@ -11,6 +11,6 @@ end
 
 d is Derived
 
-/*unit A[G] extend G //A[G]
+/*type A[G] : G //A[G]
 	init: G none
 end*/

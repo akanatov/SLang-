@@ -3,7 +3,7 @@ a2 is A()
 
  type  A
 end
- type  B extend A
+ type  B : A
 end
 
 /*A: B do

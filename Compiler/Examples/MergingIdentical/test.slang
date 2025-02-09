@@ -1,10 +1,10 @@
 a is A
-unit A extend B, C
+type A : B, C
 end
-unit B extend C
+type B : C
 end
-unit C 
+type C 
 	foo do end
 end
-abstract unit Any 
+abstract type Any 
 end

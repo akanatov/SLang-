@@ -1,15 +1,15 @@
 a is A
-unit A extend B, C
+type A : B, C
 	override B.foo
 end
 
-unit B
+type B
 	foo do end
 end
 
-unit C
+type C
 	foo do end
 end
 
-abstract unit Any
+abstract type Any
 end

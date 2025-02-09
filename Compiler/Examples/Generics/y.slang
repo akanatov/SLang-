@@ -1,12 +1,12 @@
 x is A[Any]
 
-unit A[G]
+type A[G]
 	A do
 		data is new A [Any]
 	end
 end
 
 
-unit Any
+type Any
 end
 

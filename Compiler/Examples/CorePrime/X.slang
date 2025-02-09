@@ -3,7 +3,7 @@
 build Kernel from "." // Kernel library is to be built from all SLang files from the current folder
 end
 
-val unit Bit
+val type Bit
     const: // Bit is just 0 or 1
          0b0, 0b1
     end
@@ -11,7 +11,7 @@ val unit Bit
 
 end // Bit
 
-val unit Bit [bitsCount: Cardinal]
+val type Bit [bitsCount: Cardinal]
 	const : // All Bit constants not longer than B bits in it
 	    //{Bit.0b0 | Bit.0b1}bitsCount
 	end
@@ -22,49 +22,49 @@ val unit Bit [bitsCount: Cardinal]
 	end // getLowBits
 end // Bit [bitsCount]
 
-abstract unit Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.maxCardinal], Pointer
+abstract type Any use const Integer, Real, Boolean, Character, String, Bit [2 ^ Cardinal.maxCardinal], Pointer
 end // Any
 
-final unit Platform
+final type Platform
 end // Platform
 
-abstract unit Numeric
+abstract type Numeric
 end // Numeric
 
-abstract unit Comparable 
+abstract type Comparable 
 end // Comparable
 
-abstract unit Enumeration
+abstract type Enumeration
 end // Enumeration
 
-unit Memory
+type Memory
 end // Memory
 
-val unit Pointer
+val type Pointer
 	write (ab: Array [Byte]) none
 	safe read (numberOfBytes: Cardinal): Array [Byte] none
 	{} data : Bit [Platform.pointerBitsCount]
 end // Pointer
 
-val unit Region
+val type Region
 end // Region
 
-val unit Cardinal alias Uint extend Cardinal [Platform.cardinalBitsCount]
+val type Cardinal alias Uint : Cardinal [Platform.cardinalBitsCount]
 	new Cardinal[Platform.cardinalBitsCount]( as this ), Cardinal[Platform.cardinalBitsCount]
 end // Cardinal
 
-val unit Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
+val type Cardinal alias Uint [bitsCount: Cardinal] : Numeric, Enumeration
 
 	Cardinal (other: Integer [bitsCount])
 	do
 	end // Cardinal
 end // Cardinal
 
-val unit Integer extend Integer [Platform.integerBitsCount]
+val type Integer : Integer [Platform.integerBitsCount]
 	new Integer [Platform.integerBitsCount] (Integer), Integer [Platform.integerBitsCount]
 end // Integer
 
-val unit Integer [bitsCount: Cardinal] extend Numeric, Enumeration
+val type Integer [bitsCount: Cardinal] : Numeric, Enumeration
 	override safe = (other: Cardinal[bitsCount]): Boolean none 
 	:= (other: Cardinal[bitsCount]) none 
 	{} data: Bit [bitsCount]	
@@ -73,7 +73,7 @@ val unit Integer [bitsCount: Cardinal] extend Numeric, Enumeration
 	end
 end // Integer
 
-val unit Byte
+val type Byte
 	Byte do
 		/// Default zero value
 		data is Bit [Platform.bitsInByteCount]
@@ -81,102 +81,102 @@ val unit Byte
 	{} data: Bit [Platform.bitsInByteCount]	
 end // Byte
 
-abstract unit Rational extend Numeric, Comparable
+abstract type Rational : Numeric, Comparable
 end // Rational
 
-abstract unit Fixed extend Numeric, Comparable
+abstract type Fixed : Numeric, Comparable
 end // Fixed
 
-abstract unit Float [nBits: Integer] extend Numeric, Comparable
+abstract type Float [nBits: Integer] : Numeric, Comparable
 end // Float
 
-val unit Real extend Float [Platform.realBitsCount]
+val type Real : Float [Platform.realBitsCount]
 	Real do
 		data is Bit [Platform.realBitsCount]
 	end
 	{} data : Bit [Platform.realBitsCount]	
 end // Real
 
-val unit Character alias Char extend Enumeration
+val type Character alias Char : Enumeration
 	Character do
 		data is Bit [Platform.characterBitsCount]
 	end
 	{} data : Bit [Platform.characterBitsCount]	
 end // Character
 
-val unit Boolean alias Bool extend Enumeration
+val type Boolean alias Bool : Enumeration
 	{} data: Bit [Platform.booleanBitsCount]	
 end // Boolean
 
 
-abstract unit AString extend Comparable
+abstract type AString : Comparable
 	{} data: Array [Bit [8]] // Byte array of data
-end // unit Astring
+end // type Astring
 
-unit String [stringLength:Integer] extend AString, Array [Character, stringLength]
+type String [stringLength:Integer] : AString, Array [Character, stringLength]
 end
 
-unit String extend AString
+type String : AString
 	String do
 		data is new Array [Character] (1, 0)
 	end
 	{} data: Array [Character] // Dynamic empty array of characters
 end // String
 
-abstract unit AnArray [G]
+abstract type AnArray [G]
 end // AnArray [G]
 
-abstract unit OneDimentionalArray [G new ()] extend AnArray [G]
+abstract type OneDimentionalArray [G new ()] : AnArray [G]
 	OneDimentionalArray do 
 		result is new Array [G](from, to)
 	end
 end
 
-unit Array [G new (), arrayLength: Cardinal] extend OneDimentionalArray [G]
+type Array [G new (), arrayLength: Cardinal] : OneDimentionalArray [G]
 end // Array
 
-unit Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray [G]
-end // Array
-
-
-unit Array [G new ()] extend OneDimentionalArray [G]
+type Array [G new (), arrayBounds: (Integer,Integer)] : OneDimentionalArray [G]
 end // Array
 
 
-unit DynamicObject
+type Array [G new ()] : OneDimentionalArray [G]
+end // Array
+
+
+type DynamicObject
 	final routines() : Array [RoutineDescriptor] none
 	final attributes (): Array [AttributeDescriptor] none
 	DynamicObject (bytes: Array [Byte]) none
 	
 end // DynamicObject
 
-abstract unit MemberDescriptor
+abstract type MemberDescriptor
 end // MemberDescriptor
 
-abstract unit RoutineDescriptor extend MemberDescriptor
+abstract type RoutineDescriptor : MemberDescriptor
 	final arguments: Array [ArgumentDescriptor]
 end // RoutineDescriptor
 
-final unit ProcedureDescriptor extend RoutineDescriptor
+final type ProcedureDescriptor : RoutineDescriptor
 end // Procedure [Arguments -> ()]
 
-final unit FunctionDescriptor extend RoutineDescriptor
+final type FunctionDescriptor : RoutineDescriptor
 end // Function [Arguments -> (), Result]
 
-abstract unit AttributeDescriptor extend MemberDescriptor
+abstract type AttributeDescriptor : MemberDescriptor
 end // AttributeDescriptor
 
-final unit VariableDescriptor extend AttributeDescriptor 
+final type VariableDescriptor : AttributeDescriptor 
 end // VariableDescriptor
 
-final unit ConstantDescriptor extend AttributeDescriptor 
+final type ConstantDescriptor : AttributeDescriptor 
 end // ConstantDescriptor
 
-final unit TypeDescriptor
+final type TypeDescriptor
 	final routines : Array [RoutineDescriptor]
 	final attributes : Array [AttributeDescriptor]
 	final parents: Array [TypeDescriptor]
 end // TypeDescriptor
 
-final unit ArgumentDescriptor
+final type ArgumentDescriptor
 end // ArgumentDescriptor

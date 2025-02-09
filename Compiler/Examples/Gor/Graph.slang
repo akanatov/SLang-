@@ -5,40 +5,40 @@ c is C
 g is G
 i is I
 d is D
-unit A
+type A
 	f1 do end // f1@A[f1$A]
 end
-unit B  extend  A
+type B  :  A
 	override f1 do end // f1@B[f1$A]
 	f2 do end // f2@B[f2$B]
 end
-unit C extend B
+type C : B
 end
-unit D extend B
+type D : B
 	override f2	do end // f2@D[f2$B]
 end
-unit E extend B, H
+type E : B, H
 	override f1 do end // f1@E[f1$A]
 end
-unit F extend E
+type F : E
 end
-unit G extend E, I
+type G : E, I
 	override E.f3, I.f1 // f3$
 end
-unit H extend A
+type H : A
 	f3 do end // f3@H[f3$H]
 end
-unit I extend H, J
+type I : H, J
 	override f3 do end // f3@I[f3$H]
 end
-unit J extend A
+type J : A
 	f4 do end // f4@J[f4$J]
 end
-unit K extend J
+type K : J
 	override f4 do end // f4@K[f4$J]
 end
 
-abstract unit Any end
+abstract type Any end
 
 /*
 					f1$A			f2$B			f3$H			f4$J		

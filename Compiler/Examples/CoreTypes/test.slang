@@ -4,10 +4,10 @@
 //char is 'X'
 bit is 0b010
 
-unit Any end
-//unit String end
-//val unit Real end
-val unit Integer end
-//val unit Character end
-val unit Bit [count: Integer] end
+type Any end
+//type String end
+//val type Real end
+val type Integer end
+//val type Character end
+val type Bit [count: Integer] end
 

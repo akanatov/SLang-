@@ -1,13 +1,13 @@
 a is A[Any]
-unit A
+type A
      A (any: Any) do end
 end
-unit A[G] extend A
+type A[G] : A
       A do
             A(Any)   // Which constructor is called here?
       end
      A (any: Any) do end
 end
 
-unit Any
+type Any
 end

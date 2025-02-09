@@ -105,13 +105,13 @@ a: rtn (T1, T2, T3) // That is a rtn!
 type Base
 	isSomething: Boolean abstract
 end
-type Derived1 extend Base
+type Derived1 : Base
 	override isSomething: Boolean // variable attribute
 end
-type Derived2 extend Base
+type Derived2 : Base
 	override isSomething: Boolean do end // function
 end
-type Derived3 extend Base
+type Derived3 : Base
 	override const isSomething: Boolean is true // constant attribute
 end
 
@@ -126,11 +126,11 @@ bool := base.isSomething ()
 type T0
 	foo (<parameters>): Result do return Result end
 end // type T0
-active type T1 extend T0
+active type T1 : T0
 end
-active type T2 extend T0
+active type T2 : T0
 end
-active type T3 extend T0
+active type T3 : T0
 end
 
 resultingTuple is in (T1, T2, T3) do foo (<arguments>) // Variant #1

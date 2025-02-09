@@ -369,7 +369,7 @@ feature {Any}
 						elseif scanner.genericsStart then
 --trace (">>#5.5")
 -- NOT_IMPLEMENTED_YET: not  SUPPORTED foo[T]() - call chain !!!
--- Parse generics  either declaration or instantiation foo [G] vs foo [Type] vs foo [expr] vs foo [G extend Type] vs foo [G new ...]
+-- Parse generics  either declaration or instantiation foo [G] vs foo [Type] vs foo [expr] vs foo [G <: Type] vs foo [G init ...]
 -- require|do|foreign|none - standalone routine
 -- foo[Integer] - valid procedure call !!!
 -- foo [Integer] (arguments)
@@ -7051,7 +7051,7 @@ end -- debug
 	end -- parseFactualGenericArgument
 	
 	parseFormalGenericType (fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]): FormalGenericDescriptor is
-	-- (TypeName [“extend” UnitTypeName ] [“new” [Signature]])
+	-- (TypeName [“<:” UnitTypeName ] [“init” [Signature]])
 	-- |
 	-- (Identifier“:” UnitTypeDescriptor|RoutineType)
 	-- ^
@@ -7067,6 +7067,9 @@ end -- debug
 		fgtnDsc: FormalGenericTypeNameDescriptor
 		wasError: Boolean
 	do
+		-- Here we need to check for optional <: constraint and then for optional init
+		-- UnitName [“<:” UnitTypeName] [init [Signature]]
+
 		name := scanner.tokenString
 		inspect
 			scanner.token
@@ -7074,43 +7077,49 @@ end -- debug
 			scanner.nextToken
 			inspect
 				scanner.token
-			when scanner.extend_token then
+			when scanner.less_token then
 				scanner.nextToken
-				tDsc := parseUnitTypeName
-				if tDsc = Void then
-					wasError := True
-				else
-					utnDsc ?= tDsc
-					if utnDsc = Void then
-						validity_error ("Generic parameter constraint is of incorrect type `" + tDsc.out + "`")
+				if scanner.token = scanner.colon_token then
+					scanner.nextToken
+					tDsc := parseUnitTypeName
+					if tDsc = Void then
 						wasError := True
-					else					
-						if scanner.token = scanner.new_token then
-							scanner.nextToken
-							inspect
-								scanner.token
-							when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
-								signDsc := parseSignature
-								if not wasError then
-									wasError := signDsc = Void
-								end -- if
-							else
-								create signDsc.init (Void, Void)
-							end -- inspect
+					else
+						utnDsc ?= tDsc
+						if utnDsc = Void then
+							validity_error ("Generic parameter constraint is of incorrect type `" + tDsc.out + "`")
+							wasError := True
+						else					
+							if scanner.token = scanner.init_token then
+								scanner.nextToken
+								inspect
+									scanner.token
+								when scanner.left_paranthesis_token then
+									signDsc := parseSignature
+									if not wasError then
+										wasError := signDsc = Void
+									end -- if
+								else
+									create signDsc.init (Void, Void)
+								end -- inspect
+							end -- if
 						end -- if
 					end -- if
+				else
+					syntax_error (<<scanner.colon_token>>)
 				end -- if
-			when scanner.new_token then
+			when scanner.init_token then
 				scanner.nextToken
 				inspect
 					scanner.token
-				when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
+				when scanner.left_paranthesis_token then
 					signDsc := parseSignature
 					wasError := signDsc = Void
 				else
 					create signDsc.init (Void, Void)
 				end -- inspect
 			else
+				-- no constraint or init procedure
 			end -- inspect
 			if not wasError then
 				create fgtnDsc.init (name)
@@ -7227,7 +7236,7 @@ end -- debug
 	-- ":" ParentDescriptor {“,” ParentDescriptor}
 	-- [“~”] UnitTypeNameDescriptor 
 	--  ^^^^ obsolete 
-	-- InheritDirective: extend Parent {“,” Parent} 
+	-- InheritDirective: ":" Parent {“,” Parent} 
 	-- Parent: UnitTypeName | (“~” UnitTypeName [“(”MemberName{“,”MemberName}“)”])
 	-- MemberName: Identifier|(RoutineName [Signature])
 	require
@@ -7267,12 +7276,12 @@ end -- debug
 							-- Inheritance graph simple cycle
 						else
 							--if utnDsc.name.is_equal (unitDsc.name) then
-							--	validity_error ("Unit `" + unitDsc.name + "` can't extend unit with the same name `" + utnDsc.out + "`")
+							--	validity_error ("Unit `" + unitDsc.name + "` can't inherit form type with the same name `" + utnDsc.out + "`")
 							--	-- Prevent unit name overloading in case of inheritance
 							--end -- if
 							-- Cardinal inherits Cardinal [...]
 							-- Huh ...
-							
+
 							create parentDsc.init (isNonConformant, utnDsc)
 							if not currentUnitDsc.parents.added (parentDsc) then
 								validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + currentUnitDsc.fullUnitName + "`")
@@ -7318,15 +7327,15 @@ end -- debug
 			--						-- Inheritance graph simple cycle
 			--					else
 			--						if utnDsc.name.is_equal (unitDsc.name) then
-			--							validity_error ("Unit `" + unitDsc.name + "` can't extend unit with the same name `" + utnDsc.out + "`")
+			--							validity_error ("Type `" + unitDsc.name + "` can't inherit type with the same name `" + utnDsc.out + "`")
 			--							-- Prevent unit name overloading in case of inheritance
 			--						end -- if
 			--						if scanner.token = scanner.left_paranthesis_token then
-			--							not_implemented_yet ("extend ~Parent “(”MemberName{“,”MemberName}“)” ")
+			--							not_implemented_yet ("<: ~Parent “(”MemberName{“,”MemberName}“)” ")
 			--						end -- if
 			--						create parentDsc.init (True, utnDsc)
 			--						if not unitDsc.parents.added (parentDsc) then
-			--							validity_error( "Duplicated inheritance from unit `" + parentDsc.out + "` in unit `" + unitDsc.name + "`")
+			--							validity_error( "Duplicated inheritance from type `" + parentDsc.out + "` in type `" + unitDsc.name + "`")
 			--							--toLeave := True
 			--							-- Repeated inheritance is prohibited
 			--						end -- if
@@ -7365,7 +7374,7 @@ end -- debug
 			--					-- Inheritance graph simple cycle
 			--				else
 			--					if utnDsc.name.is_equal (unitDsc.name) then
-			--						validity_error ("Unit `" + unitDsc.name + "` can't extend unit with the same name `" + utnDsc.out + "`")
+			--						validity_error ("Type `" + unitDsc.name + "` can't inherit type with the same name `" + utnDsc.out + "`")
 			--						-- Prevent unit name overloading in case of inheritance
 			--					end -- if
 			--					create parentDsc.init (False, utnDsc)
@@ -7754,7 +7763,7 @@ end -- debug
 			scanner.nextToken
 			inspect
 				scanner.token
-			when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
+			when scanner.colon_token, scanner.left_paranthesis_token then
 				signDsc := parseSignature
 			else
 			end -- inspect
@@ -7806,7 +7815,7 @@ end -- debug
 											scanner.nextToken
 											inspect
 												scanner.token
-											when scanner.colon_token, scanner.implies_token, scanner.left_paranthesis_token then
+											when scanner.colon_token, scanner.left_paranthesis_token then
 												signDsc := parseSignature
 											else
 												signDsc := Void
@@ -8147,7 +8156,6 @@ end -- debug
     --end -- debug								
 	--							inspect	
 	--								scanner.token
-	--							-- when scanner.colon_token, scanner.left_paranthesis_token then
 	--							when scanner.left_paranthesis_token then
 	--								create ifpDsc.init (utnDsc, parseSignature)
 	--							else
@@ -9513,11 +9521,11 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 					currentUnitDsc.memberNames.add (mdDsc.name)
 					--if mdDsc.isOverriding and then inTheInheritedOverridingList (mdDsc) then
 					--	-- Need to check that no inherited member makred as overriding
-					--	--unit A extend B
+					--	--unit A : B
 					--	--	override B.foo
 					--	--	override foo do end
 					--	--end
-					--	validityError (mdDsc.toSourcePosition, "Duplicated overriding of member `" + mdDsc.name + "` inherited and declared in unit `" + currentUnitDsc.fullUnitName + "`")						
+					--	validityError (mdDsc.toSourcePosition, "Duplicated overriding of member `" + mdDsc.name + "` inherited and declared in type `" + currentUnitDsc.fullUnitName + "`")						
 					--end -- if
 				else
 					--validity_error( "Duplicated declaration of member `" + mdDsc.name + "` in type `" + unitDsc.name + "`") 
@@ -9642,7 +9650,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 
 	parseFormalGenerics (fgTypes: Sorted_Array [FormalGenericTypeNameDescriptor]): Array [FormalGenericDescriptor] is
 	--	FormalGenerics: “[”FormalGeneric {“,” FormalGeneric}“]”
-	--	FormalGeneric: Identifier ([“extend” UnitTypeName] [“new” [Signature]])| [“:” (UnitType | RoutineType]
+	--	FormalGeneric: Identifier ([“<:” UnitTypeName] [“init” [Signature]])| [“:” (UnitType | RoutineType]
 	require
 		valid_token: validToken (<<scanner.left_square_bracket_token, scanner.less_token>>) 
 	local
@@ -9721,7 +9729,7 @@ not_implemented_yet ("parse regular expression in constant object declaration")
 	-- type Identifier 
 	-- alias	[AliasName]
 	-- "["		[FormalGenerics] 
-	-- extend	[InheritDirective]
+	-- ":"   	[InheritDirective]
 	-- use		[EnclosedUseDirective]
 	-- select	[MemberSelection]
 	-- override	[InheritedMemberOverriding]

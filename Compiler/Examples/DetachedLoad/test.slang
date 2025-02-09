@@ -1,3 +1,3 @@
 a: ?T
-unit Any
+type Any
 end

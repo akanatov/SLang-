@@ -1,4 +1,3 @@
- type  A 
-	extend M, B, ~C 
-	new M(as this, rtn (as this): as anchor), B, C
+ type  A : M, B, ~C 
+	init M(as this, rtn (as this): as anchor), B, C
 end

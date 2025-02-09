@@ -58,7 +58,7 @@ val type HeximalDigit
     end
 end*/
 
-abstract type () extend Enumeration // That is a tuple type
+abstract type () : Enumeration // That is a tuple type
 	
 	() (pos: Cardinal; value: Any)
 	/// It puts an element 'value' into the tuple at position 'pos'
@@ -456,7 +456,7 @@ val type Region
 	end // malloc */
 end // Region
 
-val type Cardinal alias Uint extend Cardinal [Platform.cardinalBitsCount]
+val type Cardinal alias Uint : Cardinal [Platform.cardinalBitsCount]
 	init do init Cardinal[Platform.cardinalBitsCount] end
 	init (other: Integer [Platform.integerBitsCount])
 	require
@@ -464,7 +464,7 @@ val type Cardinal alias Uint extend Cardinal [Platform.cardinalBitsCount]
 	do init Cardinal[Platform.cardinalBitsCount](other) end
 end // Cardinal
 
-val type Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
+val type Cardinal alias Uint [bitsCount: Cardinal] : Numeric, Enumeration
 	// WIP!!!!
 	// the caveat how to distingush Integer.1 from Cardinal.1 - now Cardinal constants are not imported into Any due to name clash!!! .... 
 	// Cardinal must have := (that: Integer) to ensure we may assign Integer to Cardinal with proper precondition!!! 
@@ -507,12 +507,12 @@ val type Cardinal alias Uint [bitsCount: Cardinal] extend Numeric, Enumeration
 	end // :=
 end // Cardinal
 
-val type Integer alias Int extend Integer [Platform.integerBitsCount]
+val type Integer alias Int : Integer [Platform.integerBitsCount]
 	init (value: Integer) do init Integer [Platform.integerBitsCount] (value) end
 	init do init Integer [Platform.integerBitsCount] end
 end // Integer
 
-val type Integer alias Int [bitsCount: Cardinal] extend Numeric, Enumeration
+val type Integer alias Int [bitsCount: Cardinal] : Numeric, Enumeration
 	const : // That is ordered set defined as range of all Integer constant values (objects)
 		minInteger .. maxInteger
 	end
@@ -650,7 +650,7 @@ val type Integer alias Int [bitsCount: Cardinal] extend Numeric, Enumeration
 	end
 end // Integer
 
-//val type Byte extend Bit [Platform.bitsInByteCount] use const Bit [Platform.bitsInByteCount]
+//val type Byte : Bit [Platform.bitsInByteCount] use const Bit [Platform.bitsInByteCount]
 //end
 val type Byte
 	// WIP - to be fully implemented
@@ -664,7 +664,7 @@ val type Byte
 	{} data: Bit [Platform.bitsInByteCount]	
 end // Byte
 
-abstract type Rational extend Numeric, Comparable
+abstract type Rational : Numeric, Comparable
 	numerator: Integer
 	denominator: Integer
 	safe toReal: Real => numerator / denominator
@@ -673,19 +673,19 @@ require
 	denominator /= 0 /// denominator must not be zero
 end // Rational
 
-abstract type Fixed extend Numeric, Comparable
+abstract type Fixed : Numeric, Comparable
 	value: Integer
 	scaleFactor: Integer // if scaleFactor is negative do scale is 1/-scaleFactor otherwise scaleFactor is scaleFactor :-)
 	safe toReal: Real => if scaleFactor < 0 do value / - scaleFactor else value * scaleFactor
 	// TBD!!!
 end // Fixed
 
-abstract type Float [nBits: Integer] extend Numeric, Comparable
+abstract type Float [nBits: Integer] : Numeric, Comparable
 	toReal: Real abstract
 	// TBD!!!
 end // Float
 
-val type Real extend Float [Platform.realBitsCount]
+val type Real : Float [Platform.realBitsCount]
 	const : // All Real numbers 
 		//{minReal + epsilon} <= maxReal
 		minReal {+epsilon} .. maxReal
@@ -783,7 +783,7 @@ val type Real extend Float [Platform.realBitsCount]
 	{} data : Bit [Platform.realBitsCount]	
 end // Real
 
-val type Character alias Char extend Enumeration
+val type Character alias Char : Enumeration
 	const : // The set of all constant objects of type type Character
 		minCharacter .. maxCharacter
 	end	// const
@@ -813,7 +813,7 @@ val type Character alias Char extend Enumeration
 	{} data : Bit [Platform.characterBitsCount]	
 end // Character
 
-val type Boolean alias Bool extend Enumeration
+val type Boolean alias Bool : Enumeration
 	const : // That is an ordered set of two constant object of type Boolean
 		false(zero), true(one)		
 	end
@@ -876,19 +876,19 @@ end // Boolean
 
 // UTF-8, Unicode etc - need to think more 
 
-abstract type AString extend Comparable
+abstract type AString : Comparable
 	/// virtualization of String
 	{} data: Array [Bit [8]] // Byte array of data
 end // type Astring
 
-type String [stringLength:Integer] extend AString, Array [Character, stringLength]
+type String [stringLength:Integer] : AString, Array [Character, stringLength]
 	/// String with fixed length
 	const : // "" .. "Character*" - all Strings of size not more than stringLength
 		//{Character.minCharacter |.. Character.maxCharacter}stringLength
 	end
 end
 
-type String extend AString
+type String : AString
 	/// Variable length String
 	const : // "" .. "Character*" - all Strings are defined here
 		//{Character.minCharacter |.. Character.maxCharacter}0+		
@@ -1012,7 +1012,7 @@ require
 	// Was: lower <= upper - 1 
 end // AnArray [G]
 
-abstract type OneDimentionalArray [G new ()] extend AnArray [G]
+abstract type OneDimentionalArray [G new ()] : AnArray [G]
 	override safe () (pos: Integer): G none
 	override () (pos: Integer; value: G) none
 	override safe () (from, to: Integer): Array [G]
@@ -1026,7 +1026,7 @@ abstract type OneDimentionalArray [G new ()] extend AnArray [G]
 	end
 end
 
-type Array [G new (), arrayLength: Cardinal] extend OneDimentionalArray [G]
+type Array [G new (), arrayLength: Cardinal] : OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a0 is Array [Integer, 5]
@@ -1049,7 +1049,7 @@ type Array [G new (), arrayLength: Cardinal] extend OneDimentionalArray [G]
 	end
 end // Array
 
-type Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray [G]
+type Array [G new (), arrayBounds: (Integer,Integer)] : OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a1 is Array [Real, (10,25)]
@@ -1071,7 +1071,7 @@ type Array [G new (), arrayBounds: (Integer,Integer)] extend OneDimentionalArray
 end // Array
 
 
-type Array [G new ()] extend OneDimentionalArray [G]
+type Array [G new ()] : OneDimentionalArray [G]
 ///   Dynamic array
 // We can put info Array only objects which has constructor with empty signature !!! We are always safe - no uninitilized data!!! 
 	override safe () (pos: Integer): G none
@@ -1102,7 +1102,7 @@ type Array [G new ()] extend OneDimentionalArray [G]
 	end
 end // Array
 
-/*type Array [G new (), dimentions: (Integer|Integer .. Integer)] extend Array [G, numberOfElementsInLinearArray ]
+/*type Array [G new (), dimentions: (Integer|Integer .. Integer)] : Array [G, numberOfElementsInLinearArray ]
 ///   Multi dimentional static array .... WIP!!!
 /*
 	a0 is Array [Integer, (5, 4)]
@@ -1232,34 +1232,34 @@ abstract type MemberDescriptor
 	final name: String
 end // MemberDescriptor
 
-abstract type RoutineDescriptor extend MemberDescriptor
+abstract type RoutineDescriptor : MemberDescriptor
 	final arguments: Array [ArgumentDescriptor]
 end // RoutineDescriptor
 
-final type ProcedureDescriptor extend RoutineDescriptor
+final type ProcedureDescriptor : RoutineDescriptor
 	() alias apply (args: ()) foreign
 		// That is a procedure call
 	init (:= name; := arguments) none
 end // Procedure [Arguments -> ()]
 
-final type FunctionDescriptor extend RoutineDescriptor
+final type FunctionDescriptor : RoutineDescriptor
 	fType: TypeDescriptor
 	() alias apply (args: ()): Any none
 		// That is a function call
 	init (:= name; := arguments; := fType) none
 end // Function [Arguments -> (), Result]
 
-abstract type AttributeDescriptor extend MemberDescriptor
+abstract type AttributeDescriptor : MemberDescriptor
 	value: Any
 	aType: TypeDescriptor
 end // AttributeDescriptor
 
-final type VariableDescriptor extend AttributeDescriptor 
+final type VariableDescriptor : AttributeDescriptor 
 	override := alias set (:= value) none
 	init (:= name; := aType; := value) none
 end // VariableDescriptor
 
-final type ConstantDescriptor extend AttributeDescriptor 
+final type ConstantDescriptor : AttributeDescriptor 
 	init (:= name; := aType; := value) none
 end // ConstantDescriptor
 

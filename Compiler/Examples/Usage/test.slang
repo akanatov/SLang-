@@ -1,15 +1,15 @@
 use B as C
 a is A
 
-unit A use B as C
+type A use B as C
 	attr: C
 end
 
-unit B
+type B
 end
 
-/*unit C
+/*type C
 end */
 
-unit Any
+type Any
 end

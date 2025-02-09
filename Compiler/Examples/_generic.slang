@@ -5,6 +5,6 @@ b is A[A[X]]
 end
  type  X
 end
-foo [G extend T] -> T do
+foo [G <: T] -> T do
 end
 

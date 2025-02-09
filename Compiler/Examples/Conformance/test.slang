@@ -1,14 +1,14 @@
 a is A
 
-unit A extend B
+type A : B
 	override foo do end
 	override foo (p: Any) do end
 end
 
-unit B
+type B
 	foo do end
 	goo: B
 end
 
-abstract unit Any
+abstract type Any
 end

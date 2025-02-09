@@ -3793,7 +3793,7 @@ feature {Any}
 	end -- getExternalName
 		
 	parents: Sorted_Array [ParentDescriptor]
-		-- extend ParentDescriptor {"," ParentDescriptor}
+		-- ":" ParentDescriptor {"," ParentDescriptor}
 	inheritsAny: Boolean
 	setAnyAsParent is do 
 		inheritsAny := True
@@ -4767,7 +4767,7 @@ invariant
 end -- class ParentDescriptor 
 
 deferred class FormalGenericDescriptor
--- Identifier (["extend" Type ] ["new" [Signature]])| [":" (UnitTypeDescriptor | RoutineType)]
+-- Identifier ([":" Type ] ["init" [Signature]])| [":" (UnitTypeDescriptor | RoutineType)]
 inherit
 	SmartComparable
 		undefine
@@ -4896,11 +4896,11 @@ feature {Any}
 	do
 		Result := clone(name)
 		if typeConstraint /= Void then
-			Result.append_string(" extend ")
+			Result.append_string(" <: ")
 			Result.append_string (typeConstraint.out)
 		end -- if
 		if initConstraint /= Void then
-			Result.append_string(" new ")
+			Result.append_string(" init ")
 			Result.append_string (initConstraint.out)
 		end -- if
 	end -- out
@@ -4912,11 +4912,11 @@ feature {Any}
 		
 		--Result := "" + name
 		--if typeConstraint /= Void then
-		--	Result.append_string("_extend_")
+		--	Result.append_string("_<:_")
 		--	Result.append_string (typeConstraint.getExternalName)
 		--end -- if
 		--if initConstraint /= Void then
-		--	Result.append_string("_new_")
+		--	Result.append_string("_init_")
 		--	Result.append_string (initConstraint.getExternalName)
 		--end -- if
 		--hashed_tail (Result)

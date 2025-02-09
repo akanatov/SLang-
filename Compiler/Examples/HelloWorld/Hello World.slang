@@ -1,11 +1,11 @@
 IO.putNL ("Hello world!")
 
 
-unit Any
+type Any
 end
-unit String
+type String
 end
-unit StandardIO alias IO 
+type StandardIO alias IO 
 	putNL(any: Any) do
 	end
 end

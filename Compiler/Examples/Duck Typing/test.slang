@@ -9,7 +9,7 @@ unit A
 require
    a > b
 end
-unit B
+type B
 	a, b: Integer
 	B(:=a, :=b)
 	require
@@ -19,7 +19,7 @@ unit B
 require
    a < b
 end
-abstract unit C
+abstract type C
 	a: Integer abstract
 	b: Integer abstract
 	foo abstract
@@ -43,15 +43,15 @@ Smart analysis is too tricky
 
 c.foo
 
-abstract unit Any 
+abstract type Any 
 end
-val unit Integer
+val type Integer
 end
 
 
 /* Duck assignment
 	lvalue := expression
-	lvalue has unit type T and expression has unit type S  (Target <= Source)
+	lvalue has type type T and expression has type S  (Target <= Source)
 	1. for every exported member of T there is only one exported member in S with the same or wider export status and signature in S which conforms to signature in T
 	2. for every exported member routine of T its precondition and postcondition is extended using OR with the appropriate precondition and postcondition of routine from S
 	3. invariant of T is extended with invariant of S using OR

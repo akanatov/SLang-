@@ -10,11 +10,11 @@ end
 // Anonymous routine(script) code
 root is Root
 
-unit Root
+type Root
 	Root do end  // Init procedure (constructor) with no parameters
 end
 
-unit Any
+type Any
 end
 
 // Standalone routine main
