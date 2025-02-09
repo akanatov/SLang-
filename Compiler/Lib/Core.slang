@@ -1012,7 +1012,7 @@ require
 	// Was: lower <= upper - 1 
 end // AnArray [G]
 
-abstract type OneDimentionalArray [G new ()] : AnArray [G]
+abstract type OneDimentionalArray [G init] : AnArray [G]
 	override safe () (pos: Integer): G none
 	override () (pos: Integer; value: G) none
 	override safe () (from, to: Integer): Array [G]
@@ -1026,7 +1026,7 @@ abstract type OneDimentionalArray [G new ()] : AnArray [G]
 	end
 end
 
-type Array [G new (), arrayLength: Cardinal] : OneDimentionalArray [G]
+type Array [G init, arrayLength: Cardinal] : OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a0 is Array [Integer, 5]
@@ -1049,7 +1049,7 @@ type Array [G new (), arrayLength: Cardinal] : OneDimentionalArray [G]
 	end
 end // Array
 
-type Array [G new (), arrayBounds: (Integer,Integer)] : OneDimentionalArray [G]
+type Array [G init, arrayBounds: (Integer,Integer)] : OneDimentionalArray [G]
  ///   One dimentional static array .... WIP !!!
 /*
 	a1 is Array [Real, (10,25)]
@@ -1071,7 +1071,7 @@ type Array [G new (), arrayBounds: (Integer,Integer)] : OneDimentionalArray [G]
 end // Array
 
 
-type Array [G new ()] : OneDimentionalArray [G]
+type Array [G init] : OneDimentionalArray [G]
 ///   Dynamic array
 // We can put info Array only objects which has constructor with empty signature !!! We are always safe - no uninitilized data!!! 
 	override safe () (pos: Integer): G none
@@ -1102,7 +1102,7 @@ type Array [G new ()] : OneDimentionalArray [G]
 	end
 end // Array
 
-/*type Array [G new (), dimentions: (Integer|Integer .. Integer)] : Array [G, numberOfElementsInLinearArray ]
+/*type Array [G init, dimentions: (Integer|Integer .. Integer)] : Array [G, numberOfElementsInLinearArray ]
 ///   Multi dimentional static array .... WIP!!!
 /*
 	a0 is Array [Integer, (5, 4)]

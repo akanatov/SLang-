@@ -300,7 +300,7 @@ feature {None}
 				from
 					j := 1
 					if m = 1 then
-						dumpOutput.put ("/* 1 unit compiled successfully: ")
+						dumpOutput.put ("/* 1 type compiled successfully: ")
 					else
 						dumpOutput.put ("/* " + m.out + " units compiled successfully: ")
 					end -- if

@@ -274,34 +274,34 @@ feature {None}
 		-- Find an entry point
 		entryPointName := sysDsc.entry
 		if entryPointName.item (1) = entryPointName.item (1).as_upper then
-			-- Entry point is the unit name! (It cannot be generic BTW)
+			-- Entry point is the type name! (It cannot be generic BTW)
 			clusters := sysDsc.hasUnit (entryPointName)
 			if clusters = Void or else clusters.count = 0 then
-				-- Such unit is not found in the search universe !!!
-				o.putNL ("Error: root unit `" + entryPointName + "` is not found in the provided context")
+				-- Such type is not found in the search universe !!!
+				o.putNL ("Error: root type `" + entryPointName + "` is not found in the provided context")
 				Result := True
 			elseif clusters.count > 1 then
-				-- More than one unit is found in the search universe !!!
-				o.putNL ("Error: " + clusters.count.out + " versions of the root unit `" + entryPointName + "` found in the provided context. Select only one to be used")
+				-- More than one type is found in the search universe !!!
+				o.putNL ("Error: " + clusters.count.out + " versions of the root type `" + entryPointName + "` found in the provided context. Select only one to be used")
 				Result := True
 			else
 				-- Load it
-				o.putLine ("Loading root unit `" + entryPointName + "`")				
+				o.putLine ("Loading root type `" + entryPointName + "`")				
 				create rootUnitCU.init (sysDsc)
 				if rootUnitCU.UnitIR_Loaded (clusters.item (1).name + fs.separator + IRfolderName + fs.separator + entryPointName + UnitSuffix + "." + ASText, o) then
-					rootUnitDsc := rootUnitCU.unitDclDsc.getUnitDeclaration -- root unit and its alias if any were loaded and registered
+					rootUnitDsc := rootUnitCU.unitDclDsc.getUnitDeclaration -- root type and its alias if any were loaded and registered
 					if rootUnitDsc.formalGenerics.count > 0 then
-						o.putNL ("Error: entry point `" + entryPointName + "` is in fact generic unit `" + rootUnitDsc.fullUnitName + 
-							"` and cannot be used as the root unit")
+						o.putNL ("Error: entry point `" + entryPointName + "` is in fact generic type `" + rootUnitDsc.fullUnitName + 
+							"` and cannot be used as the root type")
 						Result := True
 					elseif rootUnitDsc.isVirtual then
-						o.putNL ("Error: root unit `" + entryPointName + "` is abstract and cannot be used as the root unit")
+						o.putNL ("Error: root type `" + entryPointName + "` is abstract and cannot be used as the root type")
 						Result := True
 					elseif rootUnitDsc.isExtension then
-						o.putNL ("Error: root unit `" + entryPointName + "` is unit extension and cannot be used as the root unit")
+						o.putNL ("Error: root type `" + entryPointName + "` is type extension and cannot be used as the root type")
 						Result := True
 					elseif rootUnitDsc.hasNoEntryPointInitProcedure then
-						o.putNL ("Error: root unit `" + entryPointName + "` has no proper initialization procedure which can be used as the entry point")
+						o.putNL ("Error: root type `" + entryPointName + "` has no proper initialization procedure which can be used as the entry point")
 						Result := True
 					else
 						-- Register root in the context
@@ -312,7 +312,7 @@ feature {None}
 								debug
 									sysDsc.dumpContext (o)						
 								end -- debug
-								-- We need to start with the root unit implementation validate and generate code
+								-- We need to start with the root type implementation validate and generate code
 								-- and then do the same for its constructor actual usage 
 								Result := rootUnitDsc.is_invalid (rootUnitCU, o)
 								if not Result then
@@ -320,7 +320,7 @@ feature {None}
 									if not Result then
 										-- 6.Check validity and code generation for used CUs
 										-- 7. Build executable
-										o.putNL ("Building executable `" + sysDsc.name + "` from unit `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`")
+										o.putNL ("Building executable `" + sysDsc.name + "` from type `" + sysDsc.entry + "` from cluster `" + clusters.item (1).name + "`")
 										Result := buildExecutableFailed (clusters.item (1).name, sysDsc.name)
 									end -- if
 								end -- if
@@ -330,7 +330,7 @@ feature {None}
 						end -- if
 					end -- if
 				else
-					o.putNL ("Error: root unit `" + entryPointName + "` was not loaded correctly")
+					o.putNL ("Error: root type `" + entryPointName + "` was not loaded correctly")
 					Result := True
 				end -- if			
 			end -- if	
@@ -338,11 +338,11 @@ feature {None}
 			-- Entry point is the standalone procedure name!
 			clusters := sysDsc.hasStandAloneRoutine (entryPointName)
 			if clusters = Void or else clusters.count = 0 then
-				-- Such unit is not found in the search universe !!!
+				-- Such type is not found in the search universe !!!
 				o.putNL ("Error: routine `" + entryPointName + "` is not found in the provided context")
 				Result := True
 			elseif clusters.count > 1 then
-				-- More than one unit is found in the search universe !!!
+				-- More than one type is found in the search universe !!!
 				o.putNL ("Error: " + clusters.count.out + " versions of the routine `" + entryPointName + "` found in the provided context. Select only one to be used")
 				Result := True
 			else
@@ -478,7 +478,7 @@ feature {None}
 						aliasesCount := aliasesCount + 1
 						create unitDclDsc.makeForSearch (unitAliasDsc.aliasName, Void)							
 						if sysDsc.allContextTypes.seek (unitDclDsc) > 0 then -- already registered
-							o.putNL ("Error: type alias `" + unitAliasDsc.aliasName + "` clashes with another unit name")
+							o.putNL ("Error: type alias `" + unitAliasDsc.aliasName + "` clashes with another type name")
 							Result := True
 						end -- if
 						i := i + 1								
@@ -586,13 +586,13 @@ feature {None}
 				if fileName.has_substring (UnitSuffix) then
 					if fileName.has_substring (AliasPrefix) then
 					else
-						-- That is unit but not alias IR file
+						-- That is type but not alias IR file
 						create cuUnitDsc.init (sysDsc)
 						if cuUnitDsc.UnitIR_Loaded (fileDsc.path, o) then
 							debug
 								--trace ("Unit `" + cuUnitDsc.unitDclDsc.fullUnitName + "` loaded from file `" + ast_files.item (index).path + "`")
 							end -- debug
-							-- Register unit in the context
+							-- Register type in the context
 							sysDsc.registerLoadedUnit (cuUnitDsc.unitDclDsc)
 							
 							if cuUnitDsc.unitDclDsc.aliasName /= Void then				

@@ -128,7 +128,7 @@ feature {Any}
 		end -- loop
 		if Result then
 			-- Let's number units starting from Any
-			create currentID -- First non-virtual unit will get 0 ID
+			create currentID -- First non-virtual type will get 0 ID
 			anyDsc.setSortByChildrenCount
 			if failedToAssignIDandBuildFlatForms (anyDsc, currentID, Current, o) then
 				debug
@@ -424,7 +424,7 @@ feature {Any}
 		if actualFileName /= Void  then
 			create cuDsc.make (Void)
 			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
-				unitDclDsc ?= allContextTypes.add_it (cuDsc.unitDclDsc) -- register unit in the context
+				unitDclDsc ?= allContextTypes.add_it (cuDsc.unitDclDsc) -- register type in the context
 				check
 					unit_registered: unitDclDsc /= Void
 					it_has_alias: unitDclDsc.aliasName /= Void
@@ -449,9 +449,9 @@ feature {Any}
 		if actualFileName /= Void  then
 			create cuDsc.make (Void)
 			if cuDsc.UnitIR_Loaded (pathPrefix + IRfolderName  + fs.separator + actualFileName + UnitSuffix + "." + INText, o) then
-				-- clean up unitExternalName !!!! Wow - it is the name of the unit now ....
+				-- clean up unitExternalName !!!! Wow - it is the name of the type now ....
 
-				unitDclDsc ?= allContextTypes.add_it (cuDsc.unitDclDsc) -- register generic unit in the project context
+				unitDclDsc ?= allContextTypes.add_it (cuDsc.unitDclDsc) -- register generic type in the project context
 				check
 					unit_registered: unitDclDsc /= Void
 				end -- check
@@ -482,22 +482,22 @@ feature {Any}
 		unitPrintableName:= unitDsc.out -- unitDsc.name  -- Name[factualGenerics]
 		debug
 			--if unitDsc.aliasName /= Void then
-			--	o.putLine ("Loading unit `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
+			--	o.putLine ("Loading type `" + unitPrintableName + "` with alias `" + unitDsc.aliasName + "`")
 			--end -- if
-			--o.putNL (">>> Looking for unit `" + unitPrintableName + "` to be located in file  `" + unitExternalName + "`")
+			--o.putNL (">>> Looking for type `" + unitPrintableName + "` to be located in file  `" + unitExternalName + "`")
 		end	-- debug
 		if unitDsc.generics.count = 0 then
-			--o.putLine ("Looking for unit `" + unitPrintableName + "`")
+			--o.putLine ("Looking for type `" + unitPrintableName + "`")
 			clusters_zone := hasUnit(unitExternalName)
 		else
-			--o.putLine ("Looking for generic unit `" + unitPrintableName + "`")
+			--o.putLine ("Looking for generic type `" + unitPrintableName + "`")
 			clusters_zone := hasGenericUnit(unitExternalName)
 		end -- if
 		if clusters_zone = Void or else clusters_zone.count = 0 then
-			-- Such unit is not found in the search universe !!!
+			-- Such type is not found in the search universe !!!
 			o.putNL ("Error: type `" + unitPrintableName + "` is not found in the provided context")
 		elseif clusters_zone.count > 1 then
-			-- More than one unit is found in the search universe !!!
+			-- More than one type is found in the search universe !!!
 			o.putNL ("Error: " + clusters_zone.count.out + " versions of type `" + unitPrintableName + "` found in the provided context. Select one to be used in your project")
 		else
 			-- Load it
@@ -512,13 +512,13 @@ feature {Any}
 				genericUnits := loadGenericUnitInterafcesFrom (clusters_zone.item (1).name, unitExternalName, o)
 				if genericUnits /= Void then
 					if genericUnits.count = 1 then
-						-- There is no generic unit name overloading 
+						-- There is no generic type name overloading 
 						Result := <<genericUnits.item (1)>>
 					else
 						-- Several units !!!
 						Result := genericUnits
 						---- Not_implemented_yet
-						--o.putNL ("Not_implemented_yet: generic unit name overloading  not supported yet! Unit `" + unitPrintableName + "`")
+						--o.putNL ("Not_implemented_yet: generic type name overloading  not supported yet! Unit `" + unitPrintableName + "`")
 					end -- if
 				end -- if
 			end -- if
@@ -540,7 +540,7 @@ feature {Any}
 			--		o.putLine ("Unit `" + unitPrintableName + "` loaded")
 			--	end -- if
 			--else
-			--	o.putNL ("Warning: source file for the unit `" + unitPrintableName + "` is no longer in place, but unit code is loaded")
+			--	o.putNL ("Warning: source file for the type `" + unitPrintableName + "` is no longer in place, but type code is loaded")
 			end -- if
 		end -- if
 	end -- loadUnitInterface
@@ -562,10 +562,10 @@ feature {Any}
 		clusters_zone := hasGenericUnit(unitName)
 		--clusters := sysDsc.hasUnit(unitName)
 		if clusters_zone = Void or else clusters_zone.count = 0 then
-			-- Such unit is not found in the search universe !!!
+			-- Such type is not found in the search universe !!!
 			o.putNL ("Error: generic type(s) for type `" + unitPrintableName + "` not found in the provided context")
 		elseif clusters_zone.count > 1 then
-			-- More than one unit is found in the search universe !!!
+			-- More than one type is found in the search universe !!!
 			o.putNL ("Error: " + clusters_zone.count.out + " folders have versions of generic type `" + unitName + "` in the provided context. Select one to be used in your project")
 		else
 			-- Load it
@@ -628,14 +628,14 @@ feature {Any}
 						unitAliasDsc := loadUnitViaAlias (ir_path + fs.separator + fileName, path1, unitName, o)
 						if unitAliasDsc = Void then
 							debug
-								--o.putNL(">>> File alias - " + fileName + ", real unit NOT loaded !!!")
+								--o.putNL(">>> File alias - " + fileName + ", real type NOT loaded !!!")
 							end -- debug
-							-- Failed to load a unit
+							-- Failed to load a type
 							Result := Void
 							i := n
 						else
 							debug
-								-- o.putNL(">>> File alias - " + fileName + ", real unit loaded")
+								-- o.putNL(">>> File alias - " + fileName + ", real type loaded")
 							end -- debug
 							-- To DO WHAT ???
 							j := j + 1
@@ -645,7 +645,7 @@ feature {Any}
 							Result.put (unitAliasDsc.unitDclDsc, j)
 						end -- if
 						--if unitAliasDsc /= Void then
-						--	unitDclDsc ?= sysDsc.allContextTypes.add_it (unitDclDsc) -- register generic unit in the project context
+						--	unitDclDsc ?= sysDsc.allContextTypes.add_it (unitDclDsc) -- register generic type in the project context
 						--	check
 						--		unit_registered: unitDclDsc /= Void
 						--	end -- 
@@ -654,11 +654,11 @@ feature {Any}
 						--end -- if
 					else
 						debug
-							--o.putNL(">>> File unit - " + fileName)
+							--o.putNL(">>> File type - " + fileName)
 						end -- debug
 						create unitIR.make (Void)
 						if unitIR.UnitIR_Loaded (fileDsc.path, o) then						
-							unitDclDsc ?= allContextTypes.add_it (unitIR.unitDclDsc) -- register generic unit in the project context
+							unitDclDsc ?= allContextTypes.add_it (unitIR.unitDclDsc) -- register generic type in the project context
 							check
 								unit_registered: unitDclDsc /= Void
 							end -- 
@@ -1191,7 +1191,7 @@ feature {None}
 		temp: Array [ClusterDescriptor]
 	do
 		debug
-			--print ("%N+++Looking for the unit '" + unitName + "'%N")
+			--print ("%N+++Looking for the type '" + unitName + "'%N")
 		end
 		if clusters = Void or else clusters.count = 0 then
 			debug
@@ -1578,11 +1578,11 @@ feature {Any}
 	end -- getContextAsString
 
 	currentUnit: UnitDeclarationDescriptor
-	setcurrentUnit (unit: like currentUnit) is
+	setcurrentUnit (type: like currentUnit) is
 	require
-		non_void_currentRoutine: unit /= Void
+		non_void_currentRoutine: type /= Void
 	do
-		currentUnit := unit
+		currentUnit := type
 	end -- setcurrentUnit
 
 	clearcurrentUnit is
@@ -1785,7 +1785,7 @@ feature {None}
 	
 feature {Any}	
 
-	-- Parsing unit
+	-- Parsing type
 	unit_stringPool: Sorted_Array [String]
 	unit_typePool: Sorted_Array[TypeDescriptor]
 
@@ -2202,7 +2202,7 @@ feature {Any}
 		until
 			i <= 0
 		loop
-			-- per unit: useConst + unit
+			-- per type: useConst + type
 			unitDsc := units.item(i)
 			create uImg.init (FullSourceFileName, tStamp, useConst, unitDsc)
 			fName := filePrefix  + unitDsc.getExternalName + UnitSuffix + "." + irFileExtension
@@ -2337,7 +2337,7 @@ feature {CompilationUnitCommon}
 end -- class RoutineImage
 
 class UnitImage
--- local class to store unit IR
+-- local class to store type IR
 inherit
 	IR_Storage
 	end
@@ -2436,7 +2436,7 @@ feature {Any}
 		if exprDsc = Void then
 			if identifier /= Void then
 				--	identifier: String  should be unique within the context - different from
-				--  locals, parametetrs and unit members
+				--  locals, parametetrs and type members
 				if context.entity_name_not_unique (identifier) then
 					Result := True
 				end -- if
@@ -3611,19 +3611,19 @@ feature {Any}
 --					unitDclDsc := sysDsc.lookForUnit (parentDsc.parent)
 --					if unitDclDsc = Void then
 --						-- Inconsistency !!! Parent is not found among loaded types !!!
---						o.putNL ("Error: unit `" + parentDsc.parent.out + "` is not loaded though it is a parent of `" + name + "` unit. Inconsistency detected")
+--						o.putNL ("Error: type `" + parentDsc.parent.out + "` is not loaded though it is a parent of `" + name + "` type. Inconsistency detected")
 --						Result := True
 --					else
 --						if not unitDclDsc.isValidated then
 --							if unitDclDsc.isValidating then
---								o.putNL ("Error: inheritance graph cycle detected. Starting from unit `" + name + "` and reaching `" + unitDclDsc.fullUnitName + "`")
+--								o.putNL ("Error: inheritance graph cycle detected. Starting from type `" + name + "` and reaching `" + unitDclDsc.fullUnitName + "`")
 --								Result := True
 --							elseif unitDclDsc.hasInvalidInterface (sysDsc, o) then
 --								Result := True
 --							end -- if
 --						end -- if
 --						if unitDclDsc.isFinal then
---							o.putNL ("Error: `" + name + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
+--							o.putNL ("Error: `" + name + "` attempts to inherit from the final type `" + unitDclDsc.fullUnitName + "`")
 --							Result := True
 --						end -- if
 --						create parentContextUnit.init (unitDclDsc)
@@ -4256,7 +4256,7 @@ feature {Any}
 		if Result.item (Result.count) /= '%N' then
 			Result.append_character ('%N')
 		end -- if
-		Result.append_string (getIndent + "end // unit " + name + "%N")
+		Result.append_string (getIndent + "end // type " + name + "%N")
 	end -- out
 	
 	setAliasName (aName: like aliasName) is
@@ -4401,12 +4401,12 @@ feature {Any}
 		if not isValidated then
 			isValidating := True
 			debug
-				--o.putNL (" >Info: unit `" + fullUnitName + "` interface validation started")
+				--o.putNL (" >Info: type `" + fullUnitName + "` interface validation started")
 			end -- debug			
 
 			if isExtension then
 				Result := True
-				o.putNL ("Error: unit extension `" + fullUnitName + "` should have been merged with the main unit. Inconsistency found")
+				o.putNL ("Error: type extension `" + fullUnitName + "` should have been merged with the main type. Inconsistency found")
 			else
 				if isFinal then
 				elseif isVirtual then
@@ -4444,18 +4444,18 @@ feature {Any}
 					unitDclDsc := sysDsc.lookForUnitAny
 					if unitDclDsc = Void then
 						Result := True
-						o.putNL ("Error: unit `Any` is not loaded. It must be part of any SLang system")
+						o.putNL ("Error: type `Any` is not loaded. It must be part of any SLang system")
 					else						
 						if not unitDclDsc.isValidated then
 							if unitDclDsc.isValidating then
-								o.putNL ("Error: inheritance graph cycle detected. Starting from unit `" + fullUnitName + "` and reaching `" + unitDclDsc.fullUnitName + "`")
+								o.putNL ("Error: inheritance graph cycle detected. Starting from type `" + fullUnitName + "` and reaching `" + unitDclDsc.fullUnitName + "`")
 								Result := True
 							elseif unitDclDsc.hasInvalidInterface (sysDsc, o) then
 								Result := True
 							end -- if
 						end -- if
 						if unitDclDsc.isFinal then
-							o.putNL ("Error: `" + fullUnitName + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
+							o.putNL ("Error: `" + fullUnitName + "` attempts to inherit from the final type `" + unitDclDsc.fullUnitName + "`")
 							Result := True
 						end -- if
 						create parentContextUnit.init (unitDclDsc)
@@ -4473,19 +4473,19 @@ feature {Any}
 					unitDclDsc := sysDsc.lookForUnit (parentDsc.parent)
 					if unitDclDsc = Void then
 						-- Inconsistency !!! Parent is not found among loaded units or aliases.Let's check instantiatiosn then
-						o.putNL ("Error: unit `" + parentDsc.parent.out + "` is not loaded though it is a parent of `" + fullUnitName + "` unit. Inconsistency detected")
+						o.putNL ("Error: type `" + parentDsc.parent.out + "` is not loaded though it is a parent of `" + fullUnitName + "` type. Inconsistency detected")
 						Result := True
 					else
 						if not unitDclDsc.isValidated then
 							if unitDclDsc.isValidating then
-								o.putNL ("Error: inheritance graph cycle detected. Starting from unit `" + fullUnitName + "` and reaching `" + unitDclDsc.fullUnitName + "`")
+								o.putNL ("Error: inheritance graph cycle detected. Starting from type `" + fullUnitName + "` and reaching `" + unitDclDsc.fullUnitName + "`")
 								Result := True
 							elseif unitDclDsc.hasInvalidInterface (sysDsc, o) then
 								Result := True
 							end -- if
 						end -- if
 						if unitDclDsc.isFinal then
-							o.putNL ("Error: `" + fullUnitName + "` attempts to inherit from the final unit `" + unitDclDsc.fullUnitName + "`")
+							o.putNL ("Error: `" + fullUnitName + "` attempts to inherit from the final type `" + unitDclDsc.fullUnitName + "`")
 							Result := True
 						end -- if
 						create parentContextUnit.init (unitDclDsc)
@@ -4605,7 +4605,7 @@ feature {Any}
 			end -- if
 			
 			debug
-				--o.putNL (" <Info: unit `" + fullUnitName + "` interface validation done")
+				--o.putNL (" <Info: type `" + fullUnitName + "` interface validation done")
 			end
 			isValidated := True
 			isValidating := False
@@ -4617,7 +4617,7 @@ feature {Any}
 		i, n: Integer
 	do
 		debug
-			--o.putNL ("+++Info: unit declaration `" + fullUnitName + "` is_invalid started")
+			--o.putNL ("+++Info: type declaration `" + fullUnitName + "` is_invalid started")
 		end
 		context.setCurrentUnit (Current)
 		from
@@ -4645,7 +4645,7 @@ feature {Any}
 		end -- loop
 		context.clearCurrentUnit
 		debug
-			--o.putNL ("---Info: unit declaration `" + fullUnitName + "` is_invalid fullfilled")
+			--o.putNL ("---Info: type declaration `" + fullUnitName + "` is_invalid fullfilled")
 		end
 	end -- is_invalid
 	
@@ -9052,7 +9052,7 @@ feature
 			Result := True
 		end -- if
 		if not Result then
-			-- Ensure that unit type of 'exprDsc' has constant object 'constDsc' - TBD
+			-- Ensure that type type of 'exprDsc' has constant object 'constDsc' - TBD
 		end -- if
 	end -- is_invalid
 
@@ -11396,7 +11396,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := "unit"
+		Result := "type"
 		from
 			i := 1
 			n := members.count
@@ -11414,7 +11414,7 @@ feature {Any}
 	local
 		i, n: Integer
 	do
-		Result := getIndent + "unit "
+		Result := getIndent + "type "
 		from
 			i := 1
 			n := members.count
@@ -12951,7 +12951,7 @@ feature {Any}
 					create instDsc.init (Current, unitDeclaration)
 					contextTypes.add (instDsc) -- Register instantiation
 					debug
-						-- o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+						-- o.putNL ("Debug: instantiation `" + out + "` is attached to type '" + unitDeclaration.fullUnitName + "`")
 					end -- debug
 					-- It is not instantiated !!! Should it be? NOOOO !
 					if not foundInPool then 
@@ -12962,7 +12962,7 @@ feature {Any}
 				else
 					-- What to do here ????
 					-- if current type has all factual generic parameters as Types then
-					-- there should be only one generic unit declaration with all formal generic type parameters
+					-- there should be only one generic type declaration with all formal generic type parameters
 					debug
 						--o.putNL (">>>> Generic units: " + genericUnits.count.out)
 					end -- debug
@@ -12970,7 +12970,7 @@ feature {Any}
 					inspect 
 						genericUnits.count
 					when 0 then
-						o.putNL ("Error: there is no generic unit in the provided context which fits the instantiation `" + out + "`")
+						o.putNL ("Error: there is no generic type in the provided context which fits the instantiation `" + out + "`")
 						Result := True
 					when 1 then
 						unitDeclaration := genericUnits.item (1)
@@ -12978,7 +12978,7 @@ feature {Any}
 						create instDsc.init (Current, unitDeclaration)
 						contextTypes.add (instDsc) -- Register instantiation
 						debug
-							--o.putNL ("Debug: instantiation `" + out + "` is attached to unit '" + unitDeclaration.fullUnitName + "`")
+							--o.putNL ("Debug: instantiation `" + out + "` is attached to type '" + unitDeclaration.fullUnitName + "`")
 						end -- debug
 						if not foundInPool then 
 							if failedToLoadPoolTypesAndAlias (sysDsc, o) then
@@ -12988,7 +12988,7 @@ feature {Any}
 					else
 						unitDeclaration := Void
 						debug
-							o.putNL ("Debug: more than one generic unit template fits the instantiation `" + out + "`")
+							o.putNL ("Debug: more than one generic type template fits the instantiation `" + out + "`")
 							from
 								i := 1
 								n := genericUnits.count 

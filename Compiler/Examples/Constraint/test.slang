@@ -1,4 +1,4 @@
-type A [G <: B init (X)]
+type A [G <: B init (X)] : X
 end
 a is A[Any]
 

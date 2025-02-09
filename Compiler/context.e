@@ -184,7 +184,7 @@ feature
 							if inheritedOverridingMember = Void then
 								-- version in parent not found
 								o.putNL (
-									"Incorrect overriding while inheriting `" + imoDsc.out + "` in unit `" + contextTypeDsc.fullUnitName + "`. " +
+									"Incorrect overriding while inheriting `" + imoDsc.out + "` in type `" + contextTypeDsc.fullUnitName + "`. " +
 									"Parent `" + parent.contextTypeDsc.getUnitDeclaration.fullUnitName + "` does not have such member"
 								)
 								Result := True
@@ -239,7 +239,7 @@ feature
 									-- overriding in place check if signatures conform !
 									if not ConformingSignatures (member.version, parentMember.version) then 
 										o.putNL (
-											"Non-conforming member overrding in unit `" + contextTypeDsc.fullUnitName + 
+											"Non-conforming member overrding in type `" + contextTypeDsc.fullUnitName + 
 											"` member `" + member.version.fullMemberName +
 											"` from parent `" + parent.contextTypeDsc.fullUnitName + "` and member `" + parentMember.version.fullMemberName + "`"
 										)
@@ -281,7 +281,7 @@ feature
 									else
 										-- identical signatures - versions clash ! Duplicating versions detected !!!
 										o.putNL (
-											"Duplicating member inherited in unit `" + contextTypeDsc.fullUnitName + 
+											"Duplicating member inherited in type `" + contextTypeDsc.fullUnitName + 
 											"` member `" + member.version.fullMemberName +
 											"` from parent `" + parent.contextTypeDsc.fullUnitName + "`"
 										)
@@ -332,7 +332,7 @@ feature
 				if member.isOverriding and then member.seed = Void then
 					o.putNL (
 						"Unit member `" + member.version.fullMemberName +
-						"` is incorrectly marked as overriding in unit `" + contextTypeDsc.fullUnitName + "`"
+						"` is incorrectly marked as overriding in type `" + contextTypeDsc.fullUnitName + "`"
 					)
 					Result := True
 				elseif ioMembers /= Void then -- There are overrides while inheriting
@@ -546,16 +546,16 @@ feature {None}
 	once
 		create Result
 	end -- sortMode
-	init (unit: like contextTypeDsc) is
+	init (type: like contextTypeDsc) is
 	require
-		non_void_unit: unit /= Void
+		non_void_unit: type /= Void
 	local
 		index: Integer
 		mbrDsc: MemberInVectorDescriptor
 		unitMembers: Sorted_Array [MemberDeclarationDescriptor]
 		mbrDclDsc: MemberDeclarationDescriptor
 	do
-		contextTypeDsc := unit
+		contextTypeDsc := type
 		create parents.make
 		create children.make
 		sortMode.setMode(defaultMode)
