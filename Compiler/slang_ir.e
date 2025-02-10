@@ -142,7 +142,37 @@ feature {Any}
 				i := 1
 				n := matrix.count
 				debug
-					o.putNL (">>>> Incidence matrix has total `" + n.out + "` units")
+					o.putNL (">>>> #1: Incidence matrix has total `" + n.out + "` types")
+				end -- debug
+			until
+				i > n
+			loop
+				ctxUnit := matrix.item (i)
+				if ctxUnit.id >= 0 then
+					if Result then
+						ctxUnit.sortMemebrsByID
+					else
+						ctxUnit.sortMemebrsByOriginAndSeed
+					end -- if
+					--debug
+						o.putNL (ctxUnit.output (Current))
+					--end -- debug
+				end -- if
+				--debug
+				--	o.putNL (ctxUnit.out)				
+				--end -- debug
+				i := i + 1
+			end -- loop
+			debug
+				o.putNL ("<<<< End of matrix")
+			end -- debug
+			anyDsc.setSortByMembersCountAndName
+			matrix.qsort
+			from
+				i := 1
+				n := matrix.count
+				debug
+					o.putNL (">>>> #2: Incidence matrix has total `" + n.out + "` types")
 				end -- debug
 			until
 				i > n

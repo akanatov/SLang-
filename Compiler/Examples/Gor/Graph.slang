@@ -43,6 +43,7 @@ abstract type Any end
 /*
 					f1$A			f2$B			f3$H			f4$J		
 
+>>>> #1: Incidence matrix has total `12` types
 	#0	`A`:	f1@A[f1$A!11]
 	#1	`B`:	f1@B[f1$A!11]	f2@B[f2$B!6]
 	#2	`E`:	f1@E[f1$A!11]	f2@B[f2$B!6]	f3@H[f3$H!5]
@@ -54,6 +55,22 @@ abstract type Any end
 	#8	`I`:	f1@A[f1$A!11]					f3@I[f3$H!5]	f4@J[f4$J!4]
 	#9	`J`:	f1@A[f1$A!11]									f4@J[f4$J!4]
 	#10	`K`:	f1@A[f1$A!11]									f4@K[f4$J!4]
+<<<< End of matrix
+>>>> #2: Incidence matrix has total `12` types
+	#4	`G`:	f1@A[f1$A!11]	f2@B[f2$B!6]	f3@H[f3$H!5]	f4@J[f4$J!4]
+	#2	`E`:	f1@E[f1$A!11]	f2@B[f2$B!6]	f3@H[f3$H!5]
+	#3	`F`:	f1@E[f1$A!11]	f2@B[f2$B!6]	f3@H[f3$H!5]
+	#8	`I`:	f1@A[f1$A!11]					f3@I[f3$H!5]	f4@J[f4$J!4]
+	#1	`B`:	f1@B[f1$A!11]	f2@B[f2$B!6]
+	#5	`C`:	f1@B[f1$A!11]	f2@B[f2$B!6]
+	#6	`D`:	f1@B[f1$A!11]	f2@D[f2$B!6]
+	#7	`H`:	f1@A[f1$A!11]					f3@H[f3$H!5]
+	#9	`J`:	f1@A[f1$A!11]									f4@J[f4$J!4]
+	#10	`K`:	f1@A[f1$A!11]									f4@K[f4$J!4]
+	#0	`A`:	f1@A[f1$A!11]
+<<<< End of matrix
+
+
 
 
 */

@@ -9,7 +9,7 @@ creation
 feature
 	origin: ContextTypeDescriptor
 	seed: MemberDeclarationDescriptor
-	height: Integer
+	members_count: Integer
 	
 	is_equal (other: like Current): Boolean is
 	do
@@ -26,7 +26,7 @@ feature
 
 	incMSTheight is
 	do
-		height := height + 1
+		members_count := members_count + 1
 	end -- incMSTheight
 	init (o: like origin; s: like seed) is
 	require
@@ -35,6 +35,7 @@ feature
 	do
 		origin := o
 		seed := s
+		members_count := 0
 	end -- init
 invariant
 	origin_not_void: origin /= Void
@@ -56,6 +57,8 @@ feature
 	children: Sorted_Array [ContextUnit]
 	members: Sorted_Array [MemberInVectorDescriptor]
 	flatFormBuilt: Boolean
+	
+	members_count : Integer is do Result := members.count end 
 
 	isVirtual: Boolean is
 	do
@@ -501,6 +504,10 @@ feature
 	do
 		sortMode.setMode (idMode)
 	end -- setSortByID
+	setSortByMembersCountAndName is
+	do
+		sortMode.setMode (mbrCntNameMode)
+	end -- setSortByMembersCountAndName
 	is_equal (other: like Current): Boolean is
 	do
 		inspect 
@@ -511,6 +518,9 @@ feature
 			Result := id = other.id
 		when childrenMode then
 			Result := children.count = other.children.count and then id = other.id
+		when mbrCntNameMode then
+			Result := members.count = other.members.count and then 
+				contextTypeDsc.is_equal (other.contextTypeDsc)
 		end -- inspect
 	end -- is_equal
 	infix "<" (other: like Current): Boolean is
@@ -525,6 +535,11 @@ feature
 			Result := children.count < other.children.count
 			if not Result and then children.count = other.children.count then
 				Result := id < other.id
+			end -- if
+		when mbrCntNameMode then
+			Result := members.count > other.members.count
+			if not Result and then members.count = other.members.count then
+				Result := contextTypeDsc < other.contextTypeDsc
 			end -- if
 		end -- inspect
 	end -- infix "<"
@@ -580,6 +595,7 @@ feature {None}
 	defaultMode:  Character is 'D'
 	idMode: Character is '#'
 	childrenMode: Character is 'C'
+	mbrCntNameMode: Character is 'M'
 invariant
 	valid_id: id >= -1
 	non_void_context_type: contextTypeDsc /= Void
@@ -774,10 +790,10 @@ feature
 				origin /= Void
 			end -- check
 			Result.append_string(origin.fullUnitName)
-		--	if osDsc /= Void then
-		--		Result.append_character('!')
-		--		Result.append_string(osDsc.height.out)
-		--	end -- if
+			if osDsc /= Void then
+				Result.append_character('!')
+				Result.append_string(osDsc.members_count.out)
+			end -- if
 		end -- if
 		Result.append_character(']')		
 	end -- out
